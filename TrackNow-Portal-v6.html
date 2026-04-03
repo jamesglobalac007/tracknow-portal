@@ -4578,6 +4578,40 @@ function calcCommission() {
         </tr>
       </tbody>
     </table>
+  </div>
+  <div style="background:rgba(0,204,102,.07);border:1.5px solid rgba(0,204,102,.15);padding:16px;margin-top:16px">
+    <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">DEAL SUMMARY — YEAR 1 TOTAL COMMISSION</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.4px">Total Commission Pool</div>
+        <div style="font-size:22px;font-weight:800;color:#FFA028;margin-top:4px">${fmt(hwCommPool + subAnnCommPool)}</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Hardware ${fmt(hwCommPool)} + Recurring ${fmt(subAnnCommPool)}/yr</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.4px">${nameA} Yr 1 Total</div>
+        <div style="font-size:22px;font-weight:800;color:#059669;margin-top:4px">${fmt(yr1A)}</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">HW ${fmt(hwA)} + Sub ${fmt(subAnnA)}/yr</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#FFA028;text-transform:uppercase;letter-spacing:.4px">${nameB} Yr 1 Total</div>
+        <div style="font-size:22px;font-weight:800;color:#FFA028;margin-top:4px">${fmt(yr1B)}</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">HW ${fmt(hwB)} + Sub ${fmt(subAnnB)}/yr</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,204,102,.15);display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.4px">Total Deal Revenue</div>
+        <div style="font-size:16px;font-weight:700;color:#CCC;margin-top:4px">${fmt(hwRevenue + (subMoRev * 12))}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.4px">Total Deal Margin</div>
+        <div style="font-size:16px;font-weight:700;color:var(--success);margin-top:4px">${fmt(hwMargin + (subMoMargin * 12))}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.4px">Margin After Commission</div>
+        <div style="font-size:16px;font-weight:700;color:#CCC;margin-top:4px">${fmt((hwMargin + (subMoMargin * 12)) - (hwCommPool + subAnnCommPool))}</div>
+      </div>
+    </div>
   </div>`;
 }
 
