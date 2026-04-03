@@ -2947,30 +2947,26 @@ function renderPipeline() {
           const hasNotes = l.notes && l.notes.trim();
           const notePreview = hasNotes ? l.notes.split('\\n')[0].substring(0,40) : '';
           const si = STAGES.findIndex(x=>x.id===s.id);
+          const hasProducts = l._productsSet;
           return `<div class="lead-card" draggable="true"
           data-lead-id="${l.id}"
           ondragstart="handleDragStart(event,${l.id})"
           ondragend="handleDragEnd(event)"
           style="padding:8px 10px;margin-bottom:6px;${isOverdue(l)?'border-left:3px solid #dc2626;padding-left:9px':''}">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:11px;font-weight:600;color:#FFA028;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%">${l.star?'<span style="color:#f59e0b;margin-right:3px">★</span>':''}${l.co}</div>
-            <span style="font-size:10px;font-weight:700;color:#FFA028;white-space:nowrap">${l.v}u</span>
+            <div style="font-size:11px;font-weight:600;color:#FFA028;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%">${l.star?'<span style="color:#f59e0b;margin-right:3px">★</span>':''}${l.co}</div>
+            ${hasProducts ? '<span style="font-size:10px;font-weight:700;color:#FFA028;white-space:nowrap">'+l.v+'u</span>' : ''}
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-            <span style="font-size:9px;color:#666">\$${l.val.toLocaleString()}</span>
+            ${hasProducts ? '<span style="font-size:9px;color:#666">\\$'+l.val.toLocaleString()+'/yr</span>' : '<span style="font-size:9px;color:#444;font-style:italic">No products set</span>'}
             <button onclick="event.stopPropagation();toggleCardExpand(${l.id})" style="background:none;border:none;color:#555;font-size:9px;cursor:pointer;padding:0;font-family:inherit" onmouseover="this.style.color='#FFA028'" onmouseout="this.style.color='#555'">▼ more</button>
           </div>
           ${isOverdue(l)?'<div style="font-size:8px;color:#dc2626;font-weight:800;letter-spacing:.3px;margin-top:3px">OVERDUE</div>':''}
           <div id="cardExpand_${l.id}" style="display:none;margin-top:6px;border-top:1px solid #1a1a1a;padding-top:6px">
             <div style="font-size:10px;color:#666;margin-bottom:4px">${l.name} · ${l.city}, ${l.st}</div>
-            ${l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
-              ${l.term?'<span style="font-size:9px;background:#111;border:1px solid #222;color:#666;padding:1px 5px">'+(l.term==1?'MTM':l.term+'mo')+'</span>':''}
-              ${l.sim?'<span style="font-size:9px;background:#111;border:1px solid #222;color:#059669;padding:1px 5px">SIM: '+l.sim+'</span>':''}
-              <span style="font-size:9px;background:#111;border:1px solid #222;color:#FFA028;padding:1px 5px">MRR: $${l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0).toFixed(2) : (l.subPrice||0).toFixed(2)}</span>
-            </div>
+            ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${scoreLeadBadge(l)}<span style="font-size:9px;color:#555">${l.last}</span></div>
-            <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:4px;background:#080808;border:1px solid #1a1a1a;color:#FFA028;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#1a1a1a';this.style.background='#080808'">📦 EDIT PRODUCTS & PRICING</button>
+            <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
               <div style="display:flex;align-items:center;gap:3px">
@@ -2993,17 +2989,17 @@ function renderPipeline() {
     document.getElementById('tableView').style.display = 'block';
     document.getElementById('tableView').innerHTML = `<div class="card" style="padding:0;overflow:hidden"><table>
       <thead><tr><th>Company</th><th>Score</th><th>Products</th><th>Stage</th><th>Units</th><th>MRR</th><th>Annual</th><th>Term</th><th></th></tr></thead>
-      <tbody>${fl.map(l => { const s = STAGES.find(x => x.id === l.stage); const sg = getScoreGrade(scoreLeadRank(l)); const mrr = l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0) : (l.v||0)*(l.subPrice||0); const prodSummary = l.lineItems ? l.lineItems.map(li => (li.qty||0)+'x '+li.type).join(', ') : (l.v||0)+'x '+(l.deviceType||''); return `<tr style="${isOverdue(l)?'background:rgba(255,68,68,.08)':''};cursor:pointer" onclick="openDealProducts(${l.id})">
+      <tbody>${fl.map(l => { const s = STAGES.find(x => x.id === l.stage); const sg = getScoreGrade(scoreLeadRank(l)); const hp = l._productsSet; const mrr = hp && l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0) : 0; const prodSummary = hp && l.lineItems ? l.lineItems.map(li => (li.qty||0)+'x '+li.type).join(', ') : ''; return `<tr style="${isOverdue(l)?'background:rgba(255,68,68,.08)':''};cursor:pointer" onclick="openDealProducts(${l.id})">
         <td><div style="display:flex;align-items:center;gap:8px">
           ${l.star ? '<svg width="12" height="12" fill="#f59e0b" stroke="#f59e0b" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : ''}
           <div><div style="font-weight:600;color:#FFA028">${l.co}</div><div style="font-size:11px;color:#666">${l.name} · ${l.city}, ${l.st}${isOverdue(l)?'<span style="color:#dc2626;font-weight:700;margin-left:6px">// OVERDUE</span>':''}</div></div></div></td>
         <td><span style="font-size:11px;font-weight:800;color:${sg.color};background:${sg.bg};padding:3px 7px;border-radius:5px">${sg.grade}</span></td>
-        <td style="font-size:11px;color:#CCC;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prodSummary}</td>
+        <td style="font-size:11px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${hp?'color:#CCC':'color:#444;font-style:italic'}">${hp ? prodSummary : 'Not set'}</td>
         <td><span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span></td>
-        <td style="font-weight:600">${l.v}</td>
-        <td style="font-weight:700;color:#FFA028">$${mrr.toFixed(2)}</td>
-        <td style="font-weight:600;color:#999">$${l.val.toLocaleString()}</td>
-        <td style="font-size:11px;color:#666">${l.term==1?'MTM':(l.term||24)+'mo'}</td>
+        <td style="font-weight:600;${hp?'':'color:#333'}">${hp ? l.v : '—'}</td>
+        <td style="font-weight:700;${hp?'color:#FFA028':'color:#333'}">${hp ? '$'+mrr.toFixed(2) : '—'}</td>
+        <td style="font-weight:600;${hp?'color:#999':'color:#333'}">${hp ? '$'+l.val.toLocaleString() : '—'}</td>
+        <td style="font-size:11px;${hp?'color:#666':'color:#333'}">${hp ? (l.term==1?'MTM':(l.term||24)+'mo') : '—'}</td>
         <td><button onclick="event.stopPropagation();openDealProducts(${l.id})" style="background:none;border:1px solid #333;color:#FFA028;font-size:9px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Edit</button></td>
       </tr>`; }).join('')}</tbody></table></div>`;
   }
@@ -6746,14 +6742,26 @@ function updateDealProductTotals() {
   const totalUnits = l.lineItems.reduce((s,li) => s + (li.qty||0), 0);
   const monthlyTotal = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
   const annualTotal = monthlyTotal * 12;
-  const hwTotal = l.lineItems.reduce((s,li) => s + (li.qty||0) * ((li.hwPrice||0) + (li.hwInstall||0)), 0);
+  const hwDeviceCost = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwPrice||0), 0);
+  const hwInstallCost = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwInstall||0), 0);
+  const hwTotal = hwDeviceCost + hwInstallCost;
   const termEl = document.getElementById('dp_term_0');
   const term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
-  const contractValue = monthlyTotal * term;
+  const swContractTotal = monthlyTotal * term;
+  const contractValue = hwTotal + swContractTotal;
+  // Hardware Cost box
+  document.getElementById('dp_hwCost').textContent = '$' + hwTotal.toLocaleString();
+  const hwBd = document.getElementById('dp_hwBreakdown');
+  if (hwBd) hwBd.textContent = 'Devices $' + hwDeviceCost.toLocaleString() + (hwInstallCost > 0 ? ' + Install $' + hwInstallCost.toLocaleString() : '');
+  // Software Cost box
+  const swEl = document.getElementById('dp_swCost');
+  if (swEl) swEl.textContent = '$' + Math.round(swContractTotal).toLocaleString();
+  const swBd = document.getElementById('dp_swBreakdown');
+  if (swBd) swBd.textContent = '$' + monthlyTotal.toFixed(2) + '/mo × ' + (term == 1 ? 'MTM' : term + ' months');
+  // Deal Summary
   document.getElementById('dp_totalUnits').textContent = totalUnits;
   document.getElementById('dp_mrr').textContent = '$' + monthlyTotal.toFixed(2);
   document.getElementById('dp_annual').textContent = '$' + annualTotal.toLocaleString();
-  document.getElementById('dp_hwCost').textContent = '$' + hwTotal.toLocaleString();
   document.getElementById('dp_contractVal').textContent = '$' + Math.round(contractValue).toLocaleString();
 }
 
@@ -6766,6 +6774,7 @@ function saveDealProducts() {
   l.term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
   l.sim = simEl ? simEl.value : document.getElementById('dp_sim').value;
   calcLeadFromLines(l);
+  l._productsSet = true;
   // Update deviceType to primary (highest qty) for backwards compat
   if (l.lineItems && l.lineItems.length) {
     const primary = l.lineItems.reduce((a,b) => (b.qty||0) > (a.qty||0) ? b : a, l.lineItems[0]);
@@ -7157,28 +7166,36 @@ function doLogin() {
       <div id="dp_lines"></div>
       <input type="hidden" id="dp_term" value="24">
       <input type="hidden" id="dp_sim" value="">
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Hardware Cost</div>
+          <div id="dp_hwCost" style="font-size:20px;font-weight:800;color:#FFA028">$0</div>
+          <div id="dp_hwBreakdown" style="font-size:9px;color:#666;margin-top:4px"></div>
+        </div>
+        <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Software Cost</div>
+          <div id="dp_swCost" style="font-size:20px;font-weight:800;color:#FFA028">$0</div>
+          <div id="dp_swBreakdown" style="font-size:9px;color:#666;margin-top:4px"></div>
+        </div>
+      </div>
       <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:8px">
-        <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Deal Summary</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Deal Summary</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
           <div>
-            <div style="font-size:9px;color:#555">Total Units</div>
-            <div id="dp_totalUnits" style="font-size:16px;font-weight:800;color:#FFF">0</div>
+            <div style="font-size:9px;color:#FFA028">Total Units</div>
+            <div id="dp_totalUnits" style="font-size:18px;font-weight:800;color:#FFF">0</div>
           </div>
           <div>
-            <div style="font-size:9px;color:#555">Monthly (MRR)</div>
-            <div id="dp_mrr" style="font-size:16px;font-weight:800;color:#FFA028">$0</div>
+            <div style="font-size:9px;color:#FFA028">Monthly (MRR)</div>
+            <div id="dp_mrr" style="font-size:18px;font-weight:800;color:#FFA028">$0</div>
           </div>
           <div>
-            <div style="font-size:9px;color:#555">Annual</div>
-            <div id="dp_annual" style="font-size:16px;font-weight:800;color:#FFA028">$0</div>
+            <div style="font-size:9px;color:#FFA028">Annual</div>
+            <div id="dp_annual" style="font-size:18px;font-weight:800;color:#FFA028">$0</div>
           </div>
           <div>
-            <div style="font-size:9px;color:#555">Hardware Cost</div>
-            <div id="dp_hwCost" style="font-size:16px;font-weight:800;color:#dc2626">$0</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#555">Contract Value</div>
-            <div id="dp_contractVal" style="font-size:16px;font-weight:800;color:#059669">$0</div>
+            <div style="font-size:9px;color:#FFA028">Total Contract Value</div>
+            <div id="dp_contractVal" style="font-size:18px;font-weight:800;color:#059669">$0</div>
           </div>
         </div>
       </div>
