@@ -490,6 +490,7 @@ select option{background:#0a0a0a;color:#FFA028}
     </div>
     <div id="boardView"></div>
     <div id="tableView" style="display:none"></div>
+    <div id="lostDealsSection" style="margin-top:28px"></div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
@@ -2985,6 +2986,7 @@ function renderPipeline() {
               ${si>0?'<button onclick="event.stopPropagation();moveLeadStage('+l.id+',-1)" style="flex:1;padding:3px;background:#111;border:1px solid #333;color:#888;font-size:9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">◀ Back</button>':''}
               ${si<STAGES.length-1?'<button onclick="event.stopPropagation();moveLeadStage('+l.id+',1)" style="flex:1;padding:3px;background:#111;border:1px solid #333;color:#888;font-size:9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#00CC66\';this.style.color=\'#00CC66\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">Next ▶</button>':''}
             </div>
+            <button onclick="event.stopPropagation();markDealLost(${l.id})" style="width:100%;padding:4px;background:#111;border:1px solid #333;color:#dc2626;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#dc2626';this.style.background='rgba(220,38,38,.08)'" onmouseout="this.style.borderColor='#333';this.style.background='#111'">✕ NOT GOING AHEAD</button>
           </div>
         </div>`;}).join('')}
         </div>
@@ -3058,6 +3060,7 @@ function addLeadTimestamp() {
 
 // ═══════════ DRAG & DROP (Pipeline Board) ═══════════
 let _dragLeadId = null;
+let _lostDeals = [];
 
 function toggleCardExpand(leadId) {
   var el = document.getElementById('cardExpand_' + leadId);
@@ -3177,6 +3180,67 @@ function handleDrop(e, newStage) {
   const oldLabel = (STAGES.find(s => s.id === oldStage) || {}).label || oldStage;
   const newLabel = (STAGES.find(s => s.id === newStage) || {}).label || newStage;
   showStageNotification(lead.co, oldLabel, newLabel);
+}
+
+// ── Lost Deals (Not Going Ahead) ─────────────────────────────────
+function markDealLost(leadId) {
+  const idx = LEADS.findIndex(l => l.id === leadId);
+  if (idx === -1) return;
+  const lead = LEADS[idx];
+  const stageLabel = (STAGES.find(s => s.id === lead.stage) || {}).label || lead.stage;
+  lead._lostDate = new Date().toLocaleDateString('en-AU');
+  lead._lostFrom = stageLabel;
+  _lostDeals.push(lead);
+  LEADS.splice(idx, 1);
+  renderPipeline();
+  showStageNotification(lead.co, stageLabel, 'Not Going Ahead');
+}
+
+function restoreDeal(lostIdx) {
+  if (lostIdx < 0 || lostIdx >= _lostDeals.length) return;
+  const lead = _lostDeals.splice(lostIdx, 1)[0];
+  lead.stage = 'new';
+  delete lead._lostDate;
+  delete lead._lostFrom;
+  LEADS.push(lead);
+  renderPipeline();
+  showToast(lead.co + ' restored to pipeline');
+}
+
+function renderLostDeals() {
+  const el = document.getElementById('lostDealsSection');
+  if (!el) return;
+  if (!_lostDeals.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="document.getElementById('lostDealsTable').style.display=document.getElementById('lostDealsTable').style.display==='none'?'':'none';this.querySelector('.ld-arrow').style.transform=document.getElementById('lostDealsTable').style.display==='none'?'':'rotate(90deg)'">
+      <span class="ld-arrow" style="color:#666;font-size:12px;transition:transform .2s">▶</span>
+      <span style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">Not Going Ahead</span>
+      <span style="font-size:10px;font-weight:700;color:#666;background:#111;padding:3px 8px;border:1px solid #222">${_lostDeals.length}</span>
+    </div>
+    <div id="lostDealsTable" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;border-color:#331111">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#111;border-bottom:1px solid #222">
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase">Company</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase">Contact</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase">Was At</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase">Date Lost</th>
+            <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;color:#666;text-transform:uppercase">Units</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:#666;text-transform:uppercase">Value</th>
+            <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:700;color:#666;text-transform:uppercase"></th>
+          </tr></thead>
+          <tbody>${_lostDeals.map((d, i) => `<tr style="border-bottom:1px solid #1a1a1a;background:${i%2===0?'#0a0a0a':'#0f0f0f'}">
+            <td style="padding:10px 14px;font-weight:600;color:#888;font-size:12px">${d.co}</td>
+            <td style="padding:10px 14px;color:#666;font-size:12px">${d.name||'—'}</td>
+            <td style="padding:10px 14px"><span style="font-size:10px;font-weight:600;color:#dc2626;background:rgba(220,38,38,.08);padding:2px 6px;border:1px solid rgba(220,38,38,.2)">${d._lostFrom||'—'}</span></td>
+            <td style="padding:10px 14px;color:#666;font-size:12px">${d._lostDate||'—'}</td>
+            <td style="padding:10px 14px;text-align:center;color:#888;font-size:12px">${d._productsSet?d.v:'—'}</td>
+            <td style="padding:10px 14px;text-align:right;color:#888;font-size:12px">${d._productsSet?'$'+d.val.toLocaleString()+'/yr':'—'}</td>
+            <td style="padding:10px 14px;text-align:center"><button onclick="restoreDeal(${i})" style="padding:3px 10px;background:#111;border:1px solid #333;color:#FFA028;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Restore</button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 // Brief on-screen notification when a card is moved
@@ -5647,6 +5711,7 @@ function saveNewLead() {
   const total = LEADS.length;
   const totalVal = LEADS.reduce((s,l) => s + (l.val||0), 0);
   document.querySelector('#page-pipeline .page-desc').textContent = total + ' lead' + (total!==1?'s':'') + ' · $' + totalVal.toLocaleString() + ' total pipeline value';
+  renderLostDeals();
 }
 
 // ═══════════ LOGIN ═══════════
