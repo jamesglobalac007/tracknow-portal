@@ -1,0 +1,87 @@
+SESSION SUMMARY — 3 April 2026 (Laptop Session) — UPDATED
+═══════════════════════════════════════════════════════════
+
+MACHINE: MacBook Laptop (Dropbox path: ~/Dropbox/2. Finance/CW/TrackNow/TrackNow)
+
+WHAT WAS DONE THIS SESSION:
+────────────────────────────
+
+1. DROPBOX SYNC SETUP
+   - Connected laptop Dropbox folder to Cowork
+   - Files were showing as 0 bytes (online-only)
+   - Fixed by right-clicking folder → "Make available offline" in Finder
+   - REMINDER: Do the same on Mac Mini when back in office
+
+2. LEAD SCRAPER — INDIVIDUAL EMAIL FILTER
+   - Added email classification system to distinguish personal vs generic emails
+   - 42 generic prefixes blocked: info@, admin@, sales@, contact@, enquiries@, hello@, support@, office@, accounts@, billing@, dispatch@, reception@, general@, etc.
+   - Scraper results now show green "INDIVIDUAL" and orange "GENERIC" badges
+   - Filter buttons: personal_only, generic_only, all
+   - Campaign execution defaults to individual emails only
+   - Toggle buttons in execute modal: INDIVIDUAL ONLY | ALL EMAILS | GENERIC ONLY
+   - Stats from current data: 9 individual emails, 648 generic out of 657 total
+
+3. SIM PROVIDER — SIMPLIFIED UI
+   - Removed per-device SIM provider dropdowns from Customers tab
+   - Replaced with single SIM provider field at bottom of device list
+   - Changed from dropdown to free-text input with datalist suggestions
+   - Suggestions include: Telstra, Optus, Vodafone, Boost Mobile, Aldi Mobile, Belong, amaysim, TPG, iiNet, M2M One, M2M Connectivity, Emnify, Hologram
+   - User can type any custom provider name
+   - Setting SIM on customer auto-applies to all their devices
+
+4. GITHUB PUSH PIPELINE (LAPTOP)
+   - Created push.sh script in project folder
+   - Auto-detects laptop (Dropbox) vs Mac Mini (Desktop)
+   - Checks for ~/.github_token
+   - Auto-generates commit messages with timestamp
+   - Shows formatted output with tick boxes and success/fail detection
+   - Detects "no changes" and skips empty commits
+   - Push command: bash ~/Dropbox/2.\ Finance/CW/TrackNow/TrackNow/push.sh
+
+5. GIT HISTORY CLEANED
+   - Push was blocked by GitHub secret scanning (SSH keys + tokens in old files)
+   - Added .gitignore for: .ssh/, deploy-portal.html, deploy-to-github.html, deploy.html, push-to-github.sh
+   - Did rm -rf .git && git init for fresh history with no secrets
+   - Force pushed clean repo successfully
+
+6. GITHUB TOKEN
+   - Old token was exposed in chat — REVOKED
+   - New token created and saved to ~/.github_token on laptop
+   - REMINDER: Save same token on Mac Mini: echo "TOKEN" > ~/.github_token
+
+7. SKILLS UPDATED
+   - push-to-render/SKILL.md — Updated with push.sh approach, both machine paths, auto-push rule (give push command after every edit)
+   - new-project-setup/SKILL.md — Updated with both machine paths (Dropbox + Desktop)
+   - save-to-dropbox/SKILL.md — NEW: master skill ensuring all work on ANY project saves to correct Dropbox folder
+
+8. PIPELINE DEAL PRODUCTS & PRICING (NEW FEATURE)
+   - Added lineItems array to every pipeline deal — supports multiple product lines per deal
+   - Each line item has: device type, quantity, $/mo per unit, asset type, hardware type, hardware price, install cost
+   - Built "Edit Products & Pricing" modal — opens from pipeline cards (board view) or table rows
+   - Modal shows: all product lines with add/remove, contract term, SIM provider, and auto-calculated deal summary
+   - Deal summary shows: Total Units, Monthly MRR, Annual value, Hardware cost, Contract value
+   - Pipeline table view updated: now shows Products column, MRR column, Term column, and Edit button per row
+   - Pipeline board cards: expanded view now shows each product line with per-line MRR
+   - Add Lead modal: new leads auto-create lineItems from the form
+   - Prospect → Pipeline: creates default lineItems (editable via Edit Products)
+   - Customer → Pipeline (upsell): carries existing device breakdown into lineItems
+   - Closed Won → Customer: ALL line items flow through to customer's devices array with correct pricing
+   - Existing deals migrated with realistic multi-product breakdowns (e.g. Centurion Transport: 30x OBD2 Trucks + 15x Hardwired Trailers)
+   - Hardware pricing: OBD2 Device $149, Hardwired Device $199, Solar Tracker $299, Asset Tag $99
+   - Install costs: Hardwired $75/unit default, others $0
+
+CURRENT PORTAL VERSION: TrackNow-Portal-v6.html (581KB, 7429 lines)
+LIVE URL: https://tracknow-portal.onrender.com
+GITHUB REPO: jamesglobalac007/tracknow-portal
+
+LOGIN CREDENTIALS:
+- james@tracknow.com.au / password: tracknow2026 (admin)
+- jamesglobalac007@gmail.com / password: tracknow2026 (admin)
+
+PORTAL PAGES: Dashboard, Sales Pipeline, Customers, Revenue Calculators & Commission, Analytics, Marketing Hub, Tools & Calculators, Resources, Login
+
+TO-DO WHEN AT MAC MINI:
+────────────────────────
+1. Right-click TrackNow folder in Dropbox → "Make available offline"
+2. Save GitHub token: echo "NEW_TOKEN" > ~/.github_token
+3. All laptop edits will already be there via Dropbox

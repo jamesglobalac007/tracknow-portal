@@ -2060,28 +2060,40 @@ select option{background:#0a0a0a;color:#FFA028}
 // ═══════════ DATA ═══════════
 const LEADS=[
   // ── New Lead ──
-  {id:1,co:'Blacks Transport (QLD)',name:'Jason Black',ind:'Transport & Logistics',st:'QLD',city:'Park Ridge',stage:'new',v:14,val:5033,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'28 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'Scraped from Yellow Pages. Large fleet, worth pursuing.'},
-  {id:2,co:'Gulf Civil Pty Ltd',name:'Tim Reardon',ind:'Civil & Construction',st:'QLD',city:'Tully',stage:'new',v:8,val:3356,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'',last:'30 Mar',lastTs:Date.now()-3*86400000,star:false,notes:''},
+  {id:1,co:'Blacks Transport (QLD)',name:'Jason Black',ind:'Transport & Logistics',st:'QLD',city:'Park Ridge',stage:'new',v:14,val:5033,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'28 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'Scraped from Yellow Pages. Large fleet, worth pursuing.',
+    lineItems:[{type:'OBD2 Plug-In',qty:14,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
+  {id:2,co:'Gulf Civil Pty Ltd',name:'Tim Reardon',ind:'Civil & Construction',st:'QLD',city:'Tully',stage:'new',v:8,val:3356,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'',last:'30 Mar',lastTs:Date.now()-3*86400000,star:false,notes:'',
+    lineItems:[{type:'Hardwired',qty:8,sub:34.95,asset:'Trucks',hwType:'Hardwired Device',hwPrice:199,hwInstall:75}]},
 
   // ── Contacted ──
-  {id:3,co:'Centurion Transport',name:'Mark Ellison',ind:'Transport & Logistics',st:'WA',city:'Perth',stage:'contacted',v:45,val:16173,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'25 Mar',lastTs:Date.now()-8*86400000,star:true,notes:'[25 Mar 2026 10:30] Spoke with Mark — very interested. Large fleet across WA. Sending info pack today.'},
-  {id:4,co:'Highfield Civil',name:'Paul Donovan',ind:'Civil & Construction',st:'QLD',city:'Cairns',stage:'contacted',v:10,val:4194,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Optus',last:'27 Mar',lastTs:Date.now()-6*86400000,star:false,notes:'[27 Mar 2026 14:15] Left voicemail. PA says he is on site this week, try again Monday.'},
+  {id:3,co:'Centurion Transport',name:'Mark Ellison',ind:'Transport & Logistics',st:'WA',city:'Perth',stage:'contacted',v:45,val:16173,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'25 Mar',lastTs:Date.now()-8*86400000,star:true,notes:'[25 Mar 2026 10:30] Spoke with Mark — very interested. Large fleet across WA. Sending info pack today.',
+    lineItems:[{type:'OBD2 Plug-In',qty:30,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0},{type:'Hardwired',qty:15,sub:34.95,asset:'Trailers',hwType:'Hardwired Device',hwPrice:199,hwInstall:75}]},
+  {id:4,co:'Highfield Civil',name:'Paul Donovan',ind:'Civil & Construction',st:'QLD',city:'Cairns',stage:'contacted',v:10,val:4194,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Optus',last:'27 Mar',lastTs:Date.now()-6*86400000,star:false,notes:'[27 Mar 2026 14:15] Left voicemail. PA says he is on site this week, try again Monday.',
+    lineItems:[{type:'Hardwired',qty:7,sub:34.95,asset:'Excavators',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'Solar Powered',qty:3,sub:44.95,asset:'Generators',hwType:'Solar Tracker',hwPrice:299,hwInstall:0}]},
 
   // ── Interested ──
-  {id:5,co:'Hinde Transport',name:'Craig Hinde',ind:'Transport & Logistics',st:'QLD',city:'Gold Coast',stage:'interested',v:18,val:6469,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'31 Mar',lastTs:Date.now()-2*86400000,star:true,notes:'[31 Mar 2026 09:00] Craig wants to compare us vs Netstar. Sent competitor comparison PDF.\n[29 Mar 2026 11:30] Initial call — currently using paper logbooks. Fuel theft suspected on 3 trucks.'},
-  {id:6,co:'Boral Limited',name:'Andrew Chen',ind:'Civil & Construction',st:'NSW',city:'Sydney',stage:'interested',v:60,val:25164,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Telstra',last:'30 Mar',lastTs:Date.now()-3*86400000,star:true,notes:'[30 Mar 2026 16:00] Massive opportunity. Andrew is fleet ops manager. Currently on Teletrac — contract ends June. Wants pricing for 60 units hardwired.'},
+  {id:5,co:'Hinde Transport',name:'Craig Hinde',ind:'Transport & Logistics',st:'QLD',city:'Gold Coast',stage:'interested',v:18,val:6469,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'31 Mar',lastTs:Date.now()-2*86400000,star:true,notes:'[31 Mar 2026 09:00] Craig wants to compare us vs Netstar. Sent competitor comparison PDF.\n[29 Mar 2026 11:30] Initial call — currently using paper logbooks. Fuel theft suspected on 3 trucks.',
+    lineItems:[{type:'OBD2 Plug-In',qty:18,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
+  {id:6,co:'Boral Limited',name:'Andrew Chen',ind:'Civil & Construction',st:'NSW',city:'Sydney',stage:'interested',v:60,val:25164,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Telstra',last:'30 Mar',lastTs:Date.now()-3*86400000,star:true,notes:'[30 Mar 2026 16:00] Massive opportunity. Andrew is fleet ops manager. Currently on Teletrac — contract ends June. Wants pricing for 60 units hardwired.',
+    lineItems:[{type:'Hardwired',qty:40,sub:34.95,asset:'Trucks',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'Hardwired',qty:15,sub:34.95,asset:'Loaders',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'OBD2 Plug-In',qty:5,sub:29.95,asset:'Site Vehicles',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
 
   // ── Demo Booked ──
-  {id:7,co:'Murray Valley Transport',name:'Gary Nguyen',ind:'Transport & Logistics',st:'VIC',city:'Shepparton',stage:'demo',v:20,val:7188,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Optus',last:'01 Apr',lastTs:Date.now()-1*86400000,star:false,notes:'[01 Apr 2026 13:00] Demo booked for 7 Apr 10am. Gary wants to see live tracking + geofence alerts. Bring iPad with demo account loaded.'},
-  {id:8,co:'Dawsons Haulage',name:'Brett Dawson',ind:'Transport & Logistics',st:'VIC',city:'Baranduda',stage:'demo',v:12,val:4313,subPrice:29.95,deviceType:'OBD2 Plug-In',term:12,sim:'Telstra',last:'29 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'[29 Mar 2026 10:00] Demo done over Zoom. Brett impressed with fuel reports. Wants to discuss with business partner before committing.'},
+  {id:7,co:'Murray Valley Transport',name:'Gary Nguyen',ind:'Transport & Logistics',st:'VIC',city:'Shepparton',stage:'demo',v:20,val:7188,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Optus',last:'01 Apr',lastTs:Date.now()-1*86400000,star:false,notes:'[01 Apr 2026 13:00] Demo booked for 7 Apr 10am. Gary wants to see live tracking + geofence alerts. Bring iPad with demo account loaded.',
+    lineItems:[{type:'OBD2 Plug-In',qty:20,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
+  {id:8,co:'Dawsons Haulage',name:'Brett Dawson',ind:'Transport & Logistics',st:'VIC',city:'Baranduda',stage:'demo',v:12,val:4313,subPrice:29.95,deviceType:'OBD2 Plug-In',term:12,sim:'Telstra',last:'29 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'[29 Mar 2026 10:00] Demo done over Zoom. Brett impressed with fuel reports. Wants to discuss with business partner before committing.',
+    lineItems:[{type:'OBD2 Plug-In',qty:12,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
 
   // ── Proposal Sent ──
-  {id:9,co:'Outback Drilling Co.',name:'Ben Walsh',ind:'Mining',st:'NSW',city:'Muswellbrook',stage:'proposal',v:22,val:9227,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Telstra',last:'28 Mar',lastTs:Date.now()-5*86400000,star:true,notes:'[28 Mar 2026 15:30] Sent 24mo proposal — 22 hardwired units @ $34.95/mo. Ben reviewing with ops manager.\n[25 Mar 2026 09:00] Referred by Hunter Valley Freight. Keen on fuel + idle time reporting.'},
-  {id:10,co:'Formway Civil',name:'Steve Papadopoulos',ind:'Civil & Construction',st:'NSW',city:'Silverwater',stage:'proposal',v:15,val:6291,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Optus',last:'01 Apr',lastTs:Date.now()-1*86400000,star:false,notes:'[01 Apr 2026 11:00] Proposal sent — 15 units mix of hardwired + solar. Steve wants install done over Easter long weekend to avoid downtime.'},
+  {id:9,co:'Outback Drilling Co.',name:'Ben Walsh',ind:'Mining',st:'NSW',city:'Muswellbrook',stage:'proposal',v:22,val:9227,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Telstra',last:'28 Mar',lastTs:Date.now()-5*86400000,star:true,notes:'[28 Mar 2026 15:30] Sent 24mo proposal — 22 hardwired units @ $34.95/mo. Ben reviewing with ops manager.\n[25 Mar 2026 09:00] Referred by Hunter Valley Freight. Keen on fuel + idle time reporting.',
+    lineItems:[{type:'Hardwired',qty:22,sub:34.95,asset:'Drill Rigs',hwType:'Hardwired Device',hwPrice:199,hwInstall:75}]},
+  {id:10,co:'Formway Civil',name:'Steve Papadopoulos',ind:'Civil & Construction',st:'NSW',city:'Silverwater',stage:'proposal',v:15,val:6291,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Optus',last:'01 Apr',lastTs:Date.now()-1*86400000,star:false,notes:'[01 Apr 2026 11:00] Proposal sent — 15 units mix of hardwired + solar. Steve wants install done over Easter long weekend to avoid downtime.',
+    lineItems:[{type:'Hardwired',qty:10,sub:34.95,asset:'Trucks',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'Solar Powered',qty:5,sub:44.95,asset:'Trailers',hwType:'Solar Tracker',hwPrice:299,hwInstall:0}]},
 
   // ── Closed Won ──
-  {id:11,co:'Hunter Valley Freight',name:'Sarah Mitchell',ind:'Transport & Logistics',st:'NSW',city:'Cessnock',stage:'closed',v:8,val:2876,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'15 Mar',lastTs:Date.now()-18*86400000,star:true,notes:'[15 Mar 2026 10:00] CLOSED — 8 units, 24mo contract signed. Mix of OBD2 + hardwired. Install booked 22 Mar.\n[10 Mar 2026 14:00] Final negotiation — agreed on $29.95/unit. Sarah happy with demo results.'},
-  {id:12,co:'Blue Sky Agriculture',name:'Trish Gallagher',ind:'Agriculture',st:'NSW',city:'Moree',stage:'closed',v:5,val:2697,subPrice:44.95,deviceType:'Solar Powered',term:12,sim:'Vodafone',last:'10 Mar',lastTs:Date.now()-23*86400000,star:false,notes:'[10 Mar 2026 09:30] CLOSED — 5 units (2x OBD2, 3x Solar). 12mo contract. Trish wants monthly usage reports emailed.'}
+  {id:11,co:'Hunter Valley Freight',name:'Sarah Mitchell',ind:'Transport & Logistics',st:'NSW',city:'Cessnock',stage:'closed',v:8,val:2876,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'15 Mar',lastTs:Date.now()-18*86400000,star:true,notes:'[15 Mar 2026 10:00] CLOSED — 8 units, 24mo contract signed. Mix of OBD2 + hardwired. Install booked 22 Mar.\n[10 Mar 2026 14:00] Final negotiation — agreed on $29.95/unit. Sarah happy with demo results.',
+    lineItems:[{type:'OBD2 Plug-In',qty:5,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0},{type:'Hardwired',qty:3,sub:34.95,asset:'Trailers',hwType:'Hardwired Device',hwPrice:199,hwInstall:75}]},
+  {id:12,co:'Blue Sky Agriculture',name:'Trish Gallagher',ind:'Agriculture',st:'NSW',city:'Moree',stage:'closed',v:5,val:2697,subPrice:44.95,deviceType:'Solar Powered',term:12,sim:'Vodafone',last:'10 Mar',lastTs:Date.now()-23*86400000,star:false,notes:'[10 Mar 2026 09:30] CLOSED — 5 units (2x OBD2, 3x Solar). 12mo contract. Trish wants monthly usage reports emailed.',
+    lineItems:[{type:'OBD2 Plug-In',qty:2,sub:29.95,asset:'Utes',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0},{type:'Solar Powered',qty:3,sub:44.95,asset:'Trailers',hwType:'Solar Tracker',hwPrice:299,hwInstall:0}]}
 ];
 
 // ── PROSPECTS DATA ────────────────────────────────────────────────────────
@@ -2951,13 +2963,14 @@ function renderPipeline() {
           ${isOverdue(l)?'<div style="font-size:8px;color:#dc2626;font-weight:800;letter-spacing:.3px;margin-top:3px">OVERDUE</div>':''}
           <div id="cardExpand_${l.id}" style="display:none;margin-top:6px;border-top:1px solid #1a1a1a;padding-top:6px">
             <div style="font-size:10px;color:#666;margin-bottom:4px">${l.name} · ${l.city}, ${l.st}</div>
+            ${l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
-              ${l.deviceType?'<span style="font-size:9px;background:#111;border:1px solid #222;color:#CCC;padding:1px 5px">'+l.deviceType+'</span>':''}
-              ${l.subPrice?'<span style="font-size:9px;background:#111;border:1px solid #222;color:#FFA028;padding:1px 5px">$'+l.subPrice.toFixed(2)+'/mo</span>':''}
               ${l.term?'<span style="font-size:9px;background:#111;border:1px solid #222;color:#666;padding:1px 5px">'+(l.term==1?'MTM':l.term+'mo')+'</span>':''}
               ${l.sim?'<span style="font-size:9px;background:#111;border:1px solid #222;color:#059669;padding:1px 5px">SIM: '+l.sim+'</span>':''}
+              <span style="font-size:9px;background:#111;border:1px solid #222;color:#FFA028;padding:1px 5px">MRR: $${l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0).toFixed(2) : (l.subPrice||0).toFixed(2)}</span>
             </div>
             <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${scoreLeadBadge(l)}<span style="font-size:9px;color:#555">${l.last}</span></div>
+            <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:4px;background:#080808;border:1px solid #1a1a1a;color:#FFA028;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#1a1a1a';this.style.background='#080808'">📦 EDIT PRODUCTS & PRICING</button>
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
               <div style="display:flex;align-items:center;gap:3px">
@@ -2979,15 +2992,19 @@ function renderPipeline() {
     document.getElementById('boardView').style.display = 'none';
     document.getElementById('tableView').style.display = 'block';
     document.getElementById('tableView').innerHTML = `<div class="card" style="padding:0;overflow:hidden"><table>
-      <thead><tr><th>Company</th><th>Score</th><th>Industry</th><th>Location</th><th>Stage</th><th>Units</th><th>Value</th><th>Last Contact</th></tr></thead>
-      <tbody>${fl.map(l => { const s = STAGES.find(x => x.id === l.stage); const sg = getScoreGrade(scoreLeadRank(l)); return `<tr style="${isOverdue(l)?'background:rgba(255,68,68,.08)':''}">
+      <thead><tr><th>Company</th><th>Score</th><th>Products</th><th>Stage</th><th>Units</th><th>MRR</th><th>Annual</th><th>Term</th><th></th></tr></thead>
+      <tbody>${fl.map(l => { const s = STAGES.find(x => x.id === l.stage); const sg = getScoreGrade(scoreLeadRank(l)); const mrr = l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0) : (l.v||0)*(l.subPrice||0); const prodSummary = l.lineItems ? l.lineItems.map(li => (li.qty||0)+'x '+li.type).join(', ') : (l.v||0)+'x '+(l.deviceType||''); return `<tr style="${isOverdue(l)?'background:rgba(255,68,68,.08)':''};cursor:pointer" onclick="openDealProducts(${l.id})">
         <td><div style="display:flex;align-items:center;gap:8px">
           ${l.star ? '<svg width="12" height="12" fill="#f59e0b" stroke="#f59e0b" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : ''}
-          <div><div style="font-weight:600;color:#FFA028">${l.co}</div><div style="font-size:11px;color:#666">${l.name}${isOverdue(l)?'<span style="color:#dc2626;font-weight:700;margin-left:6px">// OVERDUE</span>':''}</div></div></div></td>
-        <td><span style="font-size:11px;font-weight:800;color:${sg.color};background:${sg.bg};padding:3px 7px;border-radius:5px">${sg.grade} ${sg.label}</span></td>
-        <td>${l.ind}</td><td>${l.city}, ${l.st}</td>
+          <div><div style="font-weight:600;color:#FFA028">${l.co}</div><div style="font-size:11px;color:#666">${l.name} · ${l.city}, ${l.st}${isOverdue(l)?'<span style="color:#dc2626;font-weight:700;margin-left:6px">// OVERDUE</span>':''}</div></div></div></td>
+        <td><span style="font-size:11px;font-weight:800;color:${sg.color};background:${sg.bg};padding:3px 7px;border-radius:5px">${sg.grade}</span></td>
+        <td style="font-size:11px;color:#CCC;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prodSummary}</td>
         <td><span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span></td>
-        <td style="font-weight:600">${l.v}</td><td style="font-weight:700;color:#FFA028">$${l.val.toLocaleString()}</td><td style="color:#666">${l.last}</td>
+        <td style="font-weight:600">${l.v}</td>
+        <td style="font-weight:700;color:#FFA028">$${mrr.toFixed(2)}</td>
+        <td style="font-weight:600;color:#999">$${l.val.toLocaleString()}</td>
+        <td style="font-size:11px;color:#666">${l.term==1?'MTM':(l.term||24)+'mo'}</td>
+        <td><button onclick="event.stopPropagation();openDealProducts(${l.id})" style="background:none;border:1px solid #333;color:#FFA028;font-size:9px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Edit</button></td>
       </tr>`; }).join('')}</tbody></table></div>`;
   }
 }
@@ -5559,6 +5576,7 @@ function saveNewLead() {
   const deviceType = document.getElementById('ml_deviceType').value;
   const term = parseInt(document.getElementById('ml_term').value) || 24;
   const sim = document.getElementById('ml_sim').value;
+  const hwType = HW_MAP[deviceType] || 'OBD2 Plug-In Device';
   const newLead = {
     id: Date.now(),
     co: co,
@@ -5579,7 +5597,8 @@ function saveNewLead() {
     notes: document.getElementById('ml_notes').value.trim(),
     last: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     lastTs: Date.now(),
-    star: false
+    star: false,
+    lineItems: [{type:deviceType, qty:v, sub:subRate, asset:'', hwType:hwType, hwPrice:HW_PRICES[hwType]||149, hwInstall:HW_INSTALL_DEFAULT[hwType]||0}]
   };
   LEADS.push(newLead);
   closeAddLead();
@@ -6532,12 +6551,13 @@ function moveProspectToPipeline(id) {
     phone: p.phone || '', ind: p.ind || '', v: units,
     city: '', st: '', stage: 'new', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
-    trackers: units, subPrice: sub
+    trackers: units, subPrice: sub, term: 24, sim: '',
+    lineItems: [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:149, hwInstall:0}]
   });
   const i = PROSPECTS.findIndex(x => x.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
   renderProspects(); renderCustStats(); renderPipeline();
-  showToast(p.co + ' moved to Pipeline — ' + units + ' trackers');
+  showToast(p.co + ' moved to Pipeline — ' + units + ' units. Click "Edit Products" on the card to set exact products & pricing.');
 }
 
 // ── Move customer to pipeline (e.g. upsell / renewal) ───────────
@@ -6546,19 +6566,194 @@ function moveCustomerToPipeline(id) {
   if (!c) return;
   if (!confirm('Add ' + c.co + ' to the sales pipeline?')) return;
   const annualVal = Math.round(c.trackers * c.subPrice * 12);
+  // Build lineItems from customer's existing devices
+  const custLines = (c.devices && c.devices.length) ? c.devices.map(d => ({
+    type: d.type || 'OBD2 Plug-In', qty: d.qty || 1, sub: d.sub || 29.95,
+    asset: d.asset || '', hwType: HW_MAP[d.type] || 'OBD2 Plug-In Device',
+    hwPrice: HW_PRICES[HW_MAP[d.type]] || 149, hwInstall: 0
+  })) : [{type:'OBD2 Plug-In', qty:c.trackers, sub:c.subPrice||29.95, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:149, hwInstall:0}];
   LEADS.push({
-    id: Date.now(), co: c.co, name: '', email: '',
-    phone: '', ind: c.sector || '', v: c.trackers,
+    id: Date.now(), co: c.co, name: c.contact || '', email: c.email || '',
+    phone: c.phone || '', ind: c.sector || '', v: c.trackers,
     city: '', st: '', stage: 'new', val: annualVal, notes: c.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
-    trackers: c.trackers, subPrice: c.subPrice
+    trackers: c.trackers, subPrice: c.subPrice, term: c.term || 24, sim: '',
+    lineItems: custLines
   });
   renderCustomers(); renderCustStats(); renderPipeline();
   alert(c.co + ' added to Pipeline — ' + c.trackers + ' trackers @ $' + c.subPrice.toFixed(2) + '/mo');
 }
 
-// ── Add Units / Upsell modal ────────────────────────────────────
+// ── LINE ITEMS HELPERS ──────────────────────────────────────────
 const GPS_PRICES = {'OBD2 Plug-In':29.95, 'Hardwired':34.95, 'Solar Powered':44.95};
+const HW_PRICES = {'OBD2 Plug-In Device':149, 'Hardwired Device':199, 'Solar Tracker':299, 'Asset Tag':99};
+const HW_MAP = {'OBD2 Plug-In':'OBD2 Plug-In Device', 'Hardwired':'Hardwired Device', 'Solar Powered':'Solar Tracker'};
+const HW_INSTALL_DEFAULT = {'OBD2 Plug-In Device':0, 'Hardwired Device':75, 'Solar Tracker':0, 'Asset Tag':0};
+
+function calcLeadFromLines(lead) {
+  if (!lead.lineItems || !lead.lineItems.length) return;
+  lead.v = lead.lineItems.reduce((s,li) => s + (li.qty||0), 0);
+  const monthlyTotal = lead.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
+  lead.val = Math.round(monthlyTotal * 12);
+  // Keep subPrice as weighted average for backwards compat
+  lead.subPrice = lead.v > 0 ? Math.round(monthlyTotal / lead.v * 100) / 100 : 0;
+}
+
+// ── DEAL PRODUCTS MODAL ────────────────────────────────────────
+let _dealProductsLeadId = null;
+
+function openDealProducts(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  _dealProductsLeadId = leadId;
+  if (!l.lineItems) l.lineItems = [{type:l.deviceType||'OBD2 Plug-In',qty:l.v||1,sub:l.subPrice||29.95,asset:'Vehicle',hwType:HW_MAP[l.deviceType]||'OBD2 Plug-In Device',hwPrice:HW_PRICES[HW_MAP[l.deviceType]]||149,hwInstall:0}];
+  document.getElementById('dp_title').textContent = l.co + ' — Deal Products';
+  document.getElementById('dp_term').value = l.term || 24;
+  document.getElementById('dp_sim').value = l.sim || '';
+  renderDealProductLines();
+  updateDealProductTotals();
+  document.getElementById('dealProductsModal').style.display = 'flex';
+}
+
+function closeDealProducts() {
+  document.getElementById('dealProductsModal').style.display = 'none';
+  _dealProductsLeadId = null;
+}
+
+function renderDealProductLines() {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems) return;
+  const c = document.getElementById('dp_lines');
+  c.innerHTML = l.lineItems.map((li, i) => `
+    <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:10px;margin-bottom:8px;position:relative">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:120px">
+          <label style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Device Type</label>
+          <select onchange="updateLineItem(${i},'type',this.value);autoFillLinePrices(${i})" style="width:100%;padding:6px;background:#111;border:1px solid #222;color:#FFF;font-size:12px">
+            <option value="OBD2 Plug-In" ${li.type==='OBD2 Plug-In'?'selected':''}>OBD2 Plug-In</option>
+            <option value="Hardwired" ${li.type==='Hardwired'?'selected':''}>Hardwired</option>
+            <option value="Solar Powered" ${li.type==='Solar Powered'?'selected':''}>Solar Powered</option>
+          </select>
+        </div>
+        <div style="width:65px">
+          <label style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Qty</label>
+          <input type="number" value="${li.qty||0}" min="1" onchange="updateLineItem(${i},'qty',parseInt(this.value)||0)" style="width:100%;padding:6px;background:#111;border:1px solid #222;color:#FFF;font-size:12px;text-align:center">
+        </div>
+        <div style="width:90px">
+          <label style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">$/mo each</label>
+          <input type="number" value="${li.sub||0}" step="0.05" min="0" onchange="updateLineItem(${i},'sub',parseFloat(this.value)||0)" style="width:100%;padding:6px;background:#111;border:1px solid #222;color:#FFA028;font-size:12px;text-align:center;font-weight:600">
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Asset</label>
+          <input type="text" value="${li.asset||''}" placeholder="Trucks, Trailers..." onchange="updateLineItem(${i},'asset',this.value)" style="width:100%;padding:6px;background:#111;border:1px solid #222;color:#FFF;font-size:12px">
+        </div>
+        ${l.lineItems.length > 1 ? '<button onclick="removeLineItem('+i+')" style="background:none;border:1px solid #333;color:#dc2626;font-size:14px;cursor:pointer;padding:4px 8px;line-height:1" title="Remove line">×</button>' : ''}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;align-items:end">
+        <div style="flex:1">
+          <label style="font-size:9px;color:#555;letter-spacing:.5px;display:block;margin-bottom:3px">Hardware</label>
+          <select onchange="updateLineItem(${i},'hwType',this.value);autoFillLineHwPrice(${i})" style="width:100%;padding:5px;background:#080808;border:1px solid #1a1a1a;color:#999;font-size:11px">
+            <option value="OBD2 Plug-In Device" ${li.hwType==='OBD2 Plug-In Device'?'selected':''}>OBD2 Device — $149</option>
+            <option value="Hardwired Device" ${li.hwType==='Hardwired Device'?'selected':''}>Hardwired Device — $199</option>
+            <option value="Solar Tracker" ${li.hwType==='Solar Tracker'?'selected':''}>Solar Tracker — $299</option>
+            <option value="Asset Tag" ${li.hwType==='Asset Tag'?'selected':''}>Asset Tag — $99</option>
+          </select>
+        </div>
+        <div style="width:80px">
+          <label style="font-size:9px;color:#555;letter-spacing:.5px;display:block;margin-bottom:3px">HW $/unit</label>
+          <input type="number" value="${li.hwPrice||0}" min="0" onchange="updateLineItem(${i},'hwPrice',parseFloat(this.value)||0)" style="width:100%;padding:5px;background:#080808;border:1px solid #1a1a1a;color:#999;font-size:11px;text-align:center">
+        </div>
+        <div style="width:80px">
+          <label style="font-size:9px;color:#555;letter-spacing:.5px;display:block;margin-bottom:3px">Install $</label>
+          <input type="number" value="${li.hwInstall||0}" min="0" onchange="updateLineItem(${i},'hwInstall',parseFloat(this.value)||0)" style="width:100%;padding:5px;background:#080808;border:1px solid #1a1a1a;color:#999;font-size:11px;text-align:center">
+        </div>
+        <div style="width:90px;text-align:right;padding-bottom:2px">
+          <div style="font-size:9px;color:#555">Line MRR</div>
+          <div style="font-size:12px;font-weight:700;color:#FFA028">$${((li.qty||0)*(li.sub||0)).toFixed(2)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addLineItem() {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l) return;
+  if (!l.lineItems) l.lineItems = [];
+  l.lineItems.push({type:'OBD2 Plug-In',qty:1,sub:29.95,asset:'',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0});
+  renderDealProductLines();
+  updateDealProductTotals();
+}
+
+function removeLineItem(idx) {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems || l.lineItems.length <= 1) return;
+  l.lineItems.splice(idx, 1);
+  renderDealProductLines();
+  updateDealProductTotals();
+}
+
+function updateLineItem(idx, field, value) {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems[idx]) return;
+  l.lineItems[idx][field] = value;
+  updateDealProductTotals();
+}
+
+function autoFillLinePrices(idx) {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems[idx]) return;
+  const li = l.lineItems[idx];
+  li.sub = GPS_PRICES[li.type] || 29.95;
+  li.hwType = HW_MAP[li.type] || 'OBD2 Plug-In Device';
+  li.hwPrice = HW_PRICES[li.hwType] || 149;
+  li.hwInstall = HW_INSTALL_DEFAULT[li.hwType] || 0;
+  renderDealProductLines();
+  updateDealProductTotals();
+}
+
+function autoFillLineHwPrice(idx) {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems[idx]) return;
+  l.lineItems[idx].hwPrice = HW_PRICES[l.lineItems[idx].hwType] || 0;
+  l.lineItems[idx].hwInstall = HW_INSTALL_DEFAULT[l.lineItems[idx].hwType] || 0;
+  renderDealProductLines();
+  updateDealProductTotals();
+}
+
+function updateDealProductTotals() {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems) return;
+  const totalUnits = l.lineItems.reduce((s,li) => s + (li.qty||0), 0);
+  const monthlyTotal = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
+  const annualTotal = monthlyTotal * 12;
+  const hwTotal = l.lineItems.reduce((s,li) => s + (li.qty||0) * ((li.hwPrice||0) + (li.hwInstall||0)), 0);
+  const term = parseInt(document.getElementById('dp_term').value) || 24;
+  const contractValue = monthlyTotal * term;
+  document.getElementById('dp_totalUnits').textContent = totalUnits;
+  document.getElementById('dp_mrr').textContent = '$' + monthlyTotal.toFixed(2);
+  document.getElementById('dp_annual').textContent = '$' + annualTotal.toLocaleString();
+  document.getElementById('dp_hwCost').textContent = '$' + hwTotal.toLocaleString();
+  document.getElementById('dp_contractVal').textContent = '$' + Math.round(contractValue).toLocaleString();
+}
+
+function saveDealProducts() {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l) return;
+  l.term = parseInt(document.getElementById('dp_term').value) || 24;
+  l.sim = document.getElementById('dp_sim').value;
+  calcLeadFromLines(l);
+  // Update deviceType to primary (highest qty) for backwards compat
+  if (l.lineItems && l.lineItems.length) {
+    const primary = l.lineItems.reduce((a,b) => (b.qty||0) > (a.qty||0) ? b : a, l.lineItems[0]);
+    l.deviceType = primary.type;
+  }
+  closeDealProducts();
+  renderPipeline();
+  showToast('Deal products updated for ' + l.co);
+}
+
+// ── Add Units / Upsell modal ────────────────────────────────────
 function openAddUnitsModal(custId) {
   const c = CUSTOMERS.find(x => x.id === custId);
   if (!c) return;
@@ -6585,7 +6780,6 @@ function autoFillSubPrice() {
 }
 
 // Auto-update hardware price when hardware type changes
-const HW_PRICES = {'OBD2 Plug-In Device':149, 'Hardwired Device':199, 'Solar Tracker':299, 'Asset Tag':99};
 function autoFillHwPrice() {
   const sel = document.getElementById('au_hw_type').value;
   const p = HW_PRICES[sel];
@@ -6632,8 +6826,9 @@ function saveAddUnits() {
     notes: desc,
     star: true, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: qty, subPrice: sub, upsellCustId: custId,
-    upsellType: type, upsellAsset: asset,
-    hwType: hwType, hwQty: hwQty, hwPrice: hwPrice, hwInstall: hwInstall
+    upsellType: type, upsellAsset: asset, term: 24, sim: '',
+    hwType: hwType, hwQty: hwQty, hwPrice: hwPrice, hwInstall: hwInstall,
+    lineItems: [{type:type, qty:qty||hwQty, sub:sub, asset:asset, hwType:hwType, hwPrice:hwPrice, hwInstall:hwInstall}]
   });
 
   closeAddUnitsModal();
@@ -6686,36 +6881,47 @@ function onLeadClosedWon(leadId) {
 
 // Auto-populate or update customer when lead is dragged to Closed Won
 function autoPopulateCustomer(lead) {
-  // Normalise company name for matching
   const normName = (lead.co || '').trim().toLowerCase();
-
-  // Check if customer already exists (match by company name)
   const existing = CUSTOMERS.find(c => (c.co || '').trim().toLowerCase() === normName);
 
-  // ── Pull deal details from lead (set during Add Lead or defaults) ──
-  const addQty = lead.v || 1;
-  const subRate = lead.subPrice || 29.95;
-  const deviceType = lead.deviceType || 'OBD2 Plug-In';
   const dealTerm = lead.term || 24;
   const dealSim = lead.sim || '';
+  const today = new Date().toLocaleDateString('en-AU');
+
+  // Build devices array from lineItems (or fallback to single device)
+  let newDevices = [];
+  if (lead.lineItems && lead.lineItems.length) {
+    newDevices = lead.lineItems.map(li => ({
+      type: li.type || 'OBD2 Plug-In',
+      asset: li.asset || lead.ind || 'Vehicle',
+      qty: li.qty || 1,
+      sub: li.sub || 29.95,
+      sim: dealSim
+    }));
+  } else {
+    newDevices = [{
+      type: lead.deviceType || 'OBD2 Plug-In',
+      asset: lead.ind || 'Vehicle',
+      qty: lead.v || 1,
+      sub: lead.subPrice || 29.95,
+      sim: dealSim
+    }];
+  }
+  const totalQty = newDevices.reduce((s,d) => s + (d.qty||0), 0);
+  const monthlyTotal = newDevices.reduce((s,d) => s + (d.qty||0)*(d.sub||0), 0);
+  const avgRate = totalQty > 0 ? Math.round(monthlyTotal/totalQty*100)/100 : 29.95;
+
+  // Build description from line items
+  const lineDesc = newDevices.map(d => d.qty + 'x ' + d.type + (d.asset && d.asset !== 'Vehicle' ? ' (' + d.asset + ')' : '') + ' @ $' + d.sub.toFixed(2)).join(', ');
 
   if (existing) {
-    // ── UPDATE EXISTING CUSTOMER ──
     if (!existing.devices) existing.devices = [];
-    existing.devices.push({
-      type: deviceType,
-      asset: lead.ind || 'Vehicle',
-      qty: addQty,
-      sub: subRate,
-      sim: dealSim
-    });
-    existing.trackers += addQty;
-    const today = new Date().toLocaleDateString('en-AU');
-    existing.notes = (existing.notes ? existing.notes + ' | ' : '') + 'Deal added ' + today + ': +' + addQty + 'x ' + deviceType + ' @ $' + subRate.toFixed(2) + '/mo' + (dealSim ? ' (SIM: ' + dealSim + ')' : '');
+    newDevices.forEach(d => existing.devices.push(d));
+    existing.trackers += totalQty;
+    existing.notes = (existing.notes ? existing.notes + ' | ' : '') + 'Deal added ' + today + ': ' + lineDesc + (dealSim ? ' (SIM: ' + dealSim + ')' : '');
     renderCustomers(); renderCustStats();
-    showStageNotification(existing.co, 'Deal closed', '+' + addQty + ' ' + deviceType + ' units added to existing account');
+    showStageNotification(existing.co, 'Deal closed', '+' + totalQty + ' units added to existing account');
   } else {
-    // ── CREATE NEW LIVE CUSTOMER ──
     let sector = 'Other';
     if (lead.ind) {
       if (lead.ind.includes('Transport')) sector = 'Transport';
@@ -6723,33 +6929,26 @@ function autoPopulateCustomer(lead) {
       else if (lead.ind.includes('Mining')) sector = 'Mining';
       else if (lead.ind.includes('Agri')) sector = 'Agriculture';
     }
-    const today = new Date().toISOString().slice(0, 10);
     const newCust = {
       id: _nextCustomerId++,
       co: lead.co,
       contact: lead.name || '',
       phone: lead.phone || '',
       email: lead.email || '',
-      trackers: addQty,
+      trackers: totalQty,
       sector: sector,
-      subPrice: subRate,
+      subPrice: avgRate,
       term: dealTerm,
-      start: today,
+      start: new Date().toISOString().slice(0, 10),
       renewal: dealTerm >= 12 ? 'auto' : 'manual',
       outstanding: 0,
       status: 'active',
-      notes: 'From pipeline — ' + addQty + 'x ' + deviceType + ' @ $' + subRate.toFixed(2) + '/mo, ' + (dealTerm == 1 ? 'MTM' : dealTerm + 'mo') + (dealSim ? ', SIM: ' + dealSim : ''),
-      devices: [{
-        type: deviceType,
-        asset: lead.ind || 'Vehicle',
-        qty: addQty,
-        sub: subRate,
-        sim: dealSim
-      }]
+      notes: 'From pipeline — ' + lineDesc + ', ' + (dealTerm == 1 ? 'MTM' : dealTerm + 'mo') + (dealSim ? ', SIM: ' + dealSim : ''),
+      devices: newDevices
     };
     CUSTOMERS.push(newCust);
     renderCustomers(); renderCustStats();
-    showStageNotification(lead.co, 'Deal closed', 'New customer: ' + addQty + 'x ' + deviceType + ' @ $' + subRate.toFixed(2) + '/mo');
+    showStageNotification(lead.co, 'Deal closed', 'New customer: ' + totalQty + ' units — ' + lineDesc);
   }
 }
 
@@ -6915,6 +7114,70 @@ function doLogin() {
       <button class="btn btn-primary" onclick="saveNewLead()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add to Pipeline
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ DEAL PRODUCTS MODAL ═══════════ -->
+<div class="modal-overlay" id="dealProductsModal" style="display:none" onclick="if(event.target===this)closeDealProducts()">
+  <div class="modal-box" style="width:700px;max-width:95vw">
+    <div class="modal-header">
+      <div class="modal-title" id="dp_title">Deal Products</div>
+      <button class="modal-close" onclick="closeDealProducts()">&times;</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div style="display:flex;gap:12px;margin-bottom:12px">
+        <div style="flex:1">
+          <label style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Contract Term</label>
+          <select id="dp_term" onchange="updateDealProductTotals()" style="width:100%;padding:6px;background:#111;border:1px solid #222;color:#FFF;font-size:12px">
+            <option value="24">24 months</option>
+            <option value="12">12 months</option>
+            <option value="36">36 months</option>
+            <option value="1">Month-to-Month</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">SIM Provider</label>
+          <input type="text" id="dp_sim" list="simProviders" placeholder="Type or select..." style="width:100%;padding:6px;background:#111;border:1px solid #222;color:#FFF;font-size:12px">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px">Product Lines</div>
+        <button onclick="addLineItem()" style="padding:4px 10px;background:#111;border:1px solid #333;color:#FFA028;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">+ Add Product</button>
+      </div>
+      <div id="dp_lines"></div>
+      <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:8px">
+        <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Deal Summary</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center">
+          <div>
+            <div style="font-size:9px;color:#555">Total Units</div>
+            <div id="dp_totalUnits" style="font-size:16px;font-weight:800;color:#FFF">0</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555">Monthly (MRR)</div>
+            <div id="dp_mrr" style="font-size:16px;font-weight:800;color:#FFA028">$0</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555">Annual</div>
+            <div id="dp_annual" style="font-size:16px;font-weight:800;color:#FFA028">$0</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555">Hardware Cost</div>
+            <div id="dp_hwCost" style="font-size:16px;font-weight:800;color:#dc2626">$0</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555">Contract Value</div>
+            <div id="dp_contractVal" style="font-size:16px;font-weight:800;color:#059669">$0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeDealProducts()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDealProducts()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Products
       </button>
     </div>
   </div>
