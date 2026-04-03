@@ -3033,11 +3033,7 @@ function renderPipeline() {
         </div>
       </div>`;
     });
-    // Wrap last two columns (Proposal Sent + Closed Won) in a focus box
-    const focusStart = _colsHtml.length - 2;
-    const before = _colsHtml.slice(0, focusStart).join('');
-    const focusInner = _colsHtml.slice(focusStart).join('');
-    document.getElementById('boardView').innerHTML = before + '<div class="focus-wrapper">' + focusInner + '</div>';
+    document.getElementById('boardView').innerHTML = _colsHtml.join('');
   } else {
     document.getElementById('boardView').style.display = 'none';
     document.getElementById('tableView').style.display = 'block';
