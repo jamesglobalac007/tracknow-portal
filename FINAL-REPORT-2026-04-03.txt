@@ -1,0 +1,129 @@
+═══════════════════════════════════════════════════════════════════
+  TRACKNOW PORTAL v6 — SESSION SUMMARY
+  Date: 3 April 2026
+  File: TrackNow-Portal-v6.html (8,425 lines)
+  Live: https://tracknow-portal.onrender.com
+═══════════════════════════════════════════════════════════════════
+
+OVERVIEW
+--------
+Major session focused on Marketing Hub content library, sales pipeline
+redesign, fleet profile report generator, follow-up sequences, and
+proposal/DocuSign system.
+
+
+CHANGES COMPLETED
+=================
+
+1. CONTENT LIBRARY — FOLDER SYSTEM (Marketing Hub)
+   - Built two-tier folder system: Content Folders + Social Media Folders
+   - Content Folders: Videos, Brochures, Images, Raw Files
+   - Social Media Folders: Facebook, LinkedIn, Instagram, YouTube, TikTok
+   - Uploads auto-sort by file type (video→Videos, PDF→Brochures, etc.)
+   - Content type folders show inline table with file, description, size, date
+   - Social media folders open as popup/overlay modal (not stacking down page)
+   - Info packs (TrackNow Overview, Eco Driving, FleetRun, Custom Quote)
+     pre-loaded into Brochures folder
+   - Social media content pre-seeded into platform folders with descriptions
+   - Google Ads removed from content library platform specs
+   - Removed old info pack display from bottom of Marketing Hub
+
+2. CONTENT CALENDAR (Marketing Hub)
+   - Confirmed calendar is social-only (14 events across 5 platforms)
+   - Updated event data to show platform name + content description
+   - Each event now displays: platform in bold (colour-coded) + description
+   - Subtitle changed to "Social media content schedule"
+   - Hover tooltip shows full content details
+
+3. SALES PIPELINE — STAGE REDESIGN
+   - Removed: New Lead, Contacted, Interested stages
+   - Added: Fleet Profile Sent (new first stage)
+   - Final pipeline: Fleet Profile Sent → Demo Sent → Proposal Sent → Closed Won
+   - All existing leads reassigned to appropriate stages
+   - Removed focus border around Proposal/Closed Won columns
+   - Updated analytics funnel to match new stages
+   - Updated Add Lead modal dropdown
+   - "Demo Booked" renamed to "Demo Sent" throughout portal
+
+4. FLEET PROFILE REPORT GENERATOR
+   - New section in Deal Products panel with fleet inputs:
+     Fleet type, avg km/week, fuel price, L/100km, insurance/vehicle,
+     fuel slippage %, idle hours/day
+   - "Generate Fleet Profile Report" button on Fleet Profile Sent cards
+   - Opens branded report in new tab covering:
+     • Fleet Overview (units, type, mileage)
+     • Hidden Fleet Costs (fuel slippage, idle time, unauthorised use,
+       excess wear, insurance overpayment)
+     • How TrackNow Solves It (6 solutions)
+     • Projected Savings (line by line)
+     • ROI Summary (cost vs saving, ROI percentage)
+     • Investment Summary (monthly cost, no lock-in)
+   - Print/Save as PDF button included
+   - All calculations dynamic based on fleet inputs
+
+5. DEMO SENT — VIDEO EMAIL
+   - "Send Demo Video" button on Demo Sent pipeline cards
+   - Opens Gmail pre-filled with:
+     • Personalised demo video link
+     • Platform features list (live tracking, fuel monitoring,
+       geofence, driver behaviour, reports, anti-theft)
+     • Professional email template with prospect name/company
+
+6. PROPOSAL & DOCUSIGN
+   - "View Proposal & DocuSign" button on Proposal Sent pipeline cards
+   - Opens branded proposal document in new tab:
+     • Scope of service
+     • Pricing schedule table (from deal products)
+     • Contract terms (term, value, hardware, install, support, billing)
+     • DocuSign button (dummy — shows integration placeholder)
+     • Full T&Cs (7 clauses)
+     • Signature blocks (client + TrackNow representative)
+   - Print/Save as PDF included
+
+7. FOLLOW-UP SEQUENCES (Email + SMS)
+   - Each pipeline stage has 4 follow-ups (2 email, 2 SMS):
+     • Fleet Profile Sent: Day 0 email, Day 1 SMS, Day 3 email, Day 5 SMS
+     • Demo Sent: Day 0 email, Day 1 SMS, Day 3 email, Day 5 SMS
+     • Proposal Sent: Day 0 email, Day 1 SMS, Day 3 email, Day 5 SMS
+   - Follow-up bar visible on every pipeline card (expanded view)
+   - Email buttons open Gmail pre-filled with template
+   - SMS buttons open SMS app pre-filled with message
+   - Sent follow-ups show date stamp, unsent show day indicator
+   - Follow-ups auto-reset when lead moves to new stage
+
+8. PUSH SKILL UPDATED
+   - Fixed push process — now reads token from ~/.github_token
+   - Updated skill to always use: bash ~/Dropbox/2.\ Finance/CW/TrackNow/TrackNow/push.sh
+   - No more asking for permission — push command provided after every edit
+   - Created push_changes.py as backup (API-based push, also reads ~/.github_token)
+
+
+SALES FLOW (as built)
+=====================
+1. Prospect comes in → Customers tab (Prospects view)
+2. Prospect qualified → moved to Pipeline at "Fleet Profile Sent"
+3. Fleet profile generated → branded cost analysis report emailed
+4. Follow-ups: Day 0 email, Day 1 SMS, Day 3 email, Day 5 SMS
+5. Move to "Demo Sent" → demo video emailed with platform overview
+6. Follow-ups: Day 0 email, Day 1 SMS, Day 3 email, Day 5 SMS
+7. Move to "Proposal Sent" → branded proposal with DocuSign
+8. Follow-ups: Day 0 email, Day 1 SMS, Day 3 email, Day 5 SMS
+9. Move to "Closed Won" → auto-creates live customer
+
+
+FILES IN DROPBOX
+================
+- TrackNow-Portal-v6.html    (main portal — 8,425 lines)
+- push.sh                     (deploy script)
+- push_changes.py             (backup API push)
+- .claude/skills/push/SKILL.md (updated push skill)
+
+
+DEPLOYED
+========
+Latest version pushed to GitHub and live on Render.
+URL: https://tracknow-portal.onrender.com
+
+═══════════════════════════════════════════════════════════════════
+  Session complete — 3 April 2026
+═══════════════════════════════════════════════════════════════════
