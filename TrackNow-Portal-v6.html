@@ -504,12 +504,12 @@ select option{background:#0a0a0a;color:#FFA028}
       <p class="page-desc">Manage prospects to call and track all live customer accounts in one place.</p>
     </div>
     <div style="display:flex;gap:10px" id="custHeaderBtns">
-      <button class="btn btn-secondary btn-sm" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px">
+      <button id="btnImportCsv" class="btn btn-secondary btn-sm" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Import CSV
       </button>
-      <button class="btn btn-secondary btn-sm" onclick="openProspectModal()">+ New Prospect</button>
-      <button class="btn btn-primary btn-sm" onclick="openCustomerModal()">+ Add Customer</button>
+      <button id="btnNewProspect" class="btn btn-secondary btn-sm" onclick="openProspectModal()">+ New Prospect</button>
+      <button id="btnAddCustomer" class="btn btn-primary btn-sm" onclick="openCustomerModal()">+ Add Customer</button>
     </div>
   </div>
 
@@ -5709,6 +5709,13 @@ function showCustTab(tab) {
       btn.style.color = t === tab ? '#000' : '#666';
     }
   });
+  // Toggle header buttons based on active tab
+  const csvBtn = document.getElementById('btnImportCsv');
+  const prospBtn = document.getElementById('btnNewProspect');
+  const custBtn = document.getElementById('btnAddCustomer');
+  if (csvBtn) csvBtn.style.display = tab === 'prospects' ? 'inline-flex' : 'none';
+  if (prospBtn) prospBtn.style.display = tab === 'prospects' ? '' : 'none';
+  if (custBtn) custBtn.style.display = tab === 'customers' ? '' : 'none';
   if (tab === 'prospects') renderProspects();
   else renderCustomers();
   renderCustStats();
