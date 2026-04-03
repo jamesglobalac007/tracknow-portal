@@ -6764,14 +6764,24 @@ function updateDealProductTotals() {
 }
 
 function recalcContractValue() {
+  // Get total units from product lines
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const totalUnits = (l && l.lineItems) ? l.lineItems.reduce((s,li) => s + (li.qty||0), 0) : 0;
   // Read revenue from the displayed summary
   const parseVal = (el) => { const t = el ? el.textContent.replace(/[$,]/g,'') : '0'; return parseFloat(t) || 0; };
   const totalRevenue = parseVal(document.getElementById('dp_totalRevenue'));
-  // Read manual Cost of Goods inputs
-  const hwCost = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
-  const swCost = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
-  const totalCost = hwCost + swCost;
+  // Read per-unit Cost of Goods inputs and multiply by total units
+  const hwCostPerUnit = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
+  const swCostPerUnit = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
+  const hwCostTotal = hwCostPerUnit * totalUnits;
+  const swCostTotal = swCostPerUnit * totalUnits;
+  const totalCost = hwCostTotal + swCostTotal;
   const netValue = totalRevenue - totalCost;
+  // Update the per-unit breakdown labels
+  const hwLbl = document.getElementById('dp_hwCostTotal');
+  if (hwLbl) hwLbl.textContent = '× ' + totalUnits + ' units = $' + Math.round(hwCostTotal).toLocaleString();
+  const swLbl = document.getElementById('dp_swCostTotal');
+  if (swLbl) swLbl.textContent = '× ' + totalUnits + ' units = $' + Math.round(swCostTotal).toLocaleString();
   // Update summary
   const costEl = document.getElementById('dp_totalCost');
   if (costEl) costEl.textContent = '-$' + Math.round(totalCost).toLocaleString();
@@ -7186,20 +7196,20 @@ function doLogin() {
       <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">Cost of Goods</div>
       <div style="display:flex;gap:8px">
         <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
-          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Hardware Cost</div>
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Hardware Cost / Unit</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:4px">
             <span style="color:#FFA028;font-size:16px;font-weight:800">$</span>
-            <input type="number" id="dp_hwCost_input" value="0" min="0" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
+            <input type="number" id="dp_hwCost_input" value="0" min="0" onfocus="this.select()" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
           </div>
-          <div style="font-size:9px;color:#666;margin-top:4px">Your cost for devices</div>
+          <div id="dp_hwCostTotal" style="font-size:9px;color:#666;margin-top:4px">× 0 units = $0</div>
         </div>
         <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
-          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Software Cost</div>
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Software Cost / Unit</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:4px">
             <span style="color:#FFA028;font-size:16px;font-weight:800">$</span>
-            <input type="number" id="dp_swCost_input" value="0" min="0" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
+            <input type="number" id="dp_swCost_input" value="0" min="0" onfocus="this.select()" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
           </div>
-          <div style="font-size:9px;color:#666;margin-top:4px">Your cost for subscriptions</div>
+          <div id="dp_swCostTotal" style="font-size:9px;color:#666;margin-top:4px">× 0 units = $0</div>
         </div>
       </div>
       <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:10px">
