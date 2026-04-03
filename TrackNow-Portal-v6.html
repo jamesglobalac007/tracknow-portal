@@ -833,7 +833,7 @@ select option{background:#0a0a0a;color:#FFA028}
       </div>
       <div class="card">
         <div class="section-title" style="margin-bottom:16px">Industry Performance</div>
-        <div style="height:220px"><canvas id="chartIndustries"></canvas></div>
+        <div style="height:280px;position:relative"><canvas id="chartIndustries"></canvas></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px" id="industryLegend"></div>
       </div>
     </div>
@@ -918,7 +918,7 @@ select option{background:#0a0a0a;color:#FFA028}
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <div><div class="section-title">Channel Mix</div><div class="section-sub">By reach</div></div>
           </div>
-          <div style="height:200px"><canvas id="chartMktChannels"></canvas></div>
+          <div style="height:280px;position:relative"><canvas id="chartMktChannels"></canvas></div>
           <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px" id="mktChannelLegend"></div>
         </div>
       </div>
@@ -3695,11 +3695,59 @@ function initAnalytics() {
     });
   })();
 
-  new Chart(document.getElementById('chartIndustries'), {
-    type: 'doughnut',
-    data: { labels: INDUSTRIES.slice(0, 6).map(i => i.name), datasets: [{ data: INDUSTRIES.slice(0, 6).map(i => i.count), backgroundColor: COLORS, borderWidth: 3, borderColor:'#000', spacing: 4, hoverOffset: 12, hoverBorderWidth: 3, hoverBorderColor:'#FFA028' }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '66%', animation: { animateRotate: true, duration: 1000, easing: 'easeOutQuart' }, layout: { padding: 12 }, plugins: { legend: { display: false }, tooltip: { backgroundColor:'rgba(0,0,0,.95)', titleColor:'#FFA028', bodyColor:'#CCC', borderColor:'#FFA028', borderWidth:1, padding:12, cornerRadius:0, titleFont:{weight:'700',size:13}, bodyFont:{size:12}, displayColors:true, boxPadding:4 } } }
-  });
+  (function(){
+    const indCtx = document.getElementById('chartIndustries');
+    new Chart(indCtx, {
+      type: 'doughnut',
+      data: {
+        labels: INDUSTRIES.slice(0, 6).map(i => i.name),
+        datasets: [{
+          data: INDUSTRIES.slice(0, 6).map(i => i.count),
+          backgroundColor: COLORS,
+          borderWidth: 3,
+          borderColor: '#000',
+          spacing: 4,
+          hoverOffset: 14,
+          hoverBorderWidth: 3,
+          hoverBorderColor: '#FFA028',
+          weight: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        devicePixelRatio: 3,
+        cutout: '62%',
+        radius: '90%',
+        animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutQuart' },
+        layout: { padding: 16 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,.95)',
+            titleColor: '#FFA028',
+            bodyColor: '#EEE',
+            borderColor: '#FFA028',
+            borderWidth: 1,
+            padding: 14,
+            cornerRadius: 0,
+            titleFont: { weight: '800', size: 13 },
+            bodyFont: { size: 12, weight: '600' },
+            displayColors: true,
+            boxPadding: 6,
+            caretSize: 6,
+            callbacks: {
+              label: function(ctx) {
+                const total = ctx.dataset.data.reduce((a,b) => a + b, 0);
+                const pct = ((ctx.raw / total) * 100).toFixed(1);
+                return ' ' + ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  })();
 
   document.getElementById('industryLegend').innerHTML = INDUSTRIES.slice(0, 6).map((ind, i) => `
     <div style="display:flex;align-items:center;gap:8px">
@@ -5056,11 +5104,56 @@ function renderMktOverview() {
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'line',padding:16,boxWidth:20,color:'#999'}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)',drawTicks:false},border:{display:false},ticks:{padding:10,color:'#00CC66',font:{size:10}}},y1:{position:'right',grid:{display:false},border:{display:false},ticks:{color:'#FFA028',font:{size:10}}}},interaction:{intersect:false,mode:'index'}}
       });
     })();
-    new Chart(document.getElementById('chartMktChannels'), {
-      type:'doughnut',
-      data:{labels:['Facebook','LinkedIn','Instagram','Google Ads','YouTube','TikTok'],datasets:[{data:[38,20,15,10,10,7],backgroundColor:['#1877F2','#0A66C2','#E1306C','#EA4335','#FF0000','#69C9D0'],borderWidth:3,borderColor:'#000',spacing:4,hoverOffset:12,hoverBorderWidth:3,hoverBorderColor:'#FFA028'}]},
-      options:{responsive:true,maintainAspectRatio:false,cutout:'66%',animation:{animateRotate:true,duration:1000,easing:'easeOutQuart'},layout:{padding:12},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(0,0,0,.95)',titleColor:'#FFA028',bodyColor:'#CCC',borderColor:'#FFA028',borderWidth:1,padding:12,cornerRadius:0,titleFont:{weight:'700',size:13},bodyFont:{size:12},displayColors:true,boxPadding:4}}}
-    });
+    (function(){
+      new Chart(document.getElementById('chartMktChannels'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Facebook','LinkedIn','Instagram','Google Ads','YouTube','TikTok'],
+          datasets: [{
+            data: [38,20,15,10,10,7],
+            backgroundColor: ['#1877F2','#0A66C2','#E1306C','#EA4335','#FF0000','#69C9D0'],
+            borderWidth: 3,
+            borderColor: '#000',
+            spacing: 4,
+            hoverOffset: 14,
+            hoverBorderWidth: 3,
+            hoverBorderColor: '#FFA028',
+            weight: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 3,
+          cutout: '62%',
+          radius: '90%',
+          animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutQuart' },
+          layout: { padding: 16 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(0,0,0,.95)',
+              titleColor: '#FFA028',
+              bodyColor: '#EEE',
+              borderColor: '#FFA028',
+              borderWidth: 1,
+              padding: 14,
+              cornerRadius: 0,
+              titleFont: { weight: '800', size: 13 },
+              bodyFont: { size: 12, weight: '600' },
+              displayColors: true,
+              boxPadding: 6,
+              caretSize: 6,
+              callbacks: {
+                label: function(ctx) {
+                  return ' ' + ctx.label + ': ' + ctx.raw + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    })();
     const lgd = document.getElementById('mktChannelLegend');
     if(lgd) lgd.innerHTML = [{label:'Facebook',pct:'38%',c:'#1877F2'},{label:'LinkedIn',pct:'20%',c:'#0A66C2'},{label:'Instagram',pct:'15%',c:'#E1306C'},{label:'Google Ads',pct:'10%',c:'#EA4335'},{label:'YouTube',pct:'10%',c:'#FF0000'},{label:'TikTok',pct:'7%',c:'#69C9D0'}].map(d=>`
       <div style="display:flex;justify-content:space-between;align-items:center">
