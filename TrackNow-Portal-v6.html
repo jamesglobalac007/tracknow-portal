@@ -2136,6 +2136,8 @@ const CUSTOMERS = [
 let _nextCustomerId = 5;
 let _custSortField = null; // 'date','expiry','trackers','company','subscription'
 let _custSortDir = 1; // 1 = ascending (oldest first), -1 = descending (newest first)
+let _prospSortField = null;
+let _prospSortDir = 1;
 
 
 
@@ -5868,6 +5870,12 @@ function getCallbackUrgency(p) {
   return {label:'In '+diff+' days',color:'#666',bg:'#111',urgent:false};
 }
 
+function toggleProspSort(field) {
+  if (_prospSortField === field) { _prospSortDir *= -1; }
+  else { _prospSortField = field; _prospSortDir = -1; }
+  renderProspects();
+}
+
 function renderProspects() {
   const el = document.getElementById('prospectsTable');
   const parkedEl = document.getElementById('parkedProspectsSection');
@@ -5883,8 +5891,28 @@ function renderProspects() {
   );
 
   // Split into active prospects vs parked (not-ready / not-interested)
-  const active = allFiltered.filter(p => p.status !== 'not-ready' && p.status !== 'not-interested');
+  let active = allFiltered.filter(p => p.status !== 'not-ready' && p.status !== 'not-interested');
   const parked = allFiltered.filter(p => p.status === 'not-ready' || p.status === 'not-interested');
+
+  // Apply sorting to active prospects
+  if (_prospSortField) {
+    active.sort((a, b) => {
+      let va, vb;
+      switch (_prospSortField) {
+        case 'added':
+          // Parse dd/mm/yy date format for sorting
+          const pa = (a.added||'').split('/'); const pb = (b.added||'').split('/');
+          va = pa.length===3 ? new Date(pa[2].length===2?'20'+pa[2]:pa[2], pa[1]-1, pa[0]).getTime() : 0;
+          vb = pb.length===3 ? new Date(pb[2].length===2?'20'+pb[2]:pb[2], pb[1]-1, pb[0]).getTime() : 0;
+          break;
+        case 'company': va = (a.co||'').toLowerCase(); vb = (b.co||'').toLowerCase(); break;
+        case 'fleet': va = a.fleet || 0; vb = b.fleet || 0; break;
+        case 'industry': va = (a.ind||'').toLowerCase(); vb = (b.ind||'').toLowerCase(); break;
+        default: va = 0; vb = 0;
+      }
+      return va < vb ? -1 * _prospSortDir : va > vb ? 1 * _prospSortDir : 0;
+    });
+  }
 
   const thStyle = 'padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px';
   const selectStyle = 'font-size:12px;padding:3px 6px;border:1px solid #222;border-radius:0;background:#111;color:#FFA028;font-family:inherit;outline:none;cursor:pointer';
@@ -5963,14 +5991,14 @@ function renderProspects() {
     el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="background:#111;border-bottom:1px solid #222">
-        <th style="${thStyle}">Company</th>
+        <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#FFA028':'#666'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Contact</th>
-        <th style="${thStyle}">Industry</th>
+        <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#FFA028':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Source</th>
-        <th style="${thStyle};text-align:center">Fleet</th>
+        <th onclick="toggleProspSort('fleet')" style="${thStyle};text-align:center;cursor:pointer;user-select:none;color:${_prospSortField==='fleet'?'#FFA028':'#666'}">Fleet ${_prospSortField==='fleet'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle};text-align:center">Trackers</th>
         <th style="${thStyle}">Status</th>
-        <th style="${thStyle}">Added</th>
+        <th onclick="toggleProspSort('added')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='added'?'#FFA028':'#666'}">Added ${_prospSortField==='added'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Actions</th>
       </tr></thead>
       <tbody>${active.map((p, i) => buildRow(p, i)).join('')}</tbody>
