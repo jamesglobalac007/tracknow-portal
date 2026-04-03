@@ -158,7 +158,7 @@ a:hover{opacity:.8}
 .lead-card{background:#0a0a0a;border-radius:0px;padding:8px 10px;margin-bottom:6px;box-shadow:none;border:1px solid #222;border-left:3px solid #FFA028;cursor:grab;transition:all .15s;box-sizing:border-box;width:100%}
 .lead-card:hover{background:#111;border-left-color:#FFB84D}
 .lead-card.dragging{opacity:.4;border:1px dashed #FFA028;cursor:grabbing}
-.stage-col .drop-zone{flex:1;min-height:200px;border-radius:0;transition:background .15s,border-color .15s;border:2px dashed transparent;padding:4px}
+.stage-col .drop-zone{flex:1;min-height:500px;border-radius:0;transition:background .15s,border-color .15s;border:2px dashed transparent;padding:8px}
 .stage-col .drop-zone.drag-over{background:rgba(255,160,40,.06);border-color:#FFA028}
 .stage-col.drag-over-col>.drop-zone{background:rgba(255,160,40,.06);border-color:#FFA028}
 
@@ -3148,13 +3148,20 @@ function handleDrop(e, newStage) {
   lead.last = new Date().toLocaleDateString('en-AU');
   lead.lastTs = Date.now();
 
-  // If moved to "Closed Won", auto-populate or update live customer
+  // If moved to "Closed Won", auto-populate live customer and remove from pipeline
   if (newStage === 'closed') {
     if (lead.upsellCustId) {
       onLeadClosedWon(lead.id);
     } else {
       autoPopulateCustomer(lead);
     }
+    // Remove lead from pipeline — it's now a live customer
+    const idx = LEADS.findIndex(l => l.id === leadId);
+    if (idx !== -1) LEADS.splice(idx, 1);
+    renderPipeline();
+    renderCustomers();
+    renderCustStats();
+    return;
   }
 
   renderPipeline();
