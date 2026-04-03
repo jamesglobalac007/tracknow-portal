@@ -4818,20 +4818,20 @@ function initMarketing() {
 
 // ── Calendar ─────────────────────────────────────────────────────────────
 const CAL_EVENTS = [
-  {day:1,  title:'Facebook — Fleet Cost Savings Post', color:'#1877F2', type:'Social'},
-  {day:2,  title:'LinkedIn — Case Study: QLD Transport', color:'#0A66C2', type:'Social'},
-  {day:5,  title:'Instagram Reel — OBD2 60s Install', color:'#E1306C', type:'Social'},
-  {day:7,  title:'TikTok — GPS Tracker Unboxing', color:'#69C9D0', type:'Social'},
-  {day:9,  title:'YouTube Short — Track Your Fleet in 60s', color:'#FF0000', type:'Social'},
-  {day:12, title:'Facebook — No Contracts Promo', color:'#1877F2', type:'Social'},
-  {day:14, title:'LinkedIn — Anti-Theft Alert Feature', color:'#0A66C2', type:'Social'},
-  {day:15, title:'Instagram Story — Customer Testimonial', color:'#E1306C', type:'Social'},
-  {day:18, title:'TikTok — Before/After Fleet Tracking', color:'#69C9D0', type:'Social'},
-  {day:20, title:'YouTube — Full Demo Walkthrough', color:'#FF0000', type:'Social'},
-  {day:21, title:'Facebook — Customer Win Story', color:'#1877F2', type:'Social'},
-  {day:24, title:'LinkedIn — ROI Calculator Promo', color:'#0A66C2', type:'Social'},
-  {day:27, title:'Instagram Reel — Solar Tracker Demo', color:'#E1306C', type:'Social'},
-  {day:28, title:'TikTok — Fleet Manager Tips', color:'#69C9D0', type:'Social'}
+  {day:1,  platform:'Facebook',  desc:'Post — 5 ways GPS tracking cuts fleet fuel costs. Carousel with stats graphic.', color:'#1877F2'},
+  {day:2,  platform:'LinkedIn',  desc:'Article — Case study: How a QLD transport company saved $18K/yr with TrackNow.', color:'#0A66C2'},
+  {day:5,  platform:'Instagram', desc:'Reel — 60-second OBD2 tracker install timelapse with voiceover.', color:'#E1306C'},
+  {day:7,  platform:'TikTok',    desc:'Video — GPS tracker unboxing and first look, vertical format.', color:'#69C9D0'},
+  {day:9,  platform:'YouTube',   desc:'Short — "Track your entire fleet in under 60 seconds" quick demo clip.', color:'#FF0000'},
+  {day:12, platform:'Facebook',  desc:'Post — No lock-in contracts promo. Single image with pricing highlight.', color:'#1877F2'},
+  {day:14, platform:'LinkedIn',  desc:'Post — Anti-theft geofence alert feature breakdown with screenshot.', color:'#0A66C2'},
+  {day:15, platform:'Instagram', desc:'Story — Customer testimonial quote graphic from Burleigh Earthmoving.', color:'#E1306C'},
+  {day:18, platform:'TikTok',    desc:'Video — Before/after split screen: no tracking vs live fleet view.', color:'#69C9D0'},
+  {day:20, platform:'YouTube',   desc:'Video — Full 8-min platform demo walkthrough with narration.', color:'#FF0000'},
+  {day:21, platform:'Facebook',  desc:'Post — Customer win story: Mining client reduces downtime by 40%.', color:'#1877F2'},
+  {day:24, platform:'LinkedIn',  desc:'Post — ROI calculator promo with link to free fleet savings estimate.', color:'#0A66C2'},
+  {day:27, platform:'Instagram', desc:'Reel — Solar-powered GPS tracker demo on remote site, 30s clip.', color:'#E1306C'},
+  {day:28, platform:'TikTok',    desc:'Video — 5 fleet manager tips using the TrackNow dashboard.', color:'#69C9D0'}
 ];
 
 function calNav(dir) {
@@ -4877,7 +4877,10 @@ function renderCalendar() {
     html += '<div style="font-size:12px;font-weight:' + (isToday ? '800' : '600') + ';color:' + (isToday ? '#FFA028' : '#888') + ';margin-bottom:6px">' + day + '</div>';
 
     dayEvents.forEach(ev => {
-      html += '<div style="font-size:10px;padding:3px 6px;margin-bottom:3px;background:' + ev.color + '15;border-left:2px solid ' + ev.color + ';color:' + ev.color + ';border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default" title="' + ev.title + '">' + ev.title.split(' — ').pop() + '</div>';
+      html += '<div style="padding:3px 6px;margin-bottom:3px;background:' + ev.color + '15;border-left:2px solid ' + ev.color + ';border-radius:2px;cursor:default" title="' + ev.platform + ': ' + ev.desc + '">' +
+        '<div style="font-size:10px;font-weight:700;color:' + ev.color + ';white-space:nowrap">' + ev.platform + '</div>' +
+        '<div style="font-size:9px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">' + ev.desc.split(' — ')[0] + '</div>' +
+      '</div>';
     });
 
     html += '</div>';
