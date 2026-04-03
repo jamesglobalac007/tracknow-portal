@@ -4264,13 +4264,18 @@ function calcDealPL() {
     const fontW = isMilestone || isBreakeven || isContractEnd ? '700' : '600';
     const borderTop = isMilestone && !isBreakeven ? 'border-top:2px solid #333' : 'border-top:1px solid #222';
 
-    rows += `<tr style="${borderTop};${rowBg}">
-      <td style="padding:8px 10px;font-weight:${fontW};color:${labelColor}">${label}</td>
-      <td style="padding:8px 10px;text-align:right;color:var(--success)">${fmtR(totalRev)}</td>
-      <td style="padding:8px 10px;text-align:right;color:#666">${fmtR(totalCost + (m >= 1 ? totalHwInvestment : 0))}</td>
-      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${monthPL >= 0 ? 'var(--success)' : '#FF4444'}">${fmtR(monthPL)}/mo</td>
-      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${cum >= 0 ? 'var(--success)' : '#FF4444'}">${cum >= 0 ? fmtR(cum) : '-'+fmtR(Math.abs(cum))}</td>
-      <td style="padding:8px 10px;text-align:center">${statusBadge}</td>
+    const beBorder = isBreakeven ? 'border:2px solid #FFA028' : '';
+    const beTdFirst = isBreakeven ? 'border-left:2px solid #FFA028;border-top:2px solid #FFA028;border-bottom:2px solid #FFA028' : '';
+    const beTdMid = isBreakeven ? 'border-top:2px solid #FFA028;border-bottom:2px solid #FFA028' : '';
+    const beTdLast = isBreakeven ? 'border-right:2px solid #FFA028;border-top:2px solid #FFA028;border-bottom:2px solid #FFA028' : '';
+
+    rows += `<tr style="${isBreakeven ? '' : borderTop};${rowBg}">
+      <td style="padding:8px 10px;font-weight:${fontW};color:${labelColor};${beTdFirst}">${label}</td>
+      <td style="padding:8px 10px;text-align:right;color:var(--success);${beTdMid}">${fmtR(totalRev)}</td>
+      <td style="padding:8px 10px;text-align:right;color:#666;${beTdMid}">${fmtR(totalCost + (m >= 1 ? totalHwInvestment : 0))}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${monthPL >= 0 ? 'var(--success)' : '#FF4444'};${beTdMid}">${fmtR(monthPL)}/mo</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${cum >= 0 ? 'var(--success)' : '#FF4444'};${beTdMid}">${cum >= 0 ? fmtR(cum) : '-'+fmtR(Math.abs(cum))}</td>
+      <td style="padding:8px 10px;text-align:center;${beTdLast}">${statusBadge}</td>
     </tr>`;
   });
   tbody.innerHTML = rows;
