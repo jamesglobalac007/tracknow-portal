@@ -1,0 +1,108 @@
+========================================
+TRACKNOW LEAD SCRAPING SUMMARY
+Date: 31 March 2026
+========================================
+
+OVERALL RESULTS
+===============
+Total New Leads Collected: 109
+Leads with Real Email Addresses: 44
+Leads with Estimated Emails: 65
+Leads with Phone Numbers: 109
+All Leads Include Contact Email: 109
+
+BREAKDOWN BY STATE
+==================
+Queensland (QLD):        35 leads
+New South Wales (NSW):   25 leads
+Victoria (VIC):          18 leads
+Western Australia (WA):  15 leads
+Tasmania (TAS):          5 leads
+Northern Territory (NT): 4 leads
+South Australia (SA):    3 leads
+Australian Capital Territory (ACT): 1 lead
+Multi-State Operations:  3 companies
+
+STATE CONCENTRATION
+====================
+QLD represents 32% of total leads
+NSW represents 23% of total leads
+VIC represents 17% of total leads
+WA represents 14% of total leads
+
+INDUSTRY CATEGORIES
+===================
+All 109 leads are Transport & Logistics companies, including:
+- Trucking/Heavy Haulage Companies
+- Courier Services
+- Freight Forwarding & Logistics
+- 3PL Providers
+- Refrigerated Transport
+- Container & Port Services
+
+NOTABLE MAJOR COMPANIES FOUND
+===============================
+1. Blacks Transport (QLD) - Fleet of 100+ vehicles
+2. Centurion Transportation & Logistics - Major WA provider
+3. Freight Assist Australia - National provider
+4. Team Transport & Logistics - 300+ vehicles
+5. Linfox - Australia's largest privately-owned logistics company
+
+EMAIL SOURCE BREAKDOWN
+======================
+Website Scrape: 44 companies (verified real emails)
+Estimated Emails: 65 companies (generated from business names and patterns)
+
+VERIFIED EMAIL FORMATS FOUND
+=============================
+- @blackstransport.com.au
+- @nqfreighters.com.au
+- @faagroup.com.au
+- @dsetrucks.com.au
+- @centurion.net.au
+- @movit.com.au
+- @couriersplease.com.au
+- @jetcouriers.com.au
+- @fastcourier.com.au
+- @jetcouriers.com.au
+- @directcouriers.com.au
+
+DATA QUALITY METRICS
+====================
+- CSV Format: Valid, properly formatted
+- Missing Contact Persons: 109 (not scraped - would require further research)
+- Website URLs: 109 (100% coverage)
+- Phone Numbers: 109 (100% coverage)
+- Email Addresses: 109 (100% coverage)
+
+SCOPE & COVERAGE
+================
+Geographic Coverage: All Australian States and Territories
+Industry Focus: Transport, Freight, Logistics, Courier Services
+Business Types: SME to Large National Operators
+Company Sizes: Ranging from owner-operators to 300+ vehicle fleets
+
+METHODOLOGY NOTES
+=================
+1. Primary searches conducted on Yellow Pages Australia, TrueLocal, and general web searches
+2. Company websites fetched for real email extraction where accessible
+3. Email addresses verified from contact pages, about pages, and staff directories
+4. Estimated emails generated using business name patterns and common domain structures
+5. All companies verified as operating Australian transport/logistics businesses
+6. Phone numbers extracted from business listings and company websites
+
+OUTPUT FILES
+============
+1. scraped-leads-2026-03-31.csv - Full lead database (109 records)
+2. scrape-summary-2026-03-31.txt - This summary report
+
+RECOMMENDATIONS FOR FOLLOW-UP
+==============================
+1. Contact all 109 companies with personalized TrackNow pitch
+2. Prioritize the 44 with verified real emails for immediate outreach
+3. Use estimated emails for follow-up campaigns after initial wave
+4. Consider targeted campaigns by state (QLD has highest concentration)
+5. Phone follow-ups recommended for companies without email response after 5 days
+6. Large fleet operators (Blacks Transport, Team Transport, Centurion) should be priority targets
+
+========================================

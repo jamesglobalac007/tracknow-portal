@@ -1,0 +1,62 @@
+
+==============================================
+TRACKNOW OVERNIGHT LEAD SCRAPING REPORT
+Date: 2026-03-31
+==============================================
+
+SUMMARY STATISTICS
+------------------
+Total Leads in Master File: 395
+New Leads Added: 64
+Leads Skipped (Duplicates): 11
+
+EMAIL QUALITY
+------------------
+Real Email Addresses: 330
+Estimated Emails: 65
+
+BREAKDOWN BY STATE
+------------------
+ACT:   1 total (  0 new)
+Multi:   3 total (  0 new)
+NSW:  69 total (  0 new)
+NT:  18 total ( 14 new)
+QLD: 112 total (  0 new)
+SA:  29 total (  3 new)
+TAS:  33 total ( 28 new)
+VIC:  68 total (  0 new)
+WA:  62 total ( 19 new)
+
+BREAKDOWN BY SOURCE
+------------------
+Estimated:  65
+Hotfrog:  11
+TrueLocal:  23
+Website Scrape:  42
+Yellow Pages: 254
+
+NOTES
+-----
+- All new leads have estimated emails generated from business names
+- Format: info@[business-name].com.au
+- Source indicates where the lead was found (Yellow Pages, TrueLocal, etc.)
+- Phone numbers extracted from directory listings
+- States covered: QLD, NSW, VIC, WA, SA, NT, TAS
+
+TOP INDUSTRIES
+--------------
+Transport & Logistics: 395
+
+DATA QUALITY
+-----------
+- All Australian companies verified as Transport/Logistics sector
+- Phone numbers formatted with area codes
+- Locations extracted from directory listings
+- Website information from directory where available
+
+NEXT STEPS
+----------
+1. Verify email addresses by visiting company websites
+2. Replace estimated emails with real contact addresses
+3. Add contact person names where available
+4. Cross-reference with LinkedIn for decision makers

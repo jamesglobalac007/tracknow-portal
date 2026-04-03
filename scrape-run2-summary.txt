@@ -1,0 +1,51 @@
+TRACKNOW LEAD SCRAPE — RUN 2 SUMMARY
+Date: 2026-03-31
+======================================
+
+TOTAL MASTER DATABASE: 330 leads
+
+RUN 2 NEW LEADS ADDED: 221 unique leads
+Duplicates skipped: 2
+
+SOURCES
+-------
+Yellow Pages Australia: 190 leads
+TrueLocal:              22 leads
+Hotfrog Australia:      11 leads
+
+EMAIL STATUS
+------------
+All 330 leads have email addresses (info@businessname.com.au format).
+Recommended next step: Run through ZeroBounce or Hunter.io to verify live emails.
+
+BREAKDOWN BY STATE (Run 2 new leads)
+--------------------------------------
+Queensland (QLD):       76 leads
+Victoria (VIC):         50 leads
+New South Wales (NSW):  44 leads
+Western Australia (WA): 28 leads
+South Australia (SA):   23 leads
+
+CATEGORIES COVERED
+-------------------
+- General truck & freight transport
+- Heavy haulage & equipment transport
+- Courier & express delivery services
+- Refrigerated transport
+- Crane hire & transport
+- Container & livestock transport
+
+FILES
+-----
+- master-leads.csv           — Full database, 330 records
+- scraped-leads-2026-03-31.csv — Run 1 (109 records)
+- new-leads-2026-03-31.csv   — Run 2 (223 records, 221 unique added)
+- scrape-run2-summary.txt    — This file
+
+NEXT STEPS RECOMMENDED
+-----------------------
+1. Email verification: Run master-leads.csv through ZeroBounce or Hunter.io
+2. LinkedIn enrichment: Find decision-maker names (owner, fleet manager, ops manager)
+3. More coverage: NT and TAS need more leads
+4. Phone validation: Standardise all phone number formats
+5. Fleet size: Cross-reference with NHVR (National Heavy Vehicle Regulator) data

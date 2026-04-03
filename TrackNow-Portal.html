@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackNow Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar-dark {
+            background-color: #20303c;
+        }
+        .primary-blue {
+            color: #3498db;
+        }
+        .bg-primary {
+            background-color: #3498db;
+        }
+        .text-dark {
+            color: #414141;
+        }
+        .nav-item {
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 12px 20px;
+            margin: 5px 0;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover {
+            background-color: #2d3f52;
+            color: #fff;
+        }
+        .nav-item.active {
+            background-color: #3498db;
+            color: #fff;
+        }
+        .kpi-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .trend-up { color: #10B981; }
+        .trend-down { color: #EF4444; }
+        .stage-column {
+            background-color: #f3f4f6;
+            border-radius: 12px;
+            padding: 15px;
+            min-height: 500px;
+        }
+        .lead-card {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            cursor: grab;
+        }
+        .lead-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .stage-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-gray { background-color: #F3F4F6; color: #6B7280; }
+        .badge-blue { background-color: #EFF6FF; color: #3B82F6; }
+        .badge-amber { background-color: #FFFBEB; color: #F59E0B; }
+        .badge-purple { background-color: #F5F3FF; color: #8B5CF6; }
+        .badge-pink { background-color: #FDF2F8; color: #EC4899; }
+        .badge-green { background-color: #ECFDF5; color: #10B981; }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: #a0aec0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab-button.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        .campaign-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-paused {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-draft {
+            background-color: #e2e3e5;
+            color: #383d41;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .progress-bar {
+            background-color: #e5e7eb;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            transition: width 0.3s;
+        }
+        .star-btn {
+            cursor: pointer;
+            font-size: 16px;
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+        .starred { color: #FFD700; }
+        .unstarred { color: #d0d0d0; }
+        .sidebar-collapsed {
+            width: 80px;
+        }
+        .sidebar-full {
+            width: 280px;
+        }
+        .content-full {
+            margin-left: 280px;
+        }
+        .content-collapsed {
+            margin-left: 80px;
+        }
+        .toggle-btn {
+            cursor: pointer;
+            color: #a0aec0;
+            background: none;
+            border: none;
+            font-size: 20px;
+            padding: 0;
+        }
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #f3f4f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #414141;
+        }
+        tr:hover {
+            background-color: #f9fafb;
+        }
+        .industry-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .industry-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .industry-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .sector-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .link-btn {
+            background: none;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+        }
+        .link-btn:hover {
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- SIDEBAR -->
+        <div id="sidebar" class="sidebar-dark sidebar-full transition-all duration-300 flex flex-col">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 flex-1">
+                        <div class="text-white font-bold text-lg">TRACK<span class="text-blue-400">NOW</span></div>
+                    </div>
+                    <button id="toggleSidebar" class="toggle-btn">☰</button>
+                </div>
+                <div id="tagline" class="text-xs text-gray-400 mt-2">Take Control of Your Assets</div>
+            </div>
+
+            <nav class="flex-1 px-4 py-6 overflow-y-auto">
+                <div class="nav-item active" onclick="navigateTo('dashboard')">
+                    <span>📊</span>
+                    <span id="nav-dashboard-text" class="ml-3">Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('pipeline')">
+                    <span>📈</span>
+                    <span id="nav-pipeline-text" class="ml-3">Pipeline</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('scraper')">
+                    <span>🔍</span>
+                    <span id="nav-scraper-text" class="ml-3">Lead Scraper</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('outreach')">
+                    <span>📧</span>
+                    <span id="nav-outreach-text" class="ml-3">Outreach</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('analytics')">
+                    <span>📉</span>
+                    <span id="nav-analytics-text" class="ml-3">Analytics</span>
+                </div>
+            </nav>
+
+            <div class="px-4 py-4 border-t border-gray-700 space-y-3">
+                <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 cursor-pointer">
+                    <div class="avatar bg-blue-500">MS</div>
+                    <div id="profile1-text" class="text-xs">
+                        <div class="text-white font-600">Mark Speelmeyer</div>
+                        <div class="text-gray-400">Managing Director</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 cursor-pointer">
+                    <div class="avatar" style="background-color: #1abc9c;">JG</div>
+                    <div id="profile2-text" class="text-xs">
+                        <div class="text-white font-600">James</div>
+                        <div class="text-gray-400">Partner</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div id="mainContent" class="content-full flex-1 flex flex-col transition-all duration-300">
+            <!-- TOP BAR -->
+            <div class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+                <input type="text" placeholder="Search..." class="bg-gray-100 rounded-lg px-4 py-2 w-64 text-sm placeholder-gray-400 focus:outline-none">
+                <div class="flex items-center gap-6">
+                    <a href="https://tracknow.com.au" target="_blank" class="text-sm text-blue-500 hover:underline">tracknow.com.au</a>
+                    <div class="relative">
+                        <button class="text-gray-600 hover:text-gray-800 relative">
+                            🔔
+                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-600">31 Mar 2026</div>
+                </div>
+            </div>
+
+            <!-- PAGE CONTAINER -->
+            <div class="flex-1 overflow-y-auto p-8">
+                <!-- DASHBOARD PAGE -->
+                <div id="dashboard-page" class="page-content">
+                    <h1 class="text-3xl font-bold text-dark mb-8">Dashboard</h1>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-4 gap-6 mb-8">
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Total Leads</div>
+                            <div class="text-3xl font-bold text-dark mt-2">12</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">24% this month</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Pipeline Value</div>
+                            <div class="text-3xl font-bold text-dark mt-2">$260K</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">18% growth</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Closed This Month</div>
+                            <div class="text-3xl font-bold text-dark mt-2">1</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">From 0 last month</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Total Units Tracked</div>
+                            <div class="text-3xl font-bold text-dark mt-2">722</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">156 additions</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="col-span-2 bg-white rounded-lg p-6 box-shadow">
+                            <h3 class="text-lg font-bold text-dark mb-4">Monthly Lead Performance</h3>
+                            <div class="chart-container">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-6 box-shadow">
+                            <h3 class="text-lg font-bold text-dark mb-4">Pipeline Breakdown</h3>
+                            <div class="chart-container">
+                                <canvas id="pipelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hot Leads Section -->
+                    <div class="bg-white rounded-lg p-6 mb-8 box-shadow">
+                        <h3 class="text-lg font-bold text-dark mb-4">Hot Leads</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-4 flex-1">
+                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
+                                    <div class="avatar bg-blue-500">ST</div>
+                                    <div class="flex-1">
+                                        <div class="font-600 text-dark">Smith's Transport Pty Ltd</div>
+                                        <div class="text-sm text-gray-500">David Smith | QLD Brisbane</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-600 text-dark">45 vehicles</div>
+                                    <div class="text-sm text-gray-500">$16,200</div>
+                                </div>
+                                <span class="stage-badge badge-purple ml-4">Demo Booked</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-4 flex-1">
+                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
+                                    <div class="avatar" style="background-color: #2980b9;">PC</div>
+                                    <div class="flex-1">
+                                        <div class="font-600 text-dark">Pacific Civil Contractors</div>
+                                        <div class="text-sm text-gray-500">Sarah Chen | NSW Sydney</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-600 text-dark">78 vehicles</div>
+                                    <div class="text-sm text-gray-500">$28,080</div>
+                                </div>
+                                <span class="stage-badge badge-amber ml-4">Interested</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-4 flex-1">
+                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
+                                    <div class="avatar" style="background-color: #16a085;">OM</div>
+                                    <div class="flex-1">
+                                        <div class="font-600 text-dark">Outback Mining Services</div>
+                                        <div class="text-sm text-gray-500">James Wilson | WA Perth</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-600 text-dark">120 vehicles</div>
+                                    <div class="text-sm text-gray-500">$43,200</div>
+                                </div>
+                                <span class="stage-badge badge-gray ml-4">New Lead</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-4 flex-1">
+                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
+                                    <div class="avatar" style="background-color: #2c3e50;">BC</div>
+                                    <div class="flex-1">
+                                        <div class="font-600 text-dark">Brisbane City Council</div>
+                                        <div class="text-sm text-gray-500">Angela Torres | QLD Brisbane</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-600 text-dark">200 vehicles</div>
+                                    <div class="text-sm text-gray-500">$72,000</div>
+                                </div>
+                                <span class="stage-badge badge-amber ml-4">Interested</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-lg p-6 box-shadow">
+                        <h3 class="text-lg font-bold text-dark mb-4">Recent Activity</h3>
+                        <div class="space-y-4">
+                            <div class="activity-item">
+                                <div class="activity-icon bg-blue-100">📧</div>
+                                <div class="flex-1">
+                                    <div class="font-500 text-dark">Email sent to Metro Rentals</div>
+                                    <div class="text-xs text-gray-500">2 hours ago</div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon bg-green-100">✓</div>
+                                <div class="flex-1">
+                                    <div class="font-500 text-dark">Demo booked with Smith's Transport</div>
+                                    <div class="text-xs text-gray-500">5 hours ago</div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon bg-yellow-100">📞</div>
+                                <div class="flex-1">
+                                    <div class="font-500 text-dark">Call with Pacific Civil Contractors</div>
+                                    <div class="text-xs text-gray-500">1 day ago</div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon bg-purple-100">📄</div>
+                                <div class="flex-1">
+                                    <div class="font-500 text-dark">Proposal sent to GreenWaste Solutions</div>
+                                    <div class="text-xs text-gray-500">2 days ago</div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon bg-pink-100">🎉</div>
+                                <div class="flex-1">
+                                    <div class="font-500 text-dark">Metro Rentals deal closed</div>
+                                    <div class="text-xs text-gray-500">3 days ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PIPELINE PAGE -->
+                <div id="pipeline-page" class="page-content hidden">
+                    <div class="flex items-center justify-between mb-8">
+                        <h1 class="text-3xl font-bold text-dark">Pipeline</h1>
+                        <div class="flex items-center gap-4">
+                            <div class="flex gap-2">
+                                <button id="view-board-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg" onclick="switchPipelineView('board')">Board View</button>
+                                <button id="view-table-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg" onclick="switchPipelineView('table')">Table View</button>
+                            </div>
+                            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg">+ Add Lead</button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="flex gap-4 mb-8">
+                        <select class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm">
+                            <option>All Industries</option>
+                            <option>Civil</option>
+                            <option>Transport & Logistics</option>
+                        </select>
+                        <select class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm">
+                            <option>All States</option>
+                            <option>QLD</option>
+                            <option>NSW</option>
+                            <option>VIC</option>
+                        </select>
+                    </div>
+
+                    <!-- Board View -->
+                    <div id="board-view" class="grid grid-cols-6 gap-4">
+                        <!-- New Lead -->
+                        <div>
+                            <div class="font-bold text-dark mb-4">New Lead (2)</div>
+                            <div class="stage-column">
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #16a085;">OM</div>
+                                        <span class="stage-badge badge-gray text-xs">New</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">Outback Mining Services</div>
+                                    <div class="text-xs text-gray-500 mb-2">James Wilson</div>
+                                    <div class="text-xs text-gray-500 mb-2">WA Perth</div>
+                                    <div class="text-xs font-600 text-dark mb-1">120 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$43,200</div>
+                                </div>
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #34495e;">AT</div>
+                                        <span class="stage-badge badge-gray text-xs">New</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">AgriTrack Farms</div>
+                                    <div class="text-xs text-gray-500 mb-2">Peter Brown</div>
+                                    <div class="text-xs text-gray-500 mb-2">NSW Dubbo</div>
+                                    <div class="text-xs font-600 text-dark mb-1">15 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$5,400</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contacted -->
+                        <div>
+                            <div class="font-bold text-dark mb-4">Contacted (2)</div>
+                            <div class="stage-column">
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #2980b9;">QD</div>
+                                        <span class="stage-badge badge-blue text-xs">Contacted</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">QuickDrop Couriers</div>
+                                    <div class="text-xs text-gray-500 mb-2">Tom Nguyen</div>
+                                    <div class="text-xs text-gray-500 mb-2">QLD Gold Coast</div>
+                                    <div class="text-xs font-600 text-dark mb-1">22 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$7,920</div>
+                                </div>
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #1a6fa8;">CE</div>
+                                        <span class="stage-badge badge-blue text-xs">Contacted</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">Cairns Earthmoving</div>
+                                    <div class="text-xs text-gray-500 mb-2">Rob Taylor</div>
+                                    <div class="text-xs text-gray-500 mb-2">QLD Cairns</div>
+                                    <div class="text-xs font-600 text-dark mb-1">28 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$10,080</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interested -->
+                        <div>
+                            <div class="font-bold text-dark mb-4">Interested (2)</div>
+                            <div class="stage-column">
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #2980b9;">PC</div>
+                                        <span class="stage-badge badge-amber text-xs">Interested</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">Pacific Civil Contractors</div>
+                                    <div class="text-xs text-gray-500 mb-2">Sarah Chen</div>
+                                    <div class="text-xs text-gray-500 mb-2">NSW Sydney</div>
+                                    <div class="text-xs font-600 text-dark mb-1">78 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$28,080</div>
+                                </div>
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #2c3e50;">BC</div>
+                                        <span class="stage-badge badge-amber text-xs">Interested</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">Brisbane City Council</div>
+                                    <div class="text-xs text-gray-500 mb-2">Angela Torres</div>
+                                    <div class="text-xs text-gray-500 mb-2">QLD Brisbane</div>
+                                    <div class="text-xs font-600 text-dark mb-1">200 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$72,000</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Demo Booked -->
+                        <div>
+                            <div class="font-bold text-dark mb-4">Demo Booked (2)</div>
+                            <div class="stage-column">
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #3498db;">ST</div>
+                                        <span class="stage-badge badge-purple text-xs">Demo</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">Smith's Transport</div>
+                                    <div class="text-xs text-gray-500 mb-2">David Smith</div>
+                                    <div class="text-xs text-gray-500 mb-2">QLD Brisbane</div>
+                                    <div class="text-xs font-600 text-dark mb-1">45 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$16,200</div>
+                                </div>
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #20303c;">SF</div>
+                                        <span class="stage-badge badge-purple text-xs">Demo</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">SecureFleet Logistics</div>
+                                    <div class="text-xs text-gray-500 mb-2">Karen White</div>
+                                    <div class="text-xs text-gray-500 mb-2">SA Adelaide</div>
+                                    <div class="text-xs font-600 text-dark mb-1">67 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$24,120</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Proposal Sent -->
+                        <div>
+                            <div class="font-bold text-dark mb-4">Proposal Sent (1)</div>
+                            <div class="stage-column">
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #16a085;">GW</div>
+                                        <span class="stage-badge badge-pink text-xs">Proposal</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">GreenWaste Solutions</div>
+                                    <div class="text-xs text-gray-500 mb-2">Mike O'Brien</div>
+                                    <div class="text-xs text-gray-500 mb-2">VIC Melbourne</div>
+                                    <div class="text-xs font-600 text-dark mb-1">32 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$11,520</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Closed Won -->
+                        <div>
+                            <div class="font-bold text-dark mb-4">Closed Won (1)</div>
+                            <div class="stage-column">
+                                <div class="lead-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="avatar" style="background-color: #1abc9c;">MR</div>
+                                        <span class="stage-badge badge-green text-xs">Closed</span>
+                                    </div>
+                                    <div class="font-600 text-dark text-sm">Metro Rentals Australia</div>
+                                    <div class="text-xs text-gray-500 mb-2">Lisa Park</div>
+                                    <div class="text-xs text-gray-500 mb-2">VIC Melbourne</div>
+                                    <div class="text-xs font-600 text-dark mb-1">55 vehicles</div>
+                                    <div class="text-xs text-green-600 font-600">$19,800</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table View -->
+                    <div id="table-view" class="hidden">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Company</th>
+                                        <th>Industry</th>
+                                        <th>Location</th>
+                                        <th>Stage</th>
+                                        <th>Vehicles</th>
+                                        <th>Value</th>
+                                        <th>Last Contact</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="font-600">Smith's Transport Pty Ltd</td>
+                                        <td>Transport & Logistics</td>
+                                        <td>QLD Brisbane</td>
+                                        <td><span class="stage-badge badge-purple">Demo Booked</span></td>
+                                        <td>45</td>
+                                        <td>$16,200</td>
+                                        <td>2 hours ago</td>
+                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="font-600">Pacific Civil Contractors</td>
+                                        <td>Civil</td>
+                                        <td>NSW Sydney</td>
+                                        <td><span class="stage-badge badge-amber">Interested</span></td>
+                                        <td>78</td>
+                                        <td>$28,080</td>
+                                        <td>1 day ago</td>
+                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="font-600">GreenWaste Solutions</td>
+                                        <td>Storage & Waste</td>
+                                        <td>VIC Melbourne</td>
+                                        <td><span class="stage-badge badge-pink">Proposal Sent</span></td>
+                                        <td>32</td>
+                                        <td>$11,520</td>
+                                        <td>3 days ago</td>
+                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="font-600">Outback Mining Services</td>
+                                        <td>Mining & Resources</td>
+                                        <td>WA Perth</td>
+                                        <td><span class="stage-badge badge-gray">New Lead</span></td>
+                                        <td>120</td>
+                                        <td>$43,200</td>
+                                        <td>1 week ago</td>
+                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="font-600">QuickDrop Couriers</td>
+                                        <td>Transport & Logistics</td>
+                                        <td>QLD Gold Coast</td>
+                                        <td><span class="stage-badge badge-blue">Contacted</span></td>
+                                        <td>22</td>
+                                        <td>$7,920</td>
+                                        <td>2 days ago</td>
+                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="font-600">Brisbane City Council</td>
+                                        <td>Service</td>
+                                        <td>QLD Brisbane</td>
+                                        <td><span class="stage-badge badge-amber">Interested</span></td>
+                                        <td>200</td>
+                                        <td>$72,000</td>
+                                        <td>5 days ago</td>
+                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LEAD SCRAPER PAGE -->
+                <div id="scraper-page" class="page-content hidden">
+                    <h1 class="text-3xl font-bold text-dark mb-8">Lead Scraper</h1>
+
+                    <!-- Search Criteria -->
+                    <div class="bg-white rounded-lg p-6 mb-8 box-shadow">
+                        <h3 class="text-lg font-bold text-dark mb-6">Search Criteria</h3>
+                        <div class="grid grid-cols-4 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-600 text-dark mb-2">Industry</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>All Industries</option>
+                                    <option>Civil</option>
+                                    <option>Transport & Logistics</option>
+                                    <option>Storage & Waste</option>
+                                    <option>Mining & Resources</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-600 text-dark mb-2">State</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>All States</option>
+                                    <option>QLD</option>
+                                    <option>NSW</option>
+                                    <option>VIC</option>
+                                    <option>WA</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-600 text-dark mb-2">Source</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>All Sources</option>
+                                    <option>ABN Lookup</option>
+                                    <option>Google Maps</option>
+                                    <option>Yellow Pages</option>
+                                    <option>LinkedIn</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-600 text-dark mb-2">Min Fleet Size</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>Any Size</option>
+                                    <option>10+</option>
+                                    <option>25+</option>
+                                    <option>50+</option>
+                                    <option>100+</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="px-6 py-2 bg-blue-500 text-white rounded-lg font-600" onclick="searchLeads()">Search for Leads</button>
+                    </div>
+
+                    <!-- Industry Cards -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-bold text-dark mb-4">Popular Industries</h3>
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="industry-card">
+                                <div class="industry-icon">🏗️</div>
+                                <div class="font-600 text-dark">Civil</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">342</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">🔧</div>
+                                <div class="font-600 text-dark">Service</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">287</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 68%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">🚛</div>
+                                <div class="font-600 text-dark">Transport & Logistics</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">156</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 45%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">♻️</div>
+                                <div class="font-600 text-dark">Storage & Waste</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">203</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 58%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">🏥</div>
+                                <div class="font-600 text-dark">Medical & Personal Care</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">128</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 40%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">🐄</div>
+                                <div class="font-600 text-dark">Live Stock & Pets</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">94</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 35%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">🏭</div>
+                                <div class="font-600 text-dark">Manufacturing</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">167</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="industry-card">
+                                <div class="industry-icon">⛏️</div>
+                                <div class="font-600 text-dark">Mining & Resources</div>
+                                <div class="text-2xl font-bold text-blue-500 mt-2">89</div>
+                                <div class="text-xs text-gray-500 mt-1">Available</div>
+                                <div class="progress-bar mt-2">
+                                    <div class="progress-fill" style="width: 32%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div id="scraper-results" class="hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-dark">Search Results (6 matches)</h3>
+                            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-600">+ Add to Pipeline</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" onchange="toggleAllScraperRows(this)"></th>
+                                        <th>Business Name</th>
+                                        <th>ABN</th>
+                                        <th>Industry</th>
+                                        <th>Location</th>
+                                        <th>Est. Fleet Size</th>
+                                        <th>Source</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" class="scraper-checkbox"></td>
+                                        <td class="font-600">ABC Heavy Haulage</td>
+                                        <td>12 345 678 901</td>
+                                        <td>Transport & Logistics</td>
+                                        <td>QLD Townsville</td>
+                                        <td>~30</td>
+                                        <td><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ABN Lookup</span></td>
+                                        <td><button class="text-blue-500 text-sm">View</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="scraper-checkbox"></td>
+                                        <td class="font-600">Sunshine Coast Earthworks</td>
+                                        <td>23 456 789 012</td>
+                                        <td>Civil</td>
+                                        <td>QLD Maroochydore</td>
+                                        <td>~15</td>
+                                        <td><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Google Maps</span></td>
+                                        <td><button class="text-blue-500 text-sm">View</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="scraper-checkbox"></td>
+                                        <td class="font-600">Murray River Transport</td>
+                                        <td>34 567 890 123</td>
+                                        <td>Transport & Logistics</td>
+                                        <td>VIC Mildura</td>
+                                        <td>~50</td>
+                                        <td><span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Yellow Pages</span></td>
+                                        <td><button class="text-blue-500 text-sm">View</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="scraper-checkbox"></td>
+                                        <td class="font-600">Top End Mining Contractors</td>
+                                        <td>45 678 901 234</td>
+                                        <td>Mining & Resources</td>
+                                        <td>NT Katherine</td>
+                                        <td>~80</td>
+                                        <td><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ABN Lookup</span></td>
+                                        <td><button class="text-blue-500 text-sm">View</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="scraper-checkbox"></td>
+                                        <td class="font-600">Clean City Waste</td>
+                                        <td>56 789 012 345</td>
+                                        <td>Storage & Waste</td>
+                                        <td>NSW Wollongong</td>
+                                        <td>~25</td>
+                                        <td><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Google Maps</span></td>
+                                        <td><button class="text-blue-500 text-sm">View</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="scraper-checkbox"></td>
+                                        <td class="font-600">Pilbara Plant Hire</td>
+                                        <td>67 890 123 456</td>
+                                        <td>Service</td>
+                                        <td>WA Karratha</td>
+                                        <td>~40</td>
+                                        <td><span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">LinkedIn</span></td>
+                                        <td><button class="text-blue-500 text-sm">View</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OUTREACH PAGE -->
+                <div id="outreach-page" class="page-content hidden">
+                    <h1 class="text-3xl font-bold text-dark mb-8">Outreach</h1>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-4 gap-6 mb-8">
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Total Sent</div>
+                            <div class="text-3xl font-bold text-dark mt-2">890</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">145 this month</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Open Rate</div>
+                            <div class="text-3xl font-bold text-dark mt-2">42%</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">+3.2% vs last month</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Click Rate</div>
+                            <div class="text-3xl font-bold text-dark mt-2">18%</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">+1.8% vs last month</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Replies</div>
+                            <div class="text-3xl font-bold text-dark mt-2">64</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">+18 this month</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div class="bg-white border-b border-gray-200 mb-6 rounded-t-lg">
+                        <div class="flex px-6">
+                            <button class="tab-button active" onclick="switchOutreachTab('campaigns')">Campaigns</button>
+                            <button class="tab-button" onclick="switchOutreachTab('infopacks')">Info Packs</button>
+                            <button class="tab-button" onclick="switchOutreachTab('templates')">Email Templates</button>
+                        </div>
+                    </div>
+
+                    <!-- Campaigns Tab -->
+                    <div id="campaigns-tab" class="grid grid-cols-2 gap-6">
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Construction Fleet Outreach</h3>
+                                <span class="status-active">Active</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">156</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Opened</div>
+                                    <div class="font-bold text-dark text-lg">89</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Clicked</div>
+                                    <div class="font-bold text-dark text-lg">34</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Replies</div>
+                                    <div class="font-bold text-dark text-lg">12</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 57%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">57% completion rate</div>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Logistics QLD/NSW</h3>
+                                <span class="status-active">Active</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">203</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Opened</div>
+                                    <div class="font-bold text-dark text-lg">124</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Clicked</div>
+                                    <div class="font-bold text-dark text-lg">56</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Replies</div>
+                                    <div class="font-bold text-dark text-lg">18</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 61%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">61% completion rate</div>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Waste Management National</h3>
+                                <span class="status-paused">Paused</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">87</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Opened</div>
+                                    <div class="font-bold text-dark text-lg">42</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Clicked</div>
+                                    <div class="font-bold text-dark text-lg">15</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Replies</div>
+                                    <div class="font-bold text-dark text-lg">5</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 48%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">48% completion rate</div>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Mining WA Focus</h3>
+                                <span class="status-draft">Draft</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">0</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Opened</div>
+                                    <div class="font-bold text-dark text-lg">0</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Clicked</div>
+                                    <div class="font-bold text-dark text-lg">0</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Replies</div>
+                                    <div class="font-bold text-dark text-lg">0</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">0% completion rate</div>
+                        </div>
+                    </div>
+
+                    <!-- Info Packs Tab -->
+                    <div id="infopacks-tab" class="hidden grid grid-cols-2 gap-6">
+                        <div class="campaign-card">
+                            <h3 class="font-bold text-dark mb-4">System Overview</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">234</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Viewed</div>
+                                    <div class="font-bold text-dark text-lg">187</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 80%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">80% view rate</div>
+                        </div>
+
+                        <div class="campaign-card">
+                            <h3 class="font-bold text-dark mb-4">Eco Driving</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">156</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Viewed</div>
+                                    <div class="font-bold text-dark text-lg">112</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 72%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">72% view rate</div>
+                        </div>
+
+                        <div class="campaign-card">
+                            <h3 class="font-bold text-dark mb-4">Fleetrun</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">128</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Viewed</div>
+                                    <div class="font-bold text-dark text-lg">94</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 73%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">73% view rate</div>
+                        </div>
+
+                        <div class="campaign-card">
+                            <h3 class="font-bold text-dark mb-4">Custom Pricing</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <div class="text-xs text-gray-500">Sent</div>
+                                    <div class="font-bold text-dark text-lg">67</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500">Viewed</div>
+                                    <div class="font-bold text-dark text-lg">58</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 87%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">87% view rate</div>
+                        </div>
+                    </div>
+
+                    <!-- Templates Tab -->
+                    <div id="templates-tab" class="hidden grid grid-cols-2 gap-6">
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Initial Outreach</h3>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Cold</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-3">Subject: Streamline Your Fleet Management Today</div>
+                            <button class="text-blue-500 text-sm">Edit Template</button>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Follow-Up #1</h3>
+                                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">Follow-up</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-3">Subject: Info Pack - Our Fleet Solution</div>
+                            <button class="text-blue-500 text-sm">Edit Template</button>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Follow-Up #2</h3>
+                                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">Follow-up</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-3">Subject: Quick 15-min Demo?</div>
+                            <button class="text-blue-500 text-sm">Edit Template</button>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Industry Construction</h3>
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Industry</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-3">Subject: For Construction Fleet Managers</div>
+                            <button class="text-blue-500 text-sm">Edit Template</button>
+                        </div>
+
+                        <div class="campaign-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-dark">Win-Back Lapsed</h3>
+                                <span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">Re-engagement</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-3">Subject: We miss you! Come back to better fleet management</div>
+                            <button class="text-blue-500 text-sm">Edit Template</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS PAGE -->
+                <div id="analytics-page" class="page-content hidden">
+                    <h1 class="text-3xl font-bold text-dark mb-8">Analytics</h1>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-4 gap-6 mb-8">
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Conversion Rate</div>
+                            <div class="text-3xl font-bold text-dark mt-2">14.2%</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">+2.1% vs last quarter</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Avg Deal Size</div>
+                            <div class="text-3xl font-bold text-dark mt-2">$25,600</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">+$3,200 growth</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Time to Close</div>
+                            <div class="text-3xl font-bold text-dark mt-2">34 days</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-down">↓</span>
+                                <span class="text-xs text-green-600">-8 days improvement</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="text-gray-500 text-sm font-500">Monthly Revenue</div>
+                            <div class="text-3xl font-bold text-dark mt-2">$36K</div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <span class="trend-up">↑</span>
+                                <span class="text-xs text-green-600">+$8K vs February</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white rounded-lg p-6 box-shadow">
+                            <h3 class="text-lg font-bold text-dark mb-4">Revenue Growth</h3>
+                            <div class="chart-container">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-6 box-shadow">
+                            <h3 class="text-lg font-bold text-dark mb-4">Leads by State</h3>
+                            <div class="chart-container">
+                                <canvas id="stateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversion Funnel -->
+                    <div class="bg-white rounded-lg p-6 mb-8 box-shadow">
+                        <h3 class="text-lg font-bold text-dark mb-6">Conversion Funnel</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-600 text-dark">Total Leads</span>
+                                    <span class="font-600 text-dark">287</span>
+                                </div>
+                                <div class="h-8 bg-blue-500 rounded-lg"></div>
+                                <div class="text-xs text-gray-500 mt-1">100%</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-600 text-dark">Contacted</span>
+                                    <span class="font-600 text-dark">180</span>
+                                </div>
+                                <div class="h-8 bg-blue-400 rounded-lg" style="width: 63%;"></div>
+                                <div class="text-xs text-gray-500 mt-1">63%</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-600 text-dark">Interested</span>
+                                    <span class="font-600 text-dark">98</span>
+                                </div>
+                                <div class="h-8 bg-blue-300 rounded-lg" style="width: 34%;"></div>
+                                <div class="text-xs text-gray-500 mt-1">34%</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-600 text-dark">Demo Booked</span>
+                                    <span class="font-600 text-dark">45</span>
+                                </div>
+                                <div class="h-8 bg-blue-200 rounded-lg" style="width: 16%;"></div>
+                                <div class="text-xs text-gray-500 mt-1">16%</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-600 text-dark">Closed Won</span>
+                                    <span class="font-600 text-dark">12</span>
+                                </div>
+                                <div class="h-8 bg-green-500 rounded-lg" style="width: 4%;"></div>
+                                <div class="text-xs text-gray-500 mt-1">4%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row 2 -->
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg p-6 box-shadow">
+                            <h3 class="text-lg font-bold text-dark mb-4">Top Performing Industries</h3>
+                            <div class="chart-container">
+                                <canvas id="industriesChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-6 box-shadow">
+                            <h3 class="text-lg font-bold text-dark mb-4">Sector Opportunity Map</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="sector-card">
+                                    <div class="text-lg font-bold">QLD</div>
+                                    <div class="text-2xl font-bold mt-2">87</div>
+                                    <div class="text-sm mt-1">$156K</div>
+                                </div>
+                                <div class="sector-card">
+                                    <div class="text-lg font-bold">NSW</div>
+                                    <div class="text-2xl font-bold mt-2">64</div>
+                                    <div class="text-sm mt-1">$112K</div>
+                                </div>
+                                <div class="sector-card">
+                                    <div class="text-lg font-bold">VIC</div>
+                                    <div class="text-2xl font-bold mt-2">52</div>
+                                    <div class="text-sm mt-1">$94K</div>
+                                </div>
+                                <div class="sector-card">
+                                    <div class="text-lg font-bold">WA</div>
+                                    <div class="text-2xl font-bold mt-2">38</div>
+                                    <div class="text-sm mt-1">$72K</div>
+                                </div>
+                                <div class="sector-card">
+                                    <div class="text-lg font-bold">SA</div>
+                                    <div class="text-2xl font-bold mt-2">21</div>
+                                    <div class="text-sm mt-1">$38K</div>
+                                </div>
+                                <div class="sector-card">
+                                    <div class="text-lg font-bold">NT/Other</div>
+                                    <div class="text-2xl font-bold mt-2">25</div>
+                                    <div class="text-sm mt-1">$45K</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentPage = 'dashboard';
+        let sidebarCollapsed = false;
+        let outreachCurrentTab = 'campaigns';
+        let chartsInitialized = false;
+
+        // Navigation
+        function navigateTo(page) {
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+
+            // Show selected page
+            document.getElementById(page + '-page').classList.remove('hidden');
+
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+
+            currentPage = page;
+
+            // Initialize charts when needed
+            setTimeout(() => {
+                if (page === 'dashboard' && !chartsInitialized) {
+                    initDashboardCharts();
+                    chartsInitialized = true;
+                } else if (page === 'analytics') {
+                    initAnalyticsCharts();
+                }
+            }, 100);
+        }
+
+        // Sidebar toggle
+        document.getElementById('toggleSidebar').addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebarCollapsed = !sidebarCollapsed;
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+
+            if (sidebarCollapsed) {
+                sidebar.classList.remove('sidebar-full');
+                sidebar.classList.add('sidebar-collapsed');
+                mainContent.classList.remove('content-full');
+                mainContent.classList.add('content-collapsed');
+                document.getElementById('tagline').classList.add('hidden');
+                document.querySelectorAll('[id$="-text"]').forEach(el => el.classList.add('hidden'));
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('sidebar-full');
+                mainContent.classList.remove('content-collapsed');
+                mainContent.classList.add('content-full');
+                document.getElementById('tagline').classList.remove('hidden');
+                document.querySelectorAll('[id$="-text"]').forEach(el => el.classList.remove('hidden'));
+            }
+        });
+
+        // Star toggle
+        function toggleStar(btn) {
+            btn.classList.toggle('starred');
+            btn.classList.toggle('unstarred');
+        }
+
+        // Pipeline view toggle
+        function switchPipelineView(view) {
+            if (view === 'board') {
+                document.getElementById('board-view').classList.remove('hidden');
+                document.getElementById('table-view').classList.add('hidden');
+                document.getElementById('view-board-btn').classList.add('bg-blue-500', 'text-white');
+                document.getElementById('view-board-btn').classList.remove('bg-gray-200', 'text-gray-700');
+                document.getElementById('view-table-btn').classList.remove('bg-blue-500', 'text-white');
+                document.getElementById('view-table-btn').classList.add('bg-gray-200', 'text-gray-700');
+            } else {
+                document.getElementById('board-view').classList.add('hidden');
+                document.getElementById('table-view').classList.remove('hidden');
+                document.getElementById('view-table-btn').classList.add('bg-blue-500', 'text-white');
+                document.getElementById('view-table-btn').classList.remove('bg-gray-200', 'text-gray-700');
+                document.getElementById('view-board-btn').classList.remove('bg-blue-500', 'text-white');
+                document.getElementById('view-board-btn').classList.add('bg-gray-200', 'text-gray-700');
+            }
+        }
+
+        // Search leads
+        function searchLeads() {
+            const button = event.target;
+            button.innerHTML = '<span class="loading-spinner"></span> Searching...';
+            button.disabled = true;
+
+            setTimeout(() => {
+                document.getElementById('scraper-results').classList.remove('hidden');
+                button.innerHTML = 'Search for Leads';
+                button.disabled = false;
+            }, 1500);
+        }
+
+        // Toggle all scraper checkboxes
+        function toggleAllScraperRows(checkbox) {
+            document.querySelectorAll('.scraper-checkbox').forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+        }
+
+        // Outreach tab switching
+        function switchOutreachTab(tab) {
+            document.getElementById('campaigns-tab').classList.add('hidden');
+            document.getElementById('infopacks-tab').classList.add('hidden');
+            document.getElementById('templates-tab').classList.add('hidden');
+
+            document.getElementById(tab + '-tab').classList.remove('hidden');
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            outreachCurrentTab = tab;
+        }
+
+        // Initialize dashboard charts
+        function initDashboardCharts() {
+            // Monthly chart
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+                    datasets: [
+                        {
+                            label: 'Leads',
+                            data: [18, 24, 15, 31, 38, 45],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Contacted',
+                            data: [14, 19, 12, 25, 30, 36],
+                            borderColor: '#2980b9',
+                            backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Closed',
+                            data: [3, 4, 2, 6, 8, 10],
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Pipeline chart
+            const pipelineCtx = document.getElementById('pipelineChart').getContext('2d');
+            new Chart(pipelineCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['New Lead', 'Contacted', 'Interested', 'Demo', 'Proposal', 'Closed'],
+                    datasets: [{
+                        data: [2, 2, 2, 2, 1, 1],
+                        backgroundColor: [
+                            '#6B7280',
+                            '#3B82F6',
+                            '#F59E0B',
+                            '#8B5CF6',
+                            '#EC4899',
+                            '#10B981'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize analytics charts
+        function initAnalyticsCharts() {
+            // Revenue chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+                    datasets: [{
+                        label: 'Revenue ($K)',
+                        data: [10.8, 14.4, 7.2, 21.6, 28.8, 36],
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // State chart
+            const stateCtx = document.getElementById('stateChart').getContext('2d');
+            new Chart(stateCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['QLD', 'NSW', 'VIC', 'WA', 'SA', 'NT/Other'],
+                    datasets: [{
+                        label: 'Leads',
+                        data: [87, 64, 52, 38, 21, 25],
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Industries chart
+            const industriesCtx = document.getElementById('industriesChart').getContext('2d');
+            new Chart(industriesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Civil', 'Transport', 'Service', 'Waste', 'Medical', 'Manufacturing'],
+                    datasets: [{
+                        data: [342, 156, 287, 203, 128, 167],
+                        backgroundColor: [
+                            '#3498db',
+                            '#2980b9',
+                            '#1a6fa8',
+                            '#20303c',
+                            '#1abc9c',
+                            '#34495e'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            initDashboardCharts();
+            chartsInitialized = true;
+        });
+    </script>
+</body>
+</html>

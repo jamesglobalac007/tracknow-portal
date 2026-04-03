@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackNow Sales Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Recharts & dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: #f9fafb;
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        svg.icon {
+            display: inline-block;
+        }
+        .recharts-wrapper {
+            outline: none;
+        }
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+
+    <script>
+        // ─── SAMPLE DATA ───────────────────────────────────────────
+        const INDUSTRIES = [
+            { name: "Transport & Logistics", icon: "🚛", count: 342, color: "#DC2626" },
+            { name: "Construction & Civil", icon: "🏗️", count: 287, color: "#B91C1C" },
+            { name: "Waste Management", icon: "♻️", count: 156, color: "#991B1B" },
+            { name: "Delivery & Couriers", icon: "📦", count: 203, color: "#7F1D1D" },
+            { name: "Mining & Resources", icon: "⛏️", count: 128, color: "#450A0A" },
+            { name: "Government & Council", icon: "🏛️", count: 94, color: "#1F2937" },
+            { name: "Rental & Leasing", icon: "🔑", count: 167, color: "#374151" },
+            { name: "Agriculture", icon: "🌾", count: 89, color: "#4B5563" },
+        ];
+
+        const STATES = ["All States", "QLD", "NSW", "VIC", "SA", "WA", "TAS", "NT", "ACT"];
+
+        const PIPELINE_STAGES = [
+            { id: "new", label: "New Lead", color: "#6B7280", bgColor: "#F3F4F6" },
+            { id: "contacted", label: "Contacted", color: "#3B82F6", bgColor: "#EFF6FF" },
+            { id: "interested", label: "Interested", color: "#F59E0B", bgColor: "#FFFBEB" },
+            { id: "demo", label: "Demo Booked", color: "#8B5CF6", bgColor: "#F5F3FF" },
+            { id: "proposal", label: "Proposal Sent", color: "#EC4899", bgColor: "#FDF2F8" },
+            { id: "closed", label: "Closed Won", color: "#10B981", bgColor: "#ECFDF5" },
+        ];
+
+        const SAMPLE_LEADS = [
+            { id: 1, company: "Smith's Transport Pty Ltd", contact: "David Smith", email: "david@smithstransport.com.au", phone: "0412 345 678", industry: "Transport & Logistics", state: "QLD", city: "Brisbane", stage: "demo", vehicles: 45, value: 16200, lastContact: "2026-03-28", notes: "Very interested in Eco Driving module. Demo scheduled for next Tuesday.", starred: true },
+            { id: 2, company: "Pacific Civil Contractors", contact: "Sarah Chen", email: "sarah@pacificcivil.com.au", phone: "0423 456 789", industry: "Construction & Civil", state: "NSW", city: "Sydney", stage: "interested", vehicles: 78, value: 28080, lastContact: "2026-03-27", notes: "Has 78 machines across 3 sites. Wants geofencing + maintenance alerts.", starred: true },
+            { id: 3, company: "GreenWaste Solutions", contact: "Mike O'Brien", email: "mike@greenwaste.com.au", phone: "0434 567 890", industry: "Waste Management", state: "VIC", city: "Melbourne", stage: "proposal", vehicles: 32, value: 11520, lastContact: "2026-03-29", notes: "Proposal sent for 32 trucks. Awaiting board approval.", starred: false },
+            { id: 4, company: "Outback Mining Services", contact: "James Wilson", email: "jwilson@outbackmining.com.au", phone: "0445 678 901", industry: "Mining & Resources", state: "WA", city: "Perth", stage: "new", vehicles: 120, value: 43200, lastContact: "2026-03-30", notes: "Found via LinkedIn. Large fleet opportunity in Pilbara region.", starred: true },
+            { id: 5, company: "QuickDrop Couriers", contact: "Tom Nguyen", email: "tom@quickdrop.com.au", phone: "0456 789 012", industry: "Delivery & Couriers", state: "QLD", city: "Gold Coast", stage: "contacted", vehicles: 22, value: 7920, lastContact: "2026-03-26", notes: "Sent initial info pack. Following up next week.", starred: false },
+            { id: 6, company: "Brisbane City Council", contact: "Angela Torres", email: "atorres@brisbane.qld.gov.au", phone: "07 3403 8888", industry: "Government & Council", state: "QLD", city: "Brisbane", stage: "interested", vehicles: 200, value: 72000, lastContact: "2026-03-25", notes: "Massive opportunity. Need to present to procurement committee.", starred: true },
+            { id: 7, company: "AgriTrack Farms", contact: "Peter Brown", email: "pete@agritrack.com.au", phone: "0467 890 123", industry: "Agriculture", state: "NSW", city: "Dubbo", stage: "new", vehicles: 15, value: 5400, lastContact: "2026-03-30", notes: "Scraped from Google Maps. Needs tracking for farm machinery.", starred: false },
+            { id: 8, company: "Metro Rentals Australia", contact: "Lisa Park", email: "lisa@metrorentals.com.au", phone: "0478 901 234", industry: "Rental & Leasing", state: "VIC", city: "Melbourne", stage: "closed", vehicles: 55, value: 19800, lastContact: "2026-03-20", notes: "CLOSED! 55 units. Installation scheduled for April 5.", starred: true },
+            { id: 9, company: "Cairns Earthmoving", contact: "Rob Taylor", email: "rob@cairnsearthmoving.com.au", phone: "0489 012 345", industry: "Construction & Civil", state: "QLD", city: "Cairns", stage: "contacted", vehicles: 28, value: 10080, lastContact: "2026-03-29", notes: "Interested in machine hours tracking. Sent Fleetrun brochure.", starred: false },
+            { id: 10, company: "SecureFleet Logistics", contact: "Karen White", email: "karen@securefleet.com.au", phone: "0490 123 456", industry: "Transport & Logistics", state: "SA", city: "Adelaide", stage: "demo", vehicles: 67, value: 24120, lastContact: "2026-03-28", notes: "Demo completed. Very impressed with geofencing. Awaiting quote.", starred: false },
+            { id: 11, company: "Darwin Waste Services", contact: "Chris Martin", email: "chris@darwinwaste.com.au", phone: "0401 234 567", industry: "Waste Management", state: "NT", city: "Darwin", stage: "new", vehicles: 18, value: 6480, lastContact: "2026-03-31", notes: "Cold outreach. Left voicemail.", starred: false },
+            { id: 12, company: "Hobart Bus Lines", contact: "Emma Scott", email: "emma@hobartbus.com.au", phone: "0412 876 543", industry: "Transport & Logistics", state: "TAS", city: "Hobart", stage: "interested", vehicles: 42, value: 15120, lastContact: "2026-03-27", notes: "Public transport fleet. Needs driver behaviour + fuel monitoring.", starred: false },
+        ];
+
+        const SCRAPER_RESULTS = [
+            { name: "ABC Heavy Haulage", abn: "12 345 678 901", industry: "Transport & Logistics", state: "QLD", city: "Townsville", phone: "07 4771 0000", email: "info@abchaulage.com.au", vehicles: "~30", source: "ABN Lookup" },
+            { name: "Sunshine Coast Earthworks", abn: "23 456 789 012", industry: "Construction & Civil", state: "QLD", city: "Maroochydore", phone: "07 5443 0000", email: "admin@scew.com.au", vehicles: "~15", source: "Google Maps" },
+            { name: "Murray River Transport", abn: "34 567 890 123", industry: "Transport & Logistics", state: "VIC", city: "Mildura", phone: "03 5023 0000", email: "dispatch@murrayriver.com.au", vehicles: "~50", source: "Yellow Pages" },
+            { name: "Top End Mining Contractors", abn: "45 678 901 234", industry: "Mining & Resources", state: "NT", city: "Katherine", phone: "08 8972 0000", email: "ops@topendmining.com.au", vehicles: "~80", source: "ABN Lookup" },
+            { name: "Clean City Waste", abn: "56 789 012 345", industry: "Waste Management", state: "NSW", city: "Wollongong", phone: "02 4227 0000", email: "hello@cleancity.com.au", vehicles: "~25", source: "Google Maps" },
+            { name: "Pilbara Plant Hire", abn: "67 890 123 456", industry: "Rental & Leasing", state: "WA", city: "Karratha", phone: "08 9185 0000", email: "hire@pilbaraplant.com.au", vehicles: "~40", source: "LinkedIn" },
+        ];
+
+        const monthlyData = [
+            { month: "Oct", leads: 18, contacted: 14, demos: 6, closed: 3, revenue: 10800 },
+            { month: "Nov", leads: 24, contacted: 19, demos: 8, closed: 4, revenue: 14400 },
+            { month: "Dec", leads: 15, contacted: 12, demos: 5, closed: 2, revenue: 7200 },
+            { month: "Jan", leads: 31, contacted: 25, demos: 11, closed: 6, revenue: 21600 },
+            { month: "Feb", leads: 38, contacted: 30, demos: 14, closed: 8, revenue: 28800 },
+            { month: "Mar", leads: 45, contacted: 36, demos: 18, closed: 10, revenue: 36000 },
+        ];
+
+        const stateData = [
+            { state: "QLD", leads: 87, value: 156000 },
+            { state: "NSW", leads: 64, value: 112000 },
+            { state: "VIC", leads: 52, value: 94000 },
+            { state: "WA", leads: 38, value: 72000 },
+            { state: "SA", leads: 21, value: 38000 },
+            { state: "NT", leads: 12, value: 22000 },
+            { state: "TAS", leads: 8, value: 14000 },
+            { state: "ACT", leads: 5, value: 9000 },
+        ];
+
+        const campaigns = [
+            { id: 1, name: "Construction Fleet Outreach", status: "active", sent: 156, opened: 89, clicked: 34, replies: 12, startDate: "2026-03-15" },
+            { id: 2, name: "Logistics Companies - QLD/NSW", status: "active", sent: 203, opened: 124, clicked: 56, replies: 18, startDate: "2026-03-10" },
+            { id: 3, name: "Waste Management - National", status: "paused", sent: 87, opened: 42, clicked: 15, replies: 5, startDate: "2026-03-01" },
+            { id: 4, name: "Mining Sector - WA Focus", status: "draft", sent: 0, opened: 0, clicked: 0, replies: 0, startDate: null },
+        ];
+
+        const INFO_PACKS = [
+            { id: 1, name: "TrackNow System Overview", file: "TRACKNOWCORP-OVERVIEW.pdf", sends: 234, views: 187 },
+            { id: 2, name: "Eco Driving Brochure", file: "TRACKNOWCORP-ECO-DRIVING.pdf", sends: 156, views: 112 },
+            { id: 3, name: "Fleetrun Maintenance", file: "TRACKNOWCORP-FLEETRUN.pdf", sends: 128, views: 94 },
+            { id: 4, name: "Custom Pricing Proposal", file: "Custom-Quote-Template.pdf", sends: 67, views: 58 },
+        ];
+
+        // Icon helper using HTML entities and emojis
+        const icons = {
+            dashboard: "📊", users: "👥", search: "🔍", send: "📤", chart: "📈",
+            trending_up: "📈", trending_down: "📉", user_plus: "👤➕", mail: "✉️", phone: "☎️",
+            mappin: "📍", building: "🏢", chevron_right: "▶", filter: "⚙️", download: "⬇️",
+            eye: "👁️", clock: "🕐", check: "✅", x: "❌", alert: "⚠️", star: "⭐", globe: "🌐",
+            truck: "🚛", hat: "🏗️", shield: "🛡️", fuel: "⛽", package: "📦", arrow: "→", plus: "➕",
+            refresh: "🔄", target: "🎯", zap: "⚡", calendar: "📅", message: "💬", chevron_down: "▼",
+            external: "🔗", copy: "📋", trash: "🗑️", edit: "✏️", more: "⋯", file: "📄"
+        };
+
+        // ─── STATE MANAGEMENT ───────────────────────────────────────────
+        class App {
+            constructor() {
+                this.state = {
+                    activePage: 'dashboard',
+                    viewMode: 'board',
+                    sidebarExpanded: true,
+                    filterIndustry: 'All',
+                    filterState: 'All States',
+                    searchIndustry: 'Transport & Logistics',
+                    searchState: 'QLD',
+                    isSearching: false,
+                    hasResults: false,
+                    selectedResults: [],
+                    outreachActiveTab: 'campaigns',
+                    leads: SAMPLE_LEADS,
+                };
+                this.render();
+                this.attachEventListeners();
+            }
+
+            setState(newState) {
+                this.state = { ...this.state, ...newState };
+                this.render();
+                this.attachEventListeners();
+            }
+
+            attachEventListeners() {
+                // Sidebar navigation
+                document.querySelectorAll('[data-page]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.setState({ activePage: e.currentTarget.dataset.page });
+                    });
+                });
+
+                // Sidebar collapse
+                const collapseBtn = document.getElementById('collapse-sidebar');
+                if (collapseBtn) {
+                    collapseBtn.addEventListener('click', () => {
+                        this.setState({ sidebarExpanded: !this.state.sidebarExpanded });
+                    });
+                }
+
+                // Pipeline view mode
+                document.querySelectorAll('[data-view-mode]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.setState({ viewMode: e.currentTarget.dataset.viewMode });
+                    });
+                });
+
+                // Outreach tabs
+                document.querySelectorAll('[data-outreach-tab]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.setState({ outreachActiveTab: e.currentTarget.dataset.outreachTab });
+                    });
+                });
+
+                // Pipeline filters
+                const industrySelect = document.getElementById('filter-industry');
+                const stateSelect = document.getElementById('filter-state');
+                if (industrySelect) {
+                    industrySelect.addEventListener('change', (e) => {
+                        this.setState({ filterIndustry: e.target.value });
+                    });
+                }
+                if (stateSelect) {
+                    stateSelect.addEventListener('change', (e) => {
+                        this.setState({ filterState: e.target.value });
+                    });
+                }
+
+                // Scraper search
+                const searchBtn = document.getElementById('scraper-search-btn');
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', () => {
+                        this.setState({ isSearching: true });
+                        setTimeout(() => {
+                            this.setState({ isSearching: false, hasResults: true });
+                        }, 1500);
+                    });
+                }
+
+                // Scraper result checkboxes
+                document.querySelectorAll('[data-result-checkbox]').forEach((cb, idx) => {
+                    cb.addEventListener('change', () => {
+                        const selected = this.state.selectedResults;
+                        const newSelected = selected.includes(idx)
+                            ? selected.filter(i => i !== idx)
+                            : [...selected, idx];
+                        this.setState({ selectedResults: newSelected });
+                    });
+                });
+
+                // Select all scraper results
+                const selectAllCheckbox = document.getElementById('select-all-results');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.addEventListener('change', () => {
+                        if (this.state.selectedResults.length === SCRAPER_RESULTS.length) {
+                            this.setState({ selectedResults: [] });
+                        } else {
+                            this.setState({ selectedResults: SCRAPER_RESULTS.map((_, i) => i) });
+                        }
+                    });
+                }
+            }
+
+            render() {
+                const app = document.getElementById('app');
+                app.innerHTML = this.renderApp();
+            }
+
+            renderApp() {
+                return `
+                    <div class="flex h-screen bg-gray-50">
+                        ${this.renderSidebar()}
+                        ${this.renderMain()}
+                    </div>
+                `;
+            }
+
+            renderSidebar() {
+                const expanded = this.state.sidebarExpanded;
+                const activeClass = (id) => this.state.activePage === id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800';
+
+                return `
+                    <div class="bg-gray-900 flex flex-col transition-all duration-300 ${expanded ? 'w-56' : 'w-16'} border-r border-gray-800">
+                        <div class="p-4 border-b border-gray-800 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center flex-shrink-0 text-white text-lg">
+                                📍
+                            </div>
+                            ${expanded ? `
+                                <div>
+                                    <p class="text-sm font-black text-white tracking-wide">TRACK<span class="text-red-500">NOW</span></p>
+                                    <p class="text-[9px] text-gray-500 uppercase tracking-widest">Sales Portal</p>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <nav class="flex-1 py-4 px-2 space-y-1">
+                            <button data-page="dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeClass('dashboard')}">
+                                <span class="text-lg">📊</span>
+                                ${expanded ? '<span>Dashboard</span>' : ''}
+                            </button>
+                            <button data-page="pipeline" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeClass('pipeline')}">
+                                <span class="text-lg">👥</span>
+                                ${expanded ? '<span>Pipeline</span>' : ''}
+                            </button>
+                            <button data-page="scraper" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeClass('scraper')}">
+                                <span class="text-lg">🔍</span>
+                                ${expanded ? '<span>Lead Scraper</span>' : ''}
+                            </button>
+                            <button data-page="outreach" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeClass('outreach')}">
+                                <span class="text-lg">📤</span>
+                                ${expanded ? '<span>Outreach</span>' : ''}
+                            </button>
+                            <button data-page="analytics" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeClass('analytics')}">
+                                <span class="text-lg">📈</span>
+                                ${expanded ? '<span>Analytics</span>' : ''}
+                            </button>
+                        </nav>
+
+                        <div class="p-3 border-t border-gray-800">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">MS</div>
+                                ${expanded ? `
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-white truncate">Mark Speelmeyer</p>
+                                        <p class="text-[10px] text-gray-500 truncate">Managing Director</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${expanded ? `
+                                <div class="flex items-center gap-2 mt-3">
+                                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">JG</div>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-white truncate">James</p>
+                                        <p class="text-[10px] text-gray-500 truncate">Partner</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <button id="collapse-sidebar" class="p-3 border-t border-gray-800 text-gray-500 hover:text-white text-xs text-center w-full">
+                            ${expanded ? '◀ Collapse' : '▶'}
+                        </button>
+                    </div>
+                `;
+            }
+
+            renderMain() {
+                return `
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        ${this.renderTopBar()}
+                        <div class="flex-1 overflow-auto">
+                            <div class="p-6">
+                                ${this.renderCurrentPage()}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderTopBar() {
+                return `
+                    <div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                                <input type="text" placeholder="Search leads, companies, contacts..." class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-80 bg-gray-50 focus:bg-white focus:border-red-300 focus:outline-none transition-colors">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <a href="#" class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-600 transition-colors">
+                                🌐 gps.tracknowcorp.com 🔗
+                            </a>
+                            <button class="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+                                ⚠️
+                                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </button>
+                            <span class="text-xs text-gray-400">31 Mar 2026</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderCurrentPage() {
+                switch(this.state.activePage) {
+                    case 'dashboard': return this.renderDashboard();
+                    case 'pipeline': return this.renderPipeline();
+                    case 'scraper': return this.renderScraper();
+                    case 'outreach': return this.renderOutreach();
+                    case 'analytics': return this.renderAnalytics();
+                    default: return '<div>Page not found</div>';
+                }
+            }
+
+            renderDashboard() {
+                const leads = this.state.leads;
+                const totalPipeline = leads.reduce((sum, l) => sum + l.value, 0);
+                const closedLeads = leads.filter(l => l.stage === "closed");
+                const closedValue = closedLeads.reduce((sum, l) => sum + l.value, 0);
+                const totalVehicles = leads.reduce((sum, l) => sum + l.vehicles, 0);
+
+                return `
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                                <p class="text-sm text-gray-500 mt-1">Welcome back. Here's your sales overview for March 2026.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">Last updated: Just now</span>
+                                <button class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">
+                                    ➕ Add Lead
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-4">
+                            ${this.renderKPICard('Total Leads', leads.length, '+18%', 'up', '👥', '#DC2626')}
+                            ${this.renderKPICard('Pipeline Value', `$${(totalPipeline / 1000).toFixed(0)}K`, '+24%', 'up', '🎯', '#3B82F6')}
+                            ${this.renderKPICard('Closed This Month', closedLeads.length, '+67%', 'up', '✅', '#10B981')}
+                            ${this.renderKPICard('Total Units Tracked', totalVehicles.toLocaleString(), '+12%', 'up', '🚛', '#8B5CF6')}
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-2 bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Monthly Lead Performance</h3>
+                                <div class="h-72 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500">
+                                    <span>📊 Chart: Monthly leads trend</span>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Pipeline Breakdown</h3>
+                                <div class="h-48 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500 mb-4">
+                                    <span>📊 Pie Chart</span>
+                                </div>
+                                <div class="space-y-2">
+                                    ${PIPELINE_STAGES.map(s => {
+                                        const count = leads.filter(l => l.stage === s.id).length;
+                                        return `
+                                            <div class="flex items-center justify-between text-xs">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${s.color}"></div>
+                                                    <span class="text-gray-600">${s.label}</span>
+                                                </div>
+                                                <span class="font-semibold text-gray-900">${count}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Hot Leads — Requiring Action</h3>
+                                <div class="space-y-3">
+                                    ${leads.filter(l => l.starred && l.stage !== "closed").slice(0, 5).map(lead => {
+                                        const stage = PIPELINE_STAGES.find(s => s.id === lead.stage);
+                                        return `
+                                            <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                                                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm">
+                                                    ${lead.company.charAt(0)}
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm font-semibold text-gray-900 truncate">${lead.company}</p>
+                                                    <p class="text-xs text-gray-500">${lead.vehicles} vehicles · $${lead.value.toLocaleString()}</p>
+                                                </div>
+                                                <span class="text-xs px-2 py-1 rounded-full" style="background-color: ${stage.bgColor}; color: ${stage.color}">
+                                                    ${stage.label}
+                                                </span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Recent Activity</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-start gap-3">
+                                        <div class="p-1.5 rounded-lg" style="background-color: #3B82F615">
+                                            <span class="text-lg">📤</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-700">
+                                                Info pack sent to <span class="font-semibold">Cairns Earthmoving</span>
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-0.5">2 hours ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="p-1.5 rounded-lg" style="background-color: #8B5CF615">
+                                            <span class="text-lg">👁️</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-700">
+                                                Demo completed with <span class="font-semibold">SecureFleet Logistics</span>
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-0.5">5 hours ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="p-1.5 rounded-lg" style="background-color: #DC262615">
+                                            <span class="text-lg">🔍</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-700">
+                                                New lead scraped: <span class="font-semibold">Outback Mining Services</span>
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-0.5">1 day ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="p-1.5 rounded-lg" style="background-color: #F59E0B15">
+                                            <span class="text-lg">📄</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-700">
+                                                Proposal sent to <span class="font-semibold">GreenWaste Solutions</span>
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-0.5">2 days ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="p-1.5 rounded-lg" style="background-color: #10B98115">
+                                            <span class="text-lg">✅</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-700">
+                                                DEAL CLOSED! <span class="font-semibold">Metro Rentals Australia — 55 units</span>
+                                            </p>
+                                            <p class="text-xs text-gray-400 mt-0.5">11 days ago</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderPipeline() {
+                const leads = this.state.leads;
+                const filteredLeads = leads.filter(l => {
+                    if (this.state.filterIndustry !== 'All' && l.industry !== this.state.filterIndustry) return false;
+                    if (this.state.filterState !== 'All States' && l.state !== this.state.filterState) return false;
+                    return true;
+                });
+                const totalValue = filteredLeads.reduce((s, l) => s + l.value, 0);
+
+                return `
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900">Sales Pipeline</h1>
+                                <p class="text-sm text-gray-500 mt-1">${filteredLeads.length} leads · $${totalValue.toLocaleString()} total value</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select id="filter-industry" class="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-white">
+                                    <option value="All">All Industries</option>
+                                    ${INDUSTRIES.map(i => `<option value="${i.name}">${i.name}</option>`).join('')}
+                                </select>
+                                <select id="filter-state" class="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-white">
+                                    ${STATES.map(s => `<option value="${s}">${s}</option>`).join('')}
+                                </select>
+                                <div class="flex bg-gray-100 rounded-lg p-0.5">
+                                    <button data-view-mode="board" class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${this.state.viewMode === 'board' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}">Board</button>
+                                    <button data-view-mode="table" class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${this.state.viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}">Table</button>
+                                </div>
+                                <button class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">
+                                    ➕ Add Lead
+                                </button>
+                            </div>
+                        </div>
+
+                        ${this.state.viewMode === 'board' ? this.renderBoardView(filteredLeads) : this.renderTableView(filteredLeads)}
+                    </div>
+                `;
+            }
+
+            renderBoardView(leads) {
+                return `
+                    <div class="flex gap-3 overflow-x-auto pb-4">
+                        ${PIPELINE_STAGES.map(stage => {
+                            const stageLeads = leads.filter(l => l.stage === stage.id);
+                            return `
+                                <div class="flex-1 min-w-[220px]">
+                                    <div class="flex items-center gap-2 mb-3 px-1">
+                                        <div class="w-3 h-3 rounded-full" style="background-color: ${stage.color}"></div>
+                                        <span class="text-sm font-semibold text-gray-700">${stage.label}</span>
+                                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full ml-auto">${stageLeads.length}</span>
+                                    </div>
+                                    <div class="space-y-2 min-h-[200px] rounded-lg p-2" style="background-color: ${stage.bgColor}">
+                                        ${stageLeads.map(lead => `
+                                            <div class="bg-white rounded-lg p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md">
+                                                <div class="flex items-start justify-between mb-1">
+                                                    <p class="text-sm font-semibold text-gray-900">${lead.company}</p>
+                                                    ${lead.starred ? '<span class="text-lg">⭐</span>' : ''}
+                                                </div>
+                                                <p class="text-xs text-gray-500 mb-2">${lead.contact}</p>
+                                                <div class="flex items-center gap-1 text-xs text-gray-400 mb-2">
+                                                    📍 ${lead.city}, ${lead.state}
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700">${lead.vehicles} units</span>
+                                                    <span class="text-xs font-bold text-gray-700">$${lead.value.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            renderTableView(leads) {
+                return `
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Company</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Industry</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Location</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Stage</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Vehicles</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Value</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Last Contact</th>
+                                    <th class="text-left text-xs font-semibold text-gray-500 uppercase py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${leads.map(lead => {
+                                    const stage = PIPELINE_STAGES.find(s => s.id === lead.stage);
+                                    return `
+                                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                            <td class="py-3 px-4">
+                                                <div class="flex items-center gap-2">
+                                                    ${lead.starred ? '<span class="text-lg">⭐</span>' : ''}
+                                                    <div>
+                                                        <p class="text-sm font-semibold text-gray-900">${lead.company}</p>
+                                                        <p class="text-xs text-gray-500">${lead.contact}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-gray-600">${lead.industry}</td>
+                                            <td class="py-3 px-4 text-sm text-gray-600">${lead.city}, ${lead.state}</td>
+                                            <td class="py-3 px-4">
+                                                <span class="text-xs font-medium px-2 py-1 rounded-full" style="background-color: ${stage.bgColor}; color: ${stage.color}">
+                                                    ${stage.label}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 text-sm font-medium text-gray-700">${lead.vehicles}</td>
+                                            <td class="py-3 px-4 text-sm font-bold text-gray-900">$${lead.value.toLocaleString()}</td>
+                                            <td class="py-3 px-4 text-xs text-gray-500">${lead.lastContact}</td>
+                                            <td class="py-3 px-4">
+                                                <div class="flex items-center gap-1">
+                                                    <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">✉️</button>
+                                                    <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">☎️</button>
+                                                    <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">👁️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            renderScraper() {
+                return `
+                    <div class="space-y-6">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">Lead Scraper</h1>
+                            <p class="text-sm text-gray-500 mt-1">Find prospective customers across Australia by industry, location, and business type.</p>
+                        </div>
+
+                        <div class="bg-white rounded-xl border border-gray-200 p-6">
+                            <h3 class="text-sm font-semibold text-gray-700 mb-4">Search Criteria</h3>
+                            <div class="grid grid-cols-4 gap-4">
+                                <div>
+                                    <label class="text-xs text-gray-500 mb-1 block">Industry</label>
+                                    <select class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 text-gray-700 bg-white">
+                                        ${INDUSTRIES.map(i => `<option value="${i.name}">${i.icon} ${i.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 mb-1 block">State / Territory</label>
+                                    <select class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 text-gray-700 bg-white">
+                                        ${STATES.map(s => `<option>${s}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 mb-1 block">Source</label>
+                                    <select class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 text-gray-700 bg-white">
+                                        <option>All Sources</option>
+                                        <option>ABN Lookup</option>
+                                        <option>Google Maps</option>
+                                        <option>Yellow Pages</option>
+                                        <option>LinkedIn</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 mb-1 block">Min Fleet Size</label>
+                                    <select class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 text-gray-700 bg-white">
+                                        <option>Any</option>
+                                        <option>5+ vehicles</option>
+                                        <option>10+ vehicles</option>
+                                        <option>25+ vehicles</option>
+                                        <option>50+ vehicles</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 mt-5">
+                                <button id="scraper-search-btn" class="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors ${this.state.isSearching ? 'opacity-60' : ''}">
+                                    ${this.state.isSearching ? '<span class="animate-spin">🔄</span>' : '🔍'}
+                                    ${this.state.isSearching ? 'Searching...' : 'Search for Leads'}
+                                </button>
+                                <span class="text-xs text-gray-400">Searches ABN registry, Google Maps, Yellow Pages, and LinkedIn simultaneously</span>
+                            </div>
+                        </div>
+
+                        ${this.state.hasResults ? this.renderScraperResults() : ''}
+
+                        <div class="grid grid-cols-4 gap-4">
+                            ${INDUSTRIES.map(ind => `
+                                <div class="bg-white rounded-xl border border-gray-200 p-4 hover:border-red-200 hover:shadow-sm cursor-pointer">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="text-2xl">${ind.icon}</span>
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-900">${ind.name}</p>
+                                            <p class="text-xs text-gray-400">${ind.count} businesses found</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-1.5 mt-3">
+                                        <div class="h-1.5 rounded-full" style="width: ${(ind.count / 350) * 100}%; background-color: #DC2626"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderScraperResults() {
+                const selectedCount = this.state.selectedResults.length;
+                return `
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-semibold text-gray-700">Search Results</h3>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">${SCRAPER_RESULTS.length} found</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${selectedCount > 0 ? `
+                                    <button class="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700">
+                                        👤➕ Add ${selectedCount} to Pipeline
+                                    </button>
+                                ` : ''}
+                                <button class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50">
+                                    ⬇️ Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="py-2.5 px-4 text-left">
+                                        <input type="checkbox" id="select-all-results" class="rounded" ${this.state.selectedResults.length === SCRAPER_RESULTS.length ? 'checked' : ''}>
+                                    </th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Business Name</th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">ABN</th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Industry</th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Est. Fleet</th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Source</th>
+                                    <th class="py-2.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${SCRAPER_RESULTS.map((r, i) => `
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-4">
+                                            <input type="checkbox" data-result-checkbox class="rounded" ${this.state.selectedResults.includes(i) ? 'checked' : ''}>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <p class="text-sm font-semibold text-gray-900">${r.name}</p>
+                                            <p class="text-xs text-gray-400">${r.email}</p>
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-gray-500 font-mono">${r.abn}</td>
+                                        <td class="py-3 px-4 text-sm text-gray-600">${r.industry}</td>
+                                        <td class="py-3 px-4 text-sm text-gray-600">${r.city}, ${r.state}</td>
+                                        <td class="py-3 px-4 text-sm text-gray-600">${r.vehicles}</td>
+                                        <td class="py-3 px-4">
+                                            <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">${r.source}</span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="flex items-center gap-1">
+                                                <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">👤➕</button>
+                                                <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">📤</button>
+                                                <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">🔗</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            renderOutreach() {
+                const tab = this.state.outreachActiveTab;
+                const sentTotal = campaigns.reduce((sum, c) => sum + c.sent, 0);
+                const openedTotal = campaigns.reduce((sum, c) => sum + c.opened, 0);
+                const clickedTotal = campaigns.reduce((sum, c) => sum + c.clicked, 0);
+                const repliesTotal = campaigns.reduce((sum, c) => sum + c.replies, 0);
+
+                return `
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900">Outreach & Automation</h1>
+                                <p class="text-sm text-gray-500 mt-1">Email campaigns, info pack delivery, and automated follow-ups.</p>
+                            </div>
+                            <button class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">
+                                ➕ New Campaign
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-4">
+                            ${this.renderKPICard('Total Sent', sentTotal, '+32%', 'up', '📤', '#3B82F6')}
+                            ${this.renderKPICard('Open Rate', '57.2%', '+8%', 'up', '👁️', '#8B5CF6')}
+                            ${this.renderKPICard('Click Rate', '23.5%', '+15%', 'up', '🎯', '#F59E0B')}
+                            ${this.renderKPICard('Replies', repliesTotal, '+42%', 'up', '💬', '#10B981')}
+                        </div>
+
+                        <div class="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+                            <button data-outreach-tab="campaigns" class="px-4 py-2 text-sm font-medium rounded-md transition-colors ${tab === 'campaigns' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}">Campaigns</button>
+                            <button data-outreach-tab="infopacks" class="px-4 py-2 text-sm font-medium rounded-md transition-colors ${tab === 'infopacks' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}">Info Packs</button>
+                            <button data-outreach-tab="templates" class="px-4 py-2 text-sm font-medium rounded-md transition-colors ${tab === 'templates' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}">Email Templates</button>
+                        </div>
+
+                        ${tab === 'campaigns' ? this.renderCampaigns() : ''}
+                        ${tab === 'infopacks' ? this.renderInfoPacks() : ''}
+                        ${tab === 'templates' ? this.renderTemplates() : ''}
+                    </div>
+                `;
+            }
+
+            renderCampaigns() {
+                return `
+                    <div class="space-y-4">
+                        ${campaigns.map(c => `
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <h3 class="text-base font-semibold text-gray-900">${c.name}</h3>
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${
+                                            c.status === 'active' ? 'bg-green-100 text-green-700' :
+                                            c.status === 'paused' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-gray-100 text-gray-600'
+                                        }">
+                                            ${c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-400">✏️</button>
+                                        <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-400">⋯</button>
+                                    </div>
+                                </div>
+                                ${c.sent > 0 ? `
+                                    <div class="grid grid-cols-4 gap-6">
+                                        <div>
+                                            <p class="text-xs text-gray-400 mb-1">Sent</p>
+                                            <p class="text-xl font-bold text-gray-900">${c.sent}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 mb-1">Opened</p>
+                                            <p class="text-xl font-bold text-gray-900">${c.opened} <span class="text-xs font-normal text-gray-400">(${Math.round(c.opened / c.sent * 100)}%)</span></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 mb-1">Clicked</p>
+                                            <p class="text-xl font-bold text-gray-900">${c.clicked} <span class="text-xs font-normal text-gray-400">(${Math.round(c.clicked / c.sent * 100)}%)</span></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 mb-1">Replies</p>
+                                            <p class="text-xl font-bold text-green-600">${c.replies} <span class="text-xs font-normal text-gray-400">(${Math.round(c.replies / c.sent * 100)}%)</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                                        <div class="h-full bg-blue-500" style="width: ${(c.opened / c.sent) * 100}%"></div>
+                                        <div class="h-full bg-yellow-400" style="width: ${((c.clicked - 0) / c.sent) * 100}%"></div>
+                                        <div class="h-full bg-green-500" style="width: ${(c.replies / c.sent) * 100}%"></div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            renderInfoPacks() {
+                return `
+                    <div class="grid grid-cols-2 gap-4">
+                        ${INFO_PACKS.map(pack => `
+                            <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center text-red-600 text-2xl">
+                                    📄
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-semibold text-gray-900">${pack.name}</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">${pack.file}</p>
+                                    <div class="flex items-center gap-4 mt-2">
+                                        <span class="text-xs text-gray-500">📤 ${pack.sends} sent</span>
+                                        <span class="text-xs text-gray-500">👁️ ${pack.views} viewed</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700">Send</button>
+                                    <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">👁️</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            renderTemplates() {
+                const templates = [
+                    { name: "Initial Outreach — GPS Tracking Intro", subject: "Reduce Fleet Costs by 20% with Live GPS Tracking", type: "Cold outreach" },
+                    { name: "Follow-Up #1 — Info Pack Delivery", subject: "Your TrackNow GPS Info Pack is Here", type: "Follow-up" },
+                    { name: "Follow-Up #2 — Demo Invitation", subject: "See TrackNow in Action — Free Demo", type: "Follow-up" },
+                    { name: "Industry-Specific — Construction", subject: "Track Your Machines, Cut Downtime — GPS for Civil Equipment", type: "Industry" },
+                    { name: "Win-Back — Lapsed Prospects", subject: "Still Looking for Fleet Tracking? Special Offer Inside", type: "Re-engagement" },
+                ];
+                return `
+                    <div class="space-y-4">
+                        ${templates.map((t, i) => `
+                            <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 hover:border-red-200 cursor-pointer">
+                                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-2xl">
+                                    ✉️
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-semibold text-gray-900">${t.name}</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">Subject: ${t.subject}</p>
+                                </div>
+                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">${t.type}</span>
+                                <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-400">✏️</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            renderAnalytics() {
+                const CHART_COLORS = ["#DC2626", "#B91C1C", "#991B1B", "#7F1D1D", "#450A0A", "#1F2937", "#374151", "#4B5563"];
+
+                return `
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900">Analytics & Insights</h1>
+                                <p class="text-sm text-gray-500 mt-1">Market analysis, growth tracking, and sector breakdown across Australia.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select class="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-white">
+                                    <option>Last 6 months</option>
+                                    <option>Last 3 months</option>
+                                    <option>Last 12 months</option>
+                                    <option>This year</option>
+                                </select>
+                                <button class="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+                                    ⬇️ Export Report
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-4">
+                            ${this.renderKPICard('Conversion Rate', '22.2%', '+5.3%', 'up', '📈', '#10B981')}
+                            ${this.renderKPICard('Avg Deal Size', '$15.4K', '+18%', 'up', '🎯', '#DC2626')}
+                            ${this.renderKPICard('Time to Close', '18 days', '-3 days', 'up', '🕐', '#3B82F6')}
+                            ${this.renderKPICard('Monthly Revenue', '$36K', '+25%', 'up', '📈', '#8B5CF6')}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Revenue Growth (Monthly Recurring)</h3>
+                                <div class="h-80 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500">
+                                    📊 Revenue chart
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Leads by State</h3>
+                                <div class="h-80 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500">
+                                    📊 Leads by State chart
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Conversion Funnel</h3>
+                                <div class="space-y-3">
+                                    ${[
+                                        { label: "New Leads", count: 171, pct: 100, color: "#6B7280" },
+                                        { label: "Contacted", count: 136, pct: 79.5, color: "#3B82F6" },
+                                        { label: "Interested", count: 82, pct: 47.9, color: "#F59E0B" },
+                                        { label: "Demo Booked", count: 48, pct: 28.1, color: "#8B5CF6" },
+                                        { label: "Proposal Sent", count: 31, pct: 18.1, color: "#EC4899" },
+                                        { label: "Closed Won", count: 21, pct: 12.3, color: "#10B981" },
+                                    ].map((item, i) => `
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs text-gray-500 w-28 text-right">${item.label}</span>
+                                            <div class="flex-1 h-8 bg-gray-50 rounded-lg overflow-hidden">
+                                                <div class="h-full rounded-lg flex items-center px-3" style="width: ${item.pct}%; background-color: ${item.color}20; border-left: 3px solid ${item.color}">
+                                                    <span class="text-xs font-semibold" style="color: ${item.color}">${item.count}</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-xs text-gray-400 w-12">${item.pct}%</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-4">Top Performing Industries</h3>
+                                <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500 mb-4">
+                                    📊 Industries pie chart
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    ${INDUSTRIES.slice(0, 6).map((ind, i) => `
+                                        <div class="flex items-center gap-2 text-xs">
+                                            <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${CHART_COLORS[i]}"></div>
+                                            <span class="text-gray-600 truncate">${ind.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl border border-gray-200 p-5">
+                            <h3 class="text-sm font-semibold text-gray-700 mb-4">Sector Opportunity Map — Australia</h3>
+                            <div class="grid grid-cols-8 gap-3">
+                                ${stateData.map(s => `
+                                    <div class="text-center p-4 rounded-xl bg-red-50 border border-red-100 hover:bg-red-100 cursor-pointer">
+                                        <p class="text-lg font-bold text-red-700">${s.state}</p>
+                                        <p class="text-xl font-black text-gray-900 mt-1">${s.leads}</p>
+                                        <p class="text-xs text-gray-500">leads</p>
+                                        <p class="text-sm font-bold text-red-600 mt-1">$${(s.value / 1000).toFixed(0)}K</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderKPICard(label, value, change, changeType, icon, color) {
+                const iconColor = changeType === 'up' ? '#16A34A' : '#EF4444';
+                const trendIcon = changeType === 'up' ? '📈' : '📉';
+                return `
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">${label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${value}</p>
+                            ${change ? `
+                                <div class="flex items-center gap-1 mt-2">
+                                    <span style="color: ${iconColor}">${trendIcon}</span>
+                                    <span class="text-xs font-medium" style="color: ${iconColor}">
+                                        ${change} vs last month
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="p-3 rounded-lg text-2xl" style="background-color: ${color}15">
+                            ${icon}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize app
+        new App();
+    </script>
+</body>
+</html>

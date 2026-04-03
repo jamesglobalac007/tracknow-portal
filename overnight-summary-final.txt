@@ -1,0 +1,50 @@
+TRACKNOW LEAD DATABASE — OVERNIGHT RUN SUMMARY
+Date: 2026-04-01
+==============================================
+
+TOTAL LEADS IN MASTER DATABASE: 657
+
+OVERNIGHT RUN ADDED: 249 new leads
+(on top of 408 already in master from previous runs)
+
+BREAKDOWN BY INDUSTRY
+----------------------
+Transport & Logistics:   409 leads
+Civil & Construction:    188 leads  ← NEW CATEGORY added overnight
+Mining & Resources:       60 leads  ← NEW CATEGORY added overnight
+
+BREAKDOWN BY STATE
+-------------------
+Queensland (QLD):       238 leads
+Western Australia (WA): 135 leads
+New South Wales (NSW):  131 leads
+Victoria (VIC):          68 leads
+Tasmania (TAS):          34 leads
+South Australia (SA):    29 leads
+Northern Territory (NT): 18 leads
+Multi-state:              3 leads
+ACT:                      1 lead
+
+EMAIL QUALITY
+-------------
+Real emails (scraped from websites):  46
+Domain-based emails (info@domain.com.au): 546
+Estimated emails (name-based):         65
+
+All 657 leads have an email address.
+
+CONTACT DATA COMPLETENESS
+--------------------------
+With phone numbers:  639 (97%)
+With website URLs:   456 (69%)
+
+FILES
+-----
+master-leads.csv  — Full database, 657 records
+
+NEXT STEPS
+----------
+1. Run master-leads.csv through ZeroBounce or Hunter.io to verify emails
+2. LinkedIn enrichment for fleet manager / owner contact names
+3. Continue email harvesting from the 456 company websites
+4. NT and TAS could use more coverage

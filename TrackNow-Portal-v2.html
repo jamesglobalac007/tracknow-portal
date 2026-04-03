@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackNow — Sales Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*{font-family:'Poppins',sans-serif;margin:0;padding:0;box-sizing:border-box}
+body{background:#f7f8fa;color:#333}
+:root{--blue:#3498db;--dark:#20303c;--teal:#1abc9c}
+.sidebar{width:250px;background:var(--dark);min-height:100vh;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:50;transition:width .3s}
+.sidebar.collapsed{width:72px}
+.sidebar.collapsed .hide-collapsed{display:none}
+.main{margin-left:250px;min-height:100vh;transition:margin-left .3s}
+.main.expanded{margin-left:72px}
+.nav-btn{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:8px;color:#8a9bb5;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;border:none;background:none;width:100%;text-align:left}
+.nav-btn:hover{background:#2d4050;color:#fff}
+.nav-btn.active{background:var(--blue);color:#fff}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #f0f0f0}
+.kpi{display:flex;justify-content:space-between;align-items:flex-start}
+.kpi-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.kpi-label{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px}
+.kpi-value{font-size:24px;font-weight:700;color:#1a1a2e;margin-top:4px}
+.kpi-trend{font-size:11px;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:4px}
+.trend-up{color:#10b981}.trend-down{color:#ef4444}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.page{display:none}.page.active{display:block}
+.lead-card{background:#fff;border-radius:8px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #f0f0f0;cursor:pointer;transition:box-shadow .2s}
+.lead-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.stage-col{flex:1;min-width:190px}
+.stage-bg{border-radius:12px;padding:10px;min-height:300px}
+table{width:100%;border-collapse:collapse}
+th{background:#f9fafb;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e5e7eb}
+td{padding:10px 14px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#4b5563}
+tr:hover{background:#f0f7ff}
+.tab-btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;background:#f3f4f6;color:#9ca3af}
+.tab-btn.active{background:#fff;color:#1a1a2e;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.btn-blue{background:var(--blue);color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-blue:hover{opacity:.9}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+.search-box{padding:8px 12px 8px 36px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;width:360px;background:#f9fafb;outline:none;font-family:'Poppins',sans-serif}
+.search-box:focus{border-color:var(--blue);background:#fff}
+.funnel-bar{height:32px;border-radius:8px;display:flex;align-items:center;padding-left:12px;font-size:12px;font-weight:700;transition:width .5s}
+.chart-box{position:relative;height:280px}
+.opp-card{text-align:center;padding:16px;border-radius:12px;background:rgba(52,152,219,.08);border:1px solid rgba(52,152,219,.15);cursor:pointer;transition:all .2s}
+.opp-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div style="padding:20px;border-bottom:1px solid #2d4050;display:flex;align-items:center;gap:12px">
+    <div style="width:36px;height:36px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    </div>
+    <div class="hide-collapsed">
+      <div style="font-size:14px;font-weight:900;color:#fff;letter-spacing:1px">TRACK<span style="color:var(--blue)">NOW</span></div>
+      <div style="font-size:8px;color:#6b8299;letter-spacing:1.5px;margin-top:2px">TAKE CONTROL OF YOUR ASSETS</div>
+    </div>
+  </div>
+
+  <nav style="flex:1;padding:16px 10px">
+    <button class="nav-btn active" onclick="showPage('dashboard')">
+      <span>📊</span><span class="hide-collapsed">Dashboard</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('pipeline')">
+      <span>👥</span><span class="hide-collapsed">Pipeline</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('scraper')">
+      <span>🔍</span><span class="hide-collapsed">Lead Scraper</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('outreach')">
+      <span>📧</span><span class="hide-collapsed">Outreach</span>
+    </button>
+    <button class="nav-btn" onclick="showPage('analytics')">
+      <span>📈</span><span class="hide-collapsed">Analytics</span>
+    </button>
+  </nav>
+
+  <div class="hide-collapsed" style="padding:12px 16px;border-top:1px solid #2d4050">
+    <div style="font-size:8px;color:#5a7389;letter-spacing:1.5px;margin-bottom:8px">PRODUCTS</div>
+    <div style="font-size:11px;color:#7a95ad;line-height:1.8">OBD 2 Tracker<br>Hardwired GPS<br>Custom Solutions<br>Self Powered</div>
+  </div>
+
+  <div style="padding:12px 14px;border-top:1px solid #2d4050">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">MS</div>
+      <div class="hide-collapsed">
+        <div style="font-size:12px;font-weight:600;color:#fff">Mark Speelmeyer</div>
+        <div style="font-size:10px;color:#6b8299">Managing Director</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">JG</div>
+      <div class="hide-collapsed">
+        <div style="font-size:12px;font-weight:600;color:#fff">James</div>
+        <div style="font-size:10px;color:#6b8299">Partner</div>
+      </div>
+    </div>
+  </div>
+
+  <button onclick="toggleSidebar()" style="padding:12px;border:none;background:none;color:#6b8299;cursor:pointer;border-top:1px solid #2d4050;font-size:16px" class="hide-collapsed">◀ Collapse</button>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div style="position:relative">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af">🔍</span>
+      <input type="text" class="search-box" placeholder="Search leads, companies, contacts...">
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;font-size:12px;color:#6b7280">
+      <a href="https://www.tracknow.com.au" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">🌐 tracknow.com.au ↗</a>
+      <span>31 Mar 2026</span>
+    </div>
+  </div>
+
+  <div style="padding:24px">
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <div class="page active" id="page-dashboard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:#1a1a2e">Dashboard</h1>
+        <p style="font-size:13px;color:#9ca3af;margin-top:4px">Sales overview for March 2026</p>
+      </div>
+      <button class="btn-blue">+ New Lead</button>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="kpi">
+        <div><div class="kpi-label">Total Leads</div><div class="kpi-value">12</div><div class="kpi-trend trend-up">▲ +18% vs last month</div></div>
+        <div class="kpi-icon" style="background:#3498db18;color:var(--blue)">👥</div>
+      </div></div>
+      <div class="card"><div class="kpi">
+        <div><div class="kpi-label">Pipeline Value</div><div class="kpi-value">$260K</div><div class="kpi-trend trend-up">▲ +24% vs last month</div></div>
+        <div class="kpi-icon" style="background:#2980b918;color:#2980b9">🎯</div>
+      </div></div>
+      <div class="card"><div class="kpi">
+        <div><div class="kpi-label">Closed This Month</div><div class="kpi-value">1</div><div class="kpi-trend trend-up">▲ +67% vs last month</div></div>
+        <div class="kpi-icon" style="background:#10b98118;color:#10b981">✅</div>
+      </div></div>
+      <div class="card"><div class="kpi">
+        <div><div class="kpi-label">Total Units</div><div class="kpi-value">722</div><div class="kpi-trend trend-up">▲ +12% vs last month</div></div>
+        <div class="kpi-icon" style="background:#8b5cf618;color:#8b5cf6">🚛</div>
+      </div></div>
+    </div>
+
+    <!-- Charts Row -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;color:#374151">Monthly Lead Performance</h3>
+        <p style="font-size:11px;color:#9ca3af;margin:4px 0 12px">Oct 2025 – Mar 2026</p>
+        <div class="chart-box"><canvas id="chartMonthly"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;color:#374151">Pipeline Breakdown</h3>
+        <p style="font-size:11px;color:#9ca3af;margin:4px 0 12px">12 total leads</p>
+        <div style="height:200px"><canvas id="chartPipeline"></canvas></div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#6B7280;display:inline-block"></span><span style="font-size:11px;color:#6b7280">New Lead</span></div><span style="font-size:11px;font-weight:700">3</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#3B82F6;display:inline-block"></span><span style="font-size:11px;color:#6b7280">Contacted</span></div><span style="font-size:11px;font-weight:700">2</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#F59E0B;display:inline-block"></span><span style="font-size:11px;color:#6b7280">Interested</span></div><span style="font-size:11px;font-weight:700">3</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#8B5CF6;display:inline-block"></span><span style="font-size:11px;color:#6b7280">Demo Booked</span></div><span style="font-size:11px;font-weight:700">2</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#EC4899;display:inline-block"></span><span style="font-size:11px;color:#6b7280">Proposal Sent</span></div><span style="font-size:11px;font-weight:700">1</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#10B981;display:inline-block"></span><span style="font-size:11px;color:#6b7280">Closed Won</span></div><span style="font-size:11px;font-weight:700">1</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- Hot Leads -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="font-size:14px;font-weight:700;color:#374151">Hot Leads — Action Required</h3>
+          <span class="badge" style="background:#3498db15;color:var(--blue)">4 leads</span>
+        </div>
+        <div id="hotLeads"></div>
+      </div>
+      <!-- Recent Activity -->
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:16px">Recent Activity</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#3b82f615;display:flex;align-items:center;justify-content:center;flex-shrink:0">📤</div><div><div style="font-size:13px;color:#4b5563">Info pack sent to <b>Cairns Earthmoving</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">2 hours ago</div></div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#8b5cf615;display:flex;align-items:center;justify-content:center;flex-shrink:0">👁</div><div><div style="font-size:13px;color:#4b5563">Demo completed with <b>SecureFleet Logistics</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">5 hours ago</div></div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#3498db15;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔍</div><div><div style="font-size:13px;color:#4b5563">New lead scraped: <b>Outback Mining Services</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">1 day ago</div></div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#f59e0b15;display:flex;align-items:center;justify-content:center;flex-shrink:0">📄</div><div><div style="font-size:13px;color:#4b5563">Proposal sent to <b>GreenWaste Solutions</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">2 days ago</div></div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#10b98115;display:flex;align-items:center;justify-content:center;flex-shrink:0">✅</div><div><div style="font-size:13px;color:#4b5563">DEAL CLOSED! <b>Metro Rentals — 55 units</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">11 days ago</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PIPELINE ═══════════ -->
+  <div class="page" id="page-pipeline">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:#1a1a2e">Sales Pipeline</h1>
+        <p style="font-size:13px;color:#9ca3af;margin-top:4px">12 leads · $259,920 total pipeline</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="filterInd" onchange="renderPipeline()" style="font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;background:#fff;color:#4b5563;font-family:'Poppins'">
+          <option value="All">All Industries</option>
+          <option>Civil</option><option>Service</option><option>Transport & Logistics</option><option>Storage & Waste</option><option>Medical & Personal Care</option><option>Live Stock & Pets</option><option>Manufacturing</option><option>Mining & Resources</option>
+        </select>
+        <select id="filterSt" onchange="renderPipeline()" style="font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;background:#fff;color:#4b5563;font-family:'Poppins'">
+          <option>All States</option><option>QLD</option><option>NSW</option><option>VIC</option><option>SA</option><option>WA</option><option>TAS</option><option>NT</option><option>ACT</option>
+        </select>
+        <div style="display:flex;background:#f3f4f6;border-radius:8px;padding:2px">
+          <button class="tab-btn active" id="viewBoard" onclick="setView('board')">Board</button>
+          <button class="tab-btn" id="viewTable" onclick="setView('table')">Table</button>
+        </div>
+        <button class="btn-blue">+ Add Lead</button>
+      </div>
+    </div>
+    <div id="boardView"></div>
+    <div id="tableView" style="display:none"></div>
+  </div>
+
+  <!-- ═══════════ SCRAPER ═══════════ -->
+  <div class="page" id="page-scraper">
+    <div style="margin-bottom:24px">
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e">Lead Scraper</h1>
+      <p style="font-size:13px;color:#9ca3af;margin-top:4px">Find prospective customers across Australia by industry, location, and business type.</p>
+    </div>
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:16px">Search Criteria</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+        <div><label style="font-size:11px;font-weight:600;color:#9ca3af;display:block;margin-bottom:6px">Industry</label><select style="width:100%;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'Poppins'"><option>🏗️ Civil</option><option>🔧 Service</option><option>🚛 Transport & Logistics</option><option>♻️ Storage & Waste</option><option>🏥 Medical & Personal Care</option><option>🐄 Live Stock & Pets</option><option>🏭 Manufacturing</option><option>⛏️ Mining & Resources</option></select></div>
+        <div><label style="font-size:11px;font-weight:600;color:#9ca3af;display:block;margin-bottom:6px">State / Territory</label><select style="width:100%;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'Poppins'"><option>All States</option><option>QLD</option><option>NSW</option><option>VIC</option><option>SA</option><option>WA</option><option>TAS</option><option>NT</option><option>ACT</option></select></div>
+        <div><label style="font-size:11px;font-weight:600;color:#9ca3af;display:block;margin-bottom:6px">Source</label><select style="width:100%;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'Poppins'"><option>All Sources</option><option>ABN Lookup</option><option>Google Maps</option><option>Yellow Pages</option><option>LinkedIn</option></select></div>
+        <div><label style="font-size:11px;font-weight:600;color:#9ca3af;display:block;margin-bottom:6px">Min Fleet Size</label><select style="width:100%;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-family:'Poppins'"><option>Any</option><option>5+ vehicles</option><option>10+ vehicles</option><option>25+ vehicles</option><option>50+ vehicles</option></select></div>
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+        <button class="btn-blue" id="searchBtn" onclick="doSearch()">🔍 Search for Leads</button>
+        <span style="font-size:11px;color:#9ca3af">Searches ABN registry, Google Maps, Yellow Pages & LinkedIn simultaneously</span>
+      </div>
+    </div>
+    <div id="scraperResults" style="display:none" class="card" style="margin-bottom:24px"></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px" id="industryCards"></div>
+  </div>
+
+  <!-- ═══════════ OUTREACH ═══════════ -->
+  <div class="page" id="page-outreach">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:#1a1a2e">Outreach & Automation</h1>
+        <p style="font-size:13px;color:#9ca3af;margin-top:4px">Email campaigns, info pack delivery, and automated follow-ups.</p>
+      </div>
+      <button class="btn-blue">+ New Campaign</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Total Sent</div><div class="kpi-value">446</div><div class="kpi-trend trend-up">▲ +32%</div></div><div class="kpi-icon" style="background:#3b82f618;color:#3b82f6">📤</div></div></div>
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Open Rate</div><div class="kpi-value">57.2%</div><div class="kpi-trend trend-up">▲ +8%</div></div><div class="kpi-icon" style="background:#8b5cf618;color:#8b5cf6">👁</div></div></div>
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Click Rate</div><div class="kpi-value">23.5%</div><div class="kpi-trend trend-up">▲ +15%</div></div><div class="kpi-icon" style="background:#f59e0b18;color:#f59e0b">🎯</div></div></div>
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Replies</div><div class="kpi-value">35</div><div class="kpi-trend trend-up">▲ +42%</div></div><div class="kpi-icon" style="background:#10b98118;color:#10b981">💬</div></div></div>
+    </div>
+    <div style="display:flex;gap:4px;background:#f3f4f6;border-radius:8px;padding:2px;width:fit-content;margin-bottom:20px">
+      <button class="tab-btn active" onclick="showOutreachTab('campaigns',this)">Campaigns</button>
+      <button class="tab-btn" onclick="showOutreachTab('infopacks',this)">Info Packs</button>
+      <button class="tab-btn" onclick="showOutreachTab('templates',this)">Email Templates</button>
+    </div>
+    <div id="outreach-campaigns"></div>
+    <div id="outreach-infopacks" style="display:none"></div>
+    <div id="outreach-templates" style="display:none"></div>
+  </div>
+
+  <!-- ═══════════ ANALYTICS ═══════════ -->
+  <div class="page" id="page-analytics">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:#1a1a2e">Analytics & Insights</h1>
+        <p style="font-size:13px;color:#9ca3af;margin-top:4px">Market analysis, growth tracking, and sector performance across Australia.</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <select style="font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;background:#fff;font-family:'Poppins'"><option>Last 6 months</option><option>Last 3 months</option><option>Last 12 months</option></select>
+        <button style="font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 14px;background:#fff;cursor:pointer;font-family:'Poppins';color:#4b5563">📥 Export</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Conversion Rate</div><div class="kpi-value">22.2%</div><div class="kpi-trend trend-up">▲ +5.3%</div></div><div class="kpi-icon" style="background:#10b98118;color:#10b981">📈</div></div></div>
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Avg Deal Size</div><div class="kpi-value">$15.4K</div><div class="kpi-trend trend-up">▲ +18%</div></div><div class="kpi-icon" style="background:#3498db18;color:var(--blue)">🎯</div></div></div>
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Time to Close</div><div class="kpi-value">18 days</div><div class="kpi-trend trend-up">▲ -3 days</div></div><div class="kpi-icon" style="background:#3b82f618;color:#3b82f6">⏱</div></div></div>
+      <div class="card"><div class="kpi"><div><div class="kpi-label">Monthly Revenue</div><div class="kpi-value">$36K</div><div class="kpi-trend trend-up">▲ +25%</div></div><div class="kpi-icon" style="background:#8b5cf618;color:#8b5cf6">📈</div></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151">Revenue Growth</h3><p style="font-size:11px;color:#9ca3af;margin:4px 0 12px">Monthly Recurring Revenue</p><div class="chart-box"><canvas id="chartRevenue"></canvas></div></div>
+      <div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151">Leads by State</h3><p style="font-size:11px;color:#9ca3af;margin:4px 0 12px">Total pipeline across Australia</p><div class="chart-box"><canvas id="chartStates"></canvas></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:16px">Conversion Funnel</h3>
+        <div id="funnelChart"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:12px">Top Performing Industries</h3>
+        <div style="height:220px"><canvas id="chartIndustries"></canvas></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px" id="industryLegend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:16px">Sector Opportunity Map — Australia</h3>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:12px" id="stateMap"></div>
+    </div>
+  </div>
+
+  </div><!-- end padding -->
+</div><!-- end main -->
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────
+const LEADS=[
+{id:1,co:"Smith's Transport Pty Ltd",name:"David Smith",ind:"Transport & Logistics",st:"QLD",city:"Brisbane",stage:"demo",v:45,val:16200,last:"28 Mar",star:true},
+{id:2,co:"Pacific Civil Contractors",name:"Sarah Chen",ind:"Civil",st:"NSW",city:"Sydney",stage:"interested",v:78,val:28080,last:"27 Mar",star:true},
+{id:3,co:"GreenWaste Solutions",name:"Mike O'Brien",ind:"Storage & Waste",st:"VIC",city:"Melbourne",stage:"proposal",v:32,val:11520,last:"29 Mar",star:false},
+{id:4,co:"Outback Mining Services",name:"James Wilson",ind:"Mining & Resources",st:"WA",city:"Perth",stage:"new",v:120,val:43200,last:"30 Mar",star:true},
+{id:5,co:"QuickDrop Couriers",name:"Tom Nguyen",ind:"Transport & Logistics",st:"QLD",city:"Gold Coast",stage:"contacted",v:22,val:7920,last:"26 Mar",star:false},
+{id:6,co:"Brisbane City Council",name:"Angela Torres",ind:"Service",st:"QLD",city:"Brisbane",stage:"interested",v:200,val:72000,last:"25 Mar",star:true},
+{id:7,co:"AgriTrack Farms",name:"Peter Brown",ind:"Live Stock & Pets",st:"NSW",city:"Dubbo",stage:"new",v:15,val:5400,last:"30 Mar",star:false},
+{id:8,co:"Metro Rentals Australia",name:"Lisa Park",ind:"Service",st:"VIC",city:"Melbourne",stage:"closed",v:55,val:19800,last:"20 Mar",star:true},
+{id:9,co:"Cairns Earthmoving",name:"Rob Taylor",ind:"Civil",st:"QLD",city:"Cairns",stage:"contacted",v:28,val:10080,last:"29 Mar",star:false},
+{id:10,co:"SecureFleet Logistics",name:"Karen White",ind:"Transport & Logistics",st:"SA",city:"Adelaide",stage:"demo",v:67,val:24120,last:"28 Mar",star:false},
+{id:11,co:"Darwin Waste Services",name:"Chris Martin",ind:"Storage & Waste",st:"NT",city:"Darwin",stage:"new",v:18,val:6480,last:"31 Mar",star:false},
+{id:12,co:"Hobart Bus Lines",name:"Emma Scott",ind:"Transport & Logistics",st:"TAS",city:"Hobart",stage:"interested",v:42,val:15120,last:"27 Mar",star:false}
+];
+
+const STAGES=[
+{id:"new",label:"New Lead",color:"#6B7280",bg:"#F3F4F6"},
+{id:"contacted",label:"Contacted",color:"#3B82F6",bg:"#EFF6FF"},
+{id:"interested",label:"Interested",color:"#F59E0B",bg:"#FFFBEB"},
+{id:"demo",label:"Demo Booked",color:"#8B5CF6",bg:"#F5F3FF"},
+{id:"proposal",label:"Proposal Sent",color:"#EC4899",bg:"#FDF2F8"},
+{id:"closed",label:"Closed Won",color:"#10B981",bg:"#ECFDF5"}
+];
+
+const SCRAPERS=[
+{name:"ABC Heavy Haulage",abn:"12 345 678 901",ind:"Transport & Logistics",st:"QLD",city:"Townsville",fleet:"~30",src:"ABN Lookup",email:"info@abchaulage.com.au"},
+{name:"Sunshine Coast Earthworks",abn:"23 456 789 012",ind:"Civil",st:"QLD",city:"Maroochydore",fleet:"~15",src:"Google Maps",email:"admin@scew.com.au"},
+{name:"Murray River Transport",abn:"34 567 890 123",ind:"Transport & Logistics",st:"VIC",city:"Mildura",fleet:"~50",src:"Yellow Pages",email:"dispatch@murrayriver.com.au"},
+{name:"Top End Mining Contractors",abn:"45 678 901 234",ind:"Mining & Resources",st:"NT",city:"Katherine",fleet:"~80",src:"ABN Lookup",email:"ops@topendmining.com.au"},
+{name:"Clean City Waste",abn:"56 789 012 345",ind:"Storage & Waste",st:"NSW",city:"Wollongong",fleet:"~25",src:"Google Maps",email:"hello@cleancity.com.au"},
+{name:"Pilbara Plant Hire",abn:"67 890 123 456",ind:"Service",st:"WA",city:"Karratha",fleet:"~40",src:"LinkedIn",email:"hire@pilbaraplant.com.au"}
+];
+
+const INDUSTRIES=[
+{name:"Civil",icon:"🏗️",count:342,color:"#3498db"},
+{name:"Service",icon:"🔧",count:287,color:"#2980b9"},
+{name:"Transport & Logistics",icon:"🚛",count:203,color:"#1a6fa8"},
+{name:"Storage & Waste",icon:"♻️",count:156,color:"#20303c"},
+{name:"Medical & Personal Care",icon:"🏥",count:128,color:"#1abc9c"},
+{name:"Live Stock & Pets",icon:"🐄",count:94,color:"#2c3e50"},
+{name:"Manufacturing",icon:"🏭",count:167,color:"#34495e"},
+{name:"Mining & Resources",icon:"⛏️",count:89,color:"#16a085"}
+];
+
+const CAMPAIGNS=[
+{name:"Civil Fleet Outreach — National",status:"active",sent:156,opened:89,clicked:34,replies:12},
+{name:"Logistics Companies — QLD/NSW",status:"active",sent:203,opened:124,clicked:56,replies:18},
+{name:"Storage & Waste — National",status:"paused",sent:87,opened:42,clicked:15,replies:5},
+{name:"Mining Sector — WA Focus",status:"draft",sent:0,opened:0,clicked:0,replies:0}
+];
+
+const STATES_DATA=[{st:"QLD",leads:87,val:156000},{st:"NSW",leads:64,val:112000},{st:"VIC",leads:52,val:94000},{st:"WA",leads:38,val:72000},{st:"SA",leads:21,val:38000},{st:"NT",leads:12,val:22000},{st:"TAS",leads:8,val:14000},{st:"ACT",leads:5,val:9000}];
+
+// ─── NAV ───────────────────────────────────────────────────
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(id==='pipeline')renderPipeline();
+  if(id==='analytics'&&!window.analyticsInit){initAnalytics();window.analyticsInit=true;}
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('main').classList.toggle('expanded');
+}
+
+// ─── DASHBOARD ─────────────────────────────────────────────
+function initDashboard(){
+  // Hot leads
+  const hot=LEADS.filter(l=>l.star&&l.stage!=='closed');
+  document.getElementById('hotLeads').innerHTML=hot.map(l=>{
+    const s=STAGES.find(x=>x.id===l.stage);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:#f9fafb;margin-bottom:8px;cursor:pointer" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#f9fafb'">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${l.co.charAt(0)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.co}</div><div style="font-size:11px;color:#9ca3af">${l.v} vehicles · $${l.val.toLocaleString()}</div></div>
+      <span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span>
+    </div>`;
+  }).join('');
+
+  // Charts
+  new Chart(document.getElementById('chartMonthly'),{type:'line',data:{labels:['Oct','Nov','Dec','Jan','Feb','Mar'],datasets:[
+    {label:'New Leads',data:[18,24,15,31,38,45],borderColor:'#3498db',backgroundColor:'#3498db20',fill:true,tension:.4,borderWidth:2,pointRadius:3},
+    {label:'Contacted',data:[14,19,12,25,30,36],borderColor:'#2980b9',backgroundColor:'#2980b920',fill:true,tension:.4,borderWidth:2,pointRadius:3},
+    {label:'Closed',data:[3,4,2,6,8,10],borderColor:'#10b981',backgroundColor:'#10b98120',fill:true,tension:.4,borderWidth:2,pointRadius:3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'Poppins'},usePointStyle:true,padding:16}}},scales:{x:{grid:{display:false},ticks:{font:{size:11,family:'Poppins'}}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:11,family:'Poppins'}}}}}});
+
+  new Chart(document.getElementById('chartPipeline'),{type:'doughnut',data:{labels:STAGES.map(s=>s.label),datasets:[{data:[3,2,3,2,1,1],backgroundColor:STAGES.map(s=>s.color),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
+}
+
+// ─── PIPELINE ──────────────────────────────────────────────
+let currentView='board';
+function setView(v){
+  currentView=v;
+  document.getElementById('viewBoard').classList.toggle('active',v==='board');
+  document.getElementById('viewTable').classList.toggle('active',v==='table');
+  renderPipeline();
+}
+
+function renderPipeline(){
+  const fi=document.getElementById('filterInd').value;
+  const fs=document.getElementById('filterSt').value;
+  const fl=LEADS.filter(l=>(fi==='All'||l.ind===fi)&&(fs==='All States'||l.st===fs));
+
+  if(currentView==='board'){
+    document.getElementById('boardView').style.display='flex';
+    document.getElementById('boardView').style.gap='16px';
+    document.getElementById('boardView').style.overflowX='auto';
+    document.getElementById('tableView').style.display='none';
+    document.getElementById('boardView').innerHTML=STAGES.map(s=>{
+      const items=fl.filter(l=>l.stage===s.id);
+      return `<div class="stage-col"><div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${s.color}"></div>
+        <span style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">${s.label}</span>
+        <span style="margin-left:auto;font-size:11px;font-weight:700;background:#e5e7eb;color:#6b7280;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center">${items.length}</span>
+      </div><div class="stage-bg" style="background:${s.bg}">${items.map(l=>`
+        <div class="lead-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:700;color:#1a1a2e;line-height:1.3">${l.co}</div>
+            ${l.star?'<span style="color:#fbbf24;font-size:13px">★</span>':''}
+          </div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">${l.name}</div>
+          <div style="font-size:11px;color:#b0b8c4;margin-bottom:8px">📍 ${l.city}, ${l.st}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="badge" style="background:#3498db15;color:var(--blue)">${l.v} units</span>
+            <span style="font-size:12px;font-weight:700;color:#374151">$${l.val.toLocaleString()}</span>
+          </div>
+        </div>`).join('')}</div></div>`;
+    }).join('');
+  } else {
+    document.getElementById('boardView').style.display='none';
+    document.getElementById('tableView').style.display='block';
+    document.getElementById('tableView').innerHTML=`<div class="card" style="padding:0;overflow:hidden"><table>
+      <thead><tr><th>Company</th><th>Industry</th><th>Location</th><th>Stage</th><th>Units</th><th>Value</th><th>Last Contact</th></tr></thead>
+      <tbody>${fl.map(l=>{const s=STAGES.find(x=>x.id===l.stage);return `<tr>
+        <td><div style="display:flex;align-items:center;gap:6px">${l.star?'<span style="color:#fbbf24">★</span>':''}<div><div style="font-weight:600;color:#1a1a2e">${l.co}</div><div style="font-size:11px;color:#9ca3af">${l.name}</div></div></div></td>
+        <td>${l.ind}</td><td>${l.city}, ${l.st}</td>
+        <td><span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span></td>
+        <td style="font-weight:600">${l.v}</td><td style="font-weight:700;color:#1a1a2e">$${l.val.toLocaleString()}</td><td style="font-size:12px;color:#9ca3af">${l.last}</td>
+      </tr>`;}).join('')}</tbody></table></div>`;
+  }
+}
+
+// ─── SCRAPER ───────────────────────────────────────────────
+function doSearch(){
+  const btn=document.getElementById('searchBtn');
+  btn.innerHTML='<span class="spinner"></span> Searching...';
+  btn.disabled=true;
+  setTimeout(()=>{
+    btn.innerHTML='🔍 Search for Leads';btn.disabled=false;
+    const el=document.getElementById('scraperResults');
+    el.style.display='block';
+    el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px"><h3 style="font-size:14px;font-weight:700;color:#374151">Search Results</h3><span class="badge" style="background:#d1fae5;color:#065f46">${SCRAPERS.length} found</span></div>
+      <button class="btn-blue" style="font-size:12px;padding:6px 14px">📥 Export CSV</button>
+    </div>
+    <table><thead><tr><th style="width:30px"><input type="checkbox"></th><th>Business Name</th><th>ABN</th><th>Industry</th><th>Location</th><th>Est. Fleet</th><th>Source</th></tr></thead>
+    <tbody>${SCRAPERS.map(r=>`<tr><td><input type="checkbox"></td>
+      <td><div style="font-weight:600;color:#1a1a2e">${r.name}</div><div style="font-size:11px;color:#9ca3af">${r.email}</div></td>
+      <td style="font-family:monospace;font-size:12px;color:#6b7280">${r.abn}</td><td>${r.ind}</td><td>${r.city}, ${r.st}</td><td>${r.fleet}</td>
+      <td><span class="badge" style="background:#3498db15;color:var(--blue)">${r.src}</span></td>
+    </tr>`).join('')}</tbody></table>`;
+  },1500);
+}
+
+function initIndustryCards(){
+  document.getElementById('industryCards').innerHTML=INDUSTRIES.map(i=>`
+    <div class="card" style="cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#3498db';this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.borderColor='#f0f0f0';this.style.boxShadow='0 1px 3px rgba(0,0,0,.06)'">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <span style="font-size:28px">${i.icon}</span>
+        <div><div style="font-size:13px;font-weight:700;color:#1a1a2e">${i.name}</div><div style="font-size:11px;color:#9ca3af">${i.count} businesses</div></div>
+      </div>
+      <div style="width:100%;height:6px;background:#f3f4f6;border-radius:10px"><div style="height:100%;border-radius:10px;background:${i.color};width:${(i.count/350)*100}%"></div></div>
+    </div>`).join('');
+}
+
+// ─── OUTREACH ──────────────────────────────────────────────
+function showOutreachTab(tab,btn){
+  ['campaigns','infopacks','templates'].forEach(t=>{document.getElementById('outreach-'+t).style.display='none'});
+  document.getElementById('outreach-'+tab).style.display='block';
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function initOutreach(){
+  // Campaigns
+  document.getElementById('outreach-campaigns').innerHTML=CAMPAIGNS.map(c=>{
+    const stClass=c.status==='active'?'background:#d1fae5;color:#065f46':c.status==='paused'?'background:#fef3c7;color:#92400e':'background:#f3f4f6;color:#6b7280';
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:15px;font-weight:700;color:#1a1a2e">${c.name}</span><span class="badge" style="${stClass}">${c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span></div>
+      </div>
+      ${c.sent>0?`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+        <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Sent</div><div style="font-size:20px;font-weight:700;color:#1a1a2e">${c.sent}</div></div>
+        <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Opened</div><div style="font-size:20px;font-weight:700;color:#1a1a2e">${c.opened} <span style="font-size:11px;font-weight:400;color:#9ca3af">(${Math.round(c.opened/c.sent*100)}%)</span></div></div>
+        <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Clicked</div><div style="font-size:20px;font-weight:700;color:#1a1a2e">${c.clicked} <span style="font-size:11px;font-weight:400;color:#9ca3af">(${Math.round(c.clicked/c.sent*100)}%)</span></div></div>
+        <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Replies</div><div style="font-size:20px;font-weight:700;color:#10b981">${c.replies} <span style="font-size:11px;font-weight:400;color:#9ca3af">(${Math.round(c.replies/c.sent*100)}%)</span></div></div>
+      </div>
+      <div style="margin-top:12px;width:100%;height:8px;background:#f3f4f6;border-radius:10px;overflow:hidden;display:flex">
+        <div style="height:100%;background:#60a5fa;width:${(c.opened/c.sent)*100}%"></div>
+        <div style="height:100%;background:#fbbf24;width:${(c.clicked/c.sent)*100}%"></div>
+        <div style="height:100%;background:#34d399;width:${(c.replies/c.sent)*100}%"></div>
+      </div>`:`<p style="font-size:13px;color:#9ca3af;font-style:italic">Draft — not yet sent</p>`}
+    </div>`;
+  }).join('');
+
+  // Info Packs
+  const packs=[{name:"TrackNow System Overview",file:"TRACKNOW-OVERVIEW.pdf",sent:234,views:187},{name:"Eco Driving Brochure",file:"TRACKNOW-ECO-DRIVING.pdf",sent:156,views:112},{name:"FleetRun Maintenance",file:"TRACKNOW-FLEETRUN.pdf",sent:128,views:94},{name:"Custom Pricing Proposal",file:"Custom-Quote-Template.pdf",sent:67,views:58}];
+  document.getElementById('outreach-infopacks').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${packs.map(p=>`
+    <div class="card" style="display:flex;align-items:center;gap:16px">
+      <div style="width:52px;height:52px;border-radius:12px;background:#3498db15;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📄</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#1a1a2e">${p.name}</div><div style="font-size:11px;color:#9ca3af;margin-top:2px">${p.file}</div><div style="font-size:11px;color:#6b7280;margin-top:6px">${p.sent} sent · ${p.views} viewed</div></div>
+      <button class="btn-blue" style="font-size:12px;padding:6px 16px">Send</button>
+    </div>`).join('')}</div>`;
+
+  // Templates
+  const tmpl=[{name:"Initial Outreach — GPS Tracking Intro",subj:"Reduce Fleet Costs by 20% with Live GPS Tracking",type:"Cold outreach"},{name:"Follow-Up #1 — Info Pack Delivery",subj:"Your TrackNow GPS Tracking Info Pack",type:"Follow-up"},{name:"Follow-Up #2 — Demo Invitation",subj:"See TrackNow in Action — Free Live Demo",type:"Follow-up"},{name:"Industry-Specific — Civil & Construction",subj:"Track Your Machines, Cut Downtime",type:"Industry"},{name:"Win-Back — Lapsed Prospects",subj:"Still Looking for Fleet Tracking? Special Offer Inside",type:"Re-engagement"}];
+  document.getElementById('outreach-templates').innerHTML=tmpl.map(t=>`
+    <div class="card" style="display:flex;align-items:center;gap:16px;margin-bottom:10px;cursor:pointer" onmouseover="this.style.borderColor='#3498db'" onmouseout="this.style.borderColor='#f0f0f0'">
+      <div style="width:40px;height:40px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">✉️</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#1a1a2e">${t.name}</div><div style="font-size:11px;color:#9ca3af;margin-top:2px">Subject: ${t.subj}</div></div>
+      <span class="badge" style="background:#f3f4f6;color:#6b7280">${t.type}</span>
+    </div>`).join('');
+}
+
+// ─── ANALYTICS ─────────────────────────────────────────────
+function initAnalytics(){
+  const COLORS=["#3498db","#2980b9","#1a6fa8","#20303c","#1abc9c","#2c3e50"];
+
+  new Chart(document.getElementById('chartRevenue'),{type:'line',data:{labels:['Oct','Nov','Dec','Jan','Feb','Mar'],datasets:[{label:'Revenue',data:[10800,14400,7200,21600,28800,36000],borderColor:'#3498db',backgroundColor:'#3498db20',fill:true,tension:.4,borderWidth:2.5,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11,family:'Poppins'}}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:11,family:'Poppins'},callback:v=>'$'+v/1000+'K'}}}}});
+
+  new Chart(document.getElementById('chartStates'),{type:'bar',data:{labels:STATES_DATA.map(s=>s.st),datasets:[{label:'Leads',data:STATES_DATA.map(s=>s.leads),backgroundColor:'#3498db',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11,family:'Poppins'}}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:11,family:'Poppins'}}}}}});
+
+  new Chart(document.getElementById('chartIndustries'),{type:'doughnut',data:{labels:INDUSTRIES.slice(0,6).map(i=>i.name),datasets:[{data:INDUSTRIES.slice(0,6).map(i=>i.count),backgroundColor:COLORS,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}});
+
+  document.getElementById('industryLegend').innerHTML=INDUSTRIES.slice(0,6).map((ind,i)=>`<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${COLORS[i]};display:inline-block;flex-shrink:0"></span><span style="font-size:11px;color:#6b7280;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ind.name}</span><span style="font-size:11px;font-weight:700;color:#1a1a2e">${ind.count}</span></div>`).join('');
+
+  // Funnel
+  const funnel=[{label:"New Leads",n:171,pct:100,c:"#6B7280"},{label:"Contacted",n:136,pct:79.5,c:"#3B82F6"},{label:"Interested",n:82,pct:47.9,c:"#F59E0B"},{label:"Demo Booked",n:48,pct:28.1,c:"#8B5CF6"},{label:"Proposal Sent",n:31,pct:18.1,c:"#EC4899"},{label:"Closed Won",n:21,pct:12.3,c:"#10B981"}];
+  document.getElementById('funnelChart').innerHTML=funnel.map(f=>`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <span style="font-size:11px;color:#6b7280;width:90px;text-align:right;font-weight:500">${f.label}</span>
+      <div style="flex:1;height:32px;background:#f9fafb;border-radius:8px;overflow:hidden">
+        <div class="funnel-bar" style="width:${f.pct}%;background:${f.c}20;border-left:3px solid ${f.c};color:${f.c}">${f.n}</div>
+      </div>
+      <span style="font-size:11px;color:#9ca3af;width:40px;text-align:right">${f.pct}%</span>
+    </div>`).join('');
+
+  // State map
+  document.getElementById('stateMap').innerHTML=STATES_DATA.map(s=>`
+    <div class="opp-card">
+      <div style="font-size:18px;font-weight:900;color:var(--blue)">${s.st}</div>
+      <div style="font-size:22px;font-weight:900;color:#1a1a2e;margin-top:4px">${s.leads}</div>
+      <div style="font-size:10px;color:#9ca3af">leads</div>
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-top:4px">$${(s.val/1000).toFixed(0)}K</div>
+    </div>`).join('');
+}
+
+// ─── INIT ──────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  initDashboard();
+  initIndustryCards();
+  initOutreach();
+  renderPipeline();
+});
+</script>
+</body>
+</html>
