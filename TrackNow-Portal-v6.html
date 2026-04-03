@@ -6606,6 +6606,9 @@ function openDealProducts(leadId) {
   document.getElementById('dp_title').textContent = l.co + ' — Deal Products';
   document.getElementById('dp_term').value = l.term || 24;
   document.getElementById('dp_sim').value = l.sim || '';
+  // Load saved Cost of Goods (manual entries, independent from product lines)
+  document.getElementById('dp_hwCost_input').value = l.hwCostOfGoods || 0;
+  document.getElementById('dp_swCost_input').value = l.swCostOfGoods || 0;
   renderDealProductLines();
   updateDealProductTotals();
   document.getElementById('dealProductsModal').style.display = 'flex';
@@ -6739,37 +6742,41 @@ function autoFillLineHwPrice(idx) {
 function updateDealProductTotals() {
   const l = LEADS.find(x => x.id === _dealProductsLeadId);
   if (!l || !l.lineItems) return;
-  const totalUnits = l.lineItems.reduce((s,li) => s + (li.qty||0), 0);
+  // Revenue from product lines (what you CHARGE the customer)
+  const hwDeviceRevenue = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwPrice||0), 0);
+  const hwInstallRevenue = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwInstall||0), 0);
+  const hwRevenue = hwDeviceRevenue + hwInstallRevenue;
   const monthlyTotal = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
-  const annualTotal = monthlyTotal * 12;
-  const hwDeviceCost = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwPrice||0), 0);
-  const hwInstallCost = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwInstall||0), 0);
-  const hwTotal = hwDeviceCost + hwInstallCost;
   const termEl = document.getElementById('dp_term_0');
   const term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
-  const swContractTotal = monthlyTotal * term;
-  const contractValue = hwTotal + swContractTotal;
-  // Hardware Cost input
-  const hwInp = document.getElementById('dp_hwCost_input');
-  if (hwInp) hwInp.value = hwTotal;
-  const hwBd = document.getElementById('dp_hwBreakdown');
-  if (hwBd) hwBd.textContent = 'Devices $' + hwDeviceCost.toLocaleString() + (hwInstallCost > 0 ? ' + Install $' + hwInstallCost.toLocaleString() : '');
-  // Software Cost input
-  const swInp = document.getElementById('dp_swCost_input');
-  if (swInp) swInp.value = Math.round(swContractTotal);
-  const swBd = document.getElementById('dp_swBreakdown');
-  if (swBd) swBd.textContent = '$' + monthlyTotal.toFixed(2) + '/mo × ' + (term == 1 ? 'MTM' : term + ' months');
-  // Deal Summary
-  document.getElementById('dp_totalUnits').textContent = totalUnits;
-  document.getElementById('dp_mrr').textContent = '$' + monthlyTotal.toFixed(2);
-  document.getElementById('dp_annual').textContent = '$' + annualTotal.toLocaleString();
-  document.getElementById('dp_contractVal').textContent = '$' + Math.round(contractValue).toLocaleString();
+  const swRevenue = monthlyTotal * term;
+  const totalRevenue = hwRevenue + swRevenue;
+  // Populate REVENUE lines in Deal Summary (NOT the cost inputs)
+  const hwRevEl = document.getElementById('dp_hwRevenue');
+  if (hwRevEl) hwRevEl.textContent = '$' + Math.round(hwRevenue).toLocaleString();
+  const swRevEl = document.getElementById('dp_swRevenue');
+  if (swRevEl) swRevEl.textContent = '$' + Math.round(swRevenue).toLocaleString();
+  const totRevEl = document.getElementById('dp_totalRevenue');
+  if (totRevEl) totRevEl.textContent = '$' + Math.round(totalRevenue).toLocaleString();
+  // DO NOT touch dp_hwCost_input or dp_swCost_input — those are manual Cost of Goods entries
+  // Now recalc net contract value using whatever's in the cost boxes
+  recalcContractValue();
 }
 
 function recalcContractValue() {
-  const hw = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
-  const sw = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
-  document.getElementById('dp_contractVal').textContent = '$' + Math.round(hw + sw).toLocaleString();
+  // Read revenue from the displayed summary
+  const parseVal = (el) => { const t = el ? el.textContent.replace(/[$,]/g,'') : '0'; return parseFloat(t) || 0; };
+  const totalRevenue = parseVal(document.getElementById('dp_totalRevenue'));
+  // Read manual Cost of Goods inputs
+  const hwCost = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
+  const swCost = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
+  const totalCost = hwCost + swCost;
+  const netValue = totalRevenue - totalCost;
+  // Update summary
+  const costEl = document.getElementById('dp_totalCost');
+  if (costEl) costEl.textContent = '-$' + Math.round(totalCost).toLocaleString();
+  const valEl = document.getElementById('dp_contractVal');
+  if (valEl) valEl.textContent = '$' + Math.round(netValue).toLocaleString();
 }
 
 function saveDealProducts() {
@@ -6780,6 +6787,9 @@ function saveDealProducts() {
   const simEl = document.getElementById('dp_sim_0');
   l.term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
   l.sim = simEl ? simEl.value : document.getElementById('dp_sim').value;
+  // Save Cost of Goods (manual entries, independent from product lines)
+  l.hwCostOfGoods = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
+  l.swCostOfGoods = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
   calcLeadFromLines(l);
   l._productsSet = true;
   // Update deviceType to primary (highest qty) for backwards compat
@@ -7173,37 +7183,46 @@ function doLogin() {
       <div id="dp_lines"></div>
       <input type="hidden" id="dp_term" value="24">
       <input type="hidden" id="dp_sim" value="">
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">Cost of Goods</div>
+      <div style="display:flex;gap:8px">
         <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
-          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Hardware Cost</div>
-          <input type="number" id="dp_hwCost_input" value="0" min="0" onchange="recalcContractValue()" style="width:80%;padding:6px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
-          <div id="dp_hwBreakdown" style="font-size:9px;color:#666;margin-top:4px"></div>
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Hardware Cost</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+            <span style="color:#FFA028;font-size:16px;font-weight:800">$</span>
+            <input type="number" id="dp_hwCost_input" value="0" min="0" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
+          </div>
+          <div style="font-size:9px;color:#666;margin-top:4px">Your cost for devices</div>
         </div>
         <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
-          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Software Cost</div>
-          <input type="number" id="dp_swCost_input" value="0" min="0" onchange="recalcContractValue()" style="width:80%;padding:6px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
-          <div id="dp_swBreakdown" style="font-size:9px;color:#666;margin-top:4px"></div>
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Software Cost</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+            <span style="color:#FFA028;font-size:16px;font-weight:800">$</span>
+            <input type="number" id="dp_swCost_input" value="0" min="0" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
+          </div>
+          <div style="font-size:9px;color:#666;margin-top:4px">Your cost for subscriptions</div>
         </div>
       </div>
-      <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:8px">
-        <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Deal Summary</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
-          <div>
-            <div style="font-size:9px;color:#FFA028">Total Units</div>
-            <div id="dp_totalUnits" style="font-size:18px;font-weight:800;color:#FFF">0</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#FFA028">Monthly (MRR)</div>
-            <div id="dp_mrr" style="font-size:18px;font-weight:800;color:#FFA028">$0</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#FFA028">Annual</div>
-            <div id="dp_annual" style="font-size:18px;font-weight:800;color:#FFA028">$0</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#FFA028">Total Contract Value</div>
-            <div id="dp_contractVal" style="font-size:18px;font-weight:800;color:#059669">$0</div>
-          </div>
+      <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:10px">
+        <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Deal Summary</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">
+          <span style="font-size:11px;color:#FFA028">Revenue (Hardware + Install)</span>
+          <span id="dp_hwRevenue" style="font-size:13px;font-weight:700;color:#FFA028">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">
+          <span style="font-size:11px;color:#FFA028">Revenue (Software × Term)</span>
+          <span id="dp_swRevenue" style="font-size:13px;font-weight:700;color:#FFA028">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">
+          <span style="font-size:11px;font-weight:700;color:#FFF">Total Revenue</span>
+          <span id="dp_totalRevenue" style="font-size:14px;font-weight:800;color:#FFF">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">
+          <span style="font-size:11px;color:#dc2626">Less: Cost of Goods</span>
+          <span id="dp_totalCost" style="font-size:13px;font-weight:700;color:#dc2626">-$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;margin-top:2px">
+          <span style="font-size:12px;font-weight:800;color:#059669">NET CONTRACT VALUE</span>
+          <span id="dp_contractVal" style="font-size:18px;font-weight:800;color:#059669">$0</span>
         </div>
       </div>
     </div>
