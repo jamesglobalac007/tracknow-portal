@@ -2966,6 +2966,179 @@ function setView(v) {
   renderPipeline();
 }
 
+// ── Follow-Up Sequences per Stage ────────────────────────────────────
+const FOLLOW_UPS = {
+  'fleet-profile': [
+    {type:'email', day:0, subject:'Your Fleet Profile Report — {company}', body:'Hi {name},\n\nAs discussed, please find attached your Fleet Profile Report for {company}. This outlines the hidden costs within your fleet and how GPS tracking can recover significant savings annually.\n\nHappy to jump on a quick call to walk through it.\n\nKind regards,\nTrackNow GPS Team'},
+    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Profile Report for {company}. Worth a quick look — some eye-opening numbers in there. Happy to chat anytime. — TrackNow GPS'},
+    {type:'email', day:3, subject:'Following up — Fleet Profile for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Profile Report? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Profile we sent. Any questions? Happy to chat. — TrackNow GPS'}
+  ],
+  'demo': [
+    {type:'email', day:0, subject:'Your TrackNow GPS Demo — {company}', body:'Hi {name},\n\nHere is your personalised demo video showing how TrackNow GPS works for fleets like {company}.\n\n[Demo Video Link]\n\nYou will see live tracking, fuel monitoring, geofence alerts, and driver behaviour scoring — all in one dashboard.\n\nLet me know your thoughts!\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow demo video — shows exactly how it works for your fleet. Let me know if you have any questions! — TrackNow GPS'},
+    {type:'email', day:3, subject:'Did you get a chance to watch the demo? — {company}', body:'Hi {name},\n\nJust following up on the demo video we sent through. Would love to hear your thoughts — happy to answer any questions or set up a quick live walkthrough.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, following up on the demo we sent. Happy to do a quick live walkthrough if easier? — TrackNow GPS'}
+  ],
+  'proposal': [
+    {type:'email', day:0, subject:'Your TrackNow GPS Proposal — {company}', body:'Hi {name},\n\nPlease find attached your TrackNow GPS proposal for {company}. This includes your custom pricing, fleet savings summary, and contract terms.\n\nYou can review and sign digitally using the DocuSign link below.\n\n[DocuSign Link]\n\nLooking forward to getting you set up!\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow proposal with pricing and digital sign link. Let me know if you have any questions! — TrackNow GPS'},
+    {type:'email', day:3, subject:'Following up — Proposal for {company}', body:'Hi {name},\n\nJust checking in on the proposal we sent. Happy to make any adjustments or jump on a call to discuss.\n\nThe digital sign link is still active whenever you are ready.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, just following up on the proposal. Any questions? The sign link is still active — happy to chat anytime. — TrackNow GPS'}
+  ]
+};
+
+function getFollowUps(lead) {
+  if (!lead._followUps) {
+    const seq = FOLLOW_UPS[lead.stage] || [];
+    lead._followUps = seq.map((f, i) => ({...f, id: i, sent: false, sentDate: null}));
+  }
+  return lead._followUps;
+}
+
+function resetFollowUps(lead) {
+  lead._followUps = null;
+  getFollowUps(lead);
+}
+
+function sendFollowUp(leadId, fuIdx, type) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  const fus = getFollowUps(l);
+  const fu = fus[fuIdx];
+  if (!fu) return;
+
+  const fillTemplate = (str) => str.replace(/\{name\}/g, l.name.split(' ')[0]).replace(/\{company\}/g, l.co);
+
+  if (type === 'email') {
+    const subject = encodeURIComponent(fillTemplate(fu.subject || ''));
+    const body = encodeURIComponent(fillTemplate(fu.body));
+    const email = l.email || '';
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+  } else if (type === 'sms') {
+    const body = fillTemplate(fu.body);
+    const phone = l.phone || '';
+    window.open('sms:' + phone + '&body=' + encodeURIComponent(body), '_blank');
+  }
+
+  fu.sent = true;
+  fu.sentDate = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'short'});
+  renderPipeline();
+  showToast((type === 'email' ? 'Email' : 'SMS') + ' follow-up sent for ' + l.co);
+}
+
+function renderFollowUpBar(l) {
+  const fus = getFollowUps(l);
+  if (!fus.length) return '';
+  const sent = fus.filter(f => f.sent).length;
+  const total = fus.length;
+  let html = '<div style="margin-top:6px;margin-bottom:6px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:8px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Follow-Ups</span><span style="font-size:8px;color:#555">' + sent + '/' + total + '</span></div>';
+  fus.forEach((fu, i) => {
+    const icon = fu.type === 'email' ? '✉' : '💬';
+    const label = fu.type === 'email' ? 'Email' : 'SMS';
+    const dayLabel = fu.day === 0 ? 'Day 0' : 'Day +' + fu.day;
+    if (fu.sent) {
+      html += '<div style="display:flex;align-items:center;gap:4px;padding:2px 0"><span style="font-size:9px">' + icon + '</span><span style="font-size:9px;color:#059669;font-weight:600">' + label + ' sent ' + fu.sentDate + '</span></div>';
+    } else {
+      html += '<div style="display:flex;align-items:center;gap:4px;padding:2px 0"><span style="font-size:9px">' + icon + '</span><button onclick="event.stopPropagation();sendFollowUp(' + l.id + ',' + i + ',\'' + fu.type + '\')" style="background:none;border:1px solid #333;color:#CCC;font-size:9px;padding:2px 6px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#CCC\'">' + label + ' · ' + dayLabel + '</button></div>';
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+function openProposalDoc(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
+  const subPrice = l.subPrice || 29.95;
+  const term = l.term || 24;
+  const monthly = totalUnits * subPrice;
+  const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+
+  const win = window.open('', '_blank', 'width=900,height=1100');
+  win.document.write(`<!DOCTYPE html><html><head><title>Proposal — ${l.co}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#fff;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #FFA028}
+  .logo{font-size:24px;font-weight:800;color:#FFA028;letter-spacing:-.5px} .logo span{color:#333}
+  h2{font-size:14px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #eee}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px}
+  th{text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee}
+  td{padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px}
+  .total td{border-top:2px solid #1a1a1a;font-weight:800;font-size:13px}
+  .sign-box{background:#f0f9ff;border:2px solid #0088FF;padding:24px;margin:30px 0;text-align:center;border-radius:8px}
+  .sign-btn{display:inline-block;padding:14px 40px;background:#0088FF;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:6px;cursor:pointer;text-decoration:none;letter-spacing:.5px}
+  .sign-btn:hover{background:#0066CC}
+  .terms{font-size:10px;color:#888;line-height:1.6;margin-top:20px}
+  .footer{margin-top:30px;padding-top:16px;border-top:2px solid #FFA028;display:flex;justify-content:space-between;font-size:10px;color:#888}
+  @media print{body{padding:20px}.no-print{display:none}}
+</style></head><body>
+<div class="no-print" style="text-align:right;margin-bottom:20px">
+  <button onclick="window.print()" style="padding:10px 24px;background:#FFA028;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Print / Save as PDF</button>
+</div>
+<div class="header">
+  <div><div class="logo">Track<span>Now</span> GPS</div><div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div></div>
+  <div style="text-align:right"><div style="font-size:16px;font-weight:700">${l.co}</div><div style="font-size:11px;color:#666;margin-top:2px">${l.name} · ${l.city}, ${l.st}</div><div style="font-size:11px;color:#666">${today}</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-${String(l.id).padStart(4,'0')}</div></div>
+</div>
+
+<h2>Scope of Service</h2>
+<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will supply, install, and maintain GPS tracking devices across your fleet of <strong>${totalUnits} vehicles/assets</strong>. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>
+
+<h2>Pricing Schedule</h2>
+<table>
+  <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Monthly</th></tr></thead>
+  <tbody>
+    ${l.lineItems ? l.lineItems.map(li => '<tr><td style="font-weight:600">' + li.type + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>').join('') : '<tr><td style="font-weight:600">GPS Tracking Unit</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthly) + '</td></tr>'}
+    <tr class="total"><td colspan="3">Total Monthly</td><td style="text-align:right">${fmt(monthly)}</td></tr>
+  </tbody>
+</table>
+
+<h2>Contract Terms</h2>
+<table>
+  <tbody>
+    <tr><td style="font-weight:600;width:40%">Contract Term</td><td>${term} months</td></tr>
+    <tr><td style="font-weight:600">Total Contract Value</td><td style="font-weight:700;color:#059669">${fmt(monthly * term)}</td></tr>
+    <tr><td style="font-weight:600">Hardware</td><td>Included — no upfront cost</td></tr>
+    <tr><td style="font-weight:600">Installation</td><td>Included — scheduled at your convenience</td></tr>
+    <tr><td style="font-weight:600">Support</td><td>24/7 Australian-based support</td></tr>
+    <tr><td style="font-weight:600">Billing</td><td>Monthly in advance</td></tr>
+  </tbody>
+</table>
+
+<div class="sign-box">
+  <div style="font-size:16px;font-weight:700;color:#0088FF;margin-bottom:6px">Ready to proceed?</div>
+  <div style="font-size:12px;color:#666;margin-bottom:16px">Review the terms below and sign digitally to get started</div>
+  <a class="sign-btn" href="#" onclick="alert('DocuSign integration — this will connect to your DocuSign account to capture the client signature digitally.');return false;">✍ Sign with DocuSign</a>
+  <div style="font-size:10px;color:#888;margin-top:10px">Powered by DocuSign · Secure digital signature</div>
+</div>
+
+<h2>Terms &amp; Conditions</h2>
+<div class="terms">
+  <p><strong>1. Service Period:</strong> This agreement commences on the installation date and continues for ${term} months.</p>
+  <p style="margin-top:6px"><strong>2. Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit.</p>
+  <p style="margin-top:6px"><strong>3. Hardware:</strong> All GPS devices remain the property of TrackNow GPS. Devices are provided at no upfront cost for the duration of the contract.</p>
+  <p style="margin-top:6px"><strong>4. Installation:</strong> Professional installation is included and will be scheduled at a mutually agreed time to minimise operational disruption.</p>
+  <p style="margin-top:6px"><strong>5. Support:</strong> 24/7 technical support is included. Response times: Critical issues within 2 hours, standard queries within 24 hours.</p>
+  <p style="margin-top:6px"><strong>6. Cancellation:</strong> Either party may terminate with 30 days written notice after the minimum term. Early termination fees may apply.</p>
+  <p style="margin-top:6px"><strong>7. Privacy:</strong> All fleet data is stored securely in Australian data centres and is accessible only to authorised personnel.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px;padding-top:20px;border-top:1px solid #eee">
+  <div><div style="border-bottom:1px solid #ccc;height:50px;margin-bottom:6px"></div><div style="font-size:10px;color:#888">Client Signature · ${l.name}, ${l.co}</div><div style="font-size:10px;color:#888;margin-top:2px">Date: _______________</div></div>
+  <div><div style="border-bottom:1px solid #ccc;height:50px;margin-bottom:6px"></div><div style="font-size:10px;color:#888">TrackNow GPS Representative</div><div style="font-size:10px;color:#888;margin-top:2px">Date: _______________</div></div>
+</div>
+
+<div class="footer"><div>TrackNow GPS · ABN XX XXX XXX XXX · tracknow.com.au</div><div>Confidential — prepared for ${l.co}</div></div>
+</body></html>`);
+  win.document.close();
+  showToast('Proposal generated for ' + l.co);
+}
+
 function renderPipeline() {
   const fi = document.getElementById('filterInd').value;
   const fs = document.getElementById('filterSt').value;
@@ -3015,6 +3188,8 @@ function renderPipeline() {
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
             ${l.stage==='fleet-profile'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+');setTimeout(generateFleetProfile,300)" style="width:100%;padding:5px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.15)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.3)\';this.style.background=\'rgba(0,136,255,.08)\'">📄 GENERATE FLEET PROFILE</button>':''}
+            ${l.stage==='proposal'?'<button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">📋 VIEW PROPOSAL & DOCUSIGN</button>':''}
+            ${renderFollowUpBar(l)}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
               <div style="display:flex;align-items:center;gap:3px">
@@ -3122,6 +3297,7 @@ function moveLeadStage(leadId, direction) {
   lead.stage = newStage;
   lead.last = new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short'});
   lead.lastTs = Date.now();
+  resetFollowUps(lead); // New stage = new follow-up sequence
   if (newStage === 'closed') {
     if (lead.upsellCustId) { onLeadClosedWon(lead.id); } else { autoPopulateCustomer(lead); }
   }
@@ -3193,6 +3369,7 @@ function handleDrop(e, newStage) {
   lead.stage = newStage;
   lead.last = new Date().toLocaleDateString('en-AU');
   lead.lastTs = Date.now();
+  resetFollowUps(lead);
 
   // If moved to "Closed Won", auto-populate live customer and remove from pipeline
   if (newStage === 'closed') {
