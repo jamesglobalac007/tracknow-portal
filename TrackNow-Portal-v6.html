@@ -3607,7 +3607,7 @@ function initOutreach() {
     </div>`;
   }).join('');
 
-  // Info Packs — pre-load into Content Library
+  // Info Packs — pre-load into Content Library (Brochures folder)
   const packs = [
     { name: "TrackNow System Overview", file: "TRACKNOW-OVERVIEW.pdf" },
     { name: "Eco Driving Brochure", file: "TRACKNOW-ECO-DRIVING.pdf" },
@@ -3623,6 +3623,30 @@ function initOutreach() {
       });
     }
   });
+
+  // Social media content — pre-load into platform folders
+  const socialContent = [
+    {id:800001, name:'Fleet Cost Savings Carousel', ext:'png', type:'image', size:'1.8 MB', platforms:['facebook'], uploaded:'01/04/26', desc:'5 ways GPS tracking cuts fleet fuel costs'},
+    {id:800002, name:'QLD Transport Case Study', ext:'pdf', type:'brochure', size:'3.1 MB', platforms:['linkedin'], uploaded:'02/04/26', desc:'Case study: QLD transport company saved $18K/yr'},
+    {id:800003, name:'OBD2 Install Timelapse', ext:'mp4', type:'video', size:'18.4 MB', platforms:['instagram'], uploaded:'05/04/26', desc:'60-second OBD2 tracker install reel'},
+    {id:800004, name:'GPS Tracker Unboxing', ext:'mp4', type:'video', size:'22.1 MB', platforms:['tiktok'], uploaded:'07/04/26', desc:'Vertical unboxing and first look'},
+    {id:800005, name:'Track Your Fleet 60s', ext:'mp4', type:'video', size:'8.6 MB', platforms:['youtube'], uploaded:'09/04/26', desc:'YouTube Short — quick demo clip'},
+    {id:800006, name:'No Contracts Promo', ext:'png', type:'image', size:'0.9 MB', platforms:['facebook'], uploaded:'12/04/26', desc:'No lock-in contracts — single image promo'},
+    {id:800007, name:'Anti-Theft Feature Post', ext:'png', type:'image', size:'1.2 MB', platforms:['linkedin'], uploaded:'14/04/26', desc:'Geofence alert feature breakdown with screenshot'},
+    {id:800008, name:'Burleigh Testimonial', ext:'png', type:'image', size:'0.7 MB', platforms:['instagram'], uploaded:'15/04/26', desc:'Customer testimonial quote graphic'},
+    {id:800009, name:'Before-After Fleet View', ext:'mp4', type:'video', size:'14.2 MB', platforms:['tiktok'], uploaded:'18/04/26', desc:'Split screen: no tracking vs live fleet view'},
+    {id:800010, name:'Full Platform Demo', ext:'mp4', type:'video', size:'86.3 MB', platforms:['youtube'], uploaded:'20/04/26', desc:'8-min full platform demo walkthrough'},
+    {id:800011, name:'Customer Win Mining', ext:'png', type:'image', size:'1.1 MB', platforms:['facebook'], uploaded:'21/04/26', desc:'Mining client reduces downtime by 40%'},
+    {id:800012, name:'ROI Calculator Promo', ext:'png', type:'image', size:'0.8 MB', platforms:['linkedin'], uploaded:'24/04/26', desc:'Free fleet savings estimate link promo'},
+    {id:800013, name:'Solar Tracker Demo Reel', ext:'mp4', type:'video', size:'11.7 MB', platforms:['instagram'], uploaded:'27/04/26', desc:'Solar-powered GPS tracker on remote site'},
+    {id:800014, name:'Fleet Manager Tips', ext:'mp4', type:'video', size:'15.9 MB', platforms:['tiktok'], uploaded:'28/04/26', desc:'5 fleet manager tips using TrackNow dashboard'}
+  ];
+  socialContent.forEach(sc => {
+    if (!CONTENT_LIBRARY.some(c => c.id === sc.id)) {
+      CONTENT_LIBRARY.push({...sc, thumbUrl:'', file:null});
+    }
+  });
+
   if (typeof renderContentLibrary === 'function') renderContentLibrary();
 
   // Email Templates
@@ -5105,7 +5129,11 @@ function renderContentLibrary() {
         '<span style="font-size:12px;font-weight:600;color:#CCC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">' + c.name + '</span>' +
         '<button onclick="removeContentItem(' + c.id + ')" style="background:none;border:none;color:#555;cursor:pointer;padding:2px" title="Remove">&times;</button>' +
       '</div>' +
-      '<div style="font-size:10px;color:#666;margin-bottom:6px">' + c.type.toUpperCase() + ' · ' + c.ext.toUpperCase() + ' · ' + c.size + ' · ' + c.uploaded + '</div>' +
+      (c.desc ? '<div style="font-size:11px;color:#999;margin-bottom:6px;line-height:1.4">' + c.desc + '</div>' : '') +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<span style="font-size:10px;color:#666">' + c.type.toUpperCase() + ' · ' + c.ext.toUpperCase() + ' · ' + c.size + '</span>' +
+        '<span style="font-size:10px;color:#FFA028;font-weight:600">' + c.uploaded + '</span>' +
+      '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:3px">' + platBadges + '</div>' +
     '</div>';
   });
