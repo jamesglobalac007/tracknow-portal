@@ -3048,6 +3048,17 @@ function renderFollowUpBar(l) {
   return html;
 }
 
+function openDemoEmail(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  const firstName = l.name.split(' ')[0];
+  const subject = encodeURIComponent('Your TrackNow GPS Demo — ' + l.co);
+  const body = encodeURIComponent('Hi ' + firstName + ',\n\nGreat speaking with you. As promised, here is your personalised TrackNow GPS demo for ' + l.co + '.\n\n▶ WATCH DEMO VIDEO\nhttps://tracknow.com.au/demo\n\nIn this demo you will see:\n\n• Live GPS tracking across your entire fleet\n• Real-time fuel monitoring & slippage alerts\n• Geofence boundaries — get notified when vehicles go off-route\n• Driver behaviour scoring — speeding, harsh braking, idle time\n• Automated daily & weekly fleet reports\n• Anti-theft alerts & vehicle recovery\n\nThe demo is based on a fleet similar to yours, so you can see exactly how it would work for ' + l.co + '.\n\nI have also attached a quick overview of the TrackNow platform for your reference.\n\nHappy to jump on a call to walk through anything — just let me know a time that suits.\n\nKind regards,\nTrackNow GPS Team\nteam@tracknow.com.au\n1300 TRACKNOW');
+  const email = l.email || '';
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+  showToast('Demo email opened for ' + l.co);
+}
+
 function openProposalDoc(leadId) {
   const l = LEADS.find(x => x.id === leadId);
   if (!l) return;
@@ -3188,6 +3199,7 @@ function renderPipeline() {
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
             ${l.stage==='fleet-profile'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+');setTimeout(generateFleetProfile,300)" style="width:100%;padding:5px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.15)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.3)\';this.style.background=\'rgba(0,136,255,.08)\'">📄 GENERATE FLEET PROFILE</button>':''}
+            ${l.stage==='demo'?'<button onclick="event.stopPropagation();openDemoEmail('+l.id+')" style="width:100%;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">🎬 SEND DEMO VIDEO</button>':''}
             ${l.stage==='proposal'?'<button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">📋 VIEW PROPOSAL & DOCUSIGN</button>':''}
             ${renderFollowUpBar(l)}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
