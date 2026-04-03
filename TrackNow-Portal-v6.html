@@ -4193,14 +4193,15 @@ function calcDealPL() {
     compBanner.textContent = `Customer saves ${fmtR(savingVsCompetitor)}/mo vs competitor @ $${competitor}/mo — easy win pitch`;
   }
 
-  // Build month-by-month P&L table (24 months)
+  // Build P&L table: Setup → months to breakeven → milestones at 6, 12, 24, 36
   const tbody = document.getElementById('dpPLBody');
   if (!tbody) return;
-  let cumulative = -totalHwInvestment;
-  let hitBreakeven = false;
+  const monthlyRevenue = units * subCharge;
+  const monthlyCosts = units * subCost;
+  const monthPL = monthlyRevenue - monthlyCosts;
   let rows = '';
 
-  // Month 0 = upfront cost
+  // Setup row
   rows += `<tr style="border-top:1px solid #222;background:rgba(255,68,68,.05)">
     <td style="padding:8px 10px;font-weight:700;color:#FF4444">Setup</td>
     <td style="padding:8px 10px;text-align:right;color:#666">—</td>
@@ -4210,31 +4211,68 @@ function calcDealPL() {
     <td style="padding:8px 10px;text-align:center"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(255,68,68,.12);color:#FF4444">LOSS</span></td>
   </tr>`;
 
-  for (let m = 1; m <= contractTerm; m++) {
-    const revenue = units * subCharge;
-    const costs = units * subCost;
-    const monthPL = revenue - costs;
-    cumulative += monthPL;
-    const isBreakeven = !hitBreakeven && cumulative >= 0;
-    if (isBreakeven) hitBreakeven = true;
-    const inProfit = cumulative >= 0;
+  // Helper: cumulative P&L at month m
+  const cumAt = (m) => -totalHwInvestment + (monthPL * m);
 
-    const rowBg = isBreakeven ? 'background:rgba(255,160,40,.08)' : inProfit ? '' : 'background:rgba(255,68,68,.02)';
+  // Find breakeven month
+  const beMonth = monthPL > 0 ? Math.ceil(totalHwInvestment / monthPL) : 0;
+
+  // Build list of months to show: each month up to breakeven, then milestones
+  const milestones = [6, 12, 24, 36];
+  const showMonths = new Set();
+  // Individual months up to (and including) breakeven
+  if (beMonth > 0) {
+    for (let m = 1; m <= beMonth; m++) showMonths.add(m);
+  } else {
+    // No breakeven — show month 1 at minimum
+    showMonths.add(1);
+  }
+  // Add milestones
+  milestones.forEach(m => showMonths.add(m));
+  // Also add the contract term itself so the user always sees their term endpoint
+  if (contractTerm > 0) showMonths.add(contractTerm);
+  // Sort and render
+  const sorted = Array.from(showMonths).sort((a,b) => a - b);
+
+  sorted.forEach(m => {
+    const totalRev = monthlyRevenue * m;
+    const totalCost = monthlyCosts * m;
+    const cum = cumAt(m);
+    const isBreakeven = (beMonth > 0 && m === beMonth);
+    const inProfit = cum >= 0;
+
+    const isMilestone = milestones.includes(m) || m === contractTerm;
+    const isContractEnd = m === contractTerm;
+    const rowBg = isBreakeven ? 'background:rgba(255,160,40,.08)' : isContractEnd ? 'background:rgba(0,136,255,.06)' : inProfit ? '' : 'background:rgba(255,68,68,.02)';
+
+    let label = 'Month ' + m;
+    if (m === 6) label = '6 Months';
+    else if (m === 12) label = '12 Months';
+    else if (m === 24) label = '24 Months';
+    else if (m === 36) label = '36 Months';
+    if (isContractEnd && m !== 6 && m !== 12 && m !== 24 && m !== 36 && m > beMonth) label = m + ' Months (Term)';
+
     const statusBadge = isBreakeven
       ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;background:rgba(255,160,40,.15);color:#FFA028">BREAKEVEN</span>'
-      : inProfit
-        ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,204,102,.12);color:var(--success)">PROFIT</span>'
-        : '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(255,68,68,.12);color:#FF4444">LOSS</span>';
+      : isContractEnd
+        ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;background:rgba(0,136,255,.15);color:#0088FF">CONTRACT</span>'
+        : inProfit
+          ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,204,102,.12);color:var(--success)">PROFIT</span>'
+          : '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(255,68,68,.12);color:#FF4444">LOSS</span>';
 
-    rows += `<tr style="border-top:1px solid #222;${rowBg}">
-      <td style="padding:8px 10px;font-weight:600;color:${isBreakeven ? '#FFA028' : '#CCC'}">Month ${m}</td>
-      <td style="padding:8px 10px;text-align:right;color:var(--success)">${fmtR(revenue)}</td>
-      <td style="padding:8px 10px;text-align:right;color:#666">${fmtR(costs)}</td>
-      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${monthPL >= 0 ? 'var(--success)' : '#FF4444'}">${fmtR(monthPL)}</td>
-      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${cumulative >= 0 ? 'var(--success)' : '#FF4444'}">${cumulative >= 0 ? fmtR(cumulative) : '-'+fmtR(Math.abs(cumulative))}</td>
+    const labelColor = isBreakeven ? '#FFA028' : isContractEnd ? '#0088FF' : (isMilestone ? '#FFA028' : '#CCC');
+    const fontW = isMilestone || isBreakeven || isContractEnd ? '700' : '600';
+    const borderTop = isMilestone && !isBreakeven ? 'border-top:2px solid #333' : 'border-top:1px solid #222';
+
+    rows += `<tr style="${borderTop};${rowBg}">
+      <td style="padding:8px 10px;font-weight:${fontW};color:${labelColor}">${label}</td>
+      <td style="padding:8px 10px;text-align:right;color:var(--success)">${fmtR(totalRev)}</td>
+      <td style="padding:8px 10px;text-align:right;color:#666">${fmtR(totalCost + (m >= 1 ? totalHwInvestment : 0))}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${monthPL >= 0 ? 'var(--success)' : '#FF4444'}">${fmtR(monthPL)}/mo</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${cum >= 0 ? 'var(--success)' : '#FF4444'}">${cum >= 0 ? fmtR(cum) : '-'+fmtR(Math.abs(cum))}</td>
       <td style="padding:8px 10px;text-align:center">${statusBadge}</td>
     </tr>`;
-  }
+  });
   tbody.innerHTML = rows;
 }
 
