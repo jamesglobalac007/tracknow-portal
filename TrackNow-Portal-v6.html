@@ -95,7 +95,7 @@ tr:hover td a{color:#FFA028}
 .chart-box{position:relative;height:280px}
 
 /* ═══════════ PIPELINE ═══════════ */
-.stage-col{flex:1 1 0;min-width:130px}
+.stage-col{flex:1 1 0;min-width:130px;display:flex;flex-direction:column}
 .stage-header{display:flex;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #222}
 .stage-dot{width:6px;height:6px;border-radius:50%}
 .stage-label{font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.3px}
@@ -158,8 +158,9 @@ a:hover{opacity:.8}
 .lead-card{background:#0a0a0a;border-radius:0px;padding:8px 10px;margin-bottom:6px;box-shadow:none;border:1px solid #222;border-left:3px solid #FFA028;cursor:grab;transition:all .15s;box-sizing:border-box;width:100%}
 .lead-card:hover{background:#111;border-left-color:#FFB84D}
 .lead-card.dragging{opacity:.4;border:1px dashed #FFA028;cursor:grabbing}
-.stage-col .drop-zone{min-height:200px;border-radius:0;transition:background .15s,border-color .15s;border:2px dashed transparent;padding:4px}
+.stage-col .drop-zone{flex:1;min-height:200px;border-radius:0;transition:background .15s,border-color .15s;border:2px dashed transparent;padding:4px}
 .stage-col .drop-zone.drag-over{background:rgba(255,160,40,.06);border-color:#FFA028}
+.stage-col.drag-over-col>.drop-zone{background:rgba(255,160,40,.06);border-color:#FFA028}
 
 /* ═══════════ MODAL COMPLETE ═══════════ */
 .modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(2px);align-items:center;justify-content:center}
@@ -2933,7 +2934,10 @@ function renderPipeline() {
     document.getElementById('tableView').style.display = 'none';
     document.getElementById('boardView').innerHTML = STAGES.map(s => {
       const items = fl.filter(l => l.stage === s.id);
-      return `<div class="stage-col" data-stage="${s.id}">
+      return `<div class="stage-col" data-stage="${s.id}"
+           ondragover="handleColDragOver(event,'${s.id}')"
+           ondragleave="handleColDragLeave(event)"
+           ondrop="handleDrop(event,'${s.id}')">
         <div class="stage-header">
           <div class="stage-dot" style="background:${s.color}"></div>
           <span class="stage-label">${s.label}</span>
@@ -3094,6 +3098,7 @@ function handleDragEnd(e) {
   _dragLeadId = null;
   // Clean up any lingering drag-over highlights
   document.querySelectorAll('.drop-zone.drag-over').forEach(z => z.classList.remove('drag-over'));
+  document.querySelectorAll('.stage-col.drag-over-col').forEach(c => c.classList.remove('drag-over-col'));
 }
 
 function handleDragOver(e) {
@@ -3110,10 +3115,27 @@ function handleDragLeave(e) {
   }
 }
 
+// Column-level drag handlers — makes the entire column a valid drop target
+function handleColDragOver(e, stageId) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const col = e.target.closest('.stage-col');
+  if (col) col.classList.add('drag-over-col');
+}
+
+function handleColDragLeave(e) {
+  const col = e.target.closest('.stage-col');
+  if (col && !col.contains(e.relatedTarget)) {
+    col.classList.remove('drag-over-col');
+  }
+}
+
 function handleDrop(e, newStage) {
   e.preventDefault();
   const zone = e.target.closest('.drop-zone');
   if (zone) zone.classList.remove('drag-over');
+  const col = e.target.closest('.stage-col');
+  if (col) col.classList.remove('drag-over-col');
 
   const leadId = parseInt(e.dataTransfer.getData('text/plain') || _dragLeadId);
   if (!leadId) return;
