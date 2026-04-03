@@ -6606,9 +6606,10 @@ function openDealProducts(leadId) {
   document.getElementById('dp_title').textContent = l.co + ' — Deal Products';
   document.getElementById('dp_term').value = l.term || 24;
   document.getElementById('dp_sim').value = l.sim || '';
-  // Load saved Cost of Goods (manual entries, independent from product lines)
+  // Load saved Cost of Goods per unit (manual entries, independent from product lines)
   document.getElementById('dp_hwCost_input').value = l.hwCostOfGoods || 0;
   document.getElementById('dp_swCost_input').value = l.swCostOfGoods || 0;
+  document.getElementById('dp_installCost_input').value = l.installCostOfGoods || 0;
   renderDealProductLines();
   updateDealProductTotals();
   document.getElementById('dealProductsModal').style.display = 'flex';
@@ -6773,15 +6774,19 @@ function recalcContractValue() {
   // Read per-unit Cost of Goods inputs and multiply by total units
   const hwCostPerUnit = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
   const swCostPerUnit = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
+  const installCostPerUnit = parseFloat(document.getElementById('dp_installCost_input').value) || 0;
   const hwCostTotal = hwCostPerUnit * totalUnits;
   const swCostTotal = swCostPerUnit * totalUnits;
-  const totalCost = hwCostTotal + swCostTotal;
+  const installCostTotal = installCostPerUnit * totalUnits;
+  const totalCost = hwCostTotal + swCostTotal + installCostTotal;
   const netValue = totalRevenue - totalCost;
   // Update the per-unit breakdown labels
   const hwLbl = document.getElementById('dp_hwCostTotal');
   if (hwLbl) hwLbl.textContent = '× ' + totalUnits + ' units = $' + Math.round(hwCostTotal).toLocaleString();
   const swLbl = document.getElementById('dp_swCostTotal');
   if (swLbl) swLbl.textContent = '× ' + totalUnits + ' units = $' + Math.round(swCostTotal).toLocaleString();
+  const instLbl = document.getElementById('dp_installCostTotal');
+  if (instLbl) instLbl.textContent = '× ' + totalUnits + ' units = $' + Math.round(installCostTotal).toLocaleString();
   // Update summary
   const costEl = document.getElementById('dp_totalCost');
   if (costEl) costEl.textContent = '-$' + Math.round(totalCost).toLocaleString();
@@ -6797,9 +6802,10 @@ function saveDealProducts() {
   const simEl = document.getElementById('dp_sim_0');
   l.term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
   l.sim = simEl ? simEl.value : document.getElementById('dp_sim').value;
-  // Save Cost of Goods (manual entries, independent from product lines)
+  // Save Cost of Goods per unit (manual entries, independent from product lines)
   l.hwCostOfGoods = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
   l.swCostOfGoods = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
+  l.installCostOfGoods = parseFloat(document.getElementById('dp_installCost_input').value) || 0;
   calcLeadFromLines(l);
   l._productsSet = true;
   // Update deviceType to primary (highest qty) for backwards compat
@@ -7210,6 +7216,14 @@ function doLogin() {
             <input type="number" id="dp_swCost_input" value="0" min="0" onfocus="this.select()" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
           </div>
           <div id="dp_swCostTotal" style="font-size:9px;color:#666;margin-top:4px">× 0 units = $0</div>
+        </div>
+        <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Install Cost / Unit</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+            <span style="color:#FFA028;font-size:16px;font-weight:800">$</span>
+            <input type="number" id="dp_installCost_input" value="0" min="0" onfocus="this.select()" oninput="recalcContractValue()" style="width:120px;padding:8px;background:#111;border:1px solid #332200;color:#FFA028;font-size:20px;font-weight:800;text-align:center;font-family:inherit">
+          </div>
+          <div id="dp_installCostTotal" style="font-size:9px;color:#666;margin-top:4px">× 0 units = $0</div>
         </div>
       </div>
       <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:10px">
