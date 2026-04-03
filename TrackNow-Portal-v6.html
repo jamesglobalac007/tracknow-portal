@@ -2038,15 +2038,15 @@ select option{background:#0a0a0a;color:#FFA028}
 // ═══════════ DATA ═══════════
 const LEADS=[
   // ── New Lead ──
-  {id:1,co:'Blacks Transport (QLD)',name:'Jason Black',ind:'Transport & Logistics',st:'QLD',city:'Park Ridge',stage:'demo',v:14,val:5033,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'28 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'Scraped from Yellow Pages. Large fleet, worth pursuing.',
+  {id:1,co:'Blacks Transport (QLD)',name:'Jason Black',ind:'Transport & Logistics',st:'QLD',city:'Park Ridge',stage:'fleet-profile',v:14,val:5033,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'28 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'Scraped from Yellow Pages. Large fleet, worth pursuing.',
     lineItems:[{type:'OBD2 Plug-In',qty:14,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
-  {id:2,co:'Gulf Civil Pty Ltd',name:'Tim Reardon',ind:'Civil & Construction',st:'QLD',city:'Tully',stage:'demo',v:8,val:3356,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'',last:'30 Mar',lastTs:Date.now()-3*86400000,star:false,notes:'',
+  {id:2,co:'Gulf Civil Pty Ltd',name:'Tim Reardon',ind:'Civil & Construction',st:'QLD',city:'Tully',stage:'fleet-profile',v:8,val:3356,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'',last:'30 Mar',lastTs:Date.now()-3*86400000,star:false,notes:'',
     lineItems:[{type:'Hardwired',qty:8,sub:34.95,asset:'Trucks',hwType:'Hardwired Device',hwPrice:199,hwInstall:75}]},
 
   // ── Contacted ──
-  {id:3,co:'Centurion Transport',name:'Mark Ellison',ind:'Transport & Logistics',st:'WA',city:'Perth',stage:'demo',v:45,val:16173,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'25 Mar',lastTs:Date.now()-8*86400000,star:true,notes:'[25 Mar 2026 10:30] Spoke with Mark — very interested. Large fleet across WA. Sending info pack today.',
+  {id:3,co:'Centurion Transport',name:'Mark Ellison',ind:'Transport & Logistics',st:'WA',city:'Perth',stage:'fleet-profile',v:45,val:16173,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Telstra',last:'25 Mar',lastTs:Date.now()-8*86400000,star:true,notes:'[25 Mar 2026 10:30] Spoke with Mark — very interested. Large fleet across WA. Sending info pack today.',
     lineItems:[{type:'OBD2 Plug-In',qty:30,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0},{type:'Hardwired',qty:15,sub:34.95,asset:'Trailers',hwType:'Hardwired Device',hwPrice:199,hwInstall:75}]},
-  {id:4,co:'Highfield Civil',name:'Paul Donovan',ind:'Civil & Construction',st:'QLD',city:'Cairns',stage:'demo',v:10,val:4194,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Optus',last:'27 Mar',lastTs:Date.now()-6*86400000,star:false,notes:'[27 Mar 2026 14:15] Left voicemail. PA says he is on site this week, try again Monday.',
+  {id:4,co:'Highfield Civil',name:'Paul Donovan',ind:'Civil & Construction',st:'QLD',city:'Cairns',stage:'fleet-profile',v:10,val:4194,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Optus',last:'27 Mar',lastTs:Date.now()-6*86400000,star:false,notes:'[27 Mar 2026 14:15] Left voicemail. PA says he is on site this week, try again Monday.',
     lineItems:[{type:'Hardwired',qty:7,sub:34.95,asset:'Excavators',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'Solar Powered',qty:3,sub:44.95,asset:'Generators',hwType:'Solar Tracker',hwPrice:299,hwInstall:0}]},
 
   // ── Interested ──
@@ -2118,6 +2118,7 @@ let _prospSortDir = 1;
 
 
 const STAGES=[
+{id:"fleet-profile",label:"Fleet Profile Sent",color:"#0088FF",bg:"rgba(0,136,255,.1)"},
 {id:"demo",label:"Demo Sent",color:"#7c3aed",bg:"rgba(124,58,237,.1)"},
 {id:"proposal",label:"Proposal Sent",color:"#db2777",bg:"rgba(219,39,119,.1)"},
 {id:"closed",label:"Closed Won",color:"#059669",bg:"rgba(0,204,102,.1)"}
@@ -3013,6 +3014,7 @@ function renderPipeline() {
             <div style="font-size:10px;color:#666;margin-bottom:4px">${l.name} · ${l.city}, ${l.st}</div>
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
+            ${l.stage==='fleet-profile'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+');setTimeout(generateFleetProfile,300)" style="width:100%;padding:5px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.15)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.3)\';this.style.background=\'rgba(0,136,255,.08)\'">📄 GENERATE FLEET PROFILE</button>':''}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
               <div style="display:flex;align-items:center;gap:3px">
@@ -3774,6 +3776,7 @@ function initAnalytics() {
   const funnel = [
     { label: "Prospects", n: 171, pct: 100, c: "#0088FF" },
     { label: "Qualified", n: 82, pct: 47.9, c: "#FFA028" },
+    { label: "Fleet Profile Sent", n: 62, pct: 36.3, c: "#0088FF" },
     { label: "Demo Sent", n: 48, pct: 28.1, c: "#7c3aed" },
     { label: "Proposal Sent", n: 31, pct: 18.1, c: "#db2777" },
     { label: "Closed Won", n: 21, pct: 12.3, c: "#00CC66" }
@@ -5955,7 +5958,7 @@ function copyEmailsToClipboard() {
 // ═══════════ ADD LEAD MODAL ═══════════
 function openAddLead() {
   // Pre-fill stage as "new"
-  document.getElementById('ml_stage').value = 'demo';
+  document.getElementById('ml_stage').value = 'fleet-profile';
   document.getElementById('ml_error').textContent = '';
   document.getElementById('addLeadModal').style.display='flex';
   setTimeout(() => document.getElementById('ml_co').focus(), 100);
@@ -7825,7 +7828,7 @@ function doLogin() {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Industry</label><select id="ml_ind"><option>Transport &amp; Logistics</option><option>Civil &amp; Construction</option><option>Mining &amp; Resources</option><option>Service</option><option>Storage &amp; Waste</option><option>Manufacturing</option><option>Live Stock &amp; Pets</option></select></div>
-        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="demo">Demo Sent</option><option value="proposal">Proposal Sent</option><option value="closed">Closed Won</option></select></div>
+        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="fleet-profile">Fleet Profile Sent</option><option value="demo">Demo Sent</option><option value="proposal">Proposal Sent</option><option value="closed">Closed Won</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>State</label><select id="ml_st"><option>QLD</option><option>NSW</option><option>VIC</option><option>WA</option><option>SA</option><option>TAS</option><option>NT</option><option>ACT</option></select></div>
