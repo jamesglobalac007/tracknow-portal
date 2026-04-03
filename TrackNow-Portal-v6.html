@@ -2850,7 +2850,7 @@ function initDashboard() {
 
   // Live Customer Breakdown Legend — dynamic from CUSTOMERS
   const custIndMap = {};
-  const indColors = {'Transport & Logistics':'#FFA028','Civil & Construction':'#7c3aed','Mining':'#d97706','Agriculture':'#059669','Service':'#0088FF','Storage & Waste':'#db2777','Manufacturing':'#64748b'};
+  const indColors = {'Transport & Logistics':'#FFA028','Transport':'#FFA028','Civil & Construction':'#7c3aed','Civil':'#7c3aed','Mining & Resources':'#d97706','Mining':'#d97706','Agriculture':'#00CC66','Service':'#0088FF','Storage & Waste':'#db2777','Manufacturing':'#64748b','Other':'#CCC'};
   const defaultColors = ['#FFA028','#7c3aed','#d97706','#059669','#0088FF','#db2777','#64748b','#CCC'];
   CUSTOMERS.forEach(c => {
     const sec = c.sector || 'Other';
