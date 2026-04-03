@@ -437,8 +437,8 @@ select option{background:#0a0a0a;color:#FFA028}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
       <div class="card" style="padding:24px">
         <div style="margin-bottom:20px">
-          <div class="section-title" style="font-size:16px">Monthly Lead Performance</div>
-          <div class="section-sub">Transport · Civil · Mining breakdown</div>
+          <div class="section-title" style="font-size:16px">Monthly Prospects & Live Customers</div>
+          <div class="section-sub">New additions per month</div>
         </div>
         <div class="chart-box" style="height:320px"><canvas id="chartMonthly"></canvas></div>
       </div>
@@ -2878,32 +2878,70 @@ function initDashboard() {
       <span style="font-size:12px;font-weight:600;color:#FFFFFF">${d.count}</span>
     </div>`).join('');
 
-  // Monthly chart — Bloomberg style
+  // Monthly Prospects & Live Customers chart — dynamic from data
   (function(){
     const ctx = document.getElementById('chartMonthly').getContext('2d');
+
+    // Build last 6 months labels
+    const now = new Date();
+    const monthLabels = [];
+    const prospCounts = [];
+    const custCounts = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mm = d.getMonth();
+      const yy = d.getFullYear();
+      const label = d.toLocaleDateString('en-AU', {month:'short', year:'2-digit'});
+      monthLabels.push(label);
+
+      // Count prospects added in this month (dd/mm/yy or dd/mm/yyyy format)
+      let pCount = 0;
+      PROSPECTS.forEach(p => {
+        if (!p.added) return;
+        const parts = p.added.split('/');
+        if (parts.length >= 3) {
+          const pDay = parseInt(parts[0]);
+          const pMon = parseInt(parts[1]) - 1;
+          let pYr = parseInt(parts[2]);
+          if (pYr < 100) pYr += 2000;
+          if (pMon === mm && pYr === yy) pCount++;
+        }
+      });
+      prospCounts.push(pCount);
+
+      // Count customers started in this month (yyyy-mm-dd or similar)
+      let cCount = 0;
+      CUSTOMERS.forEach(c => {
+        if (!c.start) return;
+        const cd = new Date(c.start);
+        if (cd.getMonth() === mm && cd.getFullYear() === yy) cCount++;
+      });
+      custCounts.push(cCount);
+    }
+
     const grad1 = ctx.createLinearGradient(0, 0, 0, 280);
-    grad1.addColorStop(0, 'rgba(0,210,190,0.35)');
-    grad1.addColorStop(1, 'rgba(0,210,190,0.0)');
+    grad1.addColorStop(0, 'rgba(255,160,40,0.25)');
+    grad1.addColorStop(1, 'rgba(255,160,40,0.0)');
     const grad2 = ctx.createLinearGradient(0, 0, 0, 280);
-    grad2.addColorStop(0, 'rgba(255,160,40,0.2)');
-    grad2.addColorStop(1, 'rgba(255,160,40,0.0)');
-    const grad3 = ctx.createLinearGradient(0, 0, 0, 280);
-    grad3.addColorStop(0, 'rgba(0,204,102,0.15)');
-    grad3.addColorStop(1, 'rgba(0,204,102,0.0)');
+    grad2.addColorStop(0, 'rgba(0,204,102,0.25)');
+    grad2.addColorStop(1, 'rgba(0,204,102,0.0)');
+
     new Chart(ctx, {
       type: 'line',
       data: {
-        labels: ['QLD', 'WA', 'NSW', 'VIC', 'TAS', 'SA', 'NT'],
+        labels: monthLabels,
         datasets: [
-          { label: 'Transport & Logistics', data: [170, 96, 90, 40, 5, 5, 3], borderColor: '#FFFFFF', backgroundColor: grad1, fill: true, tension: .3, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor:'#fff' },
-          { label: 'Civil & Construction', data: [50, 32, 34, 21, 22, 19, 10], borderColor: '#FFA028', backgroundColor: grad2, fill: true, tension: .3, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4 },
-          { label: 'Mining & Resources', data: [18, 7, 7, 7, 7, 5, 5], borderColor: '#00CC66', backgroundColor: grad3, fill: true, tension: .3, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4 }
+          { label: 'New Prospects', data: prospCounts, borderColor: '#FFA028', backgroundColor: grad1, fill: true, tension: .3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#FFA028', pointHoverRadius: 6 },
+          { label: 'New Live Customers', data: custCounts, borderColor: '#00CC66', backgroundColor: grad2, fill: true, tension: .3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#00CC66', pointHoverRadius: 6 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'line', padding: 20, boxWidth: 20, color: '#999' } } },
-        scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: '#666', font:{size:10} } }, y: { position:'right', grid:{ color:'rgba(255,255,255,0.04)', drawTicks:false }, border: { display: false }, ticks: { padding: 12, color:'#00CC66', font:{size:10} } } },
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, boxWidth: 8, color: '#999' } } },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: '#666', font:{size:10} } },
+          y: { position:'right', beginAtZero: true, grid:{ color:'rgba(255,255,255,0.04)', drawTicks:false }, border: { display: false }, ticks: { padding: 12, color:'#FFA028', font:{size:10}, stepSize: 1 } }
+        },
         interaction: { intersect: false, mode: 'index' }
       }
     });
