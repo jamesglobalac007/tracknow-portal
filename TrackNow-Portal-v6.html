@@ -2133,6 +2133,8 @@ const CUSTOMERS = [
     ]},
 ];
 let _nextCustomerId = 5;
+let _custSortField = null; // 'date','expiry','trackers','company','subscription'
+let _custSortDir = 1; // 1 = ascending (oldest first), -1 = descending (newest first)
 
 
 
@@ -5986,6 +5988,12 @@ function expiryChip(c) {
           <span style="font-size:10px;font-weight:700;color:${col};background:${bg};padding:2px 6px;border-radius:0">${label}</span>`;
 }
 
+function toggleCustSort(field) {
+  if (_custSortField === field) { _custSortDir *= -1; }
+  else { _custSortField = field; _custSortDir = -1; }
+  renderCustomers();
+}
+
 function renderCustomers() {
   const el = document.getElementById('customersTable');
   if (!el) return;
@@ -5995,6 +6003,22 @@ function renderCustomers() {
     (!secF || c.sector === secF) &&
     (!stF  || c.status === stF)
   );
+
+  // Apply sorting
+  if (_custSortField) {
+    list.sort((a, b) => {
+      let va, vb;
+      switch (_custSortField) {
+        case 'date': va = a.start || ''; vb = b.start || ''; break;
+        case 'expiry': va = custExpiryDate(a) ? custExpiryDate(a).getTime() : 0; vb = custExpiryDate(b) ? custExpiryDate(b).getTime() : 0; break;
+        case 'trackers': va = a.trackers || 0; vb = b.trackers || 0; break;
+        case 'company': va = (a.co||'').toLowerCase(); vb = (b.co||'').toLowerCase(); break;
+        case 'subscription': const da = (a.devices||[]).length ? (a.devices||[]).reduce((s,d)=>s+d.qty*d.sub,0) : a.trackers*a.subPrice; const db = (b.devices||[]).length ? (b.devices||[]).reduce((s,d)=>s+d.qty*d.sub,0) : b.trackers*b.subPrice; va=da; vb=db; break;
+        default: va = 0; vb = 0;
+      }
+      return va < vb ? -1 * _custSortDir : va > vb ? 1 * _custSortDir : 0;
+    });
+  }
 
   if (!list.length) {
     el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:#666">No customers match the filters. <button class="btn btn-primary btn-sm" style="margin-left:12px" onclick="openCustomerModal()">+ Add First Customer</button></div>';
@@ -6010,12 +6034,12 @@ function renderCustomers() {
   el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
   <table style="width:100%;border-collapse:collapse">
     <thead><tr style="background:#111;border-bottom:1px solid #222">
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Company</th>
-      <th style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Trackers</th>
+      <th onclick="toggleCustSort('company')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='company'?'#FFA028':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Company ${_custSortField==='company'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th onclick="toggleCustSort('trackers')" style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:${_custSortField==='trackers'?'#FFA028':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Trackers ${_custSortField==='trackers'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Sector</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Subscription</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Contract</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Expiry</th>
+      <th onclick="toggleCustSort('subscription')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='subscription'?'#FFA028':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Subscription ${_custSortField==='subscription'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th onclick="toggleCustSort('date')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='date'?'#FFA028':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Contract ${_custSortField==='date'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th onclick="toggleCustSort('expiry')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='expiry'?'#FFA028':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Expiry ${_custSortField==='expiry'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Renewal</th>
       <th style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Outstanding</th>
       <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Status</th>
