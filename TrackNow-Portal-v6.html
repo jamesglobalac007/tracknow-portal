@@ -6191,15 +6191,17 @@ function renderCustomers() {
               <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Expiry</span><div>${expiryChip(c)}</div></div>
               <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Renewal</span><div style="font-size:12px;font-weight:600;color:${c.renewal==='auto'?'#059669':'#d97706'}">${c.renewal==='auto'?'Auto-Renew':'Manual'}</div></div>
             </div>` +
-            (c.outstanding > 0 ? '<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;margin-bottom:10px;background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.15);border-radius:0;flex-wrap:wrap">' +
-              '<span style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.4px">OVERDUE</span>' +
-              '<span style="font-size:13px;font-weight:700;color:#dc2626">$' + c.outstanding.toFixed(2) + '</span>' +
-              '<label style="display:flex;align-items:center;gap:4px;cursor:pointer" title="Mark as overdue and set due date">' +
-                '<input type="checkbox" ' + (c.paymentDueDate ? 'checked' : '') + ' onchange="event.stopPropagation();toggleOverdue(' + c.id + ',this)" style="accent-color:#dc2626;cursor:pointer">' +
-                '<span style="font-size:10px;font-weight:600;color:#dc2626">Set Due Date</span>' +
-              '</label>' +
-              (c.paymentDueDate ? '<span style="font-size:10px;color:#dc2626;font-weight:600">Due: ' + new Date(c.paymentDueDate).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) + '</span>' : '') +
-              '<button onclick="event.stopPropagation();sendOverdueEmail(' + c.id + ')" title="Send payment reminder email" style="background:none;border:1px solid #dc2626;border-radius:0;padding:3px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:auto">' +
+            (c.outstanding > 0 ? '<div style="display:flex;align-items:center;gap:16px;padding:10px 14px;margin-bottom:10px;background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.15)">' +
+              '<div style="display:flex;align-items:center;gap:8px">' +
+                '<span style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">OUTSTANDING</span>' +
+                '<span style="font-size:14px;font-weight:800;color:#dc2626;white-space:nowrap">$' + c.outstanding.toFixed(2) + '</span>' +
+              '</div>' +
+              '<div style="width:1px;height:20px;background:rgba(255,68,68,.2)"></div>' +
+              '<div style="display:flex;align-items:center;gap:8px">' +
+                '<span style="font-size:10px;font-weight:600;color:#dc2626;white-space:nowrap">Due Date:</span>' +
+                '<input type="date" id="overdueDate_' + c.id + '" value="' + (c.paymentDueDate || '') + '" onchange="setOverdueDate(' + c.id + ',this.value)" style="font-size:11px;color:#FFA028;background:#111;border:1px solid rgba(255,68,68,.3);padding:4px 8px;font-family:inherit;cursor:pointer;min-width:130px">' +
+              '</div>' +
+              '<button onclick="event.stopPropagation();sendOverdueEmail(' + c.id + ')" title="Send payment reminder email" style="background:none;border:1px solid #dc2626;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;margin-left:auto;white-space:nowrap">' +
                 '<svg width="12" height="12" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
                 '<span style="font-size:10px;font-weight:600;color:#dc2626">Send Reminder</span>' +
               '</button>' +
@@ -6227,41 +6229,21 @@ function updateCustStatus(custId, newStatus) {
 }
 
 // ── Overdue payment tracking ─────────────────────────────────────
-function toggleOverdue(custId, checkbox) {
+function setOverdueDate(custId, dateVal) {
   const c = CUSTOMERS.find(x => x.id === custId);
   if (!c) return;
-  if (checkbox.checked) {
-    // Position the date picker near the checkbox element
-    const rect = checkbox.getBoundingClientRect();
-    const dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.style.cssText = 'position:fixed;z-index:99999;background:#111;color:#FFA028;border:1px solid #dc2626;padding:6px 10px;font-family:inherit;font-size:12px;border-radius:0;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px';
-    dateInput.value = c.paymentDueDate || new Date().toISOString().split('T')[0];
-    document.body.appendChild(dateInput);
-    dateInput.addEventListener('change', function() {
-      c.paymentDueDate = this.value;
-      if (c.status !== 'payment-overdue') c.status = 'payment-overdue';
-      renderCustomers(); renderCustStats();
-      showStageNotification(c.co, 'Payment overdue', 'Due date set: ' + new Date(this.value).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}));
-      if (document.body.contains(dateInput)) document.body.removeChild(dateInput);
-    });
-    dateInput.addEventListener('blur', function() {
-      if (!c.paymentDueDate) {
-        c.paymentDueDate = new Date().toISOString().split('T')[0];
-        if (c.status !== 'payment-overdue') c.status = 'payment-overdue';
-        renderCustomers(); renderCustStats();
-      }
-      setTimeout(() => { if (document.body.contains(dateInput)) document.body.removeChild(dateInput); }, 150);
-    });
-    dateInput.showPicker ? dateInput.showPicker() : dateInput.click();
-  } else {
-    // Uncheck — clear overdue status
-    c.paymentDueDate = '';
-    if (c.outstanding <= 0) c.status = 'active';
-    renderCustomers(); renderCustStats();
-    showStageNotification(c.co, 'Overdue cleared', 'Payment status updated');
+  c.paymentDueDate = dateVal || '';
+  if (dateVal && c.status !== 'payment-overdue') {
+    c.status = 'payment-overdue';
+  }
+  renderCustStats();
+  if (dateVal) {
+    showStageNotification(c.co, 'Payment overdue', 'Due date set: ' + new Date(dateVal).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}));
   }
 }
+
+// Legacy support
+function toggleOverdue(custId, checkbox) { /* deprecated — using inline date input now */ }
 
 function sendOverdueEmail(custId) {
   const c = CUSTOMERS.find(x => x.id === custId);
