@@ -2961,9 +2961,9 @@ function renderPipeline() {
             <div style="font-size:11px;font-weight:600;color:#FFA028;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%">${l.star?'<span style="color:#f59e0b;margin-right:3px">★</span>':''}${l.co}</div>
             ${hasProducts ? '<span style="font-size:10px;font-weight:700;color:#FFA028;white-space:nowrap">'+l.v+'u</span>' : ''}
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <div onclick="event.stopPropagation();toggleCardExpand(${l.id})" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;cursor:pointer;padding:4px 0" onmouseover="this.querySelector('.more-btn').style.color='#FFA028'" onmouseout="this.querySelector('.more-btn').style.color='#555'">
             ${hasProducts ? '<span style="font-size:9px;color:#666">\\$'+l.val.toLocaleString()+'/yr</span>' : '<span style="font-size:9px;color:#444;font-style:italic">No products set</span>'}
-            <button onclick="event.stopPropagation();toggleCardExpand(${l.id})" style="background:none;border:none;color:#555;font-size:9px;cursor:pointer;padding:0;font-family:inherit" onmouseover="this.style.color='#FFA028'" onmouseout="this.style.color='#555'">▼ more</button>
+            <span class="more-btn" style="color:#555;font-size:10px;font-weight:600;padding:2px 6px">▼ more</span>
           </div>
           ${isOverdue(l)?'<div style="font-size:8px;color:#dc2626;font-weight:800;letter-spacing:.3px;margin-top:3px">OVERDUE</div>':''}
           <div id="cardExpand_${l.id}" style="display:none;margin-top:6px;border-top:1px solid #1a1a1a;padding-top:6px">
