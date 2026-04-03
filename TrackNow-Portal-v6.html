@@ -6675,12 +6675,15 @@ function renderDealProductLines() {
           <label style="${lbl}">$/unit</label>
           <input type="number" value="${li.hwPrice||0}" min="0" onfocus="this.select()" onchange="updateLineItem(${i},'hwPrice',parseFloat(this.value)||0)" style="width:100%;${inp};text-align:center">
         </div>
-        <div style="width:70px">
+        <div style="width:130px">
           <label style="${lbl}">Install</label>
-          <select onchange="updateLineItem(${i},'hwInstall',this.value==='yes'?(HW_INSTALL_DEFAULT[li.hwType]||75):0);renderDealProductLines();updateDealProductTotals()" style="width:100%;${inp};text-align:center">
-            <option value="no" ${(li.hwInstall||0)===0?'selected':''}>No</option>
-            <option value="yes" ${(li.hwInstall||0)>0?'selected':''}>Yes</option>
-          </select>
+          <div style="display:flex;gap:4px;align-items:center">
+            <select id="dp_installYN_${i}" onchange="toggleInstallCost(${i},this.value)" style="width:55px;${inp};text-align:center">
+              <option value="no" ${(li.hwInstall||0)===0?'selected':''}>No</option>
+              <option value="yes" ${(li.hwInstall||0)>0?'selected':''}>Yes</option>
+            </select>
+            <input type="number" id="dp_installAmt_${i}" value="${li.hwInstall||0}" min="0" onfocus="this.select()" onchange="updateLineItem(${i},'hwInstall',parseFloat(this.value)||0);updateDealProductTotals()" style="width:65px;${inp};text-align:center;${(li.hwInstall||0)===0?'opacity:.3;pointer-events:none':''}">
+          </div>
         </div>
         <div style="flex:1;min-width:100px">
           <label style="${lbl}">Asset</label>
@@ -6736,6 +6739,21 @@ function updateLineItem(idx, field, value) {
   const l = LEADS.find(x => x.id === _dealProductsLeadId);
   if (!l || !l.lineItems[idx]) return;
   l.lineItems[idx][field] = value;
+  updateDealProductTotals();
+}
+
+function toggleInstallCost(idx, val) {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems[idx]) return;
+  const amt = document.getElementById('dp_installAmt_'+idx);
+  if (val === 'yes') {
+    const defaultCost = HW_INSTALL_DEFAULT[l.lineItems[idx].hwType] || 75;
+    l.lineItems[idx].hwInstall = defaultCost;
+    if (amt) { amt.value = defaultCost; amt.style.opacity='1'; amt.style.pointerEvents='auto'; }
+  } else {
+    l.lineItems[idx].hwInstall = 0;
+    if (amt) { amt.value = 0; amt.style.opacity='.3'; amt.style.pointerEvents='none'; }
+  }
   updateDealProductTotals();
 }
 
