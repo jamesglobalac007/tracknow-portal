@@ -801,10 +801,6 @@ select option{background:#0a0a0a;color:#FFA028}
       </div>
       <div style="display:flex;gap:10px">
         <select><option>Last 3 months</option><option>Last 6 months</option><option>Last 12 months</option></select>
-        <button class="btn btn-secondary">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Export
-        </button>
       </div>
     </div>
 
@@ -996,8 +992,42 @@ select option{background:#0a0a0a;color:#FFA028}
           <div style="font-size:11px;color:#555;margin-top:6px">Supported: MP4, MOV, AVI, JPG, PNG, GIF, WEBP, SVG, PDF</div>
         </div>
 
-        <!-- Platform folders -->
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px">
+        <!-- Content Type Folders -->
+        <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">CONTENT FOLDERS</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+          <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('videos')" id="clFolder-videos">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(255,0,0,.1);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" fill="none" stroke="#FF4444" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#FF4444">Videos</div>
+            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-videos">0 files</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('brochures')" id="clFolder-brochures">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(255,160,40,.1);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" fill="none" stroke="#FFA028" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#FFA028">Brochures</div>
+            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-brochures">0 files</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('images')" id="clFolder-images">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(0,136,255,.1);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" fill="none" stroke="#0088FF" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#0088FF">Images</div>
+            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-images">0 files</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('raw')" id="clFolder-raw">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(100,116,139,.1);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#64748b">Raw Files</div>
+            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-raw">0 files</div>
+          </div>
+        </div>
+
+        <!-- Social Platform Folders -->
+        <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">SOCIAL MEDIA FOLDERS</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
           <div class="card" style="padding:14px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('facebook')" id="clFolder-facebook">
             <div style="width:36px;height:36px;border-radius:8px;background:rgba(24,119,242,.12);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
               <svg width="18" height="18" fill="#1877F2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
@@ -1019,13 +1049,6 @@ select option{background:#0a0a0a;color:#FFA028}
             <div style="font-size:11px;font-weight:700;color:#E1306C">Instagram</div>
             <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-instagram">0 files</div>
           </div>
-          <div class="card" style="padding:14px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('google')" id="clFolder-google">
-            <div style="width:36px;height:36px;border-radius:8px;background:rgba(234,67,53,.12);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
-              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M22.5 12.23c0-.82-.07-1.6-.2-2.35H12v4.45h5.9a5.06 5.06 0 01-2.2 3.32v2.76h3.56c2.08-1.92 3.24-4.75 3.24-8.18z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-1 7.28-2.7l-3.56-2.77c-.99.66-2.25 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/></svg>
-            </div>
-            <div style="font-size:11px;font-weight:700;color:#EA4335">Google</div>
-            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-google">0 files</div>
-          </div>
           <div class="card" style="padding:14px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('youtube')" id="clFolder-youtube">
             <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,0,0,.12);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
               <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FF0000" d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.5v2.1c0 2.3.3 4.5.3 4.5s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22.2 12 22.2 12 22.2s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.5v-2.1C23.3 9.2 23 7 23 7zm-13.5 8.9V8.1l8.1 3.9-8.1 3.9z"/></svg>
@@ -1042,35 +1065,7 @@ select option{background:#0a0a0a;color:#FFA028}
           </div>
         </div>
 
-        <!-- Platform format specs reference -->
-        <div style="border:1px solid #222;border-radius:6px;overflow:hidden;margin-bottom:20px">
-          <div style="padding:10px 14px;background:#111;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="document.getElementById('clSpecsBody').style.display=document.getElementById('clSpecsBody').style.display==='none'?'':'none'">
-            <span style="font-size:11px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.4px">Platform Format Specs</span>
-            <svg width="12" height="12" fill="none" stroke="#666" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div id="clSpecsBody" style="display:none">
-            <table style="width:100%;border-collapse:collapse;font-size:11px">
-              <thead><tr style="background:#0a0a0a;border-bottom:1px solid #222">
-                <th style="padding:8px 12px;text-align:left;color:#FFA028;font-weight:700">Platform</th>
-                <th style="padding:8px 12px;text-align:left;color:#FFA028;font-weight:700">Video</th>
-                <th style="padding:8px 12px;text-align:left;color:#FFA028;font-weight:700">Image</th>
-                <th style="padding:8px 12px;text-align:left;color:#FFA028;font-weight:700">Aspect Ratio</th>
-                <th style="padding:8px 12px;text-align:left;color:#FFA028;font-weight:700">Max Duration</th>
-                <th style="padding:8px 12px;text-align:left;color:#FFA028;font-weight:700">Max Size</th>
-              </tr></thead>
-              <tbody>
-                <tr style="border-bottom:1px solid #111"><td style="padding:7px 12px;color:#1877F2;font-weight:600">Facebook</td><td style="padding:7px 12px;color:#ccc">MP4, MOV</td><td style="padding:7px 12px;color:#ccc">JPG, PNG</td><td style="padding:7px 12px;color:#ccc">16:9, 1:1, 4:5</td><td style="padding:7px 12px;color:#ccc">240 min</td><td style="padding:7px 12px;color:#ccc">4 GB</td></tr>
-                <tr style="border-bottom:1px solid #111"><td style="padding:7px 12px;color:#0A66C2;font-weight:600">LinkedIn</td><td style="padding:7px 12px;color:#ccc">MP4</td><td style="padding:7px 12px;color:#ccc">JPG, PNG</td><td style="padding:7px 12px;color:#ccc">16:9, 1:1</td><td style="padding:7px 12px;color:#ccc">10 min</td><td style="padding:7px 12px;color:#ccc">5 GB</td></tr>
-                <tr style="border-bottom:1px solid #111"><td style="padding:7px 12px;color:#E1306C;font-weight:600">Instagram</td><td style="padding:7px 12px;color:#ccc">MP4, MOV</td><td style="padding:7px 12px;color:#ccc">JPG, PNG</td><td style="padding:7px 12px;color:#ccc">Feed 1:1, 4:5 · Reel 9:16</td><td style="padding:7px 12px;color:#ccc">90 sec (Reel)</td><td style="padding:7px 12px;color:#ccc">3.6 GB</td></tr>
-                <tr style="border-bottom:1px solid #111"><td style="padding:7px 12px;color:#EA4335;font-weight:600">Google Ads</td><td style="padding:7px 12px;color:#ccc">MP4, MOV, AVI</td><td style="padding:7px 12px;color:#ccc">JPG, PNG, GIF</td><td style="padding:7px 12px;color:#ccc">16:9, 1:1</td><td style="padding:7px 12px;color:#ccc">30 sec (bumper 6s)</td><td style="padding:7px 12px;color:#ccc">1 GB</td></tr>
-                <tr style="border-bottom:1px solid #111"><td style="padding:7px 12px;color:#FF0000;font-weight:600">YouTube</td><td style="padding:7px 12px;color:#ccc">MP4, MOV</td><td style="padding:7px 12px;color:#ccc">JPG, PNG (thumb)</td><td style="padding:7px 12px;color:#ccc">16:9 · Shorts 9:16</td><td style="padding:7px 12px;color:#ccc">12 hrs · Shorts 60s</td><td style="padding:7px 12px;color:#ccc">256 GB</td></tr>
-                <tr><td style="padding:7px 12px;color:#69C9D0;font-weight:600">TikTok</td><td style="padding:7px 12px;color:#ccc">MP4, MOV, WebM</td><td style="padding:7px 12px;color:#ccc">JPG, PNG</td><td style="padding:7px 12px;color:#ccc">9:16 (vertical)</td><td style="padding:7px 12px;color:#ccc">10 min</td><td style="padding:7px 12px;color:#ccc">4 GB</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Content files list -->
+        <!-- Active folder contents -->
         <div id="clFilesList"></div>
       </div>
     </div>
@@ -3623,7 +3618,7 @@ function initOutreach() {
     if (!CONTENT_LIBRARY.some(c => c.name === p.file)) {
       CONTENT_LIBRARY.push({
         id: 900000 + i, name: p.file, ext: 'pdf', type: 'brochure', size: '2.4 MB',
-        platforms: ['facebook','linkedin','instagram','google','youtube','tiktok'],
+        platforms: ['facebook','linkedin','instagram','youtube','tiktok'],
         thumbUrl: '', uploaded: '01/04/26', file: null
       });
     }
@@ -4927,7 +4922,6 @@ const PLATFORM_SPECS = {
   facebook:  {name:'Facebook',  color:'#1877F2', video:['mp4','mov'], image:['jpg','jpeg','png'], ratios:['16:9','1:1','4:5'], maxDur:'240 min', maxSize:'4 GB', recVideo:'1280×720 (16:9) or 1080×1080 (1:1)', recImage:'1200×630 (link) or 1080×1080 (post)'},
   linkedin:  {name:'LinkedIn',  color:'#0A66C2', video:['mp4'], image:['jpg','jpeg','png'], ratios:['16:9','1:1'], maxDur:'10 min', maxSize:'5 GB', recVideo:'1920×1080 (16:9) or 1080×1080 (1:1)', recImage:'1200×627 (link) or 1080×1080 (post)'},
   instagram: {name:'Instagram', color:'#E1306C', video:['mp4','mov'], image:['jpg','jpeg','png'], ratios:['1:1','4:5','9:16'], maxDur:'90s Reel / 60s Story', maxSize:'3.6 GB', recVideo:'1080×1920 (9:16 Reel) or 1080×1350 (4:5 Feed)', recImage:'1080×1080 (post) or 1080×1920 (story)'},
-  google:    {name:'Google Ads',color:'#EA4335', video:['mp4','mov','avi'], image:['jpg','jpeg','png','gif'], ratios:['16:9','1:1'], maxDur:'30s (bumper 6s)', maxSize:'1 GB', recVideo:'1920×1080 (landscape) or 1080×1080', recImage:'1200×628 (display) or 1200×1200 (square)'},
   youtube:   {name:'YouTube',   color:'#FF0000', video:['mp4','mov'], image:['jpg','jpeg','png'], ratios:['16:9','9:16'], maxDur:'12 hrs / Shorts 60s', maxSize:'256 GB', recVideo:'1920×1080 (16:9) or 1080×1920 (Shorts 9:16)', recImage:'1280×720 (thumbnail)'},
   tiktok:    {name:'TikTok',    color:'#69C9D0', video:['mp4','mov','webm'], image:['jpg','jpeg','png'], ratios:['9:16'], maxDur:'10 min', maxSize:'4 GB', recVideo:'1080×1920 (9:16 vertical)', recImage:'1080×1920 (vertical)'}
 };
@@ -4994,13 +4988,24 @@ function handleContentUpload(files) {
   showToast(files.length + ' file' + (files.length > 1 ? 's' : '') + ' uploaded — sorted into ' + platforms.length + ' platform folders');
 }
 
-function showContentFolder(platform) {
-  _activeFolder = _activeFolder === platform ? null : platform;
-  // Highlight active folder
-  for (const pid of Object.keys(PLATFORM_SPECS)) {
-    const el = document.getElementById('clFolder-' + pid);
-    if (el) el.style.borderColor = pid === _activeFolder ? PLATFORM_SPECS[pid].color : '#222';
-  }
+const CONTENT_TYPE_FOLDERS = {
+  videos:    {name:'Videos',    color:'#FF4444'},
+  brochures: {name:'Brochures', color:'#FFA028'},
+  images:    {name:'Images',    color:'#0088FF'},
+  raw:       {name:'Raw Files', color:'#888'}
+};
+const ALL_FOLDER_IDS = Object.keys(CONTENT_TYPE_FOLDERS).concat(Object.keys(PLATFORM_SPECS));
+
+function showContentFolder(folderId) {
+  _activeFolder = _activeFolder === folderId ? null : folderId;
+  // Highlight active folder — clear all, then highlight active
+  ALL_FOLDER_IDS.forEach(function(id) {
+    const el = document.getElementById('clFolder-' + id);
+    if (!el) return;
+    const isActive = id === _activeFolder;
+    const clr = CONTENT_TYPE_FOLDERS[id] ? CONTENT_TYPE_FOLDERS[id].color : (PLATFORM_SPECS[id] ? PLATFORM_SPECS[id].color : '#FFA028');
+    el.style.borderColor = isActive ? clr : '#222';
+  });
   renderContentLibrary();
 }
 
@@ -5010,7 +5015,20 @@ function removeContentItem(id) {
 }
 
 function renderContentLibrary() {
-  // Update folder counts
+  // Content-type folder filter map
+  const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other'};
+
+  // Update content-type folder counts
+  for (const tid of Object.keys(CONTENT_TYPE_FOLDERS)) {
+    const matchType = typeMap[tid];
+    const count = tid === 'raw'
+      ? CONTENT_LIBRARY.filter(c => c.type === 'other').length
+      : CONTENT_LIBRARY.filter(c => c.type === matchType).length;
+    const el = document.getElementById('clCount-' + tid);
+    if (el) el.textContent = count + ' file' + (count !== 1 ? 's' : '');
+  }
+
+  // Update platform folder counts
   for (const [pid, spec] of Object.entries(PLATFORM_SPECS)) {
     const count = CONTENT_LIBRARY.filter(c => c.platforms.includes(pid)).length;
     const el = document.getElementById('clCount-' + pid);
@@ -5021,19 +5039,30 @@ function renderContentLibrary() {
   const el = document.getElementById('clFilesList');
   if (!el) return;
 
-  const filtered = _activeFolder
-    ? CONTENT_LIBRARY.filter(c => c.platforms.includes(_activeFolder))
-    : CONTENT_LIBRARY;
+  // Filter based on active folder (content-type or platform)
+  let filtered;
+  if (_activeFolder && typeMap[_activeFolder] !== undefined) {
+    // Content-type folder
+    const matchType = typeMap[_activeFolder];
+    filtered = CONTENT_LIBRARY.filter(c => c.type === matchType);
+  } else if (_activeFolder) {
+    // Platform folder
+    filtered = CONTENT_LIBRARY.filter(c => c.platforms.includes(_activeFolder));
+  } else {
+    filtered = CONTENT_LIBRARY;
+  }
 
   if (!filtered.length) {
+    const folderName = _activeFolder
+      ? (CONTENT_TYPE_FOLDERS[_activeFolder] ? CONTENT_TYPE_FOLDERS[_activeFolder].name : (PLATFORM_SPECS[_activeFolder] ? PLATFORM_SPECS[_activeFolder].name : _activeFolder))
+      : '';
     const msg = _activeFolder
-      ? 'No content in ' + PLATFORM_SPECS[_activeFolder].name + ' yet — upload files above'
-      : CONTENT_LIBRARY.length ? 'Click a platform folder to filter' : 'No content uploaded yet — drag files into the drop zone above';
+      ? 'No content in ' + folderName + ' yet — upload files above'
+      : CONTENT_LIBRARY.length ? 'Click a folder to filter content' : 'No content uploaded yet — drag files into the drop zone above';
     el.innerHTML = '<div style="text-align:center;padding:24px;color:#555;font-size:13px">' + msg + '</div>';
     return;
   }
 
-  const spec = _activeFolder ? PLATFORM_SPECS[_activeFolder] : null;
   const typeIcons = {
     video: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
     image: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
@@ -5041,9 +5070,18 @@ function renderContentLibrary() {
     other: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/></svg>'
   };
 
+  // Folder header
   let html = '';
-  if (spec) {
-    html += '<div style="padding:10px 14px;background:' + spec.color + '12;border:1px solid ' + spec.color + '33;border-radius:6px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
+  const isContentType = _activeFolder && CONTENT_TYPE_FOLDERS[_activeFolder];
+  const isPlatform = _activeFolder && PLATFORM_SPECS[_activeFolder];
+  if (isContentType) {
+    const ctf = CONTENT_TYPE_FOLDERS[_activeFolder];
+    html += '<div style="padding:10px 14px;background:' + ctf.color + '12;border:1px solid ' + ctf.color + '33;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="font-size:12px;font-weight:700;color:' + ctf.color + '">' + ctf.name + ' Folder</span>' +
+      '<span style="font-size:11px;color:#666">' + filtered.length + ' file' + (filtered.length !== 1 ? 's' : '') + '</span></div>';
+  } else if (isPlatform) {
+    const spec = PLATFORM_SPECS[_activeFolder];
+    html += '<div style="padding:10px 14px;background:' + spec.color + '12;border:1px solid ' + spec.color + '33;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
       '<div><span style="font-size:12px;font-weight:700;color:' + spec.color + '">' + spec.name + ' Folder</span>' +
       '<span style="font-size:11px;color:#999;margin-left:10px">Recommended: ' + spec.recVideo + '</span></div>' +
       '<span style="font-size:11px;color:#666">' + filtered.length + ' file' + (filtered.length !== 1 ? 's' : '') + '</span></div>';
@@ -5052,7 +5090,10 @@ function renderContentLibrary() {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
   filtered.forEach(c => {
     const icon = typeIcons[c.type] || typeIcons.other;
-    const platBadges = c.platforms.map(p => '<span style="font-size:9px;font-weight:700;color:' + PLATFORM_SPECS[p].color + ';background:' + PLATFORM_SPECS[p].color + '18;padding:1px 5px;border-radius:3px">' + PLATFORM_SPECS[p].name + '</span>').join(' ');
+    const platBadges = c.platforms.map(function(p) {
+      if (!PLATFORM_SPECS[p]) return '';
+      return '<span style="font-size:9px;font-weight:700;color:' + PLATFORM_SPECS[p].color + ';background:' + PLATFORM_SPECS[p].color + '18;padding:1px 5px;border-radius:3px">' + PLATFORM_SPECS[p].name + '</span>';
+    }).join(' ');
     const thumb = c.thumbUrl ? '<div style="width:100%;height:80px;background:url(' + c.thumbUrl + ') center/cover;border-radius:4px;margin-bottom:8px"></div>' : '';
     html += '<div class="card" style="padding:12px;position:relative">' +
       thumb +
