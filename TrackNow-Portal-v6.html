@@ -2055,10 +2055,10 @@ const LEADS=[
   {id:6,co:'Boral Limited',name:'Andrew Chen',ind:'Civil & Construction',st:'NSW',city:'Sydney',stage:'interested',v:60,val:25164,subPrice:34.95,deviceType:'Hardwired',term:24,sim:'Telstra',last:'30 Mar',lastTs:Date.now()-3*86400000,star:true,notes:'[30 Mar 2026 16:00] Massive opportunity. Andrew is fleet ops manager. Currently on Teletrac — contract ends June. Wants pricing for 60 units hardwired.',
     lineItems:[{type:'Hardwired',qty:40,sub:34.95,asset:'Trucks',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'Hardwired',qty:15,sub:34.95,asset:'Loaders',hwType:'Hardwired Device',hwPrice:199,hwInstall:75},{type:'OBD2 Plug-In',qty:5,sub:29.95,asset:'Site Vehicles',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
 
-  // ── Demo Booked ──
-  {id:7,co:'Murray Valley Transport',name:'Gary Nguyen',ind:'Transport & Logistics',st:'VIC',city:'Shepparton',stage:'demo',v:20,val:7188,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Optus',last:'01 Apr',lastTs:Date.now()-1*86400000,star:false,notes:'[01 Apr 2026 13:00] Demo booked for 7 Apr 10am. Gary wants to see live tracking + geofence alerts. Bring iPad with demo account loaded.',
+  // ── Demo Sent ──
+  {id:7,co:'Murray Valley Transport',name:'Gary Nguyen',ind:'Transport & Logistics',st:'VIC',city:'Shepparton',stage:'demo',v:20,val:7188,subPrice:29.95,deviceType:'OBD2 Plug-In',term:24,sim:'Optus',last:'01 Apr',lastTs:Date.now()-1*86400000,star:false,notes:'[01 Apr 2026 13:00] Demo video sent via email. Gary wants to see live tracking + geofence alerts. Following up in 2 days.',
     lineItems:[{type:'OBD2 Plug-In',qty:20,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
-  {id:8,co:'Dawsons Haulage',name:'Brett Dawson',ind:'Transport & Logistics',st:'VIC',city:'Baranduda',stage:'demo',v:12,val:4313,subPrice:29.95,deviceType:'OBD2 Plug-In',term:12,sim:'Telstra',last:'29 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'[29 Mar 2026 10:00] Demo done over Zoom. Brett impressed with fuel reports. Wants to discuss with business partner before committing.',
+  {id:8,co:'Dawsons Haulage',name:'Brett Dawson',ind:'Transport & Logistics',st:'VIC',city:'Baranduda',stage:'demo',v:12,val:4313,subPrice:29.95,deviceType:'OBD2 Plug-In',term:12,sim:'Telstra',last:'29 Mar',lastTs:Date.now()-4*86400000,star:false,notes:'[29 Mar 2026 10:00] Demo video sent. Brett impressed with fuel reports. Wants to discuss with business partner before committing.',
     lineItems:[{type:'OBD2 Plug-In',qty:12,sub:29.95,asset:'Trucks',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0}]},
 
   // ── Proposal Sent ──
@@ -2121,7 +2121,7 @@ const STAGES=[
 {id:"new",label:"New Lead",color:"#64748b",bg:"#111"},
 {id:"contacted",label:"Contacted",color:"#0088FF",bg:"rgba(0,136,255,.1)"},
 {id:"interested",label:"Interested",color:"#d97706",bg:"rgba(255,160,40,.1)"},
-{id:"demo",label:"Demo Booked",color:"#7c3aed",bg:"rgba(124,58,237,.1)"},
+{id:"demo",label:"Demo Sent",color:"#7c3aed",bg:"rgba(124,58,237,.1)"},
 {id:"proposal",label:"Proposal Sent",color:"#db2777",bg:"rgba(219,39,119,.1)"},
 {id:"closed",label:"Closed Won",color:"#059669",bg:"rgba(0,204,102,.1)"}
 ];
@@ -2947,7 +2947,7 @@ function initDashboard() {
     actEl.innerHTML = [
       {label:'Prospects Added', count:totalProspects, color:'#FFA028', icon:'<svg width="20" height="20" fill="none" stroke="#FFA028" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'},
       {label:'Live Customers', count:totalCustomers, color:'#00CC66', icon:'<svg width="20" height="20" fill="none" stroke="#00CC66" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>'},
-      {label:'Demos Booked', count:demosBooked, color:'#7c3aed', icon:'<svg width="20" height="20" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'},
+      {label:'Demos Sent', count:demosBooked, color:'#7c3aed', icon:'<svg width="20" height="20" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'},
       {label:'Proposals Sent', count:proposalsSent, color:'#db2777', icon:'<svg width="20" height="20" fill="none" stroke="#db2777" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'}
     ].map(s => `
       <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:20px;text-align:center">
@@ -3778,7 +3778,7 @@ function initAnalytics() {
     { label: "New Leads", n: 171, pct: 100, c: "#0088FF" },
     { label: "Contacted", n: 136, pct: 79.5, c: "#0077DD" },
     { label: "Interested", n: 82, pct: 47.9, c: "#FFA028" },
-    { label: "Demo Booked", n: 48, pct: 28.1, c: "#7c3aed" },
+    { label: "Demo Sent", n: 48, pct: 28.1, c: "#7c3aed" },
     { label: "Proposal Sent", n: 31, pct: 18.1, c: "#db2777" },
     { label: "Closed Won", n: 21, pct: 12.3, c: "#00CC66" }
   ];
@@ -7270,6 +7270,237 @@ function saveDealProducts() {
   showToast('Deal products updated for ' + l.co);
 }
 
+// ── Fleet Profile Report Generator ─────────────────────────────
+function generateFleetProfile() {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l) { showToast('No lead selected'); return; }
+
+  const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
+  const fleetType = document.getElementById('fp_fleetType').value;
+  const kmWeek = parseFloat(document.getElementById('fp_kmWeek').value) || 800;
+  const fuelPrice = parseFloat(document.getElementById('fp_fuelPrice').value) || 2.15;
+  const consumption = parseFloat(document.getElementById('fp_consumption').value) || 22;
+  const insPerVehicle = parseFloat(document.getElementById('fp_insurance').value) || 3500;
+  const slippagePct = parseFloat(document.getElementById('fp_slippage').value) || 15;
+  const idleHrs = parseFloat(document.getElementById('fp_idleHrs').value) || 2;
+  const subPrice = l.subPrice || 29.95;
+
+  const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
+  const fleetLabels = {mixed:'Mixed Fleet',trucks:'Trucks / Heavy Vehicles',vans:'Vans / Light Commercial',equipment:'Plant / Equipment',cars:'Cars / Service Vehicles',excavators:'Excavators / Earthmoving'};
+
+  // ── CALCULATIONS ──
+  // Fuel & Slippage
+  const weeklyFuel = totalUnits * kmWeek * (consumption / 100) * fuelPrice;
+  const annualFuel = weeklyFuel * 52;
+  const annualSlippage = annualFuel * (slippagePct / 100);
+  const fuelSavingRate = 0.60; // GPS recovers ~60% of slippage
+  const annualFuelSaving = annualSlippage * fuelSavingRate;
+
+  // Idle Time Waste
+  const idleFuelPerHr = (consumption / 100) * 3 * fuelPrice; // ~3L/hr idle
+  const annualIdleWaste = totalUnits * idleHrs * idleFuelPerHr * 260; // 260 work days
+  const idleSavingRate = 0.50;
+  const annualIdleSaving = annualIdleWaste * idleSavingRate;
+
+  // Insurance Savings
+  const totalInsurance = totalUnits * insPerVehicle;
+  const insDiscountPct = 0.15; // avg 15% discount with GPS
+  const annualInsSaving = totalInsurance * insDiscountPct;
+
+  // Unauthorised Use / After Hours
+  const afterHoursPct = 0.08; // 8% of fleet used after hours
+  const afterHoursKm = totalUnits * afterHoursPct * kmWeek * 52;
+  const afterHoursCost = afterHoursKm * (consumption / 100) * fuelPrice;
+  const afterHoursSaving = afterHoursCost * 0.90; // GPS eliminates 90%
+
+  // Maintenance & Wear
+  const wearPerKm = 0.12; // $0.12/km excess wear
+  const excessKm = totalUnits * kmWeek * (slippagePct / 100) * 52;
+  const annualWear = excessKm * wearPerKm;
+  const wearSaving = annualWear * 0.50;
+
+  // Total
+  const totalAnnualLoss = annualSlippage + annualIdleWaste + afterHoursCost + annualWear;
+  const totalAnnualSaving = annualFuelSaving + annualIdleSaving + annualInsSaving + afterHoursSaving + wearSaving;
+  const trackNowAnnualCost = totalUnits * subPrice * 12;
+  const netAnnualBenefit = totalAnnualSaving - trackNowAnnualCost;
+  const roi = trackNowAnnualCost > 0 ? Math.round((netAnnualBenefit / trackNowAnnualCost) * 100) : 0;
+
+  // ── BUILD REPORT HTML ──
+  const reportWin = window.open('', '_blank', 'width=900,height=1100');
+  reportWin.document.write(`<!DOCTYPE html><html><head><title>Fleet Profile — ${l.co}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#fff; color:#1a1a1a; padding:40px; max-width:800px; margin:0 auto; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px; padding-bottom:20px; border-bottom:3px solid #FFA028; }
+  .logo { font-size:24px; font-weight:800; color:#FFA028; letter-spacing:-0.5px; }
+  .logo span { color:#333; }
+  .subtitle { font-size:11px; color:#888; margin-top:4px; }
+  .client-info { text-align:right; }
+  .client-name { font-size:16px; font-weight:700; color:#1a1a1a; }
+  .client-detail { font-size:11px; color:#666; margin-top:2px; }
+  h2 { font-size:15px; font-weight:700; color:#FFA028; text-transform:uppercase; letter-spacing:1px; margin:28px 0 14px; padding-bottom:6px; border-bottom:1px solid #eee; }
+  .fleet-box { background:#f8f8f8; border:1px solid #e5e5e5; padding:16px; margin-bottom:20px; }
+  .fleet-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .fleet-stat { text-align:center; }
+  .fleet-stat .num { font-size:22px; font-weight:800; color:#1a1a1a; }
+  .fleet-stat .lbl { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+  .issue-table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+  .issue-table th { text-align:left; font-size:10px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; padding:8px 12px; border-bottom:2px solid #eee; }
+  .issue-table td { padding:10px 12px; border-bottom:1px solid #f0f0f0; font-size:12px; }
+  .issue-table .issue-name { font-weight:600; color:#1a1a1a; }
+  .issue-table .issue-desc { font-size:11px; color:#888; margin-top:2px; }
+  .issue-table .cost { font-weight:700; color:#dc2626; text-align:right; }
+  .issue-table .saving { font-weight:700; color:#059669; text-align:right; }
+  .total-row td { border-top:2px solid #1a1a1a; font-weight:800; font-size:13px; padding-top:12px; }
+  .roi-box { background:#FFA028; color:#fff; padding:24px; margin:24px 0; text-align:center; }
+  .roi-box .big { font-size:36px; font-weight:800; }
+  .roi-box .label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+  .roi-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin:20px 0; }
+  .roi-stat { text-align:center; background:#f8f8f8; padding:16px; border:1px solid #e5e5e5; }
+  .roi-stat .num { font-size:20px; font-weight:800; }
+  .roi-stat .lbl { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+  .solution-list { list-style:none; }
+  .solution-list li { padding:10px 0; border-bottom:1px solid #f0f0f0; display:flex; align-items:flex-start; gap:10px; }
+  .solution-list .check { color:#059669; font-weight:700; font-size:16px; flex-shrink:0; }
+  .solution-list .txt { font-size:12px; line-height:1.5; }
+  .solution-list .txt strong { color:#1a1a1a; }
+  .footer { margin-top:40px; padding-top:16px; border-top:2px solid #FFA028; display:flex; justify-content:space-between; font-size:10px; color:#888; }
+  .disclaimer { margin-top:20px; font-size:9px; color:#aaa; line-height:1.5; }
+  @media print { body { padding:20px; } .no-print { display:none; } }
+</style></head><body>
+<div class="no-print" style="text-align:right;margin-bottom:20px">
+  <button onclick="window.print()" style="padding:10px 24px;background:#FFA028;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Print / Save as PDF</button>
+</div>
+
+<div class="header">
+  <div>
+    <div class="logo">Track<span>Now</span> GPS</div>
+    <div class="subtitle">Fleet Profile &amp; Cost Analysis Report</div>
+  </div>
+  <div class="client-info">
+    <div class="client-name">${l.co}</div>
+    <div class="client-detail">${l.name} · ${l.city}, ${l.st}</div>
+    <div class="client-detail">${l.ind}</div>
+    <div class="client-detail">Prepared: ${new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'})}</div>
+  </div>
+</div>
+
+<h2>Fleet Overview</h2>
+<div class="fleet-box">
+  <div class="fleet-grid">
+    <div class="fleet-stat"><div class="num">${totalUnits}</div><div class="lbl">Total Vehicles / Assets</div></div>
+    <div class="fleet-stat"><div class="num">${fleetLabels[fleetType] || fleetType}</div><div class="lbl">Fleet Type</div></div>
+    <div class="fleet-stat"><div class="num">${kmWeek.toLocaleString()}</div><div class="lbl">Avg KM / Week / Vehicle</div></div>
+  </div>
+</div>
+
+<h2>Hidden Fleet Costs — What Your Fleet Is Losing</h2>
+<p style="font-size:12px;color:#666;margin-bottom:16px;line-height:1.5">
+  Every fleet has hidden costs that go unnoticed without GPS tracking and fleet management. Based on your fleet of ${totalUnits} vehicles, here is what these issues are likely costing your business annually.
+</p>
+
+<table class="issue-table">
+  <thead><tr><th>Issue</th><th style="text-align:right">Annual Cost</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>
+        <div class="issue-name">Fuel Slippage &amp; Waste</div>
+        <div class="issue-desc">Unauthorised fuel use, inefficient routes, excessive idling — est. ${slippagePct}% of total fuel spend wasted</div>
+      </td>
+      <td class="cost">${fmt(annualSlippage)}</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="issue-name">Vehicle Idle Time</div>
+        <div class="issue-desc">Engines running while stationary — est. ${idleHrs} hrs/day across fleet, burning fuel with zero productivity</div>
+      </td>
+      <td class="cost">${fmt(annualIdleWaste)}</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="issue-name">Unauthorised / After-Hours Use</div>
+        <div class="issue-desc">Personal use, detours, after-hours driving — untracked mileage adding fuel, wear and liability costs</div>
+      </td>
+      <td class="cost">${fmt(afterHoursCost)}</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="issue-name">Excess Wear &amp; Maintenance</div>
+        <div class="issue-desc">Unnecessary kilometres from poor routing and misuse accelerate servicing, tyre replacement and depreciation</div>
+      </td>
+      <td class="cost">${fmt(annualWear)}</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="issue-name">Insurance Premium Overpayment</div>
+        <div class="issue-desc">Without GPS, insurers charge higher premiums — fleets with tracking typically receive 10–20% discounts</div>
+      </td>
+      <td class="cost">${fmt(totalInsurance - annualInsSaving)} <span style="font-size:10px;color:#888">(potential saving: ${fmt(annualInsSaving)})</span></td>
+    </tr>
+    <tr class="total-row">
+      <td style="color:#dc2626">TOTAL ESTIMATED ANNUAL LOSS</td>
+      <td class="cost" style="font-size:16px;color:#dc2626">${fmt(totalAnnualLoss)}</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>How TrackNow Solves This</h2>
+<ul class="solution-list">
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Live GPS Tracking</strong> — Know where every vehicle is in real time. Eliminate unauthorised use and after-hours driving instantly.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Fuel Monitoring &amp; Alerts</strong> — Detect fuel slippage, excessive idling, and wasteful driving patterns. Set alerts for anomalies.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Geofence Boundaries</strong> — Set virtual boundaries around job sites, depots, and approved routes. Get notified the moment a vehicle goes off-track.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Driver Behaviour Scoring</strong> — Monitor speeding, harsh braking, and rapid acceleration. Reduce accidents, wear and insurance claims.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Automated Reports</strong> — Daily, weekly, and monthly fleet reports delivered to your inbox. No manual tracking required.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Insurance Proof &amp; Recovery</strong> — GPS data provides evidence for insurance claims and helps recover stolen vehicles within hours.</div></li>
+</ul>
+
+<h2>Your Projected Savings</h2>
+<table class="issue-table">
+  <thead><tr><th>Saving Category</th><th style="text-align:right">Annual Saving</th></tr></thead>
+  <tbody>
+    <tr><td><div class="issue-name">Fuel Slippage Recovery</div><div class="issue-desc">GPS reduces fuel waste by up to 60% through route optimisation and accountability</div></td><td class="saving">${fmt(annualFuelSaving)}</td></tr>
+    <tr><td><div class="issue-name">Idle Time Reduction</div><div class="issue-desc">Idle alerts and driver coaching cut unnecessary engine running by ~50%</div></td><td class="saving">${fmt(annualIdleSaving)}</td></tr>
+    <tr><td><div class="issue-name">Insurance Premium Discount</div><div class="issue-desc">GPS-tracked fleets qualify for 10–20% premium reductions</div></td><td class="saving">${fmt(annualInsSaving)}</td></tr>
+    <tr><td><div class="issue-name">Unauthorised Use Eliminated</div><div class="issue-desc">After-hours and personal use drops 90%+ with live tracking visibility</div></td><td class="saving">${fmt(afterHoursSaving)}</td></tr>
+    <tr><td><div class="issue-name">Reduced Wear &amp; Maintenance</div><div class="issue-desc">Fewer unnecessary kilometres = less servicing, tyres, and depreciation</div></td><td class="saving">${fmt(wearSaving)}</td></tr>
+    <tr class="total-row"><td style="color:#059669">TOTAL PROJECTED ANNUAL SAVING</td><td class="saving" style="font-size:16px">${fmt(totalAnnualSaving)}</td></tr>
+  </tbody>
+</table>
+
+<div class="roi-grid">
+  <div class="roi-stat"><div class="num" style="color:#dc2626">${fmt(totalAnnualLoss)}</div><div class="lbl">Current Annual Loss</div></div>
+  <div class="roi-stat"><div class="num" style="color:#FFA028">${fmt(trackNowAnnualCost)}</div><div class="lbl">TrackNow Annual Cost</div></div>
+  <div class="roi-stat"><div class="num" style="color:#059669">${fmt(netAnnualBenefit)}</div><div class="lbl">Net Annual Benefit</div></div>
+</div>
+
+<div class="roi-box">
+  <div class="big">${roi}% ROI</div>
+  <div class="label">Return on Investment — First Year</div>
+  <div style="font-size:13px;margin-top:8px">For every $1 spent on TrackNow, your business saves $${(totalAnnualSaving / trackNowAnnualCost).toFixed(2)}</div>
+</div>
+
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;margin:20px 0">
+  <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px">Investment Summary</div>
+  <div style="font-size:12px;color:#333;line-height:1.8">
+    <strong>${totalUnits} units</strong> × <strong>$${subPrice.toFixed(2)}/month</strong> = <strong>${fmt(trackNowAnnualCost)}/year</strong><br>
+    No lock-in contracts · No setup fees · Hardware included · Cancel anytime
+  </div>
+</div>
+
+<div class="footer">
+  <div>TrackNow GPS · ABN XX XXX XXX XXX · tracknow.com.au</div>
+  <div>Confidential — prepared for ${l.co}</div>
+</div>
+<div class="disclaimer">
+  This report is based on estimated fleet data provided and industry benchmarks. Actual savings may vary based on fleet usage, driver behaviour, and operational factors. Figures are projections only and do not constitute financial advice.
+</div>
+</body></html>`);
+  reportWin.document.close();
+  showToast('Fleet Profile generated for ' + l.co);
+}
+
 // ── Add Units / Upsell modal ────────────────────────────────────
 function openAddUnitsModal(custId) {
   const c = CUSTOMERS.find(x => x.id === custId);
@@ -7598,7 +7829,7 @@ function doLogin() {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Industry</label><select id="ml_ind"><option>Transport &amp; Logistics</option><option>Civil &amp; Construction</option><option>Mining &amp; Resources</option><option>Service</option><option>Storage &amp; Waste</option><option>Manufacturing</option><option>Live Stock &amp; Pets</option></select></div>
-        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="new">New Lead</option><option value="contacted">Contacted</option><option value="interested">Interested</option><option value="demo">Demo Booked</option><option value="proposal">Proposal Sent</option><option value="closed">Closed Won</option></select></div>
+        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="new">New Lead</option><option value="contacted">Contacted</option><option value="interested">Interested</option><option value="demo">Demo Sent</option><option value="proposal">Proposal Sent</option><option value="closed">Closed Won</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>State</label><select id="ml_st"><option>QLD</option><option>NSW</option><option>VIC</option><option>WA</option><option>SA</option><option>TAS</option><option>NT</option><option>ACT</option></select></div>
@@ -7700,6 +7931,59 @@ function doLogin() {
           <span style="font-size:12px;font-weight:800;color:#059669">NET CONTRACT VALUE</span>
           <span id="dp_contractVal" style="font-size:18px;font-weight:800;color:#059669">$0</span>
         </div>
+      </div>
+    </div>
+      <!-- ── FLEET PROFILE SECTION ── -->
+      <div style="border-top:1px solid #332200;margin-top:16px;padding-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">Fleet Profile</div>
+          <div style="font-size:9px;color:#666">Used to generate savings report for prospect</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fleet Type</label>
+            <select id="fp_fleetType" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+              <option value="mixed">Mixed Fleet</option>
+              <option value="trucks">Trucks / Heavy Vehicles</option>
+              <option value="vans">Vans / Light Commercial</option>
+              <option value="equipment">Plant / Equipment</option>
+              <option value="cars">Cars / Service Vehicles</option>
+              <option value="excavators">Excavators / Earthmoving</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Avg KM/Week per Vehicle</label>
+            <input type="number" id="fp_kmWeek" value="800" min="50" step="50" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fuel $/Litre</label>
+            <input type="number" id="fp_fuelPrice" value="2.15" min="0.5" step="0.05" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">L/100km</label>
+            <input type="number" id="fp_consumption" value="22" min="5" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Insurance $/Vehicle/Yr</label>
+            <input type="number" id="fp_insurance" value="3500" min="500" step="100" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Fuel Slippage %</label>
+            <input type="number" id="fp_slippage" value="15" min="5" max="40" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Idle Hours/Day</label>
+            <input type="number" id="fp_idleHrs" value="2" min="0" max="8" step="0.5" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+        </div>
+        <button onclick="generateFleetProfile()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700;letter-spacing:.5px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          GENERATE FLEET PROFILE REPORT
+        </button>
       </div>
     </div>
     <div class="modal-footer">
