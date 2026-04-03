@@ -6675,9 +6675,12 @@ function renderDealProductLines() {
           <label style="${lbl}">$/unit</label>
           <input type="number" value="${li.hwPrice||0}" min="0" onfocus="this.select()" onchange="updateLineItem(${i},'hwPrice',parseFloat(this.value)||0)" style="width:100%;${inp};text-align:center">
         </div>
-        <div style="width:80px">
-          <label style="${lbl}">Install $</label>
-          <input type="number" value="${li.hwInstall||0}" min="0" onfocus="this.select()" onchange="updateLineItem(${i},'hwInstall',parseFloat(this.value)||0)" style="width:100%;${inp};text-align:center">
+        <div style="width:70px">
+          <label style="${lbl}">Install</label>
+          <select onchange="updateLineItem(${i},'hwInstall',this.value==='yes'?(HW_INSTALL_DEFAULT[li.hwType]||75):0);renderDealProductLines();updateDealProductTotals()" style="width:100%;${inp};text-align:center">
+            <option value="no" ${(li.hwInstall||0)===0?'selected':''}>No</option>
+            <option value="yes" ${(li.hwInstall||0)>0?'selected':''}>Yes</option>
+          </select>
         </div>
         <div style="flex:1;min-width:100px">
           <label style="${lbl}">Asset</label>
