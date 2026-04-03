@@ -5007,12 +5007,16 @@ function handleContentUpload(files) {
     });
   }
 
-  document.getElementById('clDropLabel').textContent = files.length + ' file' + (files.length > 1 ? 's' : '') + ' added to Content Library';
+  // Show which folder it went into
+  const typeLabels = {video:'Videos', image:'Images', brochure:'Brochures', other:'Raw Files'};
+  const types = [...new Set(Array.from(files).map(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    return ['mp4','mov','avi','webm','mkv'].includes(ext) ? 'video' : ['jpg','jpeg','png','gif','webp','svg'].includes(ext) ? 'image' : ext === 'pdf' ? 'brochure' : 'other';
+  }))];
+  const folderNames = types.map(t => typeLabels[t] || 'Raw Files').join(', ');
+  document.getElementById('clDropLabel').textContent = files.length + ' file' + (files.length > 1 ? 's' : '') + ' added to ' + folderNames;
   renderContentLibrary();
-
-  // Show confirmation
-  const platforms = [...new Set(CONTENT_LIBRARY.flatMap(c => c.platforms))];
-  showToast(files.length + ' file' + (files.length > 1 ? 's' : '') + ' uploaded — sorted into ' + platforms.length + ' platform folders');
+  showToast(files.length + ' file' + (files.length > 1 ? 's' : '') + ' sorted into ' + folderNames);
 }
 
 const CONTENT_TYPE_FOLDERS = {
@@ -5024,16 +5028,87 @@ const CONTENT_TYPE_FOLDERS = {
 const ALL_FOLDER_IDS = Object.keys(CONTENT_TYPE_FOLDERS).concat(Object.keys(PLATFORM_SPECS));
 
 function showContentFolder(folderId) {
+  const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other'};
+
+  // Platform folders open as overlay modal
+  if (PLATFORM_SPECS[folderId]) {
+    openPlatformFolder(folderId);
+    return;
+  }
+
+  // Content-type folders toggle inline
   _activeFolder = _activeFolder === folderId ? null : folderId;
-  // Highlight active folder — clear all, then highlight active
   ALL_FOLDER_IDS.forEach(function(id) {
     const el = document.getElementById('clFolder-' + id);
     if (!el) return;
     const isActive = id === _activeFolder;
-    const clr = CONTENT_TYPE_FOLDERS[id] ? CONTENT_TYPE_FOLDERS[id].color : (PLATFORM_SPECS[id] ? PLATFORM_SPECS[id].color : '#FFA028');
+    const clr = CONTENT_TYPE_FOLDERS[id] ? CONTENT_TYPE_FOLDERS[id].color : '#FFA028';
     el.style.borderColor = isActive ? clr : '#222';
   });
   renderContentLibrary();
+}
+
+function openPlatformFolder(pid) {
+  const spec = PLATFORM_SPECS[pid];
+  if (!spec) return;
+  const filtered = CONTENT_LIBRARY.filter(c => c.platforms.includes(pid));
+  const typeIcons = {
+    video: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
+    image: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+    brochure: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    other: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/></svg>'
+  };
+
+  let rows = '';
+  if (filtered.length === 0) {
+    rows = '<div style="text-align:center;padding:30px;color:#555;font-size:13px">No content in ' + spec.name + ' yet — upload files to get started</div>';
+  } else {
+    rows = '<table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr style="border-bottom:1px solid #222">' +
+        '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">File</th>' +
+        '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Description</th>' +
+        '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Type</th>' +
+        '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Size</th>' +
+        '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Date</th>' +
+      '</tr></thead><tbody>';
+    filtered.forEach(function(c) {
+      const icon = typeIcons[c.type] || typeIcons.other;
+      rows += '<tr style="border-bottom:1px solid #161616">' +
+        '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + spec.color + '">' + icon + '</span><span style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</span></div></td>' +
+        '<td style="padding:10px 12px;font-size:11px;color:#999">' + (c.desc || '-') + '</td>' +
+        '<td style="padding:10px 12px;font-size:10px;color:#666;text-transform:uppercase">' + c.type + ' · ' + c.ext + '</td>' +
+        '<td style="padding:10px 12px;font-size:11px;color:#888">' + c.size + '</td>' +
+        '<td style="padding:10px 12px;font-size:11px;color:#FFA028;font-weight:600;white-space:nowrap">' + c.uploaded + '</td>' +
+      '</tr>';
+    });
+    rows += '</tbody></table>';
+  }
+
+  // Remove existing overlay if present
+  const existing = document.getElementById('platformFolderOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'platformFolderOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:40px';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = '<div style="background:#0a0a0a;border:1px solid ' + spec.color + '33;width:100%;max-width:800px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">' +
+    '<div style="padding:16px 20px;background:' + spec.color + '10;border-bottom:1px solid ' + spec.color + '33;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<svg width="18" height="18" fill="none" stroke="' + spec.color + '" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+        '<span style="font-size:14px;font-weight:700;color:' + spec.color + '">' + spec.name + '</span>' +
+        '<span style="font-size:11px;color:#666;margin-left:4px">' + filtered.length + ' file' + (filtered.length !== 1 ? 's' : '') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px">' +
+        '<span style="font-size:10px;color:#666">Rec: ' + spec.recVideo + '</span>' +
+        '<button onclick="document.getElementById(\'platformFolderOverlay\').remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:20px;line-height:1">&times;</button>' +
+      '</div>' +
+    '</div>' +
+    '<div style="overflow-y:auto;flex:1">' + rows + '</div>' +
+  '</div>';
+
+  document.body.appendChild(overlay);
 }
 
 function removeContentItem(id) {
@@ -5042,15 +5117,12 @@ function removeContentItem(id) {
 }
 
 function renderContentLibrary() {
-  // Content-type folder filter map
   const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other'};
 
   // Update content-type folder counts
   for (const tid of Object.keys(CONTENT_TYPE_FOLDERS)) {
     const matchType = typeMap[tid];
-    const count = tid === 'raw'
-      ? CONTENT_LIBRARY.filter(c => c.type === 'other').length
-      : CONTENT_LIBRARY.filter(c => c.type === matchType).length;
+    const count = CONTENT_LIBRARY.filter(c => c.type === matchType).length;
     const el = document.getElementById('clCount-' + tid);
     if (el) el.textContent = count + ' file' + (count !== 1 ? 's' : '');
   }
@@ -5062,34 +5134,33 @@ function renderContentLibrary() {
     if (el) el.textContent = count + ' file' + (count !== 1 ? 's' : '');
   }
 
-  // Render file list
+  // Render inline file list (content-type folders only)
   const el = document.getElementById('clFilesList');
   if (!el) return;
 
-  // Filter based on active folder (content-type or platform)
   let filtered;
   if (_activeFolder && typeMap[_activeFolder] !== undefined) {
-    // Content-type folder
-    const matchType = typeMap[_activeFolder];
-    filtered = CONTENT_LIBRARY.filter(c => c.type === matchType);
-  } else if (_activeFolder) {
-    // Platform folder
-    filtered = CONTENT_LIBRARY.filter(c => c.platforms.includes(_activeFolder));
+    filtered = CONTENT_LIBRARY.filter(c => c.type === typeMap[_activeFolder]);
   } else {
-    filtered = CONTENT_LIBRARY;
+    // No active folder or not a content-type — show nothing inline (platform folders use overlay)
+    if (_activeFolder) { el.innerHTML = ''; return; }
+    filtered = [];
   }
 
-  if (!filtered.length) {
-    const folderName = _activeFolder
-      ? (CONTENT_TYPE_FOLDERS[_activeFolder] ? CONTENT_TYPE_FOLDERS[_activeFolder].name : (PLATFORM_SPECS[_activeFolder] ? PLATFORM_SPECS[_activeFolder].name : _activeFolder))
-      : '';
-    const msg = _activeFolder
-      ? 'No content in ' + folderName + ' yet — upload files above'
-      : CONTENT_LIBRARY.length ? 'Click a folder to filter content' : 'No content uploaded yet — drag files into the drop zone above';
-    el.innerHTML = '<div style="text-align:center;padding:24px;color:#555;font-size:13px">' + msg + '</div>';
+  if (!_activeFolder) {
+    el.innerHTML = CONTENT_LIBRARY.length
+      ? '<div style="text-align:center;padding:20px;color:#555;font-size:13px">Click a content folder above to view files</div>'
+      : '<div style="text-align:center;padding:20px;color:#555;font-size:13px">No content uploaded yet — drag files into the drop zone above</div>';
     return;
   }
 
+  if (!filtered.length) {
+    const ctf = CONTENT_TYPE_FOLDERS[_activeFolder];
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#555;font-size:13px">No files in ' + (ctf ? ctf.name : _activeFolder) + ' yet</div>';
+    return;
+  }
+
+  const ctf = CONTENT_TYPE_FOLDERS[_activeFolder];
   const typeIcons = {
     video: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
     image: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
@@ -5097,47 +5168,37 @@ function renderContentLibrary() {
     other: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/></svg>'
   };
 
-  // Folder header
-  let html = '';
-  const isContentType = _activeFolder && CONTENT_TYPE_FOLDERS[_activeFolder];
-  const isPlatform = _activeFolder && PLATFORM_SPECS[_activeFolder];
-  if (isContentType) {
-    const ctf = CONTENT_TYPE_FOLDERS[_activeFolder];
-    html += '<div style="padding:10px 14px;background:' + ctf.color + '12;border:1px solid ' + ctf.color + '33;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
-      '<span style="font-size:12px;font-weight:700;color:' + ctf.color + '">' + ctf.name + ' Folder</span>' +
-      '<span style="font-size:11px;color:#666">' + filtered.length + ' file' + (filtered.length !== 1 ? 's' : '') + '</span></div>';
-  } else if (isPlatform) {
-    const spec = PLATFORM_SPECS[_activeFolder];
-    html += '<div style="padding:10px 14px;background:' + spec.color + '12;border:1px solid ' + spec.color + '33;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
-      '<div><span style="font-size:12px;font-weight:700;color:' + spec.color + '">' + spec.name + ' Folder</span>' +
-      '<span style="font-size:11px;color:#999;margin-left:10px">Recommended: ' + spec.recVideo + '</span></div>' +
-      '<span style="font-size:11px;color:#666">' + filtered.length + ' file' + (filtered.length !== 1 ? 's' : '') + '</span></div>';
-  }
+  let html = '<div style="padding:10px 14px;background:' + ctf.color + '12;border:1px solid ' + ctf.color + '33;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
+    '<span style="font-size:12px;font-weight:700;color:' + ctf.color + '">' + ctf.name + '</span>' +
+    '<span style="font-size:11px;color:#666">' + filtered.length + ' file' + (filtered.length !== 1 ? 's' : '') + '</span></div>';
 
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
-  filtered.forEach(c => {
+  // Table layout for inline content folders
+  html += '<table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr style="border-bottom:1px solid #222">' +
+      '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">File</th>' +
+      '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Description</th>' +
+      '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Size</th>' +
+      '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Date</th>' +
+      '<th style="width:30px"></th>' +
+    '</tr></thead><tbody>';
+
+  filtered.forEach(function(c) {
     const icon = typeIcons[c.type] || typeIcons.other;
     const platBadges = c.platforms.map(function(p) {
       if (!PLATFORM_SPECS[p]) return '';
-      return '<span style="font-size:9px;font-weight:700;color:' + PLATFORM_SPECS[p].color + ';background:' + PLATFORM_SPECS[p].color + '18;padding:1px 5px;border-radius:3px">' + PLATFORM_SPECS[p].name + '</span>';
+      return '<span style="font-size:8px;font-weight:700;color:' + PLATFORM_SPECS[p].color + ';background:' + PLATFORM_SPECS[p].color + '18;padding:1px 4px;border-radius:2px">' + PLATFORM_SPECS[p].name + '</span>';
     }).join(' ');
-    const thumb = c.thumbUrl ? '<div style="width:100%;height:80px;background:url(' + c.thumbUrl + ') center/cover;border-radius:4px;margin-bottom:8px"></div>' : '';
-    html += '<div class="card" style="padding:12px;position:relative">' +
-      thumb +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-        '<span style="color:#FFA028">' + icon + '</span>' +
-        '<span style="font-size:12px;font-weight:600;color:#CCC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">' + c.name + '</span>' +
-        '<button onclick="removeContentItem(' + c.id + ')" style="background:none;border:none;color:#555;cursor:pointer;padding:2px" title="Remove">&times;</button>' +
-      '</div>' +
-      (c.desc ? '<div style="font-size:11px;color:#999;margin-bottom:6px;line-height:1.4">' + c.desc + '</div>' : '') +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-        '<span style="font-size:10px;color:#666">' + c.type.toUpperCase() + ' · ' + c.ext.toUpperCase() + ' · ' + c.size + '</span>' +
-        '<span style="font-size:10px;color:#FFA028;font-weight:600">' + c.uploaded + '</span>' +
-      '</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:3px">' + platBadges + '</div>' +
-    '</div>';
+
+    html += '<tr style="border-bottom:1px solid #161616">' +
+      '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + ctf.color + '">' + icon + '</span><div><div style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</div><div style="display:flex;gap:3px;margin-top:3px">' + platBadges + '</div></div></div></td>' +
+      '<td style="padding:10px 12px;font-size:11px;color:#999">' + (c.desc || c.ext.toUpperCase() + ' file') + '</td>' +
+      '<td style="padding:10px 12px;font-size:11px;color:#888;white-space:nowrap">' + c.size + '</td>' +
+      '<td style="padding:10px 12px;font-size:11px;color:#FFA028;font-weight:600;white-space:nowrap">' + c.uploaded + '</td>' +
+      '<td style="padding:10px 12px"><button onclick="removeContentItem(' + c.id + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Remove">&times;</button></td>' +
+    '</tr>';
   });
-  html += '</div>';
+
+  html += '</tbody></table>';
   el.innerHTML = html;
 }
 
