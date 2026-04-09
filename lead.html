@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TrackNow Lead</title>
+<script>
+(function(){
+  try {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('new_prospect') !== '1') { window.close(); return; }
+    var name = p.get('name') || '';
+    var email = p.get('email') || '';
+    if (!name && !email) { window.close(); return; }
+    var lead = { name:name, email:email, mobile:p.get('mobile')||'', company:p.get('company')||'', type:p.get('type')||'demo', product:p.get('product')||'', ts:new Date().toISOString() };
+    var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
+    if (!queue.some(function(q){ return q.email && email && q.email.toLowerCase() === email.toLowerCase(); })) {
+      queue.push(lead);
+      localStorage.setItem('tn_website_leads', JSON.stringify(queue));
+    }
+  } catch(e){}
+  setTimeout(function(){ window.close(); }, 500);
+})();
+</script>
+</head><body></body></html>
