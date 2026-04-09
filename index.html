@@ -4074,6 +4074,7 @@ window.addEventListener('load', function () {
   try { renderCompetitors(); } catch(e) { console.warn('renderCompetitors:', e); }
   try { renderCallScript(); } catch(e) { console.warn('renderCallScript:', e); }
   try { checkWebsiteProspect(); } catch(e) { console.warn('checkWebsiteProspect:', e); }
+  try { _importQueuedWebLeads(); } catch(e) { console.warn('importQueuedWebLeads:', e); }
 });
 
 // ═══════════════════════════════════════════════════
@@ -7890,6 +7891,8 @@ function initCustomersTab() {
   renderProspects();
   // Auto-create prospect from website demo/quote form (URL params)
   checkWebsiteProspect();
+  // Import any queued website leads from localStorage (from hidden iframe submissions)
+  _importQueuedWebLeads();
 }
 
 function checkWebsiteProspect() {
@@ -7902,39 +7905,59 @@ function checkWebsiteProspect() {
   var type = params.get('type') || 'demo';
   var product = params.get('product') || '';
   if (!name && !email) return;
-  // Avoid duplicate if already added (same email)
-  if (email && PROSPECTS.some(function(p){ return (p.email||'').toLowerCase() === email.toLowerCase(); })) {
-    showStageNotification(name, 'Already exists', 'This prospect is already in the system.');
-    window.history.replaceState({}, '', window.location.pathname);
-    return;
-  }
-  var noteText = (type === 'quote' ? 'Quote request' : 'Demo request') + ' via website on ' + auDate() + '.';
-  if (product) noteText += ' Product interest: ' + product + '.';
-  PROSPECTS.push({
-    id: _nextProspectId++,
-    co: company || name,
-    name: name,
-    phone: mobile,
-    email: email,
-    ind: '',
-    source: 'Website',
-    fleet: 0,
-    trackers: 0,
-    subPrice: 0,
-    added: auDate(),
-    status: 'new',
-    callbackDate: '',
-    callbackTime: '',
-    notes: noteText
-  });
-  renderProspects();
-  renderCustStats();
-  showStageNotification(name, 'New website lead', 'Prospect added from website — source: Website');
-  // Clean the URL so refresh doesn't re-add
+  // Queue lead in localStorage so it persists even if loaded via hidden iframe
+  var lead = {name:name, email:email, mobile:mobile, company:company, type:type, product:product, ts:new Date().toISOString()};
+  try {
+    var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
+    // Avoid duplicate by email
+    var dominated = queue.some(function(q){ return q.email && q.email.toLowerCase() === email.toLowerCase(); });
+    if (!dominated) { queue.push(lead); localStorage.setItem('tn_website_leads', JSON.stringify(queue)); }
+  } catch(_){}
+  // If running inside the main portal (not iframe), import immediately
+  if (typeof PROSPECTS !== 'undefined') { _importQueuedWebLeads(); }
   window.history.replaceState({}, '', window.location.pathname);
-  // Switch to Customers > Prospects tab
-  if (typeof showPage === 'function') showPage('customers');
-  if (typeof showCustTab === 'function') showCustTab('prospects');
+}
+
+/* Import any queued website leads from localStorage into PROSPECTS */
+function _importQueuedWebLeads() {
+  try {
+    var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
+    if (!queue.length) return;
+    var imported = 0;
+    queue.forEach(function(lead) {
+      // Skip if already in PROSPECTS (same email)
+      if (lead.email && PROSPECTS.some(function(p){ return (p.email||'').toLowerCase() === lead.email.toLowerCase(); })) return;
+      var noteText = (lead.type === 'quote' ? 'Quote request' : 'Demo request') + ' via website.';
+      if (lead.product) noteText += ' Product interest: ' + lead.product + '.';
+      PROSPECTS.push({
+        id: _nextProspectId++,
+        co: lead.company || lead.name,
+        name: lead.name,
+        phone: lead.mobile,
+        email: lead.email,
+        ind: '',
+        source: 'Website',
+        fleet: 0,
+        trackers: 0,
+        subPrice: 0,
+        added: auDate(),
+        status: 'new',
+        callbackDate: '',
+        callbackTime: '',
+        notes: noteText
+      });
+      imported++;
+    });
+    // Clear the queue after importing
+    localStorage.removeItem('tn_website_leads');
+    if (imported > 0) {
+      renderProspects();
+      renderCustStats();
+      showStageNotification(imported + ' new lead' + (imported > 1 ? 's' : ''), 'Website leads imported', imported + ' prospect' + (imported > 1 ? 's' : '') + ' added from website forms.');
+      if (typeof showPage === 'function') showPage('customers');
+      if (typeof showCustTab === 'function') showCustTab('prospects');
+    }
+  } catch(_){}
 }
 
 function showDisclaimer(user) {
