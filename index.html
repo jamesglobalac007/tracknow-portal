@@ -4,6 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TrackNow — Sales & Marketing Portal</title>
+<script>
+/* Early lead capture — runs immediately before any external resources load.
+   When the website form creates a hidden iframe pointing here with ?new_prospect=1,
+   this queues the lead into localStorage so it's picked up on next portal login. */
+(function(){
+  try {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('new_prospect') !== '1') return;
+    var name = p.get('name') || '';
+    var email = p.get('email') || '';
+    if (!name && !email) return;
+    var lead = { name:name, email:email, mobile:p.get('mobile')||'', company:p.get('company')||'', type:p.get('type')||'demo', product:p.get('product')||'', ts:new Date().toISOString() };
+    var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
+    if (!queue.some(function(q){ return q.email && email && q.email.toLowerCase() === email.toLowerCase(); })) {
+      queue.push(lead);
+      localStorage.setItem('tn_website_leads', JSON.stringify(queue));
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  } catch(e){}
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>/* ═══════════ RESET & BASE ═══════════ */
