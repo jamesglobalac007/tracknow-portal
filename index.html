@@ -2096,14 +2096,24 @@ const LEADS=[
 ];
 
 // ── PROSPECTS DATA ────────────────────────────────────────────────────────
-const PROSPECTS = [
+const _DEFAULT_PROSPECTS = [
   {id:1,co:'Apex Civil Contractors',name:'Dave Brooks',phone:'0411 222 333',email:'dave@apexcivil.com.au',ind:'Civil',source:'database',fleet:12,added:'28/03/26',status:'new',notes:'Interested in trial, call back end of April'},
   {id:2,co:'Peak Earthworks Pty Ltd',name:'Sharon Liu',phone:'0422 111 444',email:'sharon@peakearthworks.com',ind:'Civil',source:'social',fleet:6,added:'31/03/26',status:'new',notes:'LinkedIn DM enquiry'},
   {id:3,co:'Murray Valley Transport',name:'Gary Nguyen',phone:'0433 555 666',email:'',ind:'Transport',source:'database',fleet:20,added:'01/04/26',status:'new',notes:''},
   {id:4,co:'Outback Drilling Co.',name:'Ben Walsh',phone:'0455 777 888',email:'ben@outbackdrilling.com.au',ind:'Mining',source:'referral',fleet:8,added:'25/03/26',status:'callback',callbackDate:'',callbackTime:'',notes:'Referred by Hunter Valley Freight. Keen on 24mo deal'},
   {id:5,co:'Coastal Ag Services',name:'Trish McDonald',phone:'0466 999 111',email:'trish@coastalag.com.au',ind:'Agriculture',source:'website',fleet:4,added:'29/03/26',status:'qualified',notes:'Ready to sign — send proposal'},
 ];
-let _nextProspectId = 6;
+/* Load saved prospects from localStorage, or fall back to defaults */
+let PROSPECTS = (function() {
+  try {
+    var saved = localStorage.getItem('tn_prospects');
+    if (saved) { var arr = JSON.parse(saved); if (Array.isArray(arr) && arr.length > 0) return arr; }
+  } catch(e){}
+  return JSON.parse(JSON.stringify(_DEFAULT_PROSPECTS));
+})();
+let _nextProspectId = (function() { var mx = 0; PROSPECTS.forEach(function(p) { if (p.id > mx) mx = p.id; }); return mx + 1; })();
+/* Persist prospects to localStorage after any change */
+function _saveProspects() { try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} }
 
 // ── CUSTOMERS DATA ────────────────────────────────────────────────────────
 const CUSTOMERS = [
@@ -6403,6 +6413,7 @@ function updateProspectField(id, field, value) {
   if (field === 'status' && value === 'qualified') {
     moveProspectToPipeline(id);
   }
+  _saveProspects();
 }
 
 function getCallbackUrgency(p) {
@@ -6427,6 +6438,7 @@ function toggleProspSort(field) {
 }
 
 function renderProspects() {
+  _saveProspects();
   const el = document.getElementById('prospectsTable');
   const parkedEl = document.getElementById('parkedProspectsSection');
   if (!el) return;
