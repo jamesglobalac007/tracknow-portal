@@ -4073,6 +4073,7 @@ window.addEventListener('load', function () {
   try { renderObjections(); } catch(e) { console.warn('renderObjections:', e); }
   try { renderCompetitors(); } catch(e) { console.warn('renderCompetitors:', e); }
   try { renderCallScript(); } catch(e) { console.warn('renderCallScript:', e); }
+  try { checkWebsiteProspect(); } catch(e) { console.warn('checkWebsiteProspect:', e); }
 });
 
 // ═══════════════════════════════════════════════════
@@ -7887,6 +7888,53 @@ function autoPopulateCustomer(lead) {
 function initCustomersTab() {
   renderCustStats();
   renderProspects();
+  // Auto-create prospect from website demo/quote form (URL params)
+  checkWebsiteProspect();
+}
+
+function checkWebsiteProspect() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('new_prospect') !== '1') return;
+  var name = params.get('name') || '';
+  var email = params.get('email') || '';
+  var mobile = params.get('mobile') || '';
+  var company = params.get('company') || '';
+  var type = params.get('type') || 'demo';
+  var product = params.get('product') || '';
+  if (!name && !email) return;
+  // Avoid duplicate if already added (same email)
+  if (email && PROSPECTS.some(function(p){ return (p.email||'').toLowerCase() === email.toLowerCase(); })) {
+    showStageNotification(name, 'Already exists', 'This prospect is already in the system.');
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+  var noteText = (type === 'quote' ? 'Quote request' : 'Demo request') + ' via website on ' + auDate() + '.';
+  if (product) noteText += ' Product interest: ' + product + '.';
+  PROSPECTS.push({
+    id: _nextProspectId++,
+    co: company || name,
+    name: name,
+    phone: mobile,
+    email: email,
+    ind: '',
+    source: 'Website',
+    fleet: 0,
+    trackers: 0,
+    subPrice: 0,
+    added: auDate(),
+    status: 'new',
+    callbackDate: '',
+    callbackTime: '',
+    notes: noteText
+  });
+  renderProspects();
+  renderCustStats();
+  showStageNotification(name, 'New website lead', 'Prospect added from website — source: Website');
+  // Clean the URL so refresh doesn't re-add
+  window.history.replaceState({}, '', window.location.pathname);
+  // Switch to Customers > Prospects tab
+  if (typeof showPage === 'function') showPage('customers');
+  if (typeof showCustTab === 'function') showCustTab('prospects');
 }
 
 function showDisclaimer(user) {
