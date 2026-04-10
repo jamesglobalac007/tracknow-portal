@@ -8493,33 +8493,16 @@ function doLogin() {
         </div>
       </div>
     </div>
-      <!-- ── FLEET PROFILE SECTION ── -->
-      <div style="border-top:1px solid #332200;margin-top:16px;padding-top:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">Fleet Profile</div>
-          <div style="font-size:9px;color:#666">Add each vehicle category — benchmarks auto-fill</div>
-        </div>
-        <!-- Vehicle segments container -->
-        <div id="fp_segments" style="margin-bottom:10px"></div>
-        <button onclick="addFleetSegment()" class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:12px;padding:6px;font-size:11px">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          ADD VEHICLE CATEGORY
-        </button>
-        <!-- Global inputs -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
-            <input type="number" id="fp_fuelPrice" value="2.15" min="0.5" step="0.05" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+      <!-- ── FLEET PROFILE STATUS ── -->
+      <div id="dp_fleetStatus" style="border-top:1px solid #332200;margin-top:16px;padding-top:16px">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.2)">
+          <span style="font-size:14px">📄</span>
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:700;color:#0088FF">Fleet Optimisation Report</div>
+            <div style="font-size:9px;color:#666;margin-top:2px">Generated from prospect fleet profile data</div>
           </div>
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Fuel Card Fraud %</label>
-            <input type="number" id="fp_fraudPct" value="3" min="0" max="20" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
+          <span style="font-size:11px;color:#00CC66;font-weight:700">✓ Sent</span>
         </div>
-        <button onclick="generateFleetReport()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700;letter-spacing:.5px">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          GENERATE FLEET PROFILE REPORT
-        </button>
       </div>
     </div>
     <div class="modal-footer">
