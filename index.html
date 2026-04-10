@@ -2423,8 +2423,12 @@ function openProposalDoc(leadId) {
   <button onclick="window.print()" style="padding:10px 24px;background:#FFA028;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Print / Save as PDF</button>
 </div>
 <div class="header">
-  <div><div class="logo">Track<span>Now</span> GPS</div><div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div></div>
-  <div style="text-align:right"><div style="font-size:16px;font-weight:700">${l.co}</div><div style="font-size:11px;color:#666;margin-top:2px">${l.name} · ${l.city}, ${l.st}</div><div style="font-size:11px;color:#666">${today}</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-${String(l.id).padStart(4,'0')}</div></div>
+  <div>
+    <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
+    <div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>
+    <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
+  </div>
+  <div style="text-align:right"><div style="font-size:16px;font-weight:700">${l.co}</div><div style="font-size:11px;color:#666;margin-top:2px">${l.name}${l.city ? ' · '+l.city : ''}${l.st ? ', '+l.st : ''}</div><div style="font-size:11px;color:#666">${l.email || ''}</div><div style="font-size:11px;color:#666">${today}</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-${String(l.id).padStart(4,'0')}</div></div>
 </div>
 
 <h2>Scope of Service</h2>
@@ -2474,7 +2478,7 @@ function openProposalDoc(leadId) {
   <div><div style="border-bottom:1px solid #ccc;height:50px;margin-bottom:6px"></div><div style="font-size:10px;color:#888">TrackNow GPS Representative</div><div style="font-size:10px;color:#888;margin-top:2px">Date: _______________</div></div>
 </div>
 
-<div class="footer"><div>TrackNow GPS · ABN XX XXX XXX XXX · tracknow.com.au</div><div>Confidential — prepared for ${l.co}</div></div>
+<div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; tracknow.com.au</div><div>Confidential &mdash; prepared for ${l.co}</div></div>
 </body></html>`);
   win.document.close();
   showToast('Proposal generated for ' + l.co);
@@ -2614,8 +2618,13 @@ function openAgreementDoc(leadId) {
   @media print{.accept-btn,.no-print{display:none !important}.accepted-msg{display:block !important}}
 </style></head><body>
 <div class="header">
-  <div><div class="logo">Track<span>Now</span> GPS</div><div class="doc-type">Service Agreement</div></div>
-  <div class="meta"><div style="font-weight:600;color:#1a1a1a">${l.co}</div><div>${l.name || ''}</div><div>${today}</div><div>Ref: TN-AGR-${String(l.id).padStart(4,'0')}</div></div>
+  <div>
+    <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
+    <div class="doc-type">Service Agreement</div>
+    <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
+    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au</div>
+  </div>
+  <div class="meta"><div style="font-weight:600;color:#1a1a1a">${l.co}</div><div>${l.name || ''}</div><div>${l.email || ''}</div><div>${today}</div><div>Ref: TN-AGR-${String(l.id).padStart(4,'0')}</div></div>
 </div>
 
 <div class="section">
@@ -7089,6 +7098,24 @@ function saveDealProducts() {
 }
 
 // ── Fleet Profile Report Generator ─────────────────────────────
+// ── Fleet type benchmarks — auto-fill sensible defaults per asset type ──
+const FLEET_BENCHMARKS = {
+  mixed:      { km: 800,  consumption: 22, insurance: 3500, slippage: 15, idle: 2.0 },
+  trucks:     { km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5 },
+  vans:       { km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5 },
+  equipment:  { km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0 },
+  cars:       { km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0 },
+  excavators: { km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0 }
+};
+function applyFleetDefaults(type) {
+  const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.mixed;
+  document.getElementById('fp_kmWeek').value = b.km;
+  document.getElementById('fp_consumption').value = b.consumption;
+  document.getElementById('fp_insurance').value = b.insurance;
+  document.getElementById('fp_slippage').value = b.slippage;
+  document.getElementById('fp_idleHrs').value = b.idle;
+}
+
 function generateFleetReport() {
   const l = LEADS.find(x => x.id === _dealProductsLeadId);
   if (!l) { showToast('No lead selected'); return; }
@@ -7194,12 +7221,15 @@ function generateFleetReport() {
 
 <div class="header">
   <div>
-    <div class="logo">Track<span>Now</span> GPS</div>
+    <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:36px;margin-bottom:8px">
     <div class="subtitle">Fleet Profile &amp; Cost Analysis Report</div>
+    <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
+    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; Gold Coast, QLD 4217</div>
   </div>
   <div class="client-info">
     <div class="client-name">${l.co}</div>
-    <div class="client-detail">${l.name} · ${l.city}, ${l.st}</div>
+    <div class="client-detail">${l.name}${l.city ? ' · '+l.city : ''}${l.st ? ', '+l.st : ''}</div>
+    <div class="client-detail">${l.email || ''}</div>
     <div class="client-detail">${l.ind}</div>
     <div class="client-detail">Prepared: ${new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'})}</div>
   </div>
@@ -7308,11 +7338,11 @@ function generateFleetReport() {
 </div>
 
 <div class="footer">
-  <div>TrackNow GPS · ABN XX XXX XXX XXX · tracknow.com.au</div>
-  <div>Confidential — prepared for ${l.co}</div>
+  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; tracknow.com.au</div>
+  <div>Confidential &mdash; prepared for ${l.co}</div>
 </div>
 <div class="disclaimer">
-  This report is based on estimated fleet data provided and industry benchmarks. Actual savings may vary based on fleet usage, driver behaviour, and operational factors. Figures are projections only and do not constitute financial advice.
+  This report is based on estimated fleet data provided and industry benchmarks. Actual savings may vary based on fleet usage, driver behaviour, and operational factors. Figures are projections only and do not constitute financial advice. &copy; ${new Date().getFullYear()} Track Now Proprietary Limited. All rights reserved.
 </div>
 </body></html>`);
   reportWin.document.close();
@@ -7829,7 +7859,7 @@ function doLogin() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
           <div>
             <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fleet Type</label>
-            <select id="fp_fleetType" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <select id="fp_fleetType" onchange="applyFleetDefaults(this.value)" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
               <option value="mixed">Mixed Fleet</option>
               <option value="trucks">Trucks / Heavy Vehicles</option>
               <option value="vans">Vans / Light Commercial</option>
