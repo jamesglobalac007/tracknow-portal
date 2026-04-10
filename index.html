@@ -7306,14 +7306,6 @@ function renderFleetSegments() {
         <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Qty</label>
           <input type="number" value="${seg.qty}" min="1" onchange="updateFleetSegVal(${seg.id},'qty',this.value)" style="width:100%;padding:5px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:11px;font-family:inherit"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
-        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">L/100km</label>
-          <input type="number" value="${seg.consumption}" min="0" onchange="updateFleetSegVal(${seg.id},'consumption',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
-        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Ins $/Yr</label>
-          <input type="number" value="${seg.insurance}" min="0" onchange="updateFleetSegVal(${seg.id},'insurance',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
-        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Idle Hr/D</label>
-          <input type="number" value="${seg.idle}" min="0" max="10" step="0.5" onchange="updateFleetSegVal(${seg.id},'idle',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
-      </div>
     </div>`;
   }).join('');
   const emptyMsg = '<div style="text-align:center;padding:12px;color:#555;font-size:11px">No vehicle categories added yet — click below to add</div>';
