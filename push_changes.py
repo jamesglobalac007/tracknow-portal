@@ -15,13 +15,16 @@ else:
 
 os.chdir(REPO)
 
-# Clear stale lock file if present
-lock = os.path.join(REPO, ".git", "index.lock")
-if os.path.exists(lock):
+# Clear ALL stale lock files if present
+import glob as _glob
+for lockf in _glob.glob(os.path.join(REPO, ".git", "*.lock")) + _glob.glob(os.path.join(REPO, ".git", "refs", "**", "*.lock"), recursive=True):
     try:
-        os.remove(lock)
+        os.remove(lockf)
     except Exception:
         pass
+
+# Reset git index to pick up any working-tree changes missed due to stale locks
+run("git reset")
 
 G = "\033[92m"
 O = "\033[38;5;214m"
