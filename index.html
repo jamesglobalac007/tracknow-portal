@@ -7188,10 +7188,12 @@ function updateFleetSegVal(id, field, val) {
   if (seg) seg[field] = parseFloat(val) || 0;
 }
 function renderFleetSegments() {
-  const c = document.getElementById('fp_segments');
+  const c = document.getElementById('fp_segments') || document.getElementById('pfp_segments');
   if (!c) return;
+  // Also render into the prospect fleet modal if open
+  const c2 = document.getElementById('pfp_segments');
   const typeOpts = Object.entries(FLEET_BENCHMARKS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
-  c.innerHTML = _fpSegments.map(seg => {
+  const html = _fpSegments.map(seg => {
     const opts = typeOpts.replace(`value="${seg.type}"`, `value="${seg.type}" selected`);
     return `<div style="background:#111;border:1px solid #333;padding:8px;margin-bottom:6px;position:relative">
       <button onclick="removeFleetSegment(${seg.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;font-weight:700" title="Remove">&times;</button>
@@ -7215,7 +7217,9 @@ function renderFleetSegments() {
       </div>
     </div>`;
   }).join('');
-  if (_fpSegments.length === 0) c.innerHTML = '<div style="text-align:center;padding:12px;color:#555;font-size:11px">No vehicle categories added yet — click below to add</div>';
+  const emptyMsg = '<div style="text-align:center;padding:12px;color:#555;font-size:11px">No vehicle categories added yet — click below to add</div>';
+  c.innerHTML = _fpSegments.length === 0 ? emptyMsg : html;
+  if (c2 && c2 !== c) c2.innerHTML = _fpSegments.length === 0 ? emptyMsg : html;
 }
 // Auto-add one segment when fleet profile opens
 function initFleetProfile() {
@@ -7234,8 +7238,8 @@ function generateFleetReport() {
   if (!l) { showToast('No lead selected'); return; }
   if (_fpSegments.length === 0) { showToast('Add at least one vehicle category'); return; }
 
-  const fuelPrice = parseFloat(document.getElementById('fp_fuelPrice').value) || 2.15;
-  const fraudPct = parseFloat(document.getElementById('fp_fraudPct').value) || 3;
+  const fuelPrice = parseFloat((document.getElementById('fp_fuelPrice') || document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
+  const fraudPct = parseFloat((document.getElementById('fp_fraudPct') || document.getElementById('pfp_fraudPct') || {}).value) || 3;
   const subPrice = l.subPrice || 29.95;
   const totalUnits = _fpSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
   const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
@@ -7457,19 +7461,33 @@ function generateFleetReport() {
 
 // ── Send Fleet Report from Prospects tab ──────────────────────────
 function sendProspectFleetReport(prospectId) {
+  const p = PROSPECTS.find(x => x.id === prospectId);
+  if (!p) return;
+  // If no fleet data yet, open the fleet profile modal instead
+  if (!p.fleetSegments || !p.fleetSegments.length) {
+    openProspectFleetProfile(prospectId);
+    showToast('Add fleet details first, then generate the report');
+    return;
+  }
+  // Has fleet data — generate directly
+  _fpSegments = p.fleetSegments.slice();
   _dealProductsSource = 'prospect';
   _dealProductsLeadId = prospectId;
-  const p = _getDealEntity();
-  if (!p) return;
-  // Ensure fleet segments exist
-  if (p.fleetSegments && p.fleetSegments.length) _fpSegments = p.fleetSegments.slice();
-  else if (_fpSegments.length === 0) { showToast('Open Fleet Profile first to add vehicle categories'); return; }
+  if (!p.subPrice) p.subPrice = 29.95;
+  // Set fuel/fraud inputs for generateFleetReport
+  var fpFuel = document.getElementById('fp_fuelPrice');
+  var fpFraud = document.getElementById('fp_fraudPct');
+  var origFuel = fpFuel ? fpFuel.value : null;
+  var origFraud = fpFraud ? fpFraud.value : null;
+  if (fpFuel) fpFuel.value = p.fuelPrice || 2.15;
+  if (fpFraud) fpFraud.value = p.fraudPct || 3;
   generateFleetReport();
+  if (fpFuel && origFuel !== null) fpFuel.value = origFuel;
+  if (fpFraud && origFraud !== null) fpFraud.value = origFraud;
   // Mark prospect as warm
   p.status = 'warm';
   p.fleetReportSentDate = new Date().toLocaleDateString('en-AU');
-  // Set auto follow-up: callback in 2 days
-  const followUp = new Date(); followUp.setDate(followUp.getDate() + 2);
+  var followUp = new Date(); followUp.setDate(followUp.getDate() + 2);
   p.callbackDate = followUp.toISOString().split('T')[0];
   p.callbackTime = '10:00';
   _saveProspects();
@@ -7478,8 +7496,79 @@ function sendProspectFleetReport(prospectId) {
   _dealProductsLeadId = null;
 }
 
+let _prospectFleetId = null;
 function openProspectFleetProfile(prospectId) {
-  openDealProducts(prospectId, 'prospect');
+  _prospectFleetId = prospectId;
+  const p = PROSPECTS.find(x => x.id === prospectId);
+  if (!p) return;
+  document.getElementById('pfp_title').textContent = p.co + ' — Fleet Profile';
+  // Load saved segments or start fresh
+  if (p.fleetSegments && p.fleetSegments.length) {
+    _fpSegments = p.fleetSegments.map(function(s) { return Object.assign({}, s); });
+  } else {
+    _fpSegments = [];
+    addFleetSegment('trucks');
+  }
+  renderFleetSegments();
+  document.getElementById('pfp_fuelPrice').value = p.fuelPrice || 2.15;
+  document.getElementById('pfp_fraudPct').value = p.fraudPct || 3;
+  document.getElementById('prospectFleetModal').style.display = 'flex';
+}
+function closeProspectFleet() {
+  document.getElementById('prospectFleetModal').style.display = 'none';
+  _prospectFleetId = null;
+}
+function saveProspectFleet() {
+  const p = PROSPECTS.find(x => x.id === _prospectFleetId);
+  if (!p) return;
+  p.fleetSegments = _fpSegments.slice();
+  p.fuelPrice = parseFloat(document.getElementById('pfp_fuelPrice').value) || 2.15;
+  p.fraudPct = parseFloat(document.getElementById('pfp_fraudPct').value) || 3;
+  // Update fleet count from segments
+  p.fleet = _fpSegments.reduce(function(s, seg) { return s + (seg.qty || 0); }, 0);
+  p.trackers = p.fleet;
+  _saveProspects();
+  closeProspectFleet();
+  renderProspects();
+  showToast('Fleet profile saved for ' + p.co);
+}
+function generateFleetReportFromProspect() {
+  const p = PROSPECTS.find(x => x.id === _prospectFleetId);
+  if (!p) return;
+  if (_fpSegments.length === 0) { showToast('Add at least one vehicle category'); return; }
+  // Save fleet data to prospect first
+  p.fleetSegments = _fpSegments.slice();
+  p.fuelPrice = parseFloat(document.getElementById('pfp_fuelPrice').value) || 2.15;
+  p.fraudPct = parseFloat(document.getElementById('pfp_fraudPct').value) || 3;
+  p.fleet = _fpSegments.reduce(function(s, seg) { return s + (seg.qty || 0); }, 0);
+  p.trackers = p.fleet;
+  // Set up entity context for generateFleetReport
+  _dealProductsSource = 'prospect';
+  _dealProductsLeadId = _prospectFleetId;
+  // Ensure subPrice exists for report calculation
+  if (!p.subPrice) p.subPrice = 29.95;
+  // Temporarily set fuel/fraud inputs for generateFleetReport (it reads from fp_ ids)
+  var fpFuel = document.getElementById('fp_fuelPrice');
+  var fpFraud = document.getElementById('fp_fraudPct');
+  var origFuel = fpFuel ? fpFuel.value : null;
+  var origFraud = fpFraud ? fpFraud.value : null;
+  if (fpFuel) fpFuel.value = p.fuelPrice;
+  if (fpFraud) fpFraud.value = p.fraudPct;
+  generateFleetReport();
+  // Restore original values
+  if (fpFuel && origFuel !== null) fpFuel.value = origFuel;
+  if (fpFraud && origFraud !== null) fpFraud.value = origFraud;
+  // Mark prospect as warm
+  p.status = 'warm';
+  p.fleetReportSentDate = new Date().toLocaleDateString('en-AU');
+  var followUp = new Date(); followUp.setDate(followUp.getDate() + 2);
+  p.callbackDate = followUp.toISOString().split('T')[0];
+  p.callbackTime = '10:00';
+  _saveProspects();
+  renderProspects();
+  _dealProductsSource = 'lead';
+  _dealProductsLeadId = null;
+  closeProspectFleet();
 }
 
 // ── Add Units / Upsell modal ────────────────────────────────────
@@ -8019,6 +8108,48 @@ function doLogin() {
       <button class="btn btn-primary" onclick="saveDealProducts()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         Save Products
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PROSPECT FLEET PROFILE MODAL ═══════════ -->
+<div class="modal-overlay" id="prospectFleetModal" style="display:none" onclick="if(event.target===this)closeProspectFleet()">
+  <div class="modal-box" style="width:660px;max-width:95vw">
+    <div class="modal-header">
+      <div class="modal-title" id="pfp_title">Fleet Profile</div>
+      <button class="modal-close" onclick="closeProspectFleet()">&times;</button>
+    </div>
+    <div class="modal-body" style="max-height:75vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">Vehicle Categories</div>
+        <div style="font-size:9px;color:#666">Add each vehicle type — benchmarks auto-fill from industry data</div>
+      </div>
+      <div id="pfp_segments" style="margin-bottom:10px"></div>
+      <button onclick="addFleetSegment()" class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:14px;padding:6px;font-size:11px">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        ADD VEHICLE CATEGORY
+      </button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div>
+          <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
+          <input type="number" id="pfp_fuelPrice" value="2.15" min="0.5" step="0.05" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Fuel Card Fraud %</label>
+          <input type="number" id="pfp_fraudPct" value="3" min="0" max="20" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+        </div>
+      </div>
+      <button onclick="generateFleetReportFromProspect()" class="btn btn-primary" style="width:100%;padding:12px;font-size:13px;font-weight:700;letter-spacing:.5px">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        GENERATE &amp; SEND FLEET REPORT
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeProspectFleet()">Close</button>
+      <button class="btn btn-primary" onclick="saveProspectFleet()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Fleet Profile
       </button>
     </div>
   </div>
