@@ -7267,7 +7267,7 @@ function _autoRecalcProspectCosts() {
 function addFleetSegment(type) {
   type = type || 'trucks';
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle };
+  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, selected: true };
   _fpSegments.push(seg);
   renderFleetSegments();
   _autoRecalcProspectCosts();
@@ -7285,6 +7285,13 @@ function updateFleetSegType(id, type) {
   renderFleetSegments();
   _autoRecalcProspectCosts();
 }
+function toggleFleetSegSelected(id) {
+  const seg = _fpSegments.find(s => s.id === id);
+  if (!seg) return;
+  seg.selected = !seg.selected;
+  renderFleetSegments();
+  _autoRecalcProspectCosts();
+}
 function updateFleetSegVal(id, field, val) {
   const seg = _fpSegments.find(s => s.id === id);
   if (seg) seg[field] = parseFloat(val) || 0;
@@ -7298,9 +7305,13 @@ function renderFleetSegments() {
   const typeOpts = Object.entries(FLEET_BENCHMARKS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
   const html = _fpSegments.map(seg => {
     const opts = typeOpts.replace(`value="${seg.type}"`, `value="${seg.type}" selected`);
-    return `<div style="background:#111;border:1px solid #333;padding:8px;margin-bottom:6px;position:relative">
+    const isSelected = seg.selected !== false;
+    const borderColor = isSelected ? '#0098d4' : '#333';
+    const opacity = isSelected ? '1' : '0.45';
+    return `<div style="background:#111;border:1px solid ${borderColor};padding:8px;margin-bottom:6px;position:relative;opacity:${opacity};transition:opacity .2s,border-color .2s">
       <button onclick="removeFleetSegment(${seg.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;font-weight:700" title="Remove">&times;</button>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:auto 2fr 1fr;gap:6px;align-items:end">
+        <div style="padding-bottom:2px"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleFleetSegSelected(${seg.id})" style="width:16px;height:16px;accent-color:#0098d4;cursor:pointer" title="Include in slippage calculation &amp; report"></div>
         <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Vehicle Type</label>
           <select onchange="updateFleetSegType(${seg.id},this.value)" style="width:100%;padding:5px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:11px;font-family:inherit">${opts}</select></div>
         <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Qty</label>
@@ -7332,12 +7343,13 @@ function generateFleetReport() {
   const fuelPrice = parseFloat((document.getElementById('fp_fuelPrice') || document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
   const fraudPct = parseFloat((document.getElementById('fp_fraudPct') || document.getElementById('pfp_fraudPct') || {}).value) || 3;
   const subPrice = l.subPrice || 29.95;
-  const totalUnits = _fpSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
+  const _reportSegments = _fpSegments.filter(seg => seg.selected !== false);
+  const totalUnits = _reportSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
   const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
 
-  // ── PER-SEGMENT CALCULATIONS ──
+  // ── PER-SEGMENT CALCULATIONS (only selected segments) ──
   let annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
-  const segResults = _fpSegments.map(seg => {
+  const segResults = _reportSegments.map(seg => {
     const q = seg.qty || 0;
     const weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
     const aFuel = weeklyFuel * 52;
@@ -7868,7 +7880,8 @@ function recalcProspectCosts() {
   var annualSlippage = 0, annualIdleWaste = 0, afterHoursCost = 0, annualWear = 0;
   var totalUnits = 0, totalAnnualFuelSpend = 0;
 
-  _fpSegments.forEach(function(seg) {
+  var _selectedSegments = _fpSegments.filter(function(seg) { return seg.selected !== false; });
+  _selectedSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     totalUnits += q;
     var weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
@@ -7945,7 +7958,10 @@ function recalcProspectCosts() {
   var totalAnnualSaving = fuelSlippageSaving + hcGpsSaves;
 
   // ── BUILD SUMMARY HTML ──
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:10px;color:#666">' + totalUnits + ' vehicles across ' + _fpSegments.length + ' categor' + (_fpSegments.length===1?'y':'ies') + '</div><div style="font-size:10px;color:#5a6675">Annual fuel spend: <b style="color:#0098d4">' + fmt(totalAnnualFuelSpend) + '</b></div></div>';
+  var selCount = _selectedSegments.length;
+  var totalCount = _fpSegments.length;
+  var selLabel = selCount === totalCount ? (totalCount + ' categor' + (totalCount===1?'y':'ies')) : (selCount + ' of ' + totalCount + ' selected');
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:10px;color:#666">' + totalUnits + ' vehicles across ' + selLabel + '</div><div style="font-size:10px;color:#5a6675">Annual fuel spend: <b style="color:#0098d4">' + fmt(totalAnnualFuelSpend) + '</b></div></div>';
 
   // Fuel Slippage losses
   html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fuel Slippage Losses (Annual)</div>';
