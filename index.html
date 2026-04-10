@@ -2552,8 +2552,8 @@ function renderPipeline() {
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
             ${''/* Fleet report removed from pipeline — now on Prospects tab */}
-            ${l.stage==='proposal'?'<button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 SEND PROPOSAL</button>':''}
-            ${l.stage==='agreement'?'<button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍️ SEND AGREEMENT</button>':''}
+            ${l.stage==='proposal'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button><button onclick="event.stopPropagation();emailProposal('+l.id+')" style="padding:5px 10px;background:#7c3aed;border:1px solid #7c3aed;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
+            ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍ VIEW AGREEMENT</button><button onclick="event.stopPropagation();emailAgreement('+l.id+')" style="padding:5px 10px;background:#db2777;border:1px solid #db2777;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
             ${renderFollowUpBar(l)}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
@@ -2663,39 +2663,79 @@ function openAgreementDoc(leadId) {
 </div>
 
 <div class="section">
-  <div class="section-title">Terms & Conditions</div>
+  <div class="section-title">Terms &amp; Conditions</div>
   <div class="terms"><ol>
-    <li>This agreement is for a minimum term of ${term} months from the date of installation.</li>
-    <li>Monthly subscription fees are billed in advance on the 1st of each month.</li>
-    <li>Hardware remains the property of TrackNow GPS Pty Ltd for the duration of the contract.</li>
-    <li>Installation will be scheduled within 5 business days of agreement execution.</li>
-    <li>TrackNow GPS provides 24/7 platform access, real-time tracking, and standard support.</li>
-    <li>Either party may terminate with 30 days written notice after the minimum term.</li>
-    <li>All prices are exclusive of GST unless otherwise stated.</li>
+    <li><strong>Term &amp; Commencement:</strong> This agreement is for a minimum term of ${term} months commencing from the date of installation of the GPS tracking devices. The agreement automatically renews on a month-to-month basis unless either party provides 30 days written notice prior to the end of the initial term or any renewal period.</li>
+    <li><strong>Fees &amp; Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit. All prices are in Australian dollars and exclusive of GST. A valid payment method must be provided prior to installation. Late payments may incur an administration fee of $15.00 per overdue invoice.</li>
+    <li><strong>Hardware Ownership &amp; Care:</strong> All GPS tracking devices, SIM cards, and associated hardware remain the sole property of Track Now Proprietary Limited (ABN 12 634 559 970) for the duration of this agreement. The Client is responsible for the reasonable care and protection of installed devices. Damaged, lost, or stolen devices may be replaced at the Client's cost at the then-current replacement price.</li>
+    <li><strong>Installation &amp; Access:</strong> Professional installation is included at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time. The Client agrees to provide safe and reasonable access to all vehicles and assets listed in this agreement for the purpose of installation, maintenance, and removal of GPS devices.</li>
+    <li><strong>Service Level &amp; Support:</strong> TrackNow GPS provides 24/7 platform access, real-time GPS tracking, geofence alerts, driver behaviour monitoring, fuel reconciliation, and automated reporting. Technical support is available 24/7 via phone and email. Critical issues will be responded to within 2 business hours; standard queries within 1 business day.</li>
+    <li><strong>Data, Privacy &amp; Security:</strong> All fleet tracking data is stored securely in Australian-based data centres and is accessible only to authorised personnel nominated by the Client. TrackNow GPS complies with the Australian Privacy Act 1988 and will not share, sell, or disclose Client data to third parties without prior written consent, except as required by law. Data is retained for 12 months after termination and then securely deleted.</li>
+    <li><strong>Intellectual Property:</strong> The TrackNow GPS platform, software, dashboards, and reporting tools remain the intellectual property of Track Now Proprietary Limited. The Client is granted a non-exclusive, non-transferable licence to use the platform for the duration of this agreement.</li>
+    <li><strong>Limitation of Liability:</strong> To the maximum extent permitted by law, TrackNow GPS's liability under this agreement is limited to the total fees paid by the Client in the 12 months preceding the claim. TrackNow GPS is not liable for indirect, consequential, or incidental losses including but not limited to loss of revenue, data, or business opportunity. GPS tracking relies on satellite and cellular networks which may be subject to coverage limitations.</li>
+    <li><strong>Indemnification:</strong> The Client agrees to indemnify and hold harmless Track Now Proprietary Limited, its directors, officers, and employees from any claims, damages, or expenses arising from the Client's use of the GPS tracking system or breach of this agreement.</li>
+    <li><strong>Termination:</strong> Either party may terminate this agreement with 30 days written notice after the minimum term. Early termination during the initial term will incur an early exit fee equal to the remaining monthly fees for the balance of the term. Upon termination, all GPS devices must be made available for collection within 14 days.</li>
+    <li><strong>Force Majeure:</strong> Neither party shall be liable for failure to perform obligations due to circumstances beyond reasonable control, including but not limited to natural disasters, government actions, network outages, or pandemic events.</li>
+    <li><strong>Dispute Resolution:</strong> In the event of a dispute, both parties agree to first attempt resolution through good-faith negotiation. If unresolved within 30 days, the dispute shall be referred to mediation in Queensland, Australia. This agreement is governed by the laws of Queensland and the Commonwealth of Australia.</li>
+    <li><strong>Entire Agreement:</strong> This document constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, and agreements. Any amendments must be made in writing and signed by both parties.</li>
   </ol></div>
 </div>
 
-<div class="sig-block">
-  <div>
-    <div style="font-weight:600;margin-bottom:12px">Client — ${l.co}</div>
-    <div class="sig-line"></div>
-    <div class="sig-label">Signature</div>
-    <div class="sig-line" style="margin-top:16px"></div>
-    <div class="sig-label">Full Name & Date</div>
+<!-- ── DIGITAL SIGNATURE SECTION ── -->
+<div style="background:#f0f9ff;border:2px solid #0098d4;padding:24px;margin:30px 0">
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-size:16px;font-weight:800;color:#0098d4;margin-bottom:4px">Digital Signature</div>
+    <div style="font-size:11px;color:#666">Sign below to accept this agreement. All fields are required.</div>
   </div>
-  <div>
-    <div style="font-weight:600;margin-bottom:12px">TrackNow GPS Pty Ltd</div>
-    <div class="sig-line"></div>
-    <div class="sig-label">Authorised Representative</div>
-    <div class="sig-line" style="margin-top:16px"></div>
-    <div class="sig-label">Full Name & Date</div>
+
+  <div class="sig-block" style="margin-top:0;padding-top:0;border-top:none">
+    <div style="background:#fff;border:1px solid #ddd;padding:16px">
+      <div style="font-weight:700;color:#0098d4;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Client — ${l.co}</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Full Name</label>
+        <input type="text" id="sig_client_name" value="${l.name||''}" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" placeholder="Full legal name">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Position / Title</label>
+        <input type="text" id="sig_client_title" value="" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" placeholder="e.g. Director, Fleet Manager">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Signature (type your name to sign)</label>
+        <input type="text" id="sig_client_sig" value="" style="width:100%;padding:10px;border:1px solid #ccc;font-family:'Brush Script MT','Segoe Script',cursive;font-size:22px;color:#1a1a1a" placeholder="Type your full name" oninput="document.getElementById('sig_client_preview').textContent=this.value">
+        <div id="sig_client_preview" style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1a1a1a;min-height:36px;margin-top:6px;border-bottom:2px solid #0098d4;padding:4px 0"></div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Date</label>
+        <input type="text" id="sig_client_date" value="${today}" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" readonly>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #ddd;padding:16px">
+      <div style="font-weight:700;color:#0098d4;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">TrackNow GPS Pty Ltd</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Full Name</label>
+        <input type="text" id="sig_tn_name" value="Mark Spielmeyer" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" readonly>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Position / Title</label>
+        <input type="text" id="sig_tn_title" value="Director" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" readonly>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Signature</label>
+        <div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1a1a1a;border-bottom:2px solid #0098d4;padding:4px 0;min-height:36px">Mark Spielmeyer</div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Date</label>
+        <input type="text" id="sig_tn_date" value="${today}" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" readonly>
+      </div>
+    </div>
   </div>
 </div>
 
-<button class="accept-btn no-print" onclick="this.style.display='none';document.getElementById('acceptedMsg').style.display='block';window.print()">
-  ✓ I ACCEPT THIS AGREEMENT
+<button class="accept-btn no-print" onclick="var cn=document.getElementById('sig_client_name').value.trim();var cs=document.getElementById('sig_client_sig').value.trim();if(!cn||!cs){alert('Please enter your full name and signature to proceed.');return;}this.style.display='none';document.getElementById('acceptedMsg').style.display='block';document.getElementById('acceptedMsg').innerHTML='✓ Agreement Signed &mdash; '+cn+' &middot; ${today}';window.print()">
+  ✓ SIGN &amp; ACCEPT AGREEMENT
 </button>
-<div class="accepted-msg" id="acceptedMsg">✓ Agreement Accepted — ${today}</div>
+<div class="accepted-msg" id="acceptedMsg">✓ Agreement Signed — ${today}</div>
 
 <div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">
   <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
@@ -6101,8 +6141,9 @@ function renderProspects() {
             style="font-size:11px;padding:4px 8px;border:1px solid #444;color:${notesCount?'#FFA028':'#666'};background:#111;border-radius:0;cursor:pointer;font-weight:600;position:relative">📝${notesCount?' '+notesCount:''}</button>
           <button onclick="openProspectFleetProfile(${p.id})" title="Fleet Profile & Products"
             style="font-size:10px;padding:4px 8px;border:1px solid #0088FF;color:#0088FF;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">📊 Fleet</button>
-          <button onclick="sendProspectFleetReport(${p.id})" title="Generate & Send Fleet Overview"
-            style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'✓ Overview Sent':'📄 Send Overview'}</button>
+          <button onclick="sendProspectFleetReport(${p.id})" title="View Fleet Overview Report"
+            style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'📄 View Report':'📄 Generate'}</button>
+          ${p.status==='warm'?'<button onclick="emailFleetOverview('+p.id+')" title="Email Fleet Overview to client" style="font-size:10px;padding:4px 8px;border:1px solid #0098d4;color:#fff;background:#0098d4;border-radius:0;cursor:pointer;font-weight:600">✉ Send</button>':''}
           <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline (Proposal stage)"
             style="font-size:10px;padding:4px 8px;border:1px solid #FFA028;color:#FFA028;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
           <button onclick="deleteProspect(${p.id})"
@@ -7543,6 +7584,125 @@ function sendProspectFleetReport(prospectId) {
   _dealProductsLeadId = null;
 }
 
+// ── Email Send Helpers ──────────────────────────────────────────
+var _pendingEmail = {};
+
+function closeEmailPreview() { document.getElementById('emailPreviewModal').style.display = 'none'; }
+
+function _showEmailPreview(to, subject, htmlBody, plainBody, docType) {
+  _pendingEmail = { to: to, subject: subject, plainBody: plainBody, docType: docType };
+  document.getElementById('ep_to').value = to;
+  document.getElementById('ep_subject').value = subject;
+  document.getElementById('ep_title').textContent = 'Send ' + docType;
+  document.getElementById('ep_body').innerHTML = htmlBody;
+  document.getElementById('emailPreviewModal').style.display = 'flex';
+}
+
+function sendEmailFromPortal() {
+  var to = document.getElementById('ep_to').value;
+  var subject = document.getElementById('ep_subject').value;
+  var body = _pendingEmail.plainBody || '';
+  // Open Gmail compose with pre-filled fields (sends from sales@tracknow.com.au if logged in)
+  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+    '&to=' + encodeURIComponent(to) +
+    '&su=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
+  window.open(gmailUrl, '_blank');
+  closeEmailPreview();
+  showToast(_pendingEmail.docType + ' email opened in Gmail for sending');
+}
+
+function _emailSignature() {
+  return '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+    '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:28px">' +
+    '<div>' +
+    '<div style="font-size:13px;font-weight:700;color:#0a1726">TrackNow GPS Sales Team</div>' +
+    '<div style="font-size:11px;color:#666">1300 TRACK NOW &middot; sales@tracknow.com.au</div>' +
+    '<div style="font-size:11px;color:#0098d4"><a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>' +
+    '</div></div></div>';
+}
+
+function _emailSignaturePlain() {
+  return '\n\n—\nTrackNow GPS Sales Team\n1300 TRACK NOW\nsales@tracknow.com.au\nwww.tracknow.com.au';
+}
+
+function emailFleetOverview(prospectId) {
+  var p = PROSPECTS.find(function(x){return x.id===prospectId;});
+  if (!p) return;
+  if (!p.email) { showToast('No email address for ' + p.co + ' — add one first'); return; }
+  var name = p.name || 'there';
+  var subject = 'Fleet Overview & Optimisation Report — ' + p.co;
+  var html = '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#333;line-height:1.6">' +
+    '<p>Hi ' + name + ',</p>' +
+    '<p>Thank you for taking the time to speak with us about your fleet.</p>' +
+    '<p>Please find attached your personalised <strong>Fleet Overview &amp; Optimisation Report</strong> for <strong>' + p.co + '</strong>. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.</p>' +
+    '<p>We would love the opportunity to walk you through the numbers and show you a quick demo of the TrackNow platform.</p>' +
+    '<p>Feel free to reply to this email or call us on <strong>1300 TRACK NOW</strong>.</p>' +
+    '<p>Kind regards,</p>' +
+    _emailSignature() + '</div>';
+  var plain = 'Hi ' + name + ',\n\n' +
+    'Thank you for taking the time to speak with us about your fleet.\n\n' +
+    'Please find attached your personalised Fleet Overview & Optimisation Report for ' + p.co + '. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.\n\n' +
+    'We would love the opportunity to walk you through the numbers and show you a quick demo of the TrackNow platform.\n\n' +
+    'Feel free to reply to this email or call us on 1300 TRACK NOW.\n\n' +
+    'Kind regards,' + _emailSignaturePlain();
+  _showEmailPreview(p.email, subject, html, plain, 'Fleet Overview Report');
+}
+
+function emailProposal(leadId) {
+  var l = LEADS.find(function(x){return x.id===leadId;});
+  if (!l) return;
+  if (!l.email) { showToast('No email address for ' + l.co + ' — add one first'); return; }
+  var name = l.name || 'there';
+  var totalUnits = l.lineItems ? l.lineItems.reduce(function(s,li){return s+(li.qty||0);},0) : (l.v||0);
+  var subject = 'TrackNow GPS Proposal — ' + l.co;
+  var html = '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#333;line-height:1.6">' +
+    '<p>Hi ' + name + ',</p>' +
+    '<p>Thank you for your interest in TrackNow GPS fleet tracking.</p>' +
+    '<p>Please find attached your proposal for <strong>' + totalUnits + ' GPS tracking units</strong> for <strong>' + l.co + '</strong>. This includes full pricing, contract terms, and service details.</p>' +
+    '<p>If you have any questions or would like to discuss the proposal, please don\'t hesitate to reach out. We\'re here to help.</p>' +
+    '<p>Kind regards,</p>' +
+    _emailSignature() + '</div>';
+  var plain = 'Hi ' + name + ',\n\n' +
+    'Thank you for your interest in TrackNow GPS fleet tracking.\n\n' +
+    'Please find attached your proposal for ' + totalUnits + ' GPS tracking units for ' + l.co + '. This includes full pricing, contract terms, and service details.\n\n' +
+    'If you have any questions or would like to discuss the proposal, please don\'t hesitate to reach out. We\'re here to help.\n\n' +
+    'Kind regards,' + _emailSignaturePlain();
+  _showEmailPreview(l.email, subject, html, plain, 'Proposal');
+}
+
+function emailAgreement(leadId) {
+  var l = LEADS.find(function(x){return x.id===leadId;});
+  if (!l) return;
+  if (!l.email) { showToast('No email address for ' + l.co + ' — add one first'); return; }
+  var name = l.name || 'there';
+  var subject = 'TrackNow GPS Service Agreement — ' + l.co;
+  var html = '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#333;line-height:1.6">' +
+    '<p>Hi ' + name + ',</p>' +
+    '<p>Thank you for choosing TrackNow GPS.</p>' +
+    '<p>Please find attached the <strong>Service Agreement</strong> for <strong>' + l.co + '</strong>. You can review the terms and sign digitally using the secure link provided.</p>' +
+    '<p>Once signed, our team will be in touch within 24 hours to schedule your installation.</p>' +
+    '<p>If you have any questions about the agreement, please don\'t hesitate to reach out.</p>' +
+    '<p>Kind regards,</p>' +
+    '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+    '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:28px">' +
+    '<div>' +
+    '<div style="font-size:13px;font-weight:700;color:#0a1726">Mark Spielmeyer</div>' +
+    '<div style="font-size:11px;color:#666">Director &middot; TrackNow GPS</div>' +
+    '<div style="font-size:11px;color:#666">1300 TRACK NOW &middot; sales@tracknow.com.au</div>' +
+    '<div style="font-size:11px;color:#0098d4"><a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>' +
+    '</div></div></div></div>';
+  var plain = 'Hi ' + name + ',\n\n' +
+    'Thank you for choosing TrackNow GPS.\n\n' +
+    'Please find attached the Service Agreement for ' + l.co + '. You can review the terms and sign digitally using the secure link provided.\n\n' +
+    'Once signed, our team will be in touch within 24 hours to schedule your installation.\n\n' +
+    'If you have any questions about the agreement, please don\'t hesitate to reach out.\n\n' +
+    'Kind regards,\n\nMark Spielmeyer\nDirector — TrackNow GPS\n1300 TRACK NOW\nsales@tracknow.com.au\nwww.tracknow.com.au';
+  _showEmailPreview(l.email, subject, html, plain, 'Service Agreement');
+}
+
 let _prospectFleetId = null;
 function openProspectFleetProfile(prospectId) {
   _prospectFleetId = prospectId;
@@ -8508,6 +8668,42 @@ function doLogin() {
       <button class="btn btn-primary" onclick="saveProspectFleet()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         Save Fleet Profile
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ NEW CAMPAIGN MODAL ═══════════ -->
+<!-- ═══════════ EMAIL PREVIEW & SEND MODAL ═══════════ -->
+<div class="modal-overlay" id="emailPreviewModal" style="display:none" onclick="if(event.target===this)closeEmailPreview()">
+  <div class="modal-box" style="width:640px;max-width:95vw">
+    <div class="modal-header">
+      <div class="modal-title" id="ep_title">Send Email</div>
+      <button class="modal-close" onclick="closeEmailPreview()">&times;</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div style="margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:50px;flex-shrink:0">From:</label>
+          <div style="font-size:12px;color:#0098d4;font-weight:600">sales@tracknow.com.au</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:50px;flex-shrink:0">To:</label>
+          <input type="text" id="ep_to" style="flex:1;padding:6px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit" readonly>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:50px;flex-shrink:0">Subject:</label>
+          <input type="text" id="ep_subject" style="flex:1;padding:6px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #ddd;padding:24px;color:#333" id="ep_body">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEmailPreview()">Cancel</button>
+      <button class="btn btn-primary" id="ep_sendBtn" onclick="sendEmailFromPortal()" style="background:#0098d4;border-color:#0098d4">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send from sales@tracknow.com.au
       </button>
     </div>
   </div>
