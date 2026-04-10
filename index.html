@@ -2314,9 +2314,9 @@ function setView(v) {
 const FOLLOW_UPS = {
   'fleet-report': [
     {type:'email', day:0, subject:'Your Fleet Report & Demo — {company}', body:'Hi {name},\n\nAs discussed, please find attached your Fleet Report for {company}. This outlines the hidden costs within your fleet — including fuel slippage, unauthorised use, idle time, and maintenance inefficiencies — and shows how TrackNow GPS tracking can recover significant savings annually.\n\nWe have also included a short demo video so you can see exactly how the platform works for fleets like yours.\n\nHappy to jump on a quick call to walk through it.\n\nKind regards,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Report & demo for {company}. Some eye-opening numbers on fleet savings in there. Happy to chat anytime. — TrackNow GPS'},
-    {type:'email', day:3, subject:'Following up — Fleet Report for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Report and demo video? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Report we sent. Any questions? Happy to chat. — TrackNow GPS'}
+    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Overview & Optimisation Report plus demo for {company}. Some eye-opening numbers on fleet savings in there. Happy to chat anytime. — TrackNow GPS'},
+    {type:'email', day:3, subject:'Following up — Fleet Overview Report for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Overview report and demo video? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Overview report we sent. Any questions? Happy to chat. — TrackNow GPS'}
   ],
   'proposal': [
     {type:'email', day:0, subject:'Your TrackNow GPS Proposal — {company}', body:'Hi {name},\n\nPlease find attached your TrackNow GPS proposal for {company}. This includes your custom hardware and software pricing, fleet savings summary, and contract terms based on the fleet details we discussed.\n\nHappy to make any adjustments — just let me know.\n\nCheers,\nTrackNow GPS Team'},
@@ -2441,6 +2441,7 @@ function openProposalDoc(leadId) {
     <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
     <div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
+    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   </div>
   <div style="text-align:right"><div style="font-size:16px;font-weight:700">${l.co}</div><div style="font-size:11px;color:#666;margin-top:2px">${l.name}${l.city ? ' · '+l.city : ''}${l.st ? ', '+l.st : ''}</div><div style="font-size:11px;color:#666">${l.email || ''}</div><div style="font-size:11px;color:#666">${today}</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-${String(l.id).padStart(4,'0')}</div></div>
 </div>
@@ -2492,7 +2493,7 @@ function openProposalDoc(leadId) {
   <div><div style="border-bottom:1px solid #ccc;height:50px;margin-bottom:6px"></div><div style="font-size:10px;color:#888">TrackNow GPS Representative</div><div style="font-size:10px;color:#888;margin-top:2px">Date: _______________</div></div>
 </div>
 
-<div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; tracknow.com.au</div><div>Confidential &mdash; prepared for ${l.co}</div></div>
+<div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div><div>Confidential &mdash; prepared for ${l.co}</div></div>
 </body></html>`);
   win.document.close();
   showToast('Proposal generated for ' + l.co);
@@ -2636,7 +2637,7 @@ function openAgreementDoc(leadId) {
     <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
     <div class="doc-type">Service Agreement</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
-    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au</div>
+    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   </div>
   <div class="meta"><div style="font-weight:600;color:#1a1a1a">${l.co}</div><div>${l.name || ''}</div><div>${l.email || ''}</div><div>${today}</div><div>Ref: TN-AGR-${String(l.id).padStart(4,'0')}</div></div>
 </div>
@@ -2695,6 +2696,11 @@ function openAgreementDoc(leadId) {
   ✓ I ACCEPT THIS AGREEMENT
 </button>
 <div class="accepted-msg" id="acceptedMsg">✓ Agreement Accepted — ${today}</div>
+
+<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">
+  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
+  <div>Confidential &mdash; prepared for ${l.co}</div>
+</div>
 
 </body></html>`);
   win.document.close();
@@ -6095,14 +6101,14 @@ function renderProspects() {
             style="font-size:11px;padding:4px 8px;border:1px solid #444;color:${notesCount?'#FFA028':'#666'};background:#111;border-radius:0;cursor:pointer;font-weight:600;position:relative">📝${notesCount?' '+notesCount:''}</button>
           <button onclick="openProspectFleetProfile(${p.id})" title="Fleet Profile & Products"
             style="font-size:10px;padding:4px 8px;border:1px solid #0088FF;color:#0088FF;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">📊 Fleet</button>
-          <button onclick="sendProspectFleetReport(${p.id})" title="Generate & Send Fleet Report"
-            style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'✓ Report Sent':'📄 Send Report'}</button>
+          <button onclick="sendProspectFleetReport(${p.id})" title="Generate & Send Fleet Overview"
+            style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'✓ Overview Sent':'📄 Send Overview'}</button>
           <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline (Proposal stage)"
             style="font-size:10px;padding:4px 8px;border:1px solid #FFA028;color:#FFA028;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
           <button onclick="deleteProspect(${p.id})"
             style="font-size:10px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">✕</button>
         </div>
-        ${p.status==='warm' && p.fleetReportSentDate ? '<div style="font-size:10px;color:#0088FF;margin-top:4px">📄 Fleet report sent '+p.fleetReportSentDate+'</div>' : ''}
+        ${p.status==='warm' && p.fleetReportSentDate ? '<div style="font-size:10px;color:#0088FF;margin-top:4px">📄 Fleet overview sent '+p.fleetReportSentDate+'</div>' : ''}
         ${p.status==='warm' && p.callbackDate ? '<div style="font-size:10px;color:#FFA028;margin-top:2px">📞 Follow-up: '+p.callbackDate+(p.callbackTime?' @ '+p.callbackTime:'')+'</div>' : ''}
       </td>
     </tr>
@@ -6823,7 +6829,7 @@ function moveCustomerToPipeline(id) {
     lineItems: custLines
   });
   saveData(); renderCustomers(); renderCustStats(); renderPipeline();
-  showToast(c.co + ' added to Pipeline — Fleet Report Sent. ' + c.trackers + ' trackers @ $' + c.subPrice.toFixed(2) + '/mo');
+  showToast(c.co + ' added to Pipeline — Fleet Overview Sent. ' + c.trackers + ' trackers @ $' + c.subPrice.toFixed(2) + '/mo');
 }
 
 // ── LINE ITEMS HELPERS ──────────────────────────────────────────
@@ -7322,7 +7328,7 @@ function generateFleetReport() {
 
   // ── BUILD REPORT HTML ──
   const reportWin = window.open('', '_blank', 'width=900,height=1100');
-  reportWin.document.write(`<!DOCTYPE html><html><head><title>Fleet Profile — ${l.co}</title>
+  reportWin.document.write(`<!DOCTYPE html><html><head><title>Fleet Overview &amp; Optimisation Report — ${l.co}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -7369,9 +7375,9 @@ function generateFleetReport() {
 <div class="header">
   <div>
     <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:36px;margin-bottom:8px">
-    <div class="subtitle">Fleet Profile &amp; Cost Analysis Report</div>
+    <div class="subtitle">Fleet Overview &amp; Optimisation Report</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
-    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; Gold Coast, QLD 4217</div>
+    <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   </div>
   <div class="client-info">
     <div class="client-name">${l.co}</div>
@@ -7489,7 +7495,7 @@ function generateFleetReport() {
 </div>
 
 <div class="footer">
-  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; tracknow.com.au</div>
+  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   <div>Confidential &mdash; prepared for ${l.co}</div>
 </div>
 <div class="disclaimer">
@@ -7497,7 +7503,7 @@ function generateFleetReport() {
 </div>
 </body></html>`);
   reportWin.document.close();
-  showToast('Fleet Profile generated for ' + l.co);
+  showToast('Fleet Overview report generated for ' + l.co);
 }
 
 // ── Send Fleet Report from Prospects tab ──────────────────────────
@@ -8494,7 +8500,7 @@ function doLogin() {
 
       <button onclick="generateFleetReportFromProspect()" class="btn btn-primary" style="width:100%;padding:12px;font-size:13px;font-weight:700;letter-spacing:.5px">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        GENERATE &amp; SEND FLEET REPORT
+        GENERATE &amp; SEND FLEET OVERVIEW
       </button>
     </div>
     <div class="modal-footer">
