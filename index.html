@@ -2142,14 +2142,8 @@ function showPage(id, btn) {
 
 // ═══════════ DASHBOARD ═══════════
 function initDashboard() {
-  // Recent Activity
-  const activities = [
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>', bg: 'var(--accent-bg)', color: 'var(--accent)', text: '657 leads scraped from Yellow Pages across <strong>3 industries</strong>', time: '1 Apr 2026' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>', bg: 'var(--purple-bg)', color: 'var(--purple)', text: '249 new leads added overnight — <strong>Civil &amp; Mining</strong>', time: '31 Mar 2026' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>', bg: 'var(--success-bg)', color: 'var(--success)', text: '592 leads have email addresses — ready for <strong>outreach</strong>', time: '31 Mar 2026' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>', bg: 'var(--warning-bg)', color: 'var(--warning)', text: 'Top states: <strong>QLD 238 · WA 135 · NSW 131</strong>', time: '30 Mar 2026' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', bg: 'var(--pink-bg)', color: 'var(--pink)', text: 'Portal v5 launched — lead database fully operational', time: '1 Apr 2026' }
-  ];
+  // Recent Activity — dynamically populated from real data
+  const activities = [];
   document.getElementById('recentActivity').innerHTML = activities.map(a => `
     <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;${a !== activities[activities.length-1] ? 'border-bottom:1px solid #111' : ''}">
       <div style="width:32px;height:32px;border-radius:0;background:${a.bg};color:${a.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">${a.icon}</div>
@@ -3123,28 +3117,8 @@ function initOutreach() {
     }
   });
 
-  // Social media content — pre-load into platform folders
-  const socialContent = [
-    {id:800001, name:'Fleet Cost Savings Carousel', ext:'png', type:'image', size:'1.8 MB', platforms:['facebook'], uploaded:'01/04/26', desc:'5 ways GPS tracking cuts fleet fuel costs'},
-    {id:800002, name:'QLD Transport Case Study', ext:'pdf', type:'brochure', size:'3.1 MB', platforms:['linkedin'], uploaded:'02/04/26', desc:'Case study: QLD transport company saved $18K/yr'},
-    {id:800003, name:'OBD2 Install Timelapse', ext:'mp4', type:'video', size:'18.4 MB', platforms:['instagram'], uploaded:'05/04/26', desc:'60-second OBD2 tracker install reel'},
-    {id:800004, name:'GPS Tracker Unboxing', ext:'mp4', type:'video', size:'22.1 MB', platforms:['tiktok'], uploaded:'07/04/26', desc:'Vertical unboxing and first look'},
-    {id:800005, name:'Track Your Fleet 60s', ext:'mp4', type:'video', size:'8.6 MB', platforms:['youtube'], uploaded:'09/04/26', desc:'YouTube Short — quick demo clip'},
-    {id:800006, name:'No Contracts Promo', ext:'png', type:'image', size:'0.9 MB', platforms:['facebook'], uploaded:'12/04/26', desc:'No lock-in contracts — single image promo'},
-    {id:800007, name:'Anti-Theft Feature Post', ext:'png', type:'image', size:'1.2 MB', platforms:['linkedin'], uploaded:'14/04/26', desc:'Geofence alert feature breakdown with screenshot'},
-    {id:800008, name:'Burleigh Testimonial', ext:'png', type:'image', size:'0.7 MB', platforms:['instagram'], uploaded:'15/04/26', desc:'Customer testimonial quote graphic'},
-    {id:800009, name:'Before-After Fleet View', ext:'mp4', type:'video', size:'14.2 MB', platforms:['tiktok'], uploaded:'18/04/26', desc:'Split screen: no tracking vs live fleet view'},
-    {id:800010, name:'Full Platform Demo', ext:'mp4', type:'video', size:'86.3 MB', platforms:['youtube'], uploaded:'20/04/26', desc:'8-min full platform demo walkthrough'},
-    {id:800011, name:'Customer Win Mining', ext:'png', type:'image', size:'1.1 MB', platforms:['facebook'], uploaded:'21/04/26', desc:'Mining client reduces downtime by 40%'},
-    {id:800012, name:'ROI Calculator Promo', ext:'png', type:'image', size:'0.8 MB', platforms:['linkedin'], uploaded:'24/04/26', desc:'Free fleet savings estimate link promo'},
-    {id:800013, name:'Solar Tracker Demo Reel', ext:'mp4', type:'video', size:'11.7 MB', platforms:['instagram'], uploaded:'27/04/26', desc:'Solar-powered GPS tracker on remote site'},
-    {id:800014, name:'Fleet Manager Tips', ext:'mp4', type:'video', size:'15.9 MB', platforms:['tiktok'], uploaded:'28/04/26', desc:'5 fleet manager tips using TrackNow dashboard'}
-  ];
-  socialContent.forEach(sc => {
-    if (!CONTENT_LIBRARY.some(c => c.id === sc.id)) {
-      CONTENT_LIBRARY.push({...sc, thumbUrl:'', file:null});
-    }
-  });
+  // Social media content — empty, will populate from real uploads
+  const socialContent = [];
 
   if (typeof renderContentLibrary === 'function') renderContentLibrary();
 
@@ -3308,7 +3282,7 @@ function initAnalytics() {
   // ── Units Deployed vs Target KPI Chart ──
   (function(){
     const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
-    const unitsActual = [120, 185, 210, 340, 420, 510, 0, 0, 0, 0, 0, 0];
+    const unitsActual = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const targetLow = months.map(() => 600);
     const targetHigh = months.map(() => 800);
     const ctx = document.getElementById('chartUnitsKPI').getContext('2d');
@@ -3342,7 +3316,7 @@ function initAnalytics() {
   // ── Subscriptions vs Target KPI Chart ──
   (function(){
     const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
-    const subsActual = [95, 160, 190, 310, 385, 475, 0, 0, 0, 0, 0, 0];
+    const subsActual = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const targetLow = months.map(() => 600);
     const targetHigh = months.map(() => 800);
     const ctx = document.getElementById('chartSubsKPI').getContext('2d');
@@ -4299,19 +4273,9 @@ function renderCallScript() {
 // ═══════════════════════════════════════════════════
 // MARKETING HUB
 // ═══════════════════════════════════════════════════
-let CAMPAIGNS = [
-  {id:1,name:'Fleet Tracker — Q1 Push',type:'Lead Generation',channels:['Facebook','LinkedIn'],audience:'Transport & Logistics',st:'All',status:'Active',reach:9400,clicks:312,leads:18,budget:800,spent:560,start:'1 Mar',end:'31 Mar',copy:'Track your entire fleet in real-time. No contracts, Australian-made GPS.'},
-  {id:2,name:'Civil Sector Awareness',type:'Awareness',channels:['LinkedIn','Google Ads'],audience:'Civil & Construction',st:'QLD',status:'Active',reach:5200,clicks:187,leads:11,budget:600,spent:420,start:'15 Mar',end:'15 Apr',copy:'GPS fleet tracking built for civil &amp; construction. Reduce theft, improve compliance.'},
-  {id:3,name:'Mining Remote Assets',type:'Lead Generation',channels:['Facebook'],audience:'Mining & Resources',st:'WA',status:'Scheduled',reach:0,clicks:0,leads:0,budget:400,spent:0,start:'5 Apr',end:'5 May',copy:'Track remote mining assets 24/7. Works in low-signal areas.'},
-  {id:4,name:'Easter Promo — Hardwired GPS',type:'Seasonal Promo',channels:['Facebook','Instagram'],audience:'All Industries',st:'All',status:'Draft',reach:0,clicks:0,leads:0,budget:300,spent:0,start:'18 Apr',end:'22 Apr',copy:'Easter special — get 20% off our hardwired GPS trackers this long weekend.'},
-  {id:5,name:'NSW Transport Retarget',type:'Retargeting',channels:['Facebook','Google Ads'],audience:'Transport & Logistics',st:'NSW',status:'Completed',reach:3100,clicks:98,leads:9,budget:350,spent:350,start:'1 Feb',end:'28 Feb',copy:'Still thinking about fleet tracking? See why 500+ Aussie businesses chose TrackNow.'}
-];
+let CAMPAIGNS = [];
 
-let SCHEDULED_POSTS = [
-  {date:'2 Apr',channel:'Facebook',preview:"Fleet visibility isn't a luxury \u2014 it's how smart businesses cut costs. #FleetTracking #TrackNow",status:'Scheduled'},
-  {date:'4 Apr',channel:'LinkedIn',preview:'Case study: How a Queensland transport company reduced fuel costs by 18% using real-time GPS tracking.',status:'Scheduled'},
-  {date:'7 Apr',channel:'Instagram',preview:'Our OBD2 tracker installs in 60 seconds. No mechanic needed.',status:'Scheduled'}
-];
+let SCHEDULED_POSTS = [];
 
 let MKT_TEMPLATES = [
   {cat:"Transport",title:"Fleet Cost Savings",copy:"Did you know the average fleet manager wastes $14,000/year on inefficient routing? TrackNow GPS helps you track, optimise, and save. Get a free demo today. #FleetTracking",tags:["#FleetTracking","#GPS"]},
@@ -4348,22 +4312,7 @@ function initMarketing() {
 }
 
 // ── Calendar ─────────────────────────────────────────────────────────────
-const CAL_EVENTS = [
-  {day:1,  platform:'Facebook',  desc:'Post — 5 ways GPS tracking cuts fleet fuel costs. Carousel with stats graphic.', color:'#1877F2'},
-  {day:2,  platform:'LinkedIn',  desc:'Article — Case study: How a QLD transport company saved $18K/yr with TrackNow.', color:'#0A66C2'},
-  {day:5,  platform:'Instagram', desc:'Reel — 60-second OBD2 tracker install timelapse with voiceover.', color:'#E1306C'},
-  {day:7,  platform:'TikTok',    desc:'Video — GPS tracker unboxing and first look, vertical format.', color:'#69C9D0'},
-  {day:9,  platform:'YouTube',   desc:'Short — "Track your entire fleet in under 60 seconds" quick demo clip.', color:'#FF0000'},
-  {day:12, platform:'Facebook',  desc:'Post — No lock-in contracts promo. Single image with pricing highlight.', color:'#1877F2'},
-  {day:14, platform:'LinkedIn',  desc:'Post — Anti-theft geofence alert feature breakdown with screenshot.', color:'#0A66C2'},
-  {day:15, platform:'Instagram', desc:'Story — Customer testimonial quote graphic from Burleigh Earthmoving.', color:'#E1306C'},
-  {day:18, platform:'TikTok',    desc:'Video — Before/after split screen: no tracking vs live fleet view.', color:'#69C9D0'},
-  {day:20, platform:'YouTube',   desc:'Video — Full 8-min platform demo walkthrough with narration.', color:'#FF0000'},
-  {day:21, platform:'Facebook',  desc:'Post — Customer win story: Mining client reduces downtime by 40%.', color:'#1877F2'},
-  {day:24, platform:'LinkedIn',  desc:'Post — ROI calculator promo with link to free fleet savings estimate.', color:'#0A66C2'},
-  {day:27, platform:'Instagram', desc:'Reel — Solar-powered GPS tracker demo on remote site, 30s clip.', color:'#E1306C'},
-  {day:28, platform:'TikTok',    desc:'Video — 5 fleet manager tips using the TrackNow dashboard.', color:'#69C9D0'}
-];
+const CAL_EVENTS = [];
 
 function calNav(dir) {
   if (dir === 0) { calOffset = 0; } else { calOffset += dir; }
