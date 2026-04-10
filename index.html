@@ -6076,7 +6076,7 @@ function renderProspects() {
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button onclick="toggleProspectNotes(${p.id})" title="Notes"
             style="font-size:11px;padding:4px 8px;border:1px solid #444;color:${notesCount?'#FFA028':'#666'};background:#111;border-radius:0;cursor:pointer;font-weight:600;position:relative">📝${notesCount?' '+notesCount:''}</button>
-          <button onclick="moveProspectToPipeline(${p.id})" title="Move to Pipeline"
+          <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline"
             style="font-size:11px;padding:4px 9px;border:1px solid #FFA028;color:#FFA028;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
           <button onclick="deleteProspect(${p.id})"
             style="font-size:11px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">X</button>
@@ -6749,9 +6749,12 @@ function deleteCustomer(id) {
 }
 
 // ── Move prospect to pipeline ────────────────────────────────────
+let _movingToPipeline = false;
 function moveProspectToPipeline(id) {
+  if (_movingToPipeline) return;
   const p = PROSPECTS.find(x => x.id === id);
   if (!p) return;
+  _movingToPipeline = true;
   const units = p.trackers || p.fleet || 0;
   const sub = p.subPrice || 29.95;
   const annualVal = Math.round(units * sub * 12);
@@ -6765,8 +6768,13 @@ function moveProspectToPipeline(id) {
   });
   const i = PROSPECTS.findIndex(x => x.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
-  saveData(); renderProspects(); renderCustStats(); renderPipeline();
-  showToast(p.co + ' moved to Pipeline — Fleet Report Sent. Click "Edit Products" on the card to set exact products & pricing.');
+  saveData();
+  showToast(p.co + ' moved to Pipeline — Fleet Report Sent');
+  // Defer heavy renders so the toast + UI responds instantly
+  requestAnimationFrame(function() {
+    renderProspects(); renderCustStats(); renderPipeline();
+    _movingToPipeline = false;
+  });
 }
 
 // ── Move customer to pipeline (e.g. upsell / renewal) ───────────
