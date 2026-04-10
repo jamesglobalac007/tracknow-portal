@@ -15,6 +15,14 @@ else:
 
 os.chdir(REPO)
 
+# Clear stale lock file if present
+lock = os.path.join(REPO, ".git", "index.lock")
+if os.path.exists(lock):
+    try:
+        os.remove(lock)
+    except Exception:
+        pass
+
 G = "\033[92m"
 O = "\033[38;5;214m"
 R = "\033[91m"
