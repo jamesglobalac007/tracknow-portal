@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push script — fixes Fleet Report generate button (popup blocker fix)."""
+"""Push script — Generate button warning toast + popup blocker fix."""
 import subprocess, os, sys, glob as _glob
 
 # Find the tracknow-portal repo
@@ -47,18 +47,45 @@ if not ok and "CONFLICT" in out:
     print(out)
     sys.exit(1)
 
-# Apply fix — replace window.open popup with Blob URL approach
 f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
+changed = False
 
-OLD1 = "const reportWin = window.open('', '_blank', 'width=900,height=1100');\n  reportWin.document.write(`"
-NEW1 = "// Use a Blob URL to avoid popup blockers\n  const reportHTML = `"
+# ── FIX 1: Generate button shows warning toast instead of reopening fleet data panel ──
+OLD_TOAST = """  // If no fleet data yet, open the fleet profile modal instead
+  if (!p.fleetSegments || !p.fleetSegments.length) {
+    openProspectFleetProfile(prospectId);
+    showToast('Add fleet details first, then generate the report');
+    return;
+  }"""
 
-OLD2 = """</body></html>`);
+NEW_TOAST = """  // If no fleet data saved yet, show clear message — don't re-open the data panel
+  if (!p.fleetSegments || !p.fleetSegments.length) {
+    showToast('Please save fleet profile first — click Fleet, add vehicles, then Save Fleet Profile', 'warn');
+    return;
+  }"""
+
+if OLD_TOAST in t:
+    t = t.replace(OLD_TOAST, NEW_TOAST)
+    changed = True
+    status("Generate button now shows warning toast instead of reopening fleet panel")
+elif NEW_TOAST in t:
+    status("Warning toast fix already applied (skipping)")
+else:
+    print(f"  {R}✗ Could not find fleet data check pattern{X}")
+
+# ── FIX 2: Replace window.open popup with Blob URL to avoid popup blockers ──
+OLD_POPUP = """const reportWin = window.open('', '_blank', 'width=900,height=1100');
+  reportWin.document.write(`"""
+
+NEW_POPUP = """// Use a Blob URL to avoid popup blockers
+  const reportHTML = `"""
+
+OLD_CLOSE = """</body></html>`);
   reportWin.document.close();
   showToast('Fleet Optimisation Report generated for ' + l.co);"""
 
-NEW2 = """</body></html>`;
+NEW_CLOSE = """</body></html>`;
   var blob = new Blob([reportHTML], {type: 'text/html'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener';
@@ -66,31 +93,23 @@ NEW2 = """</body></html>`;
   setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
   showToast('Fleet Optimisation Report generated for ' + l.co);"""
 
-changed = False
-
-if OLD1 in t:
-    t = t.replace(OLD1, NEW1)
+if OLD_POPUP in t:
+    t = t.replace(OLD_POPUP, NEW_POPUP)
     changed = True
     status("Replaced window.open with Blob URL approach")
-elif NEW1 in t:
+elif NEW_POPUP in t:
     status("Blob URL fix already applied (skipping)")
-else:
-    print(f"  {R}✗ Could not find window.open pattern{X}")
 
-if OLD2 in t:
-    t = t.replace(OLD2, NEW2)
+if OLD_CLOSE in t:
+    t = t.replace(OLD_CLOSE, NEW_CLOSE)
     changed = True
     status("Replaced document.write/close with Blob link click")
-elif NEW2 in t:
+elif NEW_CLOSE in t:
     status("Blob link click fix already applied (skipping)")
-else:
-    print(f"  {R}✗ Could not find document.write pattern{X}")
 
 if changed:
     open(f, "w").write(t)
     status("Saved index.html")
-else:
-    status("No changes needed — already up to date")
 
 # Commit and push
 ok, out = run("git status --porcelain")
@@ -98,7 +117,7 @@ if out.strip():
     ok, _ = run("git add -A")
     status("Staged all changes", ok)
 
-    MSG = "fix: fleet report generate button - use Blob URL instead of window.open to avoid popup blockers"
+    MSG = "fix: generate button shows save-first warning + blob URL popup fix"
     ok, out = run(f'git commit -m "{MSG}"')
     status("Committed", ok)
 
@@ -119,4 +138,4 @@ if out.strip():
         print(f"  {R}{out}{X}\n")
         sys.exit(1)
 else:
-    print(f"\n  {D}No changes to commit — portal is up to date.{X}\n")
+    print(f"\n  {D}No changes to commit — already up to date.{X}\n")

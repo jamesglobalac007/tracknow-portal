@@ -7570,10 +7570,9 @@ function generateFleetReport() {
 function sendProspectFleetReport(prospectId) {
   const p = PROSPECTS.find(x => x.id === prospectId);
   if (!p) return;
-  // If no fleet data yet, open the fleet profile modal instead
+  // If no fleet data saved yet, show clear message — don't re-open the data panel
   if (!p.fleetSegments || !p.fleetSegments.length) {
-    openProspectFleetProfile(prospectId);
-    showToast('Add fleet details first, then generate the report');
+    showToast('Please save fleet profile first — click Fleet, add vehicles, then Save Fleet Profile', 'warn');
     return;
   }
   // Has fleet data — generate directly
