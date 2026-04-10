@@ -493,7 +493,7 @@ select option{background:#0a0a0a;color:#FFA028}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">
       <div>
         <h1 class="page-title">Sales Pipeline</h1>
-        <p class="page-desc">0 leads &middot; $0 total pipeline value</p>
+        <p class="page-desc" id="pipelineSubtitle">0 leads &middot; $0 total pipeline value</p>
       </div>
       <div style="display:flex;gap:10px;align-items:center">
         <select id="filterInd" onchange="renderPipeline()">
@@ -2460,6 +2460,10 @@ function openProposalDoc(leadId) {
 }
 
 function renderPipeline() {
+  try { recalcAllMetrics(); } catch(e) {}
+  // Update pipeline subtitle dynamically
+  const pSub = document.getElementById('pipelineSubtitle');
+  if (pSub) { const tv = LEADS.reduce((s,l) => s + (l.val||0), 0); pSub.innerHTML = LEADS.length + ' lead' + (LEADS.length!==1?'s':'') + ' &middot; $' + tv.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',') + ' total pipeline value'; }
   const fi = document.getElementById('filterInd').value;
   const fs = document.getElementById('filterSt').value;
   const fl = LEADS.filter(l => (fi === 'All' || l.ind === fi) && (fs === 'All States' || l.st === fs));
@@ -3156,8 +3160,88 @@ function initOutreach() {
     </div>`).join('');
 }
 
+// ═══════════ DYNAMIC METRICS ENGINE ═══════════
+function recalcAllMetrics() {
+  // ── Recalculate STATES_DATA from LEADS ──
+  STATES_DATA.forEach(s => { s.leads = 0; s.val = 0; });
+  LEADS.forEach(l => {
+    const sd = STATES_DATA.find(s => s.st === l.st);
+    if (sd) { sd.leads++; sd.val += (l.val || 0); }
+  });
+
+  // ── Recalculate INDUSTRIES counts from LEADS + CUSTOMERS ──
+  INDUSTRIES.forEach(ind => { ind.count = 0; });
+  LEADS.forEach(l => {
+    const ind = INDUSTRIES.find(i => i.name === l.ind);
+    if (ind) ind.count++;
+  });
+  CUSTOMERS.forEach(c => {
+    const sec = c.sector || '';
+    const ind = INDUSTRIES.find(i => i.name === sec);
+    if (ind) ind.count++;
+  });
+
+  // ── Analytics KPI cards ──
+  const activeCust = CUSTOMERS.filter(c => c.status === 'active' || c.status === 'renewal-due');
+  const totalMRR = activeCust.reduce((s, c) => s + (c.trackers * c.subPrice), 0);
+  const closedDeals = LEADS.filter(l => l.stage === 'closed');
+  const avgDeal = closedDeals.length > 0 ? closedDeals.reduce((s, l) => s + (l.val || 0), 0) / closedDeals.length : 0;
+  const statesWithData = new Set();
+  LEADS.forEach(l => { if (l.st) statesWithData.add(l.st); });
+  CUSTOMERS.forEach(c => { if (c.state) statesWithData.add(c.state); });
+
+  // Update Analytics KPI HTML
+  const avgEl = document.querySelector('#page-analytics .kpi-grid .kpi-card:nth-child(1) .kpi-value');
+  const revEl = document.querySelector('#page-analytics .kpi-grid .kpi-card:nth-child(2) .kpi-value');
+  const stEl = document.getElementById('kpiStatesCovered');
+  if (avgEl) avgEl.textContent = avgDeal >= 1000 ? '$' + (avgDeal/1000).toFixed(1) + 'K' : '$' + avgDeal.toFixed(0);
+  if (revEl) revEl.textContent = totalMRR >= 1000 ? '$' + (totalMRR/1000).toFixed(1) + 'K' : '$' + totalMRR.toFixed(0);
+  if (stEl) stEl.textContent = statesWithData.size + ' / 8';
+
+  // Update Analytics KPI trends
+  const avgTrend = document.querySelector('#page-analytics .kpi-grid .kpi-card:nth-child(1) .kpi-trend');
+  const revTrend = document.querySelector('#page-analytics .kpi-grid .kpi-card:nth-child(2) .kpi-trend');
+  const stTrend = document.querySelector('#page-analytics .kpi-grid .kpi-card:nth-child(3) .kpi-trend');
+  if (avgTrend) { avgTrend.textContent = closedDeals.length + ' closed deal' + (closedDeals.length !== 1 ? 's' : ''); avgTrend.style.color = closedDeals.length > 0 ? '#00CC66' : '#666'; }
+  if (revTrend) { revTrend.textContent = '$' + (totalMRR * 12).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' ARR'; revTrend.style.color = totalMRR > 0 ? '#00CC66' : '#666'; }
+  if (stTrend) { stTrend.textContent = statesWithData.size === 8 ? 'All Australia' : statesWithData.size + ' state' + (statesWithData.size !== 1 ? 's' : '') + ' active'; stTrend.className = statesWithData.size > 0 ? 'kpi-trend trend-up' : 'kpi-trend'; if (statesWithData.size === 0) stTrend.style.color = '#666'; }
+
+  // ── Marketing Hub KPI cards ──
+  const mktReach = document.getElementById('mkt-reach');
+  const mktEngage = document.getElementById('mkt-engage');
+  const mktLeads = document.getElementById('mkt-leads');
+  const mktRoi = document.getElementById('mkt-roi');
+  const totalCampReach = CAMPAIGNS.reduce((s, c) => s + (c.reach || 0), 0);
+  const totalCampClicks = CAMPAIGNS.reduce((s, c) => s + (c.clicks || 0), 0);
+  const totalCampLeads = CAMPAIGNS.reduce((s, c) => s + (c.leads || 0), 0);
+  const totalCampSpent = CAMPAIGNS.reduce((s, c) => s + (c.spent || 0), 0);
+  const totalCampRevenue = CAMPAIGNS.reduce((s, c) => s + (c.revenue || 0), 0);
+  const engageRate = totalCampReach > 0 ? ((totalCampClicks / totalCampReach) * 100).toFixed(1) : '0';
+  const roi = totalCampSpent > 0 ? (((totalCampRevenue - totalCampSpent) / totalCampSpent) * 100).toFixed(0) : '0';
+  if (mktReach) mktReach.textContent = totalCampReach >= 1000 ? (totalCampReach / 1000).toFixed(1) + 'K' : totalCampReach;
+  if (mktEngage) mktEngage.textContent = engageRate + '%';
+  if (mktLeads) mktLeads.textContent = totalCampLeads;
+  if (mktRoi) mktRoi.textContent = roi + '%';
+
+  // ── Email Campaign KPIs ──
+  const totalSent = OUTREACH_CAMPAIGNS.reduce((s, c) => s + (c.sent || 0), 0);
+  const totalOpens = OUTREACH_CAMPAIGNS.reduce((s, c) => s + (c.opens || 0), 0);
+  const totalClicks = OUTREACH_CAMPAIGNS.reduce((s, c) => s + (c.clicks || 0), 0);
+  const totalReplies = OUTREACH_CAMPAIGNS.reduce((s, c) => s + (c.replies || 0), 0);
+  const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '0';
+  const clickRate = totalSent > 0 ? ((totalClicks / totalSent) * 100).toFixed(1) : '0';
+  const emailKpis = document.querySelectorAll('#mktSection-emailcampaigns .kpi-card .kpi-value');
+  if (emailKpis.length >= 4) {
+    emailKpis[0].textContent = totalSent;
+    emailKpis[1].textContent = openRate + '%';
+    emailKpis[2].textContent = clickRate + '%';
+    emailKpis[3].textContent = totalReplies;
+  }
+}
+
 // ═══════════ ANALYTICS ═══════════
 function initAnalytics() {
+  recalcAllMetrics();
   const COLORS = ['rgba(0,210,190,0.8)', '#FFA028', '#00CC66', '#FF4444', '#7c3aed', '#FFFFFF'];
 
   (function(){
@@ -3166,10 +3250,29 @@ function initAnalytics() {
     grad.addColorStop(0, 'rgba(0,210,190,0.4)');
     grad.addColorStop(0.6, 'rgba(0,180,160,0.1)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
+    // Build last 6 months MRR from CUSTOMERS
+    const now = new Date();
+    const mLabels = [];
+    const mrrData = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mm = d.getMonth(); const yy = d.getFullYear();
+      mLabels.push(d.toLocaleDateString('en-AU', {month:'short'}));
+      // MRR = sum of (trackers * subPrice) for all CUSTOMERS active by that month
+      let monthMRR = 0;
+      CUSTOMERS.forEach(c => {
+        if (!c.start) return;
+        const sd = new Date(c.start);
+        if (sd.getFullYear() < yy || (sd.getFullYear() === yy && sd.getMonth() <= mm)) {
+          if (c.status === 'active' || c.status === 'renewal-due') monthMRR += (c.trackers || 0) * (c.subPrice || 0);
+        }
+      });
+      mrrData.push(monthMRR);
+    }
     new Chart(ctx, {
       type: 'line',
-      data: { labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'], datasets: [{ label: 'Revenue', data: [0, 0, 0, 0, 0, 0], borderColor: '#FFFFFF', backgroundColor: grad, fill: true, tension: .3, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor:'#fff' }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: '#666', font:{size:10} } }, y: { position:'right', grid:{ color:'rgba(255,255,255,0.04)', drawTicks:false }, border: { display: false }, ticks: { padding: 12, color:'#00CC66', font:{size:10}, callback: v => '$' + v / 1000 + 'K' } } }, interaction: { intersect: false } }
+      data: { labels: mLabels, datasets: [{ label: 'MRR', data: mrrData, borderColor: '#FFFFFF', backgroundColor: grad, fill: true, tension: .3, borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor:'#fff' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: '#666', font:{size:10} } }, y: { position:'right', grid:{ color:'rgba(255,255,255,0.04)', drawTicks:false }, border: { display: false }, ticks: { padding: 12, color:'#00CC66', font:{size:10}, callback: v => v >= 1000 ? '$' + v/1000 + 'K' : '$' + v } } }, interaction: { intersect: false } }
     });
   })();
 
@@ -3281,8 +3384,22 @@ function initAnalytics() {
 
   // ── Units Deployed vs Target KPI Chart ──
   (function(){
-    const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
-    const unitsActual = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // Build last 12 months from CUSTOMERS trackers
+    const now = new Date();
+    const months = [];
+    const unitsActual = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mm = d.getMonth(); const yy = d.getFullYear();
+      months.push(d.toLocaleDateString('en-AU', {month:'short'}));
+      let units = 0;
+      CUSTOMERS.forEach(c => {
+        if (!c.start) return;
+        const sd = new Date(c.start);
+        if (sd.getMonth() === mm && sd.getFullYear() === yy) units += (c.trackers || 0);
+      });
+      unitsActual.push(units);
+    }
     const targetLow = months.map(() => 600);
     const targetHigh = months.map(() => 800);
     const ctx = document.getElementById('chartUnitsKPI').getContext('2d');
@@ -3315,8 +3432,22 @@ function initAnalytics() {
 
   // ── Subscriptions vs Target KPI Chart ──
   (function(){
-    const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
-    const subsActual = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // Build last 12 months new subscriptions from CUSTOMERS
+    const now = new Date();
+    const months = [];
+    const subsActual = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mm = d.getMonth(); const yy = d.getFullYear();
+      months.push(d.toLocaleDateString('en-AU', {month:'short'}));
+      let subs = 0;
+      CUSTOMERS.forEach(c => {
+        if (!c.start) return;
+        const sd = new Date(c.start);
+        if (sd.getMonth() === mm && sd.getFullYear() === yy) subs++;
+      });
+      subsActual.push(subs);
+    }
     const targetLow = months.map(() => 600);
     const targetHigh = months.map(() => 800);
     const ctx = document.getElementById('chartSubsKPI').getContext('2d');
@@ -4307,6 +4438,7 @@ function showMktTab(tab, btn) {
 
 // ── Init Marketing Hub ────────────────────────────────────────────────────
 function initMarketing() {
+  recalcAllMetrics();
   renderMktOverview();
   buildSegment();
 }
@@ -4675,8 +4807,8 @@ function renderMktOverview() {
         data:{
           labels:['Week 1','Week 2','Week 3','Week 4'],
           datasets:[
-            {label:'Reach',data:[0,0,0,0],borderColor:'#FFFFFF',backgroundColor:grad,fill:true,tension:.3,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,yAxisID:'y'},
-            {label:'Leads',data:[0,0,0,0],borderColor:'#00CC66',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,yAxisID:'y1'}
+            {label:'Reach',data:(() => { const w=[0,0,0,0]; CAMPAIGNS.forEach(c => { const wi = Math.min(3, Math.floor(((Date.now() - new Date(c.start||Date.now()).getTime()) / 604800000))); if (wi >= 0 && wi <= 3) w[wi] += (c.reach||0); }); return w; })(),borderColor:'#FFFFFF',backgroundColor:grad,fill:true,tension:.3,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,yAxisID:'y'},
+            {label:'Leads',data:(() => { const w=[0,0,0,0]; CAMPAIGNS.forEach(c => { const wi = Math.min(3, Math.floor(((Date.now() - new Date(c.start||Date.now()).getTime()) / 604800000))); if (wi >= 0 && wi <= 3) w[wi] += (c.leads||0); }); return w; })(),borderColor:'#00CC66',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,yAxisID:'y1'}
           ]
         },
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'line',padding:16,boxWidth:20,color:'#999'}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)',drawTicks:false},border:{display:false},ticks:{padding:10,color:'#00CC66',font:{size:10}}},y1:{position:'right',grid:{display:false},border:{display:false},ticks:{color:'#FFA028',font:{size:10}}}},interaction:{intersect:false,mode:'index'}}
@@ -4688,7 +4820,7 @@ function renderMktOverview() {
         data: {
           labels: ['Facebook','LinkedIn','Instagram','Google Ads','YouTube','TikTok'],
           datasets: [{
-            data: [0,0,0,0,0,0],
+            data: (() => { const ch = {Facebook:0,LinkedIn:0,Instagram:0,'Google Ads':0,YouTube:0,TikTok:0}; CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (ch[p] !== undefined) ch[p] += (c.reach||c.spent||1); }); }); return Object.values(ch); })(),
             backgroundColor: ['#1877F2','#0A66C2','#E1306C','#EA4335','#FF0000','#69C9D0'],
             borderWidth: 3,
             borderColor: '#000',
@@ -4733,11 +4865,17 @@ function renderMktOverview() {
       });
     })();
     const lgd = document.getElementById('mktChannelLegend');
-    if(lgd) lgd.innerHTML = [{label:'Facebook',pct:'0%',c:'#1877F2'},{label:'LinkedIn',pct:'0%',c:'#0A66C2'},{label:'Instagram',pct:'0%',c:'#E1306C'},{label:'Google Ads',pct:'0%',c:'#EA4335'},{label:'YouTube',pct:'0%',c:'#FF0000'},{label:'TikTok',pct:'0%',c:'#69C9D0'}].map(d=>`
+    if(lgd) {
+      const _chD = {Facebook:0,LinkedIn:0,Instagram:0,'Google Ads':0,YouTube:0,TikTok:0};
+      CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (_chD[p] !== undefined) _chD[p] += (c.reach||c.spent||1); }); });
+      const _chT = Object.values(_chD).reduce((a,b)=>a+b,0);
+      const _chItems = [{label:'Facebook',c:'#1877F2'},{label:'LinkedIn',c:'#0A66C2'},{label:'Instagram',c:'#E1306C'},{label:'Google Ads',c:'#EA4335'},{label:'YouTube',c:'#FF0000'},{label:'TikTok',c:'#69C9D0'}].map(d => ({...d, pct: _chT > 0 ? Math.round((_chD[d.label]/_chT)*100)+'%' : '0%'}));
+      lgd.innerHTML = _chItems.map(d=>`
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:3px;background:${d.c};display:inline-block"></span><span style="font-size:12px;color:#CCC">${d.label}</span></div>
         <span style="font-size:12px;font-weight:600;color:#FFFFFF">${d.pct}</span>
       </div>`).join('');
+    }
   }
 }
 
@@ -5553,6 +5691,7 @@ function showCustTab(tab) {
 }
 
 function renderCustStats() {
+  try { recalcAllMetrics(); } catch(e) {}
   const el = document.getElementById('custStats');
   if (!el) return;
   el.style.display = 'block';
