@@ -1333,25 +1333,27 @@ select option{background:#0a0a0a;color:#FFA028}
           <div>
             <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Device Type</label>
             <select id="qType" onchange="calcQuote()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;outline:none">
-              <option value="29.95">OBD2 Plug-In — $29.95/mo</option>
-              <option value="34.95">Hardwired — $34.95/mo</option>
-              <option value="39.95">Asset Tracker — $39.95/mo</option>
+              <option value="OBD2 Plug-In">OBD2 Plug-In</option>
+              <option value="Hardwired">Hardwired</option>
+              <option value="Battery Asset">Battery Asset Tracker</option>
+              <option value="Dual AI Dashcam">Dual AI Dashcam</option>
             </select>
           </div>
           <div>
             <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Contract Term</label>
             <select id="qTerm" onchange="calcQuote()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;outline:none">
               <option value="0">Month-to-Month</option>
-              <option value="5">12 Months (5% off)</option>
-              <option value="10">24 Months (10% off)</option>
+              <option value="12">12 Months</option>
+              <option value="24" selected>24 Months</option>
+              <option value="36">36 Months</option>
+              <option value="60">60 Months</option>
             </select>
           </div>
           <div>
             <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Include Install?</label>
             <select id="qInstall" onchange="calcQuote()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;outline:none">
-              <option value="0">No Installation Fee</option>
-              <option value="99">$99/vehicle install</option>
-              <option value="149">$149/vehicle install</option>
+              <option value="0">Self Install ($0)</option>
+              <option value="88">Certified Fitment ($88/unit)</option>
             </select>
           </div>
         </div>
@@ -1378,6 +1380,24 @@ select option{background:#0a0a0a;color:#FFA028}
               Copy Fleet Quote Report
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- ── OPTIONAL EXTRAS & HARDWARE PRICING ── -->
+      <div class="card" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <div style="width:36px;height:36px;border-radius:0;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div><div class="section-title">Hardware &amp; Optional Extras</div><div class="section-sub">Own-outright hardware pricing &amp; add-on services</div></div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Hardware — Own Outright</div>
+          <div id="hwPriceTable" style="display:grid;gap:6px"></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Optional Extras</div>
+          <div id="extrasTable" style="display:grid;gap:6px"></div>
         </div>
       </div>
 
@@ -3592,6 +3612,7 @@ window.addEventListener('load', function () {
   scraperFiltered = [...SCRAPERS];
   try { doSearch(); } catch(e) { console.warn('doSearch:', e); }
   try { calcQuote(); } catch(e) { console.warn('calcQuote:', e); }
+  try { renderHwExtras(); } catch(e) { console.warn('renderHwExtras:', e); }
   try { calcFuel(); } catch(e) { console.warn('calcFuel:', e); }
   try { calcInsurance(); } catch(e) { console.warn('calcInsurance:', e); }
   try { calcFinance(); } catch(e) { console.warn('calcFinance:', e); }
@@ -3612,22 +3633,53 @@ let _quoteData = {monthly:0, annual:0, perVehicle:0};
 let _fuelData  = {annualFuel:0, saving:0};
 
 function calcQuote() {
-  const v   = parseFloat(document.getElementById('qVehicles').value) || 1;
-  const rate = parseFloat(document.getElementById('qType').value) || 29.95;
-  const disc = parseFloat(document.getElementById('qTerm').value) || 0;
+  const v = parseFloat(document.getElementById('qVehicles').value) || 1;
+  const deviceType = document.getElementById('qType').value;
+  const term = parseInt(document.getElementById('qTerm').value) || 0;
   const inst = parseFloat(document.getElementById('qInstall').value) || 0;
-  const perV  = rate * (1 - disc/100);
+  const perV = (PRICING_MATRIX[deviceType] && PRICING_MATRIX[deviceType][term]) ? PRICING_MATRIX[deviceType][term] : 26;
+  const hwName = HW_MAP[deviceType] || deviceType;
+  const hwPrice = HW_PRICES[hwName] || 0;
   const monthly = perV * v;
-  const annual  = monthly * 12 + inst * v;
-  _quoteData = {monthly, annual, perVehicle: perV};
+  const installTotal = inst * v;
+  const hwTotal = hwPrice * v;
+  const annual = monthly * 12 + installTotal + hwTotal;
+  const termLabel = TERM_LABELS[term] || 'Month-to-Month';
+  _quoteData = {monthly, annual, perVehicle: perV, hwTotal, installTotal, deviceType, term};
   document.getElementById('qrPerVehicle').textContent = '$' + perV.toFixed(2);
   document.getElementById('qrMonthly').textContent = '$' + monthly.toLocaleString('en-AU', {minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('qrAnnual').textContent = '$' + annual.toLocaleString('en-AU', {minimumFractionDigits:0,maximumFractionDigits:0});
   const il = document.getElementById('qrInstallLine');
-  if (il) il.textContent = inst > 0 ? `+ $${(inst*v).toLocaleString()} one-off installation for ${v} vehicles` : '';
+  if (il) {
+    let extra = '';
+    if (hwTotal > 0) extra += `Hardware: ${v} × $${hwPrice} = $${hwTotal.toLocaleString()}`;
+    if (installTotal > 0) extra += (extra ? '  |  ' : '') + `Install: ${v} × $${inst} = $${installTotal.toLocaleString()}`;
+    il.textContent = extra;
+  }
   const qb = document.getElementById('qrBanner');
-  if (qb) qb.textContent = `${v} vehicles × $${perV.toFixed(2)}/mo = $${Math.round(annual).toLocaleString('en-AU')}/year${disc > 0 ? ' ('+disc+'% term discount applied)' : ''}`;
+  if (qb) qb.textContent = `${v}× ${deviceType} @ $${perV.toFixed(2)}/mo (${termLabel}) = $${Math.round(annual).toLocaleString('en-AU')}/yr all-in`;
   updateROI();
+}
+
+function renderHwExtras() {
+  const hwC = document.getElementById('hwPriceTable');
+  const exC = document.getElementById('extrasTable');
+  if (!hwC || !exC) return;
+  hwC.innerHTML = Object.entries(HW_PRICES).map(([name, price]) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.12);border-radius:0">
+      <span style="font-size:13px;font-weight:600;color:#e5e5e5">${name}</span>
+      <span style="font-size:14px;font-weight:800;color:#7c3aed">$${price}</span>
+    </div>`
+  ).join('');
+  exC.innerHTML = OPTIONAL_EXTRAS.map(ex =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,160,40,.04);border:1px solid rgba(255,160,40,.12);border-radius:0">
+      <div>
+        <span style="font-size:13px;font-weight:600;color:#e5e5e5">${ex.name}</span>
+        <span style="font-size:11px;color:#888;margin-left:8px">${ex.desc}</span>
+      </div>
+      <span style="font-size:14px;font-weight:800;color:#FFA028;white-space:nowrap">$${ex.price}${ex.unit}</span>
+    </div>`
+  ).join('');
 }
 
 function calcFuel() {
@@ -6716,10 +6768,56 @@ function moveCustomerToPipeline(id) {
 }
 
 // ── LINE ITEMS HELPERS ──────────────────────────────────────────
-const GPS_PRICES = {'OBD2 Plug-In':29.95, 'Hardwired':34.95, 'Solar Powered':44.95};
-const HW_PRICES = {'OBD2 Plug-In Device':149, 'Hardwired Device':199, 'Solar Tracker':299, 'Asset Tag':99};
-const HW_MAP = {'OBD2 Plug-In':'OBD2 Plug-In Device', 'Hardwired':'Hardwired Device', 'Solar Powered':'Solar Tracker'};
-const HW_INSTALL_DEFAULT = {'OBD2 Plug-In Device':0, 'Hardwired Device':75, 'Solar Tracker':0, 'Asset Tag':0};
+// ═══════════ PRICING MATRIX (mirrors tracknow.com.au) ═══════════
+// Subscription prices per device per month by contract term
+const PRICING_MATRIX = {
+  'OBD2 Plug-In':     { 0: 18, 12: 35, 24: 26, 36: 24, 60: 22 },
+  'Hardwired':        { 0: 18, 12: 35, 24: 26, 36: 24, 60: 22 },
+  'Battery Asset':    { 0: 18, 12: 39, 24: 28, 36: 25, 60: 22 },
+  'Dual AI Dashcam':  { 0: 35, 12: 77, 24: 56, 36: 49, 60: 43 }
+};
+const CONTRACT_TERMS = [0, 12, 24, 36, 60]; // 0 = month-to-month
+const TERM_LABELS = { 0:'Month-to-Month', 12:'12 Months', 24:'24 Months', 36:'36 Months', 60:'60 Months' };
+
+// Hardware own-outright prices
+const HW_PRICES = {
+  'OBD2 Plug-In Device': 199,
+  'Hardwired Device': 199,
+  'Battery Asset Tracker': 249,
+  'Dual AI Dashcam': 499,
+  'Asset Tag': 99
+};
+
+// Map subscription type → hardware name
+const HW_MAP = {
+  'OBD2 Plug-In': 'OBD2 Plug-In Device',
+  'Hardwired': 'Hardwired Device',
+  'Battery Asset': 'Battery Asset Tracker',
+  'Dual AI Dashcam': 'Dual AI Dashcam',
+  'Solar Powered': 'Battery Asset Tracker'
+};
+
+// Default install costs
+const HW_INSTALL_DEFAULT = {
+  'OBD2 Plug-In Device': 0,
+  'Hardwired Device': 88,
+  'Battery Asset Tracker': 0,
+  'Dual AI Dashcam': 88,
+  'Asset Tag': 0
+};
+
+// Optional extras
+const OPTIONAL_EXTRAS = [
+  { id: 'fitment',    name: 'Certified Fitment',   price: 88,  unit: '/unit',        desc: 'On-site install by auto-electricians' },
+  { id: 'supervisor', name: 'Supervisor 365',       price: 15,  unit: '/asset/mo',    desc: '24/7 active monitoring for high-value assets' },
+  { id: 'cable-kit',  name: 'Cable Accessory Kit',  price: 35,  unit: '/kit',         desc: 'Non-standard wiring harnesses' },
+  { id: 'freight',    name: 'Freight (Overnight)',   price: 15,  unit: '/order',       desc: 'Overnight Australia-wide delivery' },
+  { id: 'wiatag',     name: 'WiaTag Employee GPS',  price: 18,  unit: '/device/mo',   desc: 'Smartphone GPS tracking — no hardware' }
+];
+
+// Legacy compat — default 24-month sub prices
+const GPS_PRICES = {};
+Object.keys(PRICING_MATRIX).forEach(k => { GPS_PRICES[k] = PRICING_MATRIX[k][24]; });
 
 function calcLeadFromLines(lead) {
   if (!lead.lineItems || !lead.lineItems.length) return;
@@ -6773,11 +6871,12 @@ function renderDealProductLines() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px">
         <div style="flex:1;min-width:130px">
           <label style="${lbl}">Device</label>
-          <select onchange="updateLineItem(${i},'hwType',this.value);autoFillLineHwPrice(${i});updateLineItem(${i},'type',{'OBD2 Plug-In Device':'OBD2 Plug-In','Hardwired Device':'Hardwired','Solar Tracker':'Solar Powered','Asset Tag':'OBD2 Plug-In'}[this.value]||'OBD2 Plug-In');autoFillLinePrices(${i})" style="width:100%;${inp}">
-            <option value="OBD2 Plug-In Device" ${li.hwType==='OBD2 Plug-In Device'?'selected':''}>OBD2 Plug-In Device</option>
-            <option value="Hardwired Device" ${li.hwType==='Hardwired Device'?'selected':''}>Hardwired Device</option>
-            <option value="Solar Tracker" ${li.hwType==='Solar Tracker'?'selected':''}>Solar Tracker</option>
-            <option value="Asset Tag" ${li.hwType==='Asset Tag'?'selected':''}>Asset Tag</option>
+          <select onchange="updateLineItem(${i},'hwType',this.value);autoFillLineHwPrice(${i});updateLineItem(${i},'type',{'OBD2 Plug-In Device':'OBD2 Plug-In','Hardwired Device':'Hardwired','Battery Asset Tracker':'Battery Asset','Dual AI Dashcam':'Dual AI Dashcam','Asset Tag':'OBD2 Plug-In'}[this.value]||'OBD2 Plug-In');autoFillLinePrices(${i})" style="width:100%;${inp}">
+            <option value="OBD2 Plug-In Device" ${li.hwType==='OBD2 Plug-In Device'?'selected':''}>OBD2 Plug-In Device — $${HW_PRICES['OBD2 Plug-In Device']}</option>
+            <option value="Hardwired Device" ${li.hwType==='Hardwired Device'?'selected':''}>Hardwired Device — $${HW_PRICES['Hardwired Device']}</option>
+            <option value="Battery Asset Tracker" ${li.hwType==='Battery Asset Tracker'?'selected':''}>Battery Asset Tracker — $${HW_PRICES['Battery Asset Tracker']}</option>
+            <option value="Dual AI Dashcam" ${li.hwType==='Dual AI Dashcam'?'selected':''}>Dual AI Dashcam — $${HW_PRICES['Dual AI Dashcam']}</option>
+            <option value="Asset Tag" ${li.hwType==='Asset Tag'?'selected':''}>Asset Tag — $${HW_PRICES['Asset Tag']}</option>
           </select>
         </div>
         <div style="width:60px">
@@ -6815,11 +6914,12 @@ function renderDealProductLines() {
         </div>
         <div style="width:100px">
           <label style="${lbl}">Term</label>
-          <select id="dp_term_${i}" onchange="updateDealProductTotals()" style="width:100%;${inp}">
-            <option value="24" ${(l.term||24)==24?'selected':''}>24 mo</option>
+          <select id="dp_term_${i}" onchange="applyTermPricing(${i});updateDealProductTotals()" style="width:100%;${inp}">
+            <option value="0" ${l.term==0||l.term==1?'selected':''}>MTM</option>
             <option value="12" ${l.term==12?'selected':''}>12 mo</option>
+            <option value="24" ${(l.term||24)==24?'selected':''}>24 mo</option>
             <option value="36" ${l.term==36?'selected':''}>36 mo</option>
-            <option value="1" ${l.term==1?'selected':''}>MTM</option>
+            <option value="60" ${l.term==60?'selected':''}>60 mo</option>
           </select>
         </div>
         <div style="flex:1;min-width:110px">
@@ -6874,12 +6974,30 @@ function autoFillLinePrices(idx) {
   const l = LEADS.find(x => x.id === _dealProductsLeadId);
   if (!l || !l.lineItems[idx]) return;
   const li = l.lineItems[idx];
-  li.sub = GPS_PRICES[li.type] || 29.95;
+  // Get term from the term dropdown (default 24)
+  const termEl = document.getElementById('dp_term_' + idx);
+  const term = termEl ? parseInt(termEl.value) : (l.term || 24);
+  // Look up price from matrix
+  const matrix = PRICING_MATRIX[li.type];
+  li.sub = matrix ? (matrix[term] || matrix[24] || 26) : 26;
   li.hwType = HW_MAP[li.type] || 'OBD2 Plug-In Device';
-  li.hwPrice = HW_PRICES[li.hwType] || 149;
+  li.hwPrice = HW_PRICES[li.hwType] || 199;
   li.hwInstall = HW_INSTALL_DEFAULT[li.hwType] || 0;
+  l.term = term;
   renderDealProductLines();
   updateDealProductTotals();
+}
+
+function applyTermPricing(idx) {
+  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  if (!l || !l.lineItems[idx]) return;
+  const termEl = document.getElementById('dp_term_' + idx);
+  const term = termEl ? parseInt(termEl.value) : 24;
+  const li = l.lineItems[idx];
+  const matrix = PRICING_MATRIX[li.type];
+  if (matrix) li.sub = matrix[term] || matrix[24] || 26;
+  l.term = term;
+  renderDealProductLines();
 }
 
 function autoFillLineHwPrice(idx) {
