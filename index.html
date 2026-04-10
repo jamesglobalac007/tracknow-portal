@@ -2096,9 +2096,9 @@ let _prospSortDir = 1;
 
 
 const STAGES=[
-{id:"fleet-profile",label:"Fleet Profile Sent",color:"#0088FF",bg:"rgba(0,136,255,.1)"},
-{id:"demo",label:"Demo Sent",color:"#7c3aed",bg:"rgba(124,58,237,.1)"},
-{id:"proposal",label:"Proposal Sent",color:"#db2777",bg:"rgba(219,39,119,.1)"},
+{id:"fleet-report",label:"Fleet Report Sent",color:"#0088FF",bg:"rgba(0,136,255,.1)"},
+{id:"proposal",label:"Proposal Sent",color:"#7c3aed",bg:"rgba(124,58,237,.1)"},
+{id:"agreement",label:"Agreement Sent",color:"#db2777",bg:"rgba(219,39,119,.1)"},
 {id:"closed",label:"Closed Won",color:"#059669",bg:"rgba(0,204,102,.1)"}
 ];
 
@@ -2247,15 +2247,15 @@ function initDashboard() {
   // Activity Summary — dynamic counts
   const totalProspects = PROSPECTS.length;
   const totalCustomers = CUSTOMERS.length;
-  const demosBooked = LEADS.filter(l => l.stage === 'demo').length;
   const proposalsSent = LEADS.filter(l => l.stage === 'proposal').length;
+  const agreementsSent = LEADS.filter(l => l.stage === 'agreement').length;
   const actEl = document.getElementById('recentActivity');
   if (actEl) {
     actEl.innerHTML = [
       {label:'Prospects Added', count:totalProspects, color:'#FFA028', icon:'<svg width="20" height="20" fill="none" stroke="#FFA028" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'},
       {label:'Live Customers', count:totalCustomers, color:'#00CC66', icon:'<svg width="20" height="20" fill="none" stroke="#00CC66" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>'},
-      {label:'Demos Sent', count:demosBooked, color:'#7c3aed', icon:'<svg width="20" height="20" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'},
-      {label:'Proposals Sent', count:proposalsSent, color:'#db2777', icon:'<svg width="20" height="20" fill="none" stroke="#db2777" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'}
+      {label:'Proposals Sent', count:proposalsSent, color:'#7c3aed', icon:'<svg width="20" height="20" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'},
+      {label:'Agreements Sent', count:agreementsSent, color:'#db2777', icon:'<svg width="20" height="20" fill="none" stroke="#db2777" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'}
     ].map(s => `
       <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:20px;text-align:center">
         <div style="margin-bottom:10px">${s.icon}</div>
@@ -2277,23 +2277,23 @@ function setView(v) {
 
 // ── Follow-Up Sequences per Stage ────────────────────────────────────
 const FOLLOW_UPS = {
-  'fleet-profile': [
-    {type:'email', day:0, subject:'Your Fleet Profile Report — {company}', body:'Hi {name},\n\nAs discussed, please find attached your Fleet Profile Report for {company}. This outlines the hidden costs within your fleet and how GPS tracking can recover significant savings annually.\n\nHappy to jump on a quick call to walk through it.\n\nKind regards,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Profile Report for {company}. Worth a quick look — some eye-opening numbers in there. Happy to chat anytime. — TrackNow GPS'},
-    {type:'email', day:3, subject:'Following up — Fleet Profile for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Profile Report? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Profile we sent. Any questions? Happy to chat. — TrackNow GPS'}
-  ],
-  'demo': [
-    {type:'email', day:0, subject:'Your TrackNow GPS Demo — {company}', body:'Hi {name},\n\nHere is your personalised demo video showing how TrackNow GPS works for fleets like {company}.\n\n[Demo Video Link]\n\nYou will see live tracking, fuel monitoring, geofence alerts, and driver behaviour scoring — all in one dashboard.\n\nLet me know your thoughts!\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow demo video — shows exactly how it works for your fleet. Let me know if you have any questions! — TrackNow GPS'},
-    {type:'email', day:3, subject:'Did you get a chance to watch the demo? — {company}', body:'Hi {name},\n\nJust following up on the demo video we sent through. Would love to hear your thoughts — happy to answer any questions or set up a quick live walkthrough.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, following up on the demo we sent. Happy to do a quick live walkthrough if easier? — TrackNow GPS'}
+  'fleet-report': [
+    {type:'email', day:0, subject:'Your Fleet Report & Demo — {company}', body:'Hi {name},\n\nAs discussed, please find attached your Fleet Report for {company}. This outlines the hidden costs within your fleet — including fuel slippage, unauthorised use, idle time, and maintenance inefficiencies — and shows how TrackNow GPS tracking can recover significant savings annually.\n\nWe have also included a short demo video so you can see exactly how the platform works for fleets like yours.\n\nHappy to jump on a quick call to walk through it.\n\nKind regards,\nTrackNow GPS Team'},
+    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Report & demo for {company}. Some eye-opening numbers on fleet savings in there. Happy to chat anytime. — TrackNow GPS'},
+    {type:'email', day:3, subject:'Following up — Fleet Report for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Report and demo video? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Report we sent. Any questions? Happy to chat. — TrackNow GPS'}
   ],
   'proposal': [
-    {type:'email', day:0, subject:'Your TrackNow GPS Proposal — {company}', body:'Hi {name},\n\nPlease find attached your TrackNow GPS proposal for {company}. This includes your custom pricing, fleet savings summary, and contract terms.\n\nYou can review and sign digitally using the DocuSign link below.\n\n[DocuSign Link]\n\nLooking forward to getting you set up!\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow proposal with pricing and digital sign link. Let me know if you have any questions! — TrackNow GPS'},
-    {type:'email', day:3, subject:'Following up — Proposal for {company}', body:'Hi {name},\n\nJust checking in on the proposal we sent. Happy to make any adjustments or jump on a call to discuss.\n\nThe digital sign link is still active whenever you are ready.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, just following up on the proposal. Any questions? The sign link is still active — happy to chat anytime. — TrackNow GPS'}
+    {type:'email', day:0, subject:'Your TrackNow GPS Proposal — {company}', body:'Hi {name},\n\nPlease find attached your TrackNow GPS proposal for {company}. This includes your custom hardware and software pricing, fleet savings summary, and contract terms based on the fleet details we discussed.\n\nHappy to make any adjustments — just let me know.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow proposal with pricing based on your fleet. Let me know if you have any questions! — TrackNow GPS'},
+    {type:'email', day:3, subject:'Following up — Proposal for {company}', body:'Hi {name},\n\nJust checking in on the proposal we sent. Happy to make any adjustments or jump on a call to discuss.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, just following up on the proposal. Any questions? Happy to chat anytime. — TrackNow GPS'}
+  ],
+  'agreement': [
+    {type:'email', day:0, subject:'Your TrackNow GPS Agreement — Ready to Sign — {company}', body:'Hi {name},\n\nGreat news! Based on the proposal you have reviewed, we have prepared your TrackNow GPS service agreement for {company}.\n\nPlease review and sign digitally using the link below — it only takes a minute.\n\n[Agreement Link]\n\nOnce signed, we will get your fleet set up and tracking within days.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow agreement for digital signing. Only takes a minute — let me know if you have any questions! — TrackNow GPS'},
+    {type:'email', day:3, subject:'Quick reminder — Agreement for {company}', body:'Hi {name},\n\nJust a quick reminder that your TrackNow GPS agreement is ready for signing. The digital link is still active.\n\nHappy to jump on a call if you would like to go through anything.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, friendly reminder — your TrackNow agreement is ready to sign. Happy to chat if needed. — TrackNow GPS'}
   ]
 };
 
@@ -2511,9 +2511,9 @@ function renderPipeline() {
             <div style="font-size:10px;color:#666;margin-bottom:4px">${l.name} · ${l.city}, ${l.st}</div>
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
-            ${l.stage==='fleet-profile'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+');setTimeout(generateFleetProfile,300)" style="width:100%;padding:5px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.15)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.3)\';this.style.background=\'rgba(0,136,255,.08)\'">📄 GENERATE FLEET PROFILE</button>':''}
-            ${l.stage==='demo'?'<button onclick="event.stopPropagation();openDemoEmail('+l.id+')" style="width:100%;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">🎬 SEND DEMO VIDEO</button>':''}
-            ${l.stage==='proposal'?'<button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">📋 VIEW PROPOSAL & DOCUSIGN</button>':''}
+            ${l.stage==='fleet-report'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+');setTimeout(generateFleetReport,300)" style="width:100%;padding:5px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.15)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.3)\';this.style.background=\'rgba(0,136,255,.08)\'">📄 SEND FLEET REPORT</button>':''}
+            ${l.stage==='proposal'?'<button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 SEND PROPOSAL</button>':''}
+            ${l.stage==='agreement'?'<button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍️ SEND AGREEMENT</button>':''}
             ${renderFollowUpBar(l)}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
@@ -2553,6 +2553,108 @@ function renderPipeline() {
         <td><button onclick="event.stopPropagation();openDealProducts(${l.id})" style="background:none;border:1px solid #333;color:#FFA028;font-size:9px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Edit</button></td>
       </tr>`; }).join('')}</tbody></table></div>`;
   }
+}
+
+function openAgreementDoc(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 1);
+  const subPrice = l.subPrice || 29.95;
+  const term = l.term || 24;
+  const monthly = totalUnits * subPrice;
+  const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+  const hwTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)), 0) : 0;
+
+  const win = window.open('', '_blank', 'width=900,height=1100');
+  win.document.write(`<!DOCTYPE html><html><head><title>Agreement — ${l.co}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#fff;color:#1a1a1a;padding:40px 60px;font-size:13px;line-height:1.6}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:20px;border-bottom:3px solid #FFA028}
+  .logo{font-size:22px;font-weight:800;color:#FFA028}
+  .logo span{color:#1a1a1a}
+  .doc-type{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+  .meta{text-align:right;font-size:12px;color:#666}
+  .section{margin-bottom:28px}
+  .section-title{font-size:14px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #eee}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px}
+  th{background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600}
+  td{padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px}
+  .total-row td{font-weight:700;border-top:2px solid #FFA028;font-size:14px}
+  .terms{font-size:11px;color:#666;line-height:1.8}
+  .terms li{margin-bottom:4px}
+  .sig-block{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px;padding-top:20px;border-top:1px solid #eee}
+  .sig-line{border-bottom:1px solid #333;height:40px;margin-bottom:4px}
+  .sig-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px}
+  .accept-btn{display:block;width:100%;padding:16px;background:#FFA028;color:#000;font-size:16px;font-weight:800;text-align:center;border:none;cursor:pointer;margin-top:30px;letter-spacing:1px}
+  .accept-btn:hover{background:#FFB84D}
+  .accepted-msg{display:none;text-align:center;padding:20px;background:#e8f5e9;color:#2e7d32;font-weight:700;font-size:16px;margin-top:30px;border:2px solid #2e7d32}
+  @media print{.accept-btn,.no-print{display:none !important}.accepted-msg{display:block !important}}
+</style></head><body>
+<div class="header">
+  <div><div class="logo">Track<span>Now</span> GPS</div><div class="doc-type">Service Agreement</div></div>
+  <div class="meta"><div style="font-weight:600;color:#1a1a1a">${l.co}</div><div>${l.name || ''}</div><div>${today}</div><div>Ref: TN-AGR-${String(l.id).padStart(4,'0')}</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Agreement Details</div>
+  <table>
+    <tr><td style="width:40%;color:#888">Company</td><td style="font-weight:600">${l.co}</td></tr>
+    <tr><td style="color:#888">Contact</td><td>${l.name || '—'}</td></tr>
+    <tr><td style="color:#888">Email</td><td>${l.email || '—'}</td></tr>
+    <tr><td style="color:#888">Contract Term</td><td style="font-weight:600">${term} months</td></tr>
+    <tr><td style="color:#888">Start Date</td><td>Upon installation</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Hardware & Software</div>
+  <table>
+    <tr><th>Device</th><th>Asset</th><th>Qty</th><th>Hardware</th><th>Monthly Sub</th></tr>
+    ${l.lineItems ? l.lineItems.map(li => '<tr><td>'+(li.hwType||li.type||'GPS Tracker')+'</td><td>'+(li.asset||'Vehicles')+'</td><td style="text-align:center">'+(li.qty||0)+'</td><td>'+fmt((li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)))+'</td><td>'+fmt((li.qty||0)*(li.sub||subPrice))+'/mo</td></tr>').join('') : '<tr><td>GPS Tracker</td><td>Vehicles</td><td style="text-align:center">'+totalUnits+'</td><td>'+fmt(hwTotal)+'</td><td>'+fmt(monthly)+'/mo</td></tr>'}
+    <tr class="total-row"><td colspan="3">TOTAL</td><td>${fmt(hwTotal)} once-off</td><td>${fmt(monthly)}/mo</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Terms & Conditions</div>
+  <div class="terms"><ol>
+    <li>This agreement is for a minimum term of ${term} months from the date of installation.</li>
+    <li>Monthly subscription fees are billed in advance on the 1st of each month.</li>
+    <li>Hardware remains the property of TrackNow GPS Pty Ltd for the duration of the contract.</li>
+    <li>Installation will be scheduled within 5 business days of agreement execution.</li>
+    <li>TrackNow GPS provides 24/7 platform access, real-time tracking, and standard support.</li>
+    <li>Either party may terminate with 30 days written notice after the minimum term.</li>
+    <li>All prices are exclusive of GST unless otherwise stated.</li>
+  </ol></div>
+</div>
+
+<div class="sig-block">
+  <div>
+    <div style="font-weight:600;margin-bottom:12px">Client — ${l.co}</div>
+    <div class="sig-line"></div>
+    <div class="sig-label">Signature</div>
+    <div class="sig-line" style="margin-top:16px"></div>
+    <div class="sig-label">Full Name & Date</div>
+  </div>
+  <div>
+    <div style="font-weight:600;margin-bottom:12px">TrackNow GPS Pty Ltd</div>
+    <div class="sig-line"></div>
+    <div class="sig-label">Authorised Representative</div>
+    <div class="sig-line" style="margin-top:16px"></div>
+    <div class="sig-label">Full Name & Date</div>
+  </div>
+</div>
+
+<button class="accept-btn no-print" onclick="this.style.display='none';document.getElementById('acceptedMsg').style.display='block';window.print()">
+  ✓ I ACCEPT THIS AGREEMENT
+</button>
+<div class="accepted-msg" id="acceptedMsg">✓ Agreement Accepted — ${today}</div>
+
+</body></html>`);
+  win.document.close();
+  showToast('Agreement opened for ' + l.co);
 }
 
 // ═══════════ LEAD NOTES MODAL ═══════════
@@ -3353,9 +3455,9 @@ function initAnalytics() {
   const _fStages = [
     { label: "Prospects", key: "new", c: "#0088FF" },
     { label: "Qualified", key: "contacted", c: "#FFA028" },
-    { label: "Fleet Profile Sent", key: "fleet-profile", c: "#0088FF" },
-    { label: "Demo Sent", key: "demo", c: "#7c3aed" },
-    { label: "Proposal Sent", key: "proposal", c: "#db2777" },
+    { label: "Fleet Report Sent", key: "fleet-report", c: "#0088FF" },
+    { label: "Proposal Sent", key: "proposal", c: "#7c3aed" },
+    { label: "Agreement Sent", key: "agreement", c: "#db2777" },
     { label: "Closed Won", key: "closed", c: "#00CC66" }
   ];
   const _fTotal = Math.max(PROSPECTS.length + LEADS.length, 1);
@@ -5553,7 +5655,7 @@ function copyEmailsToClipboard() {
 // ═══════════ ADD LEAD MODAL ═══════════
 function openAddLead() {
   // Pre-fill stage as "new"
-  document.getElementById('ml_stage').value = 'fleet-profile';
+  document.getElementById('ml_stage').value = 'fleet-report';
   document.getElementById('ml_error').textContent = '';
   document.getElementById('addLeadModal').style.display='flex';
   setTimeout(() => document.getElementById('ml_co').focus(), 100);
@@ -6868,7 +6970,7 @@ function saveDealProducts() {
 }
 
 // ── Fleet Profile Report Generator ─────────────────────────────
-function generateFleetProfile() {
+function generateFleetReport() {
   const l = LEADS.find(x => x.id === _dealProductsLeadId);
   if (!l) { showToast('No lead selected'); return; }
 
@@ -7495,7 +7597,7 @@ function doLogin() {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Industry</label><select id="ml_ind"><option>Transport &amp; Logistics</option><option>Civil &amp; Construction</option><option>Mining &amp; Resources</option><option>Service</option><option>Storage &amp; Waste</option><option>Manufacturing</option><option>Live Stock &amp; Pets</option></select></div>
-        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="fleet-profile">Fleet Profile Sent</option><option value="demo">Demo Sent</option><option value="proposal">Proposal Sent</option><option value="closed">Closed Won</option></select></div>
+        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="fleet-report">Fleet Report Sent</option><option value="proposal">Proposal Sent</option><option value="agreement">Agreement Sent</option><option value="closed">Closed Won</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>State</label><select id="ml_st"><option>QLD</option><option>NSW</option><option>VIC</option><option>WA</option><option>SA</option><option>TAS</option><option>NT</option><option>ACT</option></select></div>
@@ -7646,7 +7748,7 @@ function doLogin() {
             <input type="number" id="fp_idleHrs" value="2" min="0" max="8" step="0.5" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
         </div>
-        <button onclick="generateFleetProfile()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700;letter-spacing:.5px">
+        <button onclick="generateFleetReport()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700;letter-spacing:.5px">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           GENERATE FLEET PROFILE REPORT
         </button>
