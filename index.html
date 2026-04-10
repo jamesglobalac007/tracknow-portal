@@ -6855,6 +6855,7 @@ function openDealProducts(leadId) {
   document.getElementById('dp_installCost_input').value = l.installCostOfGoods || 0;
   renderDealProductLines();
   updateDealProductTotals();
+  initFleetProfile();
   document.getElementById('dealProductsModal').style.display = 'flex';
 }
 
@@ -7098,78 +7099,121 @@ function saveDealProducts() {
 }
 
 // ── Fleet Profile Report Generator ─────────────────────────────
-// ── Fleet type benchmarks — auto-fill sensible defaults per asset type ──
 const FLEET_BENCHMARKS = {
-  mixed:      { km: 800,  consumption: 22, insurance: 3500, slippage: 15, idle: 2.0 },
-  trucks:     { km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5 },
-  vans:       { km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5 },
-  equipment:  { km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0 },
-  cars:       { km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0 },
-  excavators: { km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0 }
+  trucks:     { label:'Trucks / Heavy Vehicles',   km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4 },
+  vans:       { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3 },
+  utes:       { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3 },
+  equipment:  { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5 },
+  cars:       { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2 },
+  excavators: { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5 },
+  trailers:   { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0 },
+  refrigerated:{ label:'Refrigerated Vehicles',     km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4 }
 };
-function applyFleetDefaults(type) {
-  const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.mixed;
-  document.getElementById('fp_kmWeek').value = b.km;
-  document.getElementById('fp_consumption').value = b.consumption;
-  document.getElementById('fp_insurance').value = b.insurance;
-  document.getElementById('fp_slippage').value = b.slippage;
-  document.getElementById('fp_idleHrs').value = b.idle;
+let _fpSegments = [];
+let _fpSegId = 0;
+
+function addFleetSegment(type) {
+  type = type || 'trucks';
+  const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
+  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle };
+  _fpSegments.push(seg);
+  renderFleetSegments();
+}
+function removeFleetSegment(id) {
+  _fpSegments = _fpSegments.filter(s => s.id !== id);
+  renderFleetSegments();
+}
+function updateFleetSegType(id, type) {
+  const seg = _fpSegments.find(s => s.id === id);
+  if (!seg) return;
+  const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
+  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle;
+  renderFleetSegments();
+}
+function updateFleetSegVal(id, field, val) {
+  const seg = _fpSegments.find(s => s.id === id);
+  if (seg) seg[field] = parseFloat(val) || 0;
+}
+function renderFleetSegments() {
+  const c = document.getElementById('fp_segments');
+  if (!c) return;
+  const typeOpts = Object.entries(FLEET_BENCHMARKS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+  c.innerHTML = _fpSegments.map(seg => {
+    const opts = typeOpts.replace(`value="${seg.type}"`, `value="${seg.type}" selected`);
+    return `<div style="background:#111;border:1px solid #333;padding:8px;margin-bottom:6px;position:relative">
+      <button onclick="removeFleetSegment(${seg.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;font-weight:700" title="Remove">&times;</button>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-bottom:6px">
+        <div><label style="font-size:8px;color:#FFA028;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Vehicle Type</label>
+          <select onchange="updateFleetSegType(${seg.id},this.value)" style="width:100%;padding:5px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:11px;font-family:inherit">${opts}</select></div>
+        <div><label style="font-size:8px;color:#FFA028;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Qty</label>
+          <input type="number" value="${seg.qty}" min="1" onchange="updateFleetSegVal(${seg.id},'qty',this.value)" style="width:100%;padding:5px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:11px;font-family:inherit"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:4px">
+        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">KM/Wk</label>
+          <input type="number" value="${seg.km}" min="0" onchange="updateFleetSegVal(${seg.id},'km',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
+        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">L/100km</label>
+          <input type="number" value="${seg.consumption}" min="0" onchange="updateFleetSegVal(${seg.id},'consumption',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
+        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Ins $/Yr</label>
+          <input type="number" value="${seg.insurance}" min="0" onchange="updateFleetSegVal(${seg.id},'insurance',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
+        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Slip %</label>
+          <input type="number" value="${seg.slippage}" min="0" max="40" onchange="updateFleetSegVal(${seg.id},'slippage',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
+        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Idle Hr/D</label>
+          <input type="number" value="${seg.idle}" min="0" max="10" step="0.5" onchange="updateFleetSegVal(${seg.id},'idle',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
+      </div>
+    </div>`;
+  }).join('');
+  if (_fpSegments.length === 0) c.innerHTML = '<div style="text-align:center;padding:12px;color:#555;font-size:11px">No vehicle categories added yet — click below to add</div>';
+}
+// Auto-add one segment when fleet profile opens
+function initFleetProfile() {
+  if (_fpSegments.length === 0) addFleetSegment('trucks');
 }
 
 function generateFleetReport() {
   const l = LEADS.find(x => x.id === _dealProductsLeadId);
   if (!l) { showToast('No lead selected'); return; }
+  if (_fpSegments.length === 0) { showToast('Add at least one vehicle category'); return; }
 
-  const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
-  const fleetType = document.getElementById('fp_fleetType').value;
-  const kmWeek = parseFloat(document.getElementById('fp_kmWeek').value) || 800;
   const fuelPrice = parseFloat(document.getElementById('fp_fuelPrice').value) || 2.15;
-  const consumption = parseFloat(document.getElementById('fp_consumption').value) || 22;
-  const insPerVehicle = parseFloat(document.getElementById('fp_insurance').value) || 3500;
-  const slippagePct = parseFloat(document.getElementById('fp_slippage').value) || 15;
-  const idleHrs = parseFloat(document.getElementById('fp_idleHrs').value) || 2;
+  const fraudPct = parseFloat(document.getElementById('fp_fraudPct').value) || 3;
   const subPrice = l.subPrice || 29.95;
-
+  const totalUnits = _fpSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
   const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
-  const fleetLabels = {mixed:'Mixed Fleet',trucks:'Trucks / Heavy Vehicles',vans:'Vans / Light Commercial',equipment:'Plant / Equipment',cars:'Cars / Service Vehicles',excavators:'Excavators / Earthmoving'};
 
-  // ── CALCULATIONS ──
-  // Fuel & Slippage
-  const weeklyFuel = totalUnits * kmWeek * (consumption / 100) * fuelPrice;
-  const annualFuel = weeklyFuel * 52;
-  const annualSlippage = annualFuel * (slippagePct / 100);
-  const fuelSavingRate = 0.60; // GPS recovers ~60% of slippage
-  const annualFuelSaving = annualSlippage * fuelSavingRate;
+  // ── PER-SEGMENT CALCULATIONS ──
+  let annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
+  const segResults = _fpSegments.map(seg => {
+    const q = seg.qty || 0;
+    const weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
+    const aFuel = weeklyFuel * 52;
+    const slip = aFuel * (seg.slippage / 100);
+    const idleFuelPerHr = (seg.consumption / 100) * 3 * fuelPrice;
+    const idle = q * seg.idle * idleFuelPerHr * 260;
+    const ins = q * seg.insurance;
+    const ahKm = q * 0.08 * seg.km * 52;
+    const ahCost = ahKm * (seg.consumption / 100) * fuelPrice;
+    const exKm = q * seg.km * (seg.slippage / 100) * 52;
+    const wear = exKm * 0.12;
+    const fraud = aFuel * (fraudPct / 100);
+    annualSlippage += slip; annualIdleWaste += idle; totalInsurance += ins; afterHoursCost += ahCost; annualWear += wear; annualFraud += fraud;
+    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, slippage: seg.slippage, idle: seg.idle, aFuel, slip, idle: idle, ins, ahCost, wear, fraud };
+  });
 
-  // Idle Time Waste
-  const idleFuelPerHr = (consumption / 100) * 3 * fuelPrice; // ~3L/hr idle
-  const annualIdleWaste = totalUnits * idleHrs * idleFuelPerHr * 260; // 260 work days
-  const idleSavingRate = 0.50;
-  const annualIdleSaving = annualIdleWaste * idleSavingRate;
-
-  // Insurance Savings
-  const totalInsurance = totalUnits * insPerVehicle;
-  const insDiscountPct = 0.15; // avg 15% discount with GPS
-  const annualInsSaving = totalInsurance * insDiscountPct;
-
-  // Unauthorised Use / After Hours
-  const afterHoursPct = 0.08; // 8% of fleet used after hours
-  const afterHoursKm = totalUnits * afterHoursPct * kmWeek * 52;
-  const afterHoursCost = afterHoursKm * (consumption / 100) * fuelPrice;
-  const afterHoursSaving = afterHoursCost * 0.90; // GPS eliminates 90%
-
-  // Maintenance & Wear
-  const wearPerKm = 0.12; // $0.12/km excess wear
-  const excessKm = totalUnits * kmWeek * (slippagePct / 100) * 52;
-  const annualWear = excessKm * wearPerKm;
+  const annualFuelSaving = annualSlippage * 0.60;
+  const annualIdleSaving = annualIdleWaste * 0.50;
+  const annualInsSaving = totalInsurance * 0.15;
+  const afterHoursSaving = afterHoursCost * 0.90;
   const wearSaving = annualWear * 0.50;
+  const fraudSaving = annualFraud * 0.85;
 
-  // Total
-  const totalAnnualLoss = annualSlippage + annualIdleWaste + afterHoursCost + annualWear;
-  const totalAnnualSaving = annualFuelSaving + annualIdleSaving + annualInsSaving + afterHoursSaving + wearSaving;
+  const totalAnnualLoss = annualSlippage + annualIdleWaste + afterHoursCost + annualWear + annualFraud;
+  const totalAnnualSaving = annualFuelSaving + annualIdleSaving + annualInsSaving + afterHoursSaving + wearSaving + fraudSaving;
   const trackNowAnnualCost = totalUnits * subPrice * 12;
   const netAnnualBenefit = totalAnnualSaving - trackNowAnnualCost;
   const roi = trackNowAnnualCost > 0 ? Math.round((netAnnualBenefit / trackNowAnnualCost) * 100) : 0;
+
+  // Fleet overview rows for multi-segment
+  const fleetOverviewRows = segResults.map(sr => `<tr><td style="font-weight:600">${sr.label}</td><td style="text-align:center">${sr.qty}</td><td style="text-align:center">${sr.km.toLocaleString()}</td><td style="text-align:center">${sr.consumption}L</td><td style="text-align:center">${sr.slippage}%</td><td style="text-align:center">${sr.idle}h</td></tr>`).join('');
 
   // ── BUILD REPORT HTML ──
   const reportWin = window.open('', '_blank', 'width=900,height=1100');
@@ -7236,55 +7280,50 @@ function generateFleetReport() {
 </div>
 
 <h2>Fleet Overview</h2>
-<div class="fleet-box">
-  <div class="fleet-grid">
-    <div class="fleet-stat"><div class="num">${totalUnits}</div><div class="lbl">Total Vehicles / Assets</div></div>
-    <div class="fleet-stat"><div class="num">${fleetLabels[fleetType] || fleetType}</div><div class="lbl">Fleet Type</div></div>
-    <div class="fleet-stat"><div class="num">${kmWeek.toLocaleString()}</div><div class="lbl">Avg KM / Week / Vehicle</div></div>
-  </div>
-</div>
+<table class="issue-table" style="margin-bottom:20px">
+  <thead><tr><th>Category</th><th style="text-align:center">Units</th><th style="text-align:center">KM/Week</th><th style="text-align:center">Fuel</th><th style="text-align:center">Slippage</th><th style="text-align:center">Idle/Day</th></tr></thead>
+  <tbody>
+    ${fleetOverviewRows}
+    <tr class="total-row"><td>TOTAL FLEET</td><td style="text-align:center">${totalUnits} vehicles</td><td colspan="4"></td></tr>
+  </tbody>
+</table>
 
-<h2>Hidden Fleet Costs — What Your Fleet Is Losing</h2>
+<h2>Hidden Fleet Costs &mdash; What Your Fleet Is Losing</h2>
 <p style="font-size:12px;color:#666;margin-bottom:16px;line-height:1.5">
-  Every fleet has hidden costs that go unnoticed without GPS tracking and fleet management. Based on your fleet of ${totalUnits} vehicles, here is what these issues are likely costing your business annually.
+  Every fleet has hidden costs that go unnoticed without GPS tracking and fleet management. Based on your fleet of <strong>${totalUnits} vehicles</strong> across <strong>${segResults.length} categor${segResults.length===1?'y':'ies'}</strong>, here is what these issues are likely costing your business annually.
 </p>
 
 <table class="issue-table">
   <thead><tr><th>Issue</th><th style="text-align:right">Annual Cost</th></tr></thead>
   <tbody>
     <tr>
-      <td>
-        <div class="issue-name">Fuel Slippage &amp; Waste</div>
-        <div class="issue-desc">Unauthorised fuel use, inefficient routes, excessive idling — est. ${slippagePct}% of total fuel spend wasted</div>
-      </td>
+      <td><div class="issue-name">Fuel Slippage &amp; Waste</div>
+      <div class="issue-desc">Unauthorised fuel use, inefficient routes, excessive idling across all vehicle categories</div></td>
       <td class="cost">${fmt(annualSlippage)}</td>
     </tr>
     <tr>
-      <td>
-        <div class="issue-name">Vehicle Idle Time</div>
-        <div class="issue-desc">Engines running while stationary — est. ${idleHrs} hrs/day across fleet, burning fuel with zero productivity</div>
-      </td>
+      <td><div class="issue-name">Vehicle Idle Time</div>
+      <div class="issue-desc">Engines running while stationary &mdash; burning fuel with zero productivity</div></td>
       <td class="cost">${fmt(annualIdleWaste)}</td>
     </tr>
     <tr>
-      <td>
-        <div class="issue-name">Unauthorised / After-Hours Use</div>
-        <div class="issue-desc">Personal use, detours, after-hours driving — untracked mileage adding fuel, wear and liability costs</div>
-      </td>
+      <td><div class="issue-name">Unauthorised / After-Hours Use</div>
+      <div class="issue-desc">Personal use, detours, after-hours driving &mdash; untracked mileage adding fuel, wear and liability costs</div></td>
       <td class="cost">${fmt(afterHoursCost)}</td>
     </tr>
     <tr>
-      <td>
-        <div class="issue-name">Excess Wear &amp; Maintenance</div>
-        <div class="issue-desc">Unnecessary kilometres from poor routing and misuse accelerate servicing, tyre replacement and depreciation</div>
-      </td>
+      <td><div class="issue-name">Excess Wear &amp; Maintenance</div>
+      <div class="issue-desc">Unnecessary kilometres from poor routing and misuse accelerate servicing, tyre replacement and depreciation</div></td>
       <td class="cost">${fmt(annualWear)}</td>
     </tr>
     <tr>
-      <td>
-        <div class="issue-name">Insurance Premium Overpayment</div>
-        <div class="issue-desc">Without GPS, insurers charge higher premiums — fleets with tracking typically receive 10–20% discounts</div>
-      </td>
+      <td><div class="issue-name">Fuel Card Fraud &amp; Misuse</div>
+      <div class="issue-desc">Fuel card skimming, personal fills, phantom transactions &mdash; est. ${fraudPct}% of fuel spend unaccounted for</div></td>
+      <td class="cost">${fmt(annualFraud)}</td>
+    </tr>
+    <tr>
+      <td><div class="issue-name">Insurance Premium Overpayment</div>
+      <div class="issue-desc">Without GPS, insurers charge higher premiums &mdash; tracked fleets typically receive 10&ndash;20% discounts</div></td>
       <td class="cost">${fmt(totalInsurance - annualInsSaving)} <span style="font-size:10px;color:#888">(potential saving: ${fmt(annualInsSaving)})</span></td>
     </tr>
     <tr class="total-row">
@@ -7296,12 +7335,13 @@ function generateFleetReport() {
 
 <h2>How TrackNow Solves This</h2>
 <ul class="solution-list">
-  <li><span class="check">&#10003;</span><div class="txt"><strong>Live GPS Tracking</strong> — Know where every vehicle is in real time. Eliminate unauthorised use and after-hours driving instantly.</div></li>
-  <li><span class="check">&#10003;</span><div class="txt"><strong>Fuel Monitoring &amp; Alerts</strong> — Detect fuel slippage, excessive idling, and wasteful driving patterns. Set alerts for anomalies.</div></li>
-  <li><span class="check">&#10003;</span><div class="txt"><strong>Geofence Boundaries</strong> — Set virtual boundaries around job sites, depots, and approved routes. Get notified the moment a vehicle goes off-track.</div></li>
-  <li><span class="check">&#10003;</span><div class="txt"><strong>Driver Behaviour Scoring</strong> — Monitor speeding, harsh braking, and rapid acceleration. Reduce accidents, wear and insurance claims.</div></li>
-  <li><span class="check">&#10003;</span><div class="txt"><strong>Automated Reports</strong> — Daily, weekly, and monthly fleet reports delivered to your inbox. No manual tracking required.</div></li>
-  <li><span class="check">&#10003;</span><div class="txt"><strong>Insurance Proof &amp; Recovery</strong> — GPS data provides evidence for insurance claims and helps recover stolen vehicles within hours.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Live GPS Tracking</strong> &mdash; Know where every vehicle is in real time. Eliminate unauthorised use and after-hours driving instantly.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Fuel Monitoring &amp; Alerts</strong> &mdash; Detect fuel slippage, excessive idling, and wasteful driving patterns. Set alerts for anomalies.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Fuel Card Reconciliation</strong> &mdash; Cross-reference fuel card transactions with GPS location data. Flag fills that don't match vehicle location or route.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Geofence Boundaries</strong> &mdash; Set virtual boundaries around job sites, depots, and approved routes. Get notified the moment a vehicle goes off-track.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Driver Behaviour Scoring</strong> &mdash; Monitor speeding, harsh braking, and rapid acceleration. Reduce accidents, wear and insurance claims.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Automated Reports</strong> &mdash; Daily, weekly, and monthly fleet reports delivered to your inbox. No manual tracking required.</div></li>
+  <li><span class="check">&#10003;</span><div class="txt"><strong>Insurance Proof &amp; Recovery</strong> &mdash; GPS data provides evidence for insurance claims and helps recover stolen vehicles within hours.</div></li>
 </ul>
 
 <h2>Your Projected Savings</h2>
@@ -7310,7 +7350,8 @@ function generateFleetReport() {
   <tbody>
     <tr><td><div class="issue-name">Fuel Slippage Recovery</div><div class="issue-desc">GPS reduces fuel waste by up to 60% through route optimisation and accountability</div></td><td class="saving">${fmt(annualFuelSaving)}</td></tr>
     <tr><td><div class="issue-name">Idle Time Reduction</div><div class="issue-desc">Idle alerts and driver coaching cut unnecessary engine running by ~50%</div></td><td class="saving">${fmt(annualIdleSaving)}</td></tr>
-    <tr><td><div class="issue-name">Insurance Premium Discount</div><div class="issue-desc">GPS-tracked fleets qualify for 10–20% premium reductions</div></td><td class="saving">${fmt(annualInsSaving)}</td></tr>
+    <tr><td><div class="issue-name">Fuel Card Fraud Prevention</div><div class="issue-desc">GPS + fuel card reconciliation eliminates ~85% of fraudulent or personal fuel use</div></td><td class="saving">${fmt(fraudSaving)}</td></tr>
+    <tr><td><div class="issue-name">Insurance Premium Discount</div><div class="issue-desc">GPS-tracked fleets qualify for 10&ndash;20% premium reductions</div></td><td class="saving">${fmt(annualInsSaving)}</td></tr>
     <tr><td><div class="issue-name">Unauthorised Use Eliminated</div><div class="issue-desc">After-hours and personal use drops 90%+ with live tracking visibility</div></td><td class="saving">${fmt(afterHoursSaving)}</td></tr>
     <tr><td><div class="issue-name">Reduced Wear &amp; Maintenance</div><div class="issue-desc">Fewer unnecessary kilometres = less servicing, tyres, and depreciation</div></td><td class="saving">${fmt(wearSaving)}</td></tr>
     <tr class="total-row"><td style="color:#059669">TOTAL PROJECTED ANNUAL SAVING</td><td class="saving" style="font-size:16px">${fmt(totalAnnualSaving)}</td></tr>
@@ -7325,15 +7366,15 @@ function generateFleetReport() {
 
 <div class="roi-box">
   <div class="big">${roi}% ROI</div>
-  <div class="label">Return on Investment — First Year</div>
+  <div class="label">Return on Investment &mdash; First Year</div>
   <div style="font-size:13px;margin-top:8px">For every $1 spent on TrackNow, your business saves $${(totalAnnualSaving / trackNowAnnualCost).toFixed(2)}</div>
 </div>
 
 <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;margin:20px 0">
   <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px">Investment Summary</div>
   <div style="font-size:12px;color:#333;line-height:1.8">
-    <strong>${totalUnits} units</strong> × <strong>$${subPrice.toFixed(2)}/month</strong> = <strong>${fmt(trackNowAnnualCost)}/year</strong><br>
-    No lock-in contracts · No setup fees · Hardware included · Cancel anytime
+    <strong>${totalUnits} units</strong> &times; <strong>$${subPrice.toFixed(2)}/month</strong> = <strong>${fmt(trackNowAnnualCost)}/year</strong><br>
+    No lock-in contracts &middot; No setup fees &middot; Hardware included &middot; Cancel anytime
   </div>
 </div>
 
@@ -7854,47 +7895,23 @@ function doLogin() {
       <div style="border-top:1px solid #332200;margin-top:16px;padding-top:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">Fleet Profile</div>
-          <div style="font-size:9px;color:#666">Used to generate savings report for prospect</div>
+          <div style="font-size:9px;color:#666">Add each vehicle category — benchmarks auto-fill</div>
         </div>
+        <!-- Vehicle segments container -->
+        <div id="fp_segments" style="margin-bottom:10px"></div>
+        <button onclick="addFleetSegment()" class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:12px;padding:6px;font-size:11px">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          ADD VEHICLE CATEGORY
+        </button>
+        <!-- Global inputs -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
           <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fleet Type</label>
-            <select id="fp_fleetType" onchange="applyFleetDefaults(this.value)" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-              <option value="mixed">Mixed Fleet</option>
-              <option value="trucks">Trucks / Heavy Vehicles</option>
-              <option value="vans">Vans / Light Commercial</option>
-              <option value="equipment">Plant / Equipment</option>
-              <option value="cars">Cars / Service Vehicles</option>
-              <option value="excavators">Excavators / Earthmoving</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Avg KM/Week per Vehicle</label>
-            <input type="number" id="fp_kmWeek" value="800" min="50" step="50" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fuel $/Litre</label>
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
             <input type="number" id="fp_fuelPrice" value="2.15" min="0.5" step="0.05" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
           <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">L/100km</label>
-            <input type="number" id="fp_consumption" value="22" min="5" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Insurance $/Vehicle/Yr</label>
-            <input type="number" id="fp_insurance" value="3500" min="500" step="100" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Fuel Slippage %</label>
-            <input type="number" id="fp_slippage" value="15" min="5" max="40" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Idle Hours/Day</label>
-            <input type="number" id="fp_idleHrs" value="2" min="0" max="8" step="0.5" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <label style="font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">Est. Fuel Card Fraud %</label>
+            <input type="number" id="fp_fraudPct" value="3" min="0" max="20" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
         </div>
         <button onclick="generateFleetReport()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700;letter-spacing:.5px">
