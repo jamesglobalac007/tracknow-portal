@@ -622,8 +622,8 @@ select option{background:#0a0a0a;color:#FFA028}
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
             <option value="database">Database</option><option value="walk-in">Walk-In</option>
           </select></div>
-        <div><label class="form-label">Approx. Fleet Size</label><input id="pm_fleet" class="form-input" type="number" placeholder="10"></div>
-        <div><label class="form-label">Trackers Wanted</label><input id="pm_trackers" class="form-input" type="number" placeholder="e.g. 8"></div>
+        <input type="hidden" id="pm_fleet" value="0">
+        <input type="hidden" id="pm_trackers" value="0">
         <div><label class="form-label">Subscription Type</label>
           <select id="pm_sub" class="form-input">
             <option value="29.95">OBD2 Plug-In — $29.95/mo</option>
@@ -7306,15 +7306,11 @@ function renderFleetSegments() {
         <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Qty</label>
           <input type="number" value="${seg.qty}" min="1" onchange="updateFleetSegVal(${seg.id},'qty',this.value)" style="width:100%;padding:5px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:11px;font-family:inherit"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:4px">
-        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">KM/Wk</label>
-          <input type="number" value="${seg.km}" min="0" onchange="updateFleetSegVal(${seg.id},'km',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
         <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">L/100km</label>
           <input type="number" value="${seg.consumption}" min="0" onchange="updateFleetSegVal(${seg.id},'consumption',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
         <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Ins $/Yr</label>
           <input type="number" value="${seg.insurance}" min="0" onchange="updateFleetSegVal(${seg.id},'insurance',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
-        <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Slip %</label>
-          <input type="number" value="${seg.slippage}" min="0" max="40" onchange="updateFleetSegVal(${seg.id},'slippage',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
         <div><label style="font-size:7px;color:#888;text-transform:uppercase;display:block;margin-bottom:1px">Idle Hr/D</label>
           <input type="number" value="${seg.idle}" min="0" max="10" step="0.5" onchange="updateFleetSegVal(${seg.id},'idle',this.value)" style="width:100%;padding:4px;background:#0a0a0a;border:1px solid #222;color:#CCC;font-size:10px;font-family:inherit"></div>
       </div>
