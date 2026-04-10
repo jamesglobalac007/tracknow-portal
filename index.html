@@ -6878,7 +6878,7 @@ let _dealProductsLeadId = null;
 let _dealProductsSource = 'lead'; // 'lead' or 'prospect'
 function _getDealEntity() {
   if (_dealProductsSource === 'prospect') return PROSPECTS.find(x => x.id === _dealProductsLeadId);
-  return _getDealEntity();
+  return LEADS.find(x => x.id === _dealProductsLeadId);
 }
 
 function openDealProducts(leadId, source) {
@@ -7165,16 +7165,22 @@ const FLEET_BENCHMARKS = {
 let _fpSegments = [];
 let _fpSegId = 0;
 
+function _autoRecalcProspectCosts() {
+  var el = document.getElementById('pfp_costBreakdown');
+  if (el && document.getElementById('prospectFleetModal').style.display !== 'none') recalcProspectCosts();
+}
 function addFleetSegment(type) {
   type = type || 'trucks';
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
   const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle };
   _fpSegments.push(seg);
   renderFleetSegments();
+  _autoRecalcProspectCosts();
 }
 function removeFleetSegment(id) {
   _fpSegments = _fpSegments.filter(s => s.id !== id);
   renderFleetSegments();
+  _autoRecalcProspectCosts();
 }
 function updateFleetSegType(id, type) {
   const seg = _fpSegments.find(s => s.id === id);
@@ -7182,10 +7188,12 @@ function updateFleetSegType(id, type) {
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
   seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle;
   renderFleetSegments();
+  _autoRecalcProspectCosts();
 }
 function updateFleetSegVal(id, field, val) {
   const seg = _fpSegments.find(s => s.id === id);
   if (seg) seg[field] = parseFloat(val) || 0;
+  _autoRecalcProspectCosts();
 }
 function renderFleetSegments() {
   const c = document.getElementById('fp_segments') || document.getElementById('pfp_segments');
@@ -7513,6 +7521,7 @@ function openProspectFleetProfile(prospectId) {
   document.getElementById('pfp_fuelPrice').value = p.fuelPrice || 2.15;
   document.getElementById('pfp_fraudPct').value = p.fraudPct || 3;
   document.getElementById('prospectFleetModal').style.display = 'flex';
+  recalcProspectCosts();
 }
 function closeProspectFleet() {
   document.getElementById('prospectFleetModal').style.display = 'none';
@@ -7569,6 +7578,66 @@ function generateFleetReportFromProspect() {
   _dealProductsSource = 'lead';
   _dealProductsLeadId = null;
   closeProspectFleet();
+}
+
+// ── Prospect Hidden Costs & Fraud Calculator ─────────────────────
+function recalcProspectCosts() {
+  if (_fpSegments.length === 0) { document.getElementById('pfp_costBreakdown').innerHTML = '<div style="text-align:center;padding:10px;color:#555;font-size:11px">Add vehicle categories above first</div>'; return; }
+  const fuelPrice = parseFloat((document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
+  const fraudPct = parseFloat((document.getElementById('pfp_fraudPct') || {}).value) || 3;
+  const fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-AU'); };
+
+  var annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
+  var totalUnits = 0;
+
+  _fpSegments.forEach(function(seg) {
+    var q = seg.qty || 0;
+    totalUnits += q;
+    var weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
+    var aFuel = weeklyFuel * 52;
+    annualSlippage += aFuel * (seg.slippage / 100);
+    var idleFuelPerHr = (seg.consumption / 100) * 3 * fuelPrice;
+    annualIdleWaste += q * seg.idle * idleFuelPerHr * 260;
+    totalInsurance += q * seg.insurance;
+    var ahKm = q * 0.08 * seg.km * 52;
+    afterHoursCost += ahKm * (seg.consumption / 100) * fuelPrice;
+    var exKm = q * seg.km * (seg.slippage / 100) * 52;
+    annualWear += exKm * 0.12;
+    annualFraud += aFuel * (fraudPct / 100);
+  });
+
+  var totalLoss = annualSlippage + annualIdleWaste + afterHoursCost + annualWear + annualFraud;
+  var fuelSaving = annualSlippage * 0.60;
+  var idleSaving = annualIdleWaste * 0.50;
+  var insSaving = totalInsurance * 0.15;
+  var ahSaving = afterHoursCost * 0.90;
+  var wearSaving = annualWear * 0.50;
+  var fraudSaving = annualFraud * 0.85;
+  var totalSaving = fuelSaving + idleSaving + insSaving + ahSaving + wearSaving + fraudSaving;
+
+  var row = function(label, cost, color) {
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a1a1a"><span style="font-size:11px;color:#999">' + label + '</span><span style="font-size:12px;font-weight:700;color:' + (color||'#FFA028') + '">' + fmt(cost) + '</span></div>';
+  };
+
+  var html = '<div style="font-size:10px;color:#666;margin-bottom:8px">' + totalUnits + ' vehicles across ' + _fpSegments.length + ' categor' + (_fpSegments.length===1?'y':'ies') + '</div>';
+  html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Hidden Costs (Annual)</div>';
+  html += row('Fuel Slippage & Waste', annualSlippage);
+  html += row('Vehicle Idle Time', annualIdleWaste);
+  html += row('Unauthorised / After-Hours Use', afterHoursCost);
+  html += row('Excess Wear & Maintenance', annualWear);
+  html += row('Fuel Card Fraud (' + fraudPct + '%)', annualFraud);
+  html += '<div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:2px;border-top:2px solid #dc2626"><span style="font-size:12px;font-weight:800;color:#dc2626">TOTAL ANNUAL LOSS</span><span style="font-size:14px;font-weight:800;color:#dc2626">' + fmt(totalLoss) + '</span></div>';
+
+  html += '<div style="font-size:9px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">GPS Recovery (Annual Savings)</div>';
+  html += row('Fuel Slippage Recovery (60%)', fuelSaving, '#00CC66');
+  html += row('Idle Time Reduction (50%)', idleSaving, '#00CC66');
+  html += row('Insurance Discount (15%)', insSaving, '#00CC66');
+  html += row('After-Hours Eliminated (90%)', ahSaving, '#00CC66');
+  html += row('Reduced Wear & Maintenance (50%)', wearSaving, '#00CC66');
+  html += row('Fraud Prevention (85%)', fraudSaving, '#00CC66');
+  html += '<div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:2px;border-top:2px solid #00CC66"><span style="font-size:12px;font-weight:800;color:#00CC66">TOTAL ANNUAL SAVING</span><span style="font-size:14px;font-weight:800;color:#00CC66">' + fmt(totalSaving) + '</span></div>';
+
+  document.getElementById('pfp_costBreakdown').innerHTML = html;
 }
 
 // ── Add Units / Upsell modal ────────────────────────────────────
@@ -8140,6 +8209,17 @@ function doLogin() {
           <input type="number" id="pfp_fraudPct" value="3" min="0" max="20" step="1" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
         </div>
       </div>
+      <!-- HIDDEN COSTS & FRAUD CALCULATOR -->
+      <div style="background:#080808;border:1px solid #332200;padding:14px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">Hidden Costs &amp; Fraud Calculator</div>
+          <button onclick="recalcProspectCosts()" style="font-size:9px;padding:3px 10px;border:1px solid #FFA028;color:#FFA028;background:#111;cursor:pointer;font-family:inherit;font-weight:600">↻ Recalculate</button>
+        </div>
+        <div id="pfp_costBreakdown" style="font-size:12px;color:#CCC">
+          <div style="text-align:center;padding:10px;color:#555;font-size:11px">Add vehicle categories above, then click Recalculate</div>
+        </div>
+      </div>
+
       <button onclick="generateFleetReportFromProspect()" class="btn btn-primary" style="width:100%;padding:12px;font-size:13px;font-weight:700;letter-spacing:.5px">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         GENERATE &amp; SEND FLEET REPORT
