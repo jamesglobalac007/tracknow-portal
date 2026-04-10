@@ -2077,19 +2077,13 @@ select option{background:#0a0a0a;color:#FFA028}
 
 <script>
 // ═══════════ DATA ═══════════
-const LEADS=[];
-
-// ── ONE-TIME DATA RESET (v2 — clear all demo data) ──────────────────────
-(function() {
+/* Load LEADS from localStorage */
+let LEADS = (function() {
   try {
-    if (localStorage.getItem('tn_data_version') !== 'v4') {
-      localStorage.removeItem('tn_prospects');
-      localStorage.removeItem('tn_website_leads');
-      localStorage.removeItem('tn_leads');
-      localStorage.setItem('tn_data_version', 'v4');
-      console.log('[TrackNow] Demo data cleared — starting fresh.');
-    }
+    var saved = localStorage.getItem('tn_leads');
+    if (saved) { var arr = JSON.parse(saved); if (Array.isArray(arr)) return arr; }
   } catch(e){}
+  return [];
 })();
 
 // ── PROSPECTS DATA ────────────────────────────────────────────────────────
@@ -2105,10 +2099,22 @@ let PROSPECTS = (function() {
 let _nextProspectId = (function() { var mx = 0; PROSPECTS.forEach(function(p) { if (p.id > mx) mx = p.id; }); return mx + 1; })();
 /* Persist prospects to localStorage after any change */
 function _saveProspects() { try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} }
+/* Persist LEADS + CUSTOMERS to localStorage */
+function saveData() {
+  try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){}
+  try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){}
+  _saveProspects();
+}
 
 // ── CUSTOMERS DATA ────────────────────────────────────────────────────────
-const CUSTOMERS = [];
-let _nextCustomerId = 1;
+let CUSTOMERS = (function() {
+  try {
+    var saved = localStorage.getItem('tn_customers');
+    if (saved) { var arr = JSON.parse(saved); if (Array.isArray(arr)) return arr; }
+  } catch(e){}
+  return [];
+})();
+let _nextCustomerId = (function() { var mx = 0; CUSTOMERS.forEach(function(c) { if (c.id > mx) mx = c.id; }); return mx + 1; })();
 let _custSortField = null; // 'date','expiry','trackers','company','subscription'
 let _custSortDir = 1; // 1 = ascending (oldest first), -1 = descending (newest first)
 let _prospSortField = null;
@@ -2758,6 +2764,7 @@ function moveLeadStage(leadId, direction) {
   if (newStage === 'closed') {
     if (lead.upsellCustId) { onLeadClosedWon(lead.id); } else { autoPopulateCustomer(lead); }
   }
+  saveData();
   renderPipeline();
   const oldLabel = (STAGES.find(s => s.id === oldStage) || {}).label || oldStage;
   const newLabel = (STAGES.find(s => s.id === newStage) || {}).label || newStage;
@@ -2838,12 +2845,14 @@ function handleDrop(e, newStage) {
     // Remove lead from pipeline — it's now a live customer
     const idx = LEADS.findIndex(l => l.id === leadId);
     if (idx !== -1) LEADS.splice(idx, 1);
+    saveData();
     renderPipeline();
     renderCustomers();
     renderCustStats();
     return;
   }
 
+  saveData();
   renderPipeline();
 
   // Find stage labels for the notification
@@ -2875,6 +2884,7 @@ function markDealLost(leadId) {
   };
   PROSPECTS.push(newProspect);
   LEADS.splice(idx, 1);
+  saveData();
   renderPipeline();
   renderProspects();
   renderCustStats();
@@ -3161,11 +3171,12 @@ function addOneToPipeline(idx) {
   const exists = LEADS.find(l => l.co === r.name);
   if (exists) { alert(r.name + ' is already in your pipeline.'); return; }
   LEADS.push({
-    id: LEADS.length + 1, co: r.name, name: r.contact || '', ind: r.ind, st: r.st, city: r.city,
-    stage: 'new', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
+    id: Date.now(), co: r.name, name: r.contact || '', ind: r.ind, st: r.st, city: r.city,
+    stage: 'fleet-report', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
     last: new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short'}), lastTs: Date.now(), star: false
   });
-  alert(r.name + ' added to pipeline as New Lead!');
+  saveData();
+  showToast(r.name + ' added to pipeline — Fleet Report Sent');
 }
 function addSelectedToPipeline() {
   let added = 0;
@@ -3173,14 +3184,15 @@ function addSelectedToPipeline() {
     const r = scraperFiltered[i];
     if (!LEADS.find(l => l.co === r.name)) {
       LEADS.push({
-        id: LEADS.length + 1, co: r.name, name: r.contact || '', ind: r.ind, st: r.st, city: r.city,
-        stage: 'new', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
+        id: Date.now() + added, co: r.name, name: r.contact || '', ind: r.ind, st: r.st, city: r.city,
+        stage: 'fleet-report', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
         last: new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short'}), lastTs: Date.now(), star: false
       });
       added++;
     }
   });
-  alert(added + ' leads added to pipeline!');
+  saveData();
+  showToast(added + ' leads added to pipeline!');
   selectedScrapeRows = new Set();
   renderScraperResults();
 }
@@ -5766,6 +5778,7 @@ function saveNewLead() {
     lineItems: [{type:deviceType, qty:v, sub:subRate, asset:'', hwType:hwType, hwPrice:HW_PRICES[hwType]||149, hwInstall:HW_INSTALL_DEFAULT[hwType]||0}]
   };
   LEADS.push(newLead);
+  saveData();
   closeAddLead();
   // Clear form
   ['ml_co','ml_name','ml_city','ml_phone','ml_email','ml_web','ml_notes'].forEach(id => document.getElementById(id).value = '');
@@ -6713,6 +6726,7 @@ function saveCustomer() {
     devices: [{type: subPrice <= 29.95 ? 'OBD2 Plug-In' : subPrice <= 34.95 ? 'Hardwired' : 'Solar Powered', asset:'Vehicles', qty: trackers, sub: subPrice}],
     paymentDueDate: '',
   });
+  saveData();
   closeCustomerModal();
   renderCustomers();
   renderCustStats();
@@ -6723,12 +6737,14 @@ function deleteProspect(id) {
   if (!confirm('Remove this prospect?')) return;
   const i = PROSPECTS.findIndex(p => p.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
+  saveData();
   renderProspects(); renderCustStats();
 }
 function deleteCustomer(id) {
   if (!confirm('Remove this customer?')) return;
   const i = CUSTOMERS.findIndex(c => c.id === id);
   if (i > -1) CUSTOMERS.splice(i, 1);
+  saveData();
   renderCustomers(); renderCustStats();
 }
 
@@ -7093,6 +7109,7 @@ function saveDealProducts() {
     const primary = l.lineItems.reduce((a,b) => (b.qty||0) > (a.qty||0) ? b : a, l.lineItems[0]);
     l.deviceType = primary.type;
   }
+  saveData();
   closeDealProducts();
   renderPipeline();
   showToast('Deal products updated for ' + l.co);
@@ -7459,7 +7476,7 @@ function saveAddUnits() {
   LEADS.push({
     id: Date.now(), co: c.co, name: '', email: '',
     phone: '', ind: c.sector || '', v: qty || hwQty,
-    city: '', st: '', stage: 'new', val: annualVal,
+    city: '', st: '', stage: 'fleet-report', val: annualVal,
     notes: desc,
     star: true, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: qty, subPrice: sub, upsellCustId: custId,
@@ -7468,6 +7485,7 @@ function saveAddUnits() {
     lineItems: [{type:type, qty:qty||hwQty, sub:sub, asset:asset, hwType:hwType, hwPrice:hwPrice, hwInstall:hwInstall}]
   });
 
+  saveData();
   closeAddUnitsModal();
 
   // Navigate to Pipeline so the user sees the new deal immediately
@@ -7584,6 +7602,7 @@ function autoPopulateCustomer(lead) {
       devices: newDevices
     };
     CUSTOMERS.push(newCust);
+    saveData();
     renderCustomers(); renderCustStats();
     showStageNotification(lead.co, 'Deal closed', 'New customer: ' + totalQty + ' units — ' + lineDesc);
   }
