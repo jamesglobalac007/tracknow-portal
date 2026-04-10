@@ -449,20 +449,7 @@ label{font-size:11px;font-weight:600;color:var(--text-muted);display:block;margi
 
 <script>
 // ═══════════ DATA ═══════════
-const LEADS=[
-{id:1,co:"Smith's Transport Pty Ltd",name:"David Smith",ind:"Transport & Logistics",st:"QLD",city:"Brisbane",stage:"demo",v:45,val:16200,last:"28 Mar",star:true},
-{id:2,co:"Pacific Civil Contractors",name:"Sarah Chen",ind:"Civil",st:"NSW",city:"Sydney",stage:"interested",v:78,val:28080,last:"27 Mar",star:true},
-{id:3,co:"GreenWaste Solutions",name:"Mike O'Brien",ind:"Storage & Waste",st:"VIC",city:"Melbourne",stage:"proposal",v:32,val:11520,last:"29 Mar",star:false},
-{id:4,co:"Outback Mining Services",name:"James Wilson",ind:"Mining & Resources",st:"WA",city:"Perth",stage:"new",v:120,val:43200,last:"30 Mar",star:true},
-{id:5,co:"QuickDrop Couriers",name:"Tom Nguyen",ind:"Transport & Logistics",st:"QLD",city:"Gold Coast",stage:"contacted",v:22,val:7920,last:"26 Mar",star:false},
-{id:6,co:"Brisbane City Council",name:"Angela Torres",ind:"Service",st:"QLD",city:"Brisbane",stage:"interested",v:200,val:72000,last:"25 Mar",star:true},
-{id:7,co:"AgriTrack Farms",name:"Peter Brown",ind:"Live Stock & Pets",st:"NSW",city:"Dubbo",stage:"new",v:15,val:5400,last:"30 Mar",star:false},
-{id:8,co:"Metro Rentals Australia",name:"Lisa Park",ind:"Service",st:"VIC",city:"Melbourne",stage:"closed",v:55,val:19800,last:"20 Mar",star:true},
-{id:9,co:"Cairns Earthmoving",name:"Rob Taylor",ind:"Civil",st:"QLD",city:"Cairns",stage:"contacted",v:28,val:10080,last:"29 Mar",star:false},
-{id:10,co:"SecureFleet Logistics",name:"Karen White",ind:"Transport & Logistics",st:"SA",city:"Adelaide",stage:"demo",v:67,val:24120,last:"28 Mar",star:false},
-{id:11,co:"Darwin Waste Services",name:"Chris Martin",ind:"Storage & Waste",st:"NT",city:"Darwin",stage:"new",v:18,val:6480,last:"31 Mar",star:false},
-{id:12,co:"Hobart Bus Lines",name:"Emma Scott",ind:"Transport & Logistics",st:"TAS",city:"Hobart",stage:"interested",v:42,val:15120,last:"27 Mar",star:false}
-];
+const LEADS=[];
 
 const STAGES=[
 {id:"new",label:"New Lead",color:"#64748b",bg:"#f1f5f9"},
@@ -473,24 +460,17 @@ const STAGES=[
 {id:"closed",label:"Closed Won",color:"#059669",bg:"#ecfdf5"}
 ];
 
-const SCRAPERS=[
-{name:"ABC Heavy Haulage",abn:"12 345 678 901",ind:"Transport & Logistics",st:"QLD",city:"Townsville",fleet:"~30",src:"ABN Lookup",email:"info@abchaulage.com.au"},
-{name:"Sunshine Coast Earthworks",abn:"23 456 789 012",ind:"Civil",st:"QLD",city:"Maroochydore",fleet:"~15",src:"Google Maps",email:"admin@scew.com.au"},
-{name:"Murray River Transport",abn:"34 567 890 123",ind:"Transport & Logistics",st:"VIC",city:"Mildura",fleet:"~50",src:"Yellow Pages",email:"dispatch@murrayriver.com.au"},
-{name:"Top End Mining Contractors",abn:"45 678 901 234",ind:"Mining & Resources",st:"NT",city:"Katherine",fleet:"~80",src:"ABN Lookup",email:"ops@topendmining.com.au"},
-{name:"Clean City Waste",abn:"56 789 012 345",ind:"Storage & Waste",st:"NSW",city:"Wollongong",fleet:"~25",src:"Google Maps",email:"hello@cleancity.com.au"},
-{name:"Pilbara Plant Hire",abn:"67 890 123 456",ind:"Service",st:"WA",city:"Karratha",fleet:"~40",src:"LinkedIn",email:"hire@pilbaraplant.com.au"}
-];
+const SCRAPERS=[];
 
 const INDUSTRIES=[
-{name:"Civil",count:342,color:"#2563eb"},
-{name:"Service",count:287,color:"#7c3aed"},
-{name:"Transport & Logistics",count:203,color:"#0891b2"},
-{name:"Storage & Waste",count:156,color:"#059669"},
-{name:"Medical & Personal Care",count:128,color:"#db2777"},
-{name:"Live Stock & Pets",count:94,color:"#d97706"},
-{name:"Manufacturing",count:167,color:"#64748b"},
-{name:"Mining & Resources",count:89,color:"#dc2626"}
+{name:"Civil",count:0,color:"#2563eb"},
+{name:"Service",count:0,color:"#7c3aed"},
+{name:"Transport & Logistics",count:0,color:"#0891b2"},
+{name:"Storage & Waste",count:0,color:"#059669"},
+{name:"Medical & Personal Care",count:0,color:"#db2777"},
+{name:"Live Stock & Pets",count:0,color:"#d97706"},
+{name:"Manufacturing",count:0,color:"#64748b"},
+{name:"Mining & Resources",count:0,color:"#dc2626"}
 ];
 
 const CAMPAIGNS=[
@@ -500,7 +480,7 @@ const CAMPAIGNS=[
 {name:"Mining Sector — WA Focus",status:"draft",sent:0,opened:0,clicked:0,replies:0}
 ];
 
-const STATES_DATA=[{st:"QLD",leads:87,val:156000},{st:"NSW",leads:64,val:112000},{st:"VIC",leads:52,val:94000},{st:"WA",leads:38,val:72000},{st:"SA",leads:21,val:38000},{st:"NT",leads:12,val:22000},{st:"TAS",leads:8,val:14000},{st:"ACT",leads:5,val:9000}];
+const STATES_DATA=[{st:"QLD",leads:0,val:0},{st:"NSW",leads:0,val:0},{st:"VIC",leads:0,val:0},{st:"WA",leads:0,val:0},{st:"SA",leads:0,val:0},{st:"NT",leads:0,val:0},{st:"TAS",leads:0,val:0},{st:"ACT",leads:0,val:0}];
 
 // ═══════════ CHART DEFAULTS ═══════════
 Chart.defaults.font.family = "'Inter',system-ui,sans-serif";
@@ -534,18 +514,12 @@ function initDashboard() {
   }).join('');
 
   // Recent Activity
-  const activities = [
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>', bg: 'var(--accent-bg)', color: 'var(--accent)', text: 'Info pack sent to <strong>Cairns Earthmoving</strong>', time: '2 hours ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', bg: 'var(--purple-bg)', color: 'var(--purple)', text: 'Demo completed with <strong>SecureFleet Logistics</strong>', time: '5 hours ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>', bg: 'var(--accent-bg)', color: 'var(--accent)', text: 'New lead scraped: <strong>Outback Mining Services</strong>', time: '1 day ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', bg: 'var(--warning-bg)', color: 'var(--warning)', text: 'Proposal sent to <strong>GreenWaste Solutions</strong>', time: '2 days ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>', bg: 'var(--success-bg)', color: 'var(--success)', text: 'Deal closed — <strong>Metro Rentals, 55 units</strong>', time: '11 days ago' }
-  ];
-  document.getElementById('recentActivity').innerHTML = activities.map(a => `
+  const activities = [];
+  document.getElementById('recentActivity').innerHTML = activities.length > 0 ? activities.map(a => `
     <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;${a !== activities[activities.length-1] ? 'border-bottom:1px solid #f1f5f9' : ''}">
       <div style="width:32px;height:32px;border-radius:8px;background:${a.bg};color:${a.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">${a.icon}</div>
       <div style="flex:1"><div style="font-size:13px;color:var(--text-secondary);line-height:1.5">${a.text}</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px">${a.time}</div></div>
-    </div>`).join('');
+    </div>`).join('') : '<div style="font-size:13px;color:var(--text-muted)">No recent activity</div>';
 
   // Pipeline Legend
   document.getElementById('pipelineLegend').innerHTML = STAGES.map((s, i) => {

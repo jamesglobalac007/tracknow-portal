@@ -46,14 +46,14 @@
     <script>
         // ─── SAMPLE DATA ───────────────────────────────────────────
         const INDUSTRIES = [
-            { name: "Transport & Logistics", icon: "🚛", count: 342, color: "#DC2626" },
-            { name: "Construction & Civil", icon: "🏗️", count: 287, color: "#B91C1C" },
-            { name: "Waste Management", icon: "♻️", count: 156, color: "#991B1B" },
-            { name: "Delivery & Couriers", icon: "📦", count: 203, color: "#7F1D1D" },
-            { name: "Mining & Resources", icon: "⛏️", count: 128, color: "#450A0A" },
-            { name: "Government & Council", icon: "🏛️", count: 94, color: "#1F2937" },
-            { name: "Rental & Leasing", icon: "🔑", count: 167, color: "#374151" },
-            { name: "Agriculture", icon: "🌾", count: 89, color: "#4B5563" },
+            { name: "Transport & Logistics", icon: "🚛", count: 0, color: "#DC2626" },
+            { name: "Construction & Civil", icon: "🏗️", count: 0, color: "#B91C1C" },
+            { name: "Waste Management", icon: "♻️", count: 0, color: "#991B1B" },
+            { name: "Delivery & Couriers", icon: "📦", count: 0, color: "#7F1D1D" },
+            { name: "Mining & Resources", icon: "⛏️", count: 0, color: "#450A0A" },
+            { name: "Government & Council", icon: "🏛️", count: 0, color: "#1F2937" },
+            { name: "Rental & Leasing", icon: "🔑", count: 0, color: "#374151" },
+            { name: "Agriculture", icon: "🌾", count: 0, color: "#4B5563" },
         ];
 
         const STATES = ["All States", "QLD", "NSW", "VIC", "SA", "WA", "TAS", "NT", "ACT"];
@@ -67,62 +67,30 @@
             { id: "closed", label: "Closed Won", color: "#10B981", bgColor: "#ECFDF5" },
         ];
 
-        const SAMPLE_LEADS = [
-            { id: 1, company: "Smith's Transport Pty Ltd", contact: "David Smith", email: "david@smithstransport.com.au", phone: "0412 345 678", industry: "Transport & Logistics", state: "QLD", city: "Brisbane", stage: "demo", vehicles: 45, value: 16200, lastContact: "2026-03-28", notes: "Very interested in Eco Driving module. Demo scheduled for next Tuesday.", starred: true },
-            { id: 2, company: "Pacific Civil Contractors", contact: "Sarah Chen", email: "sarah@pacificcivil.com.au", phone: "0423 456 789", industry: "Construction & Civil", state: "NSW", city: "Sydney", stage: "interested", vehicles: 78, value: 28080, lastContact: "2026-03-27", notes: "Has 78 machines across 3 sites. Wants geofencing + maintenance alerts.", starred: true },
-            { id: 3, company: "GreenWaste Solutions", contact: "Mike O'Brien", email: "mike@greenwaste.com.au", phone: "0434 567 890", industry: "Waste Management", state: "VIC", city: "Melbourne", stage: "proposal", vehicles: 32, value: 11520, lastContact: "2026-03-29", notes: "Proposal sent for 32 trucks. Awaiting board approval.", starred: false },
-            { id: 4, company: "Outback Mining Services", contact: "James Wilson", email: "jwilson@outbackmining.com.au", phone: "0445 678 901", industry: "Mining & Resources", state: "WA", city: "Perth", stage: "new", vehicles: 120, value: 43200, lastContact: "2026-03-30", notes: "Found via LinkedIn. Large fleet opportunity in Pilbara region.", starred: true },
-            { id: 5, company: "QuickDrop Couriers", contact: "Tom Nguyen", email: "tom@quickdrop.com.au", phone: "0456 789 012", industry: "Delivery & Couriers", state: "QLD", city: "Gold Coast", stage: "contacted", vehicles: 22, value: 7920, lastContact: "2026-03-26", notes: "Sent initial info pack. Following up next week.", starred: false },
-            { id: 6, company: "Brisbane City Council", contact: "Angela Torres", email: "atorres@brisbane.qld.gov.au", phone: "07 3403 8888", industry: "Government & Council", state: "QLD", city: "Brisbane", stage: "interested", vehicles: 200, value: 72000, lastContact: "2026-03-25", notes: "Massive opportunity. Need to present to procurement committee.", starred: true },
-            { id: 7, company: "AgriTrack Farms", contact: "Peter Brown", email: "pete@agritrack.com.au", phone: "0467 890 123", industry: "Agriculture", state: "NSW", city: "Dubbo", stage: "new", vehicles: 15, value: 5400, lastContact: "2026-03-30", notes: "Scraped from Google Maps. Needs tracking for farm machinery.", starred: false },
-            { id: 8, company: "Metro Rentals Australia", contact: "Lisa Park", email: "lisa@metrorentals.com.au", phone: "0478 901 234", industry: "Rental & Leasing", state: "VIC", city: "Melbourne", stage: "closed", vehicles: 55, value: 19800, lastContact: "2026-03-20", notes: "CLOSED! 55 units. Installation scheduled for April 5.", starred: true },
-            { id: 9, company: "Cairns Earthmoving", contact: "Rob Taylor", email: "rob@cairnsearthmoving.com.au", phone: "0489 012 345", industry: "Construction & Civil", state: "QLD", city: "Cairns", stage: "contacted", vehicles: 28, value: 10080, lastContact: "2026-03-29", notes: "Interested in machine hours tracking. Sent Fleetrun brochure.", starred: false },
-            { id: 10, company: "SecureFleet Logistics", contact: "Karen White", email: "karen@securefleet.com.au", phone: "0490 123 456", industry: "Transport & Logistics", state: "SA", city: "Adelaide", stage: "demo", vehicles: 67, value: 24120, lastContact: "2026-03-28", notes: "Demo completed. Very impressed with geofencing. Awaiting quote.", starred: false },
-            { id: 11, company: "Darwin Waste Services", contact: "Chris Martin", email: "chris@darwinwaste.com.au", phone: "0401 234 567", industry: "Waste Management", state: "NT", city: "Darwin", stage: "new", vehicles: 18, value: 6480, lastContact: "2026-03-31", notes: "Cold outreach. Left voicemail.", starred: false },
-            { id: 12, company: "Hobart Bus Lines", contact: "Emma Scott", email: "emma@hobartbus.com.au", phone: "0412 876 543", industry: "Transport & Logistics", state: "TAS", city: "Hobart", stage: "interested", vehicles: 42, value: 15120, lastContact: "2026-03-27", notes: "Public transport fleet. Needs driver behaviour + fuel monitoring.", starred: false },
-        ];
+        const SAMPLE_LEADS = [];
 
-        const SCRAPER_RESULTS = [
-            { name: "ABC Heavy Haulage", abn: "12 345 678 901", industry: "Transport & Logistics", state: "QLD", city: "Townsville", phone: "07 4771 0000", email: "info@abchaulage.com.au", vehicles: "~30", source: "ABN Lookup" },
-            { name: "Sunshine Coast Earthworks", abn: "23 456 789 012", industry: "Construction & Civil", state: "QLD", city: "Maroochydore", phone: "07 5443 0000", email: "admin@scew.com.au", vehicles: "~15", source: "Google Maps" },
-            { name: "Murray River Transport", abn: "34 567 890 123", industry: "Transport & Logistics", state: "VIC", city: "Mildura", phone: "03 5023 0000", email: "dispatch@murrayriver.com.au", vehicles: "~50", source: "Yellow Pages" },
-            { name: "Top End Mining Contractors", abn: "45 678 901 234", industry: "Mining & Resources", state: "NT", city: "Katherine", phone: "08 8972 0000", email: "ops@topendmining.com.au", vehicles: "~80", source: "ABN Lookup" },
-            { name: "Clean City Waste", abn: "56 789 012 345", industry: "Waste Management", state: "NSW", city: "Wollongong", phone: "02 4227 0000", email: "hello@cleancity.com.au", vehicles: "~25", source: "Google Maps" },
-            { name: "Pilbara Plant Hire", abn: "67 890 123 456", industry: "Rental & Leasing", state: "WA", city: "Karratha", phone: "08 9185 0000", email: "hire@pilbaraplant.com.au", vehicles: "~40", source: "LinkedIn" },
-        ];
+        const SCRAPER_RESULTS = [];
 
-        const monthlyData = [
-            { month: "Oct", leads: 18, contacted: 14, demos: 6, closed: 3, revenue: 10800 },
-            { month: "Nov", leads: 24, contacted: 19, demos: 8, closed: 4, revenue: 14400 },
-            { month: "Dec", leads: 15, contacted: 12, demos: 5, closed: 2, revenue: 7200 },
-            { month: "Jan", leads: 31, contacted: 25, demos: 11, closed: 6, revenue: 21600 },
-            { month: "Feb", leads: 38, contacted: 30, demos: 14, closed: 8, revenue: 28800 },
-            { month: "Mar", leads: 45, contacted: 36, demos: 18, closed: 10, revenue: 36000 },
-        ];
+        const monthlyData = [];
 
         const stateData = [
-            { state: "QLD", leads: 87, value: 156000 },
-            { state: "NSW", leads: 64, value: 112000 },
-            { state: "VIC", leads: 52, value: 94000 },
-            { state: "WA", leads: 38, value: 72000 },
-            { state: "SA", leads: 21, value: 38000 },
-            { state: "NT", leads: 12, value: 22000 },
-            { state: "TAS", leads: 8, value: 14000 },
-            { state: "ACT", leads: 5, value: 9000 },
+            { state: "QLD", leads: 0, value: 0 },
+            { state: "NSW", leads: 0, value: 0 },
+            { state: "VIC", leads: 0, value: 0 },
+            { state: "WA", leads: 0, value: 0 },
+            { state: "SA", leads: 0, value: 0 },
+            { state: "NT", leads: 0, value: 0 },
+            { state: "TAS", leads: 0, value: 0 },
+            { state: "ACT", leads: 0, value: 0 },
         ];
 
-        const campaigns = [
-            { id: 1, name: "Construction Fleet Outreach", status: "active", sent: 156, opened: 89, clicked: 34, replies: 12, startDate: "2026-03-15" },
-            { id: 2, name: "Logistics Companies - QLD/NSW", status: "active", sent: 203, opened: 124, clicked: 56, replies: 18, startDate: "2026-03-10" },
-            { id: 3, name: "Waste Management - National", status: "paused", sent: 87, opened: 42, clicked: 15, replies: 5, startDate: "2026-03-01" },
-            { id: 4, name: "Mining Sector - WA Focus", status: "draft", sent: 0, opened: 0, clicked: 0, replies: 0, startDate: null },
-        ];
+        const campaigns = [];
 
         const INFO_PACKS = [
-            { id: 1, name: "TrackNow System Overview", file: "TRACKNOWCORP-OVERVIEW.pdf", sends: 234, views: 187 },
-            { id: 2, name: "Eco Driving Brochure", file: "TRACKNOWCORP-ECO-DRIVING.pdf", sends: 156, views: 112 },
-            { id: 3, name: "Fleetrun Maintenance", file: "TRACKNOWCORP-FLEETRUN.pdf", sends: 128, views: 94 },
-            { id: 4, name: "Custom Pricing Proposal", file: "Custom-Quote-Template.pdf", sends: 67, views: 58 },
+            { id: 1, name: "TrackNow System Overview", file: "TRACKNOWCORP-OVERVIEW.pdf", sends: 0, views: 0 },
+            { id: 2, name: "Eco Driving Brochure", file: "TRACKNOWCORP-ECO-DRIVING.pdf", sends: 0, views: 0 },
+            { id: 3, name: "Fleetrun Maintenance", file: "TRACKNOWCORP-FLEETRUN.pdf", sends: 0, views: 0 },
+            { id: 4, name: "Custom Pricing Proposal", file: "Custom-Quote-Template.pdf", sends: 0, views: 0 },
         ];
 
         // Icon helper using HTML entities and emojis
@@ -456,61 +424,7 @@
                             <div class="bg-white rounded-xl border border-gray-200 p-5">
                                 <h3 class="text-sm font-semibold text-gray-700 mb-4">Recent Activity</h3>
                                 <div class="space-y-4">
-                                    <div class="flex items-start gap-3">
-                                        <div class="p-1.5 rounded-lg" style="background-color: #3B82F615">
-                                            <span class="text-lg">📤</span>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-700">
-                                                Info pack sent to <span class="font-semibold">Cairns Earthmoving</span>
-                                            </p>
-                                            <p class="text-xs text-gray-400 mt-0.5">2 hours ago</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <div class="p-1.5 rounded-lg" style="background-color: #8B5CF615">
-                                            <span class="text-lg">👁️</span>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-700">
-                                                Demo completed with <span class="font-semibold">SecureFleet Logistics</span>
-                                            </p>
-                                            <p class="text-xs text-gray-400 mt-0.5">5 hours ago</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <div class="p-1.5 rounded-lg" style="background-color: #DC262615">
-                                            <span class="text-lg">🔍</span>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-700">
-                                                New lead scraped: <span class="font-semibold">Outback Mining Services</span>
-                                            </p>
-                                            <p class="text-xs text-gray-400 mt-0.5">1 day ago</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <div class="p-1.5 rounded-lg" style="background-color: #F59E0B15">
-                                            <span class="text-lg">📄</span>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-700">
-                                                Proposal sent to <span class="font-semibold">GreenWaste Solutions</span>
-                                            </p>
-                                            <p class="text-xs text-gray-400 mt-0.5">2 days ago</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-3">
-                                        <div class="p-1.5 rounded-lg" style="background-color: #10B98115">
-                                            <span class="text-lg">✅</span>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm text-gray-700">
-                                                DEAL CLOSED! <span class="font-semibold">Metro Rentals Australia — 55 units</span>
-                                            </p>
-                                            <p class="text-xs text-gray-400 mt-0.5">11 days ago</p>
-                                        </div>
-                                    </div>
+                                    <p class="text-xs text-gray-400">No recent activity</p>
                                 </div>
                             </div>
                         </div>

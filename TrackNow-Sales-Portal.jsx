@@ -22,14 +22,14 @@ const TEAL = "#1abc9c";
 
 // ─── DATA ──────────────────────────────────────────────────
 const INDUSTRIES = [
-  { name: "Civil", icon: "🏗️", count: 342, color: "#3498db" },
-  { name: "Service", icon: "🔧", count: 287, color: "#2980b9" },
-  { name: "Transport & Logistics", icon: "🚛", count: 203, color: "#1a6fa8" },
-  { name: "Storage & Waste", icon: "♻️", count: 156, color: "#20303c" },
-  { name: "Medical & Personal Care", icon: "🏥", count: 128, color: "#1abc9c" },
-  { name: "Live Stock & Pets", icon: "🐄", count: 94, color: "#2c3e50" },
-  { name: "Manufacturing", icon: "🏭", count: 167, color: "#34495e" },
-  { name: "Mining & Resources", icon: "⛏️", count: 89, color: "#16a085" },
+  { name: "Civil", icon: "🏗️", count:0, color: "#3498db" },
+  { name: "Service", icon: "🔧", count:0, color: "#2980b9" },
+  { name: "Transport & Logistics", icon: "🚛", count:0, color: "#1a6fa8" },
+  { name: "Storage & Waste", icon: "♻️", count:0, color: "#20303c" },
+  { name: "Medical & Personal Care", icon: "🏥", count:0, color: "#1abc9c" },
+  { name: "Live Stock & Pets", icon: "🐄", count:0, color: "#2c3e50" },
+  { name: "Manufacturing", icon: "🏭", count:0, color: "#34495e" },
+  { name: "Mining & Resources", icon: "⛏️", count:0, color: "#16a085" },
 ];
 
 const STATES = ["All States","QLD","NSW","VIC","SA","WA","TAS","NT","ACT"];
@@ -43,29 +43,9 @@ const STAGES = [
   { id:"closed",    label:"Closed Won",   color:"#10B981", bg:"#ECFDF5" },
 ];
 
-const LEADS = [
-  { id:1,  co:"Smith's Transport Pty Ltd",    name:"David Smith",   email:"david@smithstransport.com.au",  ph:"0412 345 678", ind:"Transport & Logistics", st:"QLD", city:"Brisbane",   stage:"demo",      v:45,  val:16200, last:"28 Mar", note:"Eco Driving demo next Tue", star:true },
-  { id:2,  co:"Pacific Civil Contractors",    name:"Sarah Chen",    email:"sarah@pacificcivil.com.au",     ph:"0423 456 789", ind:"Civil",                 st:"NSW", city:"Sydney",     stage:"interested",v:78,  val:28080, last:"27 Mar", note:"78 machines, 3 sites. Wants geofencing.", star:true },
-  { id:3,  co:"GreenWaste Solutions",         name:"Mike O'Brien",  email:"mike@greenwaste.com.au",        ph:"0434 567 890", ind:"Storage & Waste",       st:"VIC", city:"Melbourne",  stage:"proposal",  v:32,  val:11520, last:"29 Mar", note:"Proposal sent. Awaiting board.", star:false },
-  { id:4,  co:"Outback Mining Services",      name:"James Wilson",  email:"jwilson@outbackmining.com.au",  ph:"0445 678 901", ind:"Mining & Resources",    st:"WA",  city:"Perth",      stage:"new",       v:120, val:43200, last:"30 Mar", note:"LinkedIn find. Pilbara region.", star:true },
-  { id:5,  co:"QuickDrop Couriers",           name:"Tom Nguyen",    email:"tom@quickdrop.com.au",          ph:"0456 789 012", ind:"Transport & Logistics", st:"QLD", city:"Gold Coast", stage:"contacted", v:22,  val:7920,  last:"26 Mar", note:"Info pack sent. Follow up next week.", star:false },
-  { id:6,  co:"Brisbane City Council",        name:"Angela Torres", email:"atorres@brisbane.qld.gov.au",   ph:"07 3403 8888", ind:"Service",               st:"QLD", city:"Brisbane",   stage:"interested",v:200, val:72000, last:"25 Mar", note:"Massive opp. Procurement committee.", star:true },
-  { id:7,  co:"AgriTrack Farms",              name:"Peter Brown",   email:"pete@agritrack.com.au",         ph:"0467 890 123", ind:"Live Stock & Pets",     st:"NSW", city:"Dubbo",      stage:"new",       v:15,  val:5400,  last:"30 Mar", note:"Google Maps find. Farm machinery.", star:false },
-  { id:8,  co:"Metro Rentals Australia",      name:"Lisa Park",     email:"lisa@metrorentals.com.au",      ph:"0478 901 234", ind:"Service",               st:"VIC", city:"Melbourne",  stage:"closed",    v:55,  val:19800, last:"20 Mar", note:"CLOSED! 55 units. Install Apr 5.", star:true },
-  { id:9,  co:"Cairns Earthmoving",           name:"Rob Taylor",    email:"rob@cairnsearthmoving.com.au",  ph:"0489 012 345", ind:"Civil",                 st:"QLD", city:"Cairns",     stage:"contacted", v:28,  val:10080, last:"29 Mar", note:"Machine hrs tracking. Fleetrun sent.", star:false },
-  { id:10, co:"SecureFleet Logistics",        name:"Karen White",   email:"karen@securefleet.com.au",      ph:"0490 123 456", ind:"Transport & Logistics", st:"SA",  city:"Adelaide",   stage:"demo",      v:67,  val:24120, last:"28 Mar", note:"Demo done. Loved geofencing. Quote next.", star:false },
-  { id:11, co:"Darwin Waste Services",        name:"Chris Martin",  email:"chris@darwinwaste.com.au",      ph:"0401 234 567", ind:"Storage & Waste",       st:"NT",  city:"Darwin",     stage:"new",       v:18,  val:6480,  last:"31 Mar", note:"Cold outreach. Left voicemail.", star:false },
-  { id:12, co:"Hobart Bus Lines",             name:"Emma Scott",    email:"emma@hobartbus.com.au",         ph:"0412 876 543", ind:"Transport & Logistics", st:"TAS", city:"Hobart",     stage:"interested",v:42,  val:15120, last:"27 Mar", note:"Public transport. Driver behaviour + fuel.", star:false },
-];
+const LEADS = [];
 
-const SCRAPER_RESULTS = [
-  { name:"ABC Heavy Haulage",           abn:"12 345 678 901", ind:"Transport & Logistics", st:"QLD", city:"Townsville",   fleet:"~30", src:"ABN Lookup",  email:"info@abchaulage.com.au" },
-  { name:"Sunshine Coast Earthworks",   abn:"23 456 789 012", ind:"Civil",                 st:"QLD", city:"Maroochydore", fleet:"~15", src:"Google Maps", email:"admin@scew.com.au" },
-  { name:"Murray River Transport",      abn:"34 567 890 123", ind:"Transport & Logistics", st:"VIC", city:"Mildura",      fleet:"~50", src:"Yellow Pages",email:"dispatch@murrayriver.com.au" },
-  { name:"Top End Mining Contractors",  abn:"45 678 901 234", ind:"Mining & Resources",    st:"NT",  city:"Katherine",    fleet:"~80", src:"ABN Lookup",  email:"ops@topendmining.com.au" },
-  { name:"Clean City Waste",            abn:"56 789 012 345", ind:"Storage & Waste",       st:"NSW", city:"Wollongong",   fleet:"~25", src:"Google Maps", email:"hello@cleancity.com.au" },
-  { name:"Pilbara Plant Hire",          abn:"67 890 123 456", ind:"Service",               st:"WA",  city:"Karratha",     fleet:"~40", src:"LinkedIn",    email:"hire@pilbaraplant.com.au" },
-];
+const SCRAPER_RESULTS = [];
 
 const MONTHLY = [
   { m:"Oct", leads:18, contacted:14, closed:3, rev:10800 },
@@ -91,10 +71,10 @@ const CAMPAIGNS = [
 ];
 
 const INFO_PACKS = [
-  { name:"TrackNow System Overview",   file:"TRACKNOW-OVERVIEW.pdf",    sent:234, views:187 },
-  { name:"Eco Driving Brochure",       file:"TRACKNOW-ECO-DRIVING.pdf", sent:156, views:112 },
-  { name:"FleetRun Maintenance",       file:"TRACKNOW-FLEETRUN.pdf",    sent:128, views:94 },
-  { name:"Custom Pricing Proposal",    file:"Custom-Quote-Template.pdf",sent:67,  views:58 },
+  { name:"TrackNow System Overview",   file:"TRACKNOW-OVERVIEW.pdf",    sent:234, views: 0 },
+  { name:"Eco Driving Brochure",       file:"TRACKNOW-ECO-DRIVING.pdf", sent:156, views: 0 },
+  { name:"FleetRun Maintenance",       file:"TRACKNOW-FLEETRUN.pdf",    sent:128, views: 0 },
+  { name:"Custom Pricing Proposal",    file:"Custom-Quote-Template.pdf",sent:67,  views: 0 },
 ];
 
 const TEMPLATES = [
@@ -255,23 +235,7 @@ function Dashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h3 className="text-sm font-bold text-gray-700 mb-4">Recent Activity</h3>
           <div className="space-y-4">
-            {[
-              { icon: Send,        color: "#3B82F6", act: "Info pack sent to",    target: "Cairns Earthmoving",              time: "2 hours ago" },
-              { icon: Eye,         color: "#8B5CF6", act: "Demo completed with",  target: "SecureFleet Logistics",           time: "5 hours ago" },
-              { icon: Search,      color: BLUE,      act: "New lead scraped:",     target: "Outback Mining Services",         time: "1 day ago" },
-              { icon: FileText,    color: "#F59E0B", act: "Proposal sent to",     target: "GreenWaste Solutions",            time: "2 days ago" },
-              { icon: CheckCircle2,color: "#10B981", act: "DEAL CLOSED!",         target: "Metro Rentals — 55 units",        time: "11 days ago" },
-            ].map((a, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: a.color+"15" }}>
-                  <a.icon size={15} style={{ color: a.color }} />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">{a.act} <span className="font-semibold text-gray-900">{a.target}</span></p>
-                  <p className="text-xs text-gray-400 mt-0.5">{a.time}</p>
-                </div>
-              </div>
-            ))}
+            <p className="text-xs text-gray-400">No recent activity</p>
           </div>
         </div>
       </div>

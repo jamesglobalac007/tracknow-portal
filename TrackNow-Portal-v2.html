@@ -190,11 +190,7 @@ tr:hover{background:#f0f7ff}
       <div class="card">
         <h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:16px">Recent Activity</h3>
         <div style="display:flex;flex-direction:column;gap:14px">
-          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#3b82f615;display:flex;align-items:center;justify-content:center;flex-shrink:0">📤</div><div><div style="font-size:13px;color:#4b5563">Info pack sent to <b>Cairns Earthmoving</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">2 hours ago</div></div></div>
-          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#8b5cf615;display:flex;align-items:center;justify-content:center;flex-shrink:0">👁</div><div><div style="font-size:13px;color:#4b5563">Demo completed with <b>SecureFleet Logistics</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">5 hours ago</div></div></div>
-          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#3498db15;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔍</div><div><div style="font-size:13px;color:#4b5563">New lead scraped: <b>Outback Mining Services</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">1 day ago</div></div></div>
-          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#f59e0b15;display:flex;align-items:center;justify-content:center;flex-shrink:0">📄</div><div><div style="font-size:13px;color:#4b5563">Proposal sent to <b>GreenWaste Solutions</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">2 days ago</div></div></div>
-          <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:8px;background:#10b98115;display:flex;align-items:center;justify-content:center;flex-shrink:0">✅</div><div><div style="font-size:13px;color:#4b5563">DEAL CLOSED! <b>Metro Rentals — 55 units</b></div><div style="font-size:11px;color:#9ca3af;margin-top:2px">11 days ago</div></div></div>
+          <div style="font-size:13px;color:#9ca3af">No recent activity</div>
         </div>
       </div>
     </div>
@@ -318,20 +314,7 @@ tr:hover{background:#f0f7ff}
 
 <script>
 // ─── DATA ──────────────────────────────────────────────────
-const LEADS=[
-{id:1,co:"Smith's Transport Pty Ltd",name:"David Smith",ind:"Transport & Logistics",st:"QLD",city:"Brisbane",stage:"demo",v:45,val:16200,last:"28 Mar",star:true},
-{id:2,co:"Pacific Civil Contractors",name:"Sarah Chen",ind:"Civil",st:"NSW",city:"Sydney",stage:"interested",v:78,val:28080,last:"27 Mar",star:true},
-{id:3,co:"GreenWaste Solutions",name:"Mike O'Brien",ind:"Storage & Waste",st:"VIC",city:"Melbourne",stage:"proposal",v:32,val:11520,last:"29 Mar",star:false},
-{id:4,co:"Outback Mining Services",name:"James Wilson",ind:"Mining & Resources",st:"WA",city:"Perth",stage:"new",v:120,val:43200,last:"30 Mar",star:true},
-{id:5,co:"QuickDrop Couriers",name:"Tom Nguyen",ind:"Transport & Logistics",st:"QLD",city:"Gold Coast",stage:"contacted",v:22,val:7920,last:"26 Mar",star:false},
-{id:6,co:"Brisbane City Council",name:"Angela Torres",ind:"Service",st:"QLD",city:"Brisbane",stage:"interested",v:200,val:72000,last:"25 Mar",star:true},
-{id:7,co:"AgriTrack Farms",name:"Peter Brown",ind:"Live Stock & Pets",st:"NSW",city:"Dubbo",stage:"new",v:15,val:5400,last:"30 Mar",star:false},
-{id:8,co:"Metro Rentals Australia",name:"Lisa Park",ind:"Service",st:"VIC",city:"Melbourne",stage:"closed",v:55,val:19800,last:"20 Mar",star:true},
-{id:9,co:"Cairns Earthmoving",name:"Rob Taylor",ind:"Civil",st:"QLD",city:"Cairns",stage:"contacted",v:28,val:10080,last:"29 Mar",star:false},
-{id:10,co:"SecureFleet Logistics",name:"Karen White",ind:"Transport & Logistics",st:"SA",city:"Adelaide",stage:"demo",v:67,val:24120,last:"28 Mar",star:false},
-{id:11,co:"Darwin Waste Services",name:"Chris Martin",ind:"Storage & Waste",st:"NT",city:"Darwin",stage:"new",v:18,val:6480,last:"31 Mar",star:false},
-{id:12,co:"Hobart Bus Lines",name:"Emma Scott",ind:"Transport & Logistics",st:"TAS",city:"Hobart",stage:"interested",v:42,val:15120,last:"27 Mar",star:false}
-];
+const LEADS=[];
 
 const STAGES=[
 {id:"new",label:"New Lead",color:"#6B7280",bg:"#F3F4F6"},
@@ -342,24 +325,17 @@ const STAGES=[
 {id:"closed",label:"Closed Won",color:"#10B981",bg:"#ECFDF5"}
 ];
 
-const SCRAPERS=[
-{name:"ABC Heavy Haulage",abn:"12 345 678 901",ind:"Transport & Logistics",st:"QLD",city:"Townsville",fleet:"~30",src:"ABN Lookup",email:"info@abchaulage.com.au"},
-{name:"Sunshine Coast Earthworks",abn:"23 456 789 012",ind:"Civil",st:"QLD",city:"Maroochydore",fleet:"~15",src:"Google Maps",email:"admin@scew.com.au"},
-{name:"Murray River Transport",abn:"34 567 890 123",ind:"Transport & Logistics",st:"VIC",city:"Mildura",fleet:"~50",src:"Yellow Pages",email:"dispatch@murrayriver.com.au"},
-{name:"Top End Mining Contractors",abn:"45 678 901 234",ind:"Mining & Resources",st:"NT",city:"Katherine",fleet:"~80",src:"ABN Lookup",email:"ops@topendmining.com.au"},
-{name:"Clean City Waste",abn:"56 789 012 345",ind:"Storage & Waste",st:"NSW",city:"Wollongong",fleet:"~25",src:"Google Maps",email:"hello@cleancity.com.au"},
-{name:"Pilbara Plant Hire",abn:"67 890 123 456",ind:"Service",st:"WA",city:"Karratha",fleet:"~40",src:"LinkedIn",email:"hire@pilbaraplant.com.au"}
-];
+const SCRAPERS=[];
 
 const INDUSTRIES=[
-{name:"Civil",icon:"🏗️",count:342,color:"#3498db"},
-{name:"Service",icon:"🔧",count:287,color:"#2980b9"},
-{name:"Transport & Logistics",icon:"🚛",count:203,color:"#1a6fa8"},
-{name:"Storage & Waste",icon:"♻️",count:156,color:"#20303c"},
-{name:"Medical & Personal Care",icon:"🏥",count:128,color:"#1abc9c"},
-{name:"Live Stock & Pets",icon:"🐄",count:94,color:"#2c3e50"},
-{name:"Manufacturing",icon:"🏭",count:167,color:"#34495e"},
-{name:"Mining & Resources",icon:"⛏️",count:89,color:"#16a085"}
+{name:"Civil",icon:"🏗️",count:0,color:"#3498db"},
+{name:"Service",icon:"🔧",count:0,color:"#2980b9"},
+{name:"Transport & Logistics",icon:"🚛",count:0,color:"#1a6fa8"},
+{name:"Storage & Waste",icon:"♻️",count:0,color:"#20303c"},
+{name:"Medical & Personal Care",icon:"🏥",count:0,color:"#1abc9c"},
+{name:"Live Stock & Pets",icon:"🐄",count:0,color:"#2c3e50"},
+{name:"Manufacturing",icon:"🏭",count:0,color:"#34495e"},
+{name:"Mining & Resources",icon:"⛏️",count:0,color:"#16a085"}
 ];
 
 const CAMPAIGNS=[
@@ -369,7 +345,7 @@ const CAMPAIGNS=[
 {name:"Mining Sector — WA Focus",status:"draft",sent:0,opened:0,clicked:0,replies:0}
 ];
 
-const STATES_DATA=[{st:"QLD",leads:87,val:156000},{st:"NSW",leads:64,val:112000},{st:"VIC",leads:52,val:94000},{st:"WA",leads:38,val:72000},{st:"SA",leads:21,val:38000},{st:"NT",leads:12,val:22000},{st:"TAS",leads:8,val:14000},{st:"ACT",leads:5,val:9000}];
+const STATES_DATA=[{st:"QLD",leads:0,val:0},{st:"NSW",leads:0,val:0},{st:"VIC",leads:0,val:0},{st:"WA",leads:0,val:0},{st:"SA",leads:0,val:0},{st:"NT",leads:0,val:0},{st:"TAS",leads:0,val:0},{st:"ACT",leads:0,val:0}];
 
 // ─── NAV ───────────────────────────────────────────────────
 function showPage(id){

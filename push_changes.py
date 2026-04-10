@@ -1,101 +1,93 @@
 #!/usr/bin/env python3
-"""TrackNow Portal — Push to GitHub + Render"""
-import os, sys, json, base64, urllib.request, urllib.error
+"""Push script — TrackNow Portal via git (no API token needed)."""
+import subprocess, os, sys
+from datetime import datetime
 
-# ── Config ──
-TOKEN_FILE = os.path.expanduser("~/.github_token")
-if os.path.isfile(TOKEN_FILE):
-    PAT = open(TOKEN_FILE).read().strip()
+# Find the tracknow-portal repo
+for p in ("~/MDS/tracknow-portal", "~/mds/tracknow-portal"):
+    rp = os.path.expanduser(p)
+    if os.path.isdir(os.path.join(rp, ".git")):
+        REPO = rp
+        break
 else:
-    print(f"  \033[91m✗  No token found at ~/.github_token\033[0m")
-    print(f"  \033[2m  Run: echo YOUR_TOKEN > ~/.github_token\033[0m")
+    print("\033[91m✗ Could not find tracknow-portal repo\033[0m")
     sys.exit(1)
-REPO = "jamesglobalac007/tracknow-portal"
-FILE = "index.html"
-PORTAL = os.path.expanduser("~/Dropbox/2. Finance/CW/TrackNow/TrackNow/TrackNow-Portal-v6.html")
-API = f"https://api.github.com/repos/{REPO}/contents/{FILE}"
 
-G = "\033[92m"  # green
-O = "\033[38;5;214m"  # orange
-R = "\033[91m"  # red
-D = "\033[2m"   # dim
-B = "\033[1m"   # bold
-X = "\033[0m"   # reset
+os.chdir(REPO)
+
+G = "\033[92m"
+O = "\033[38;5;214m"
+R = "\033[91m"
+D = "\033[2m"
+B = "\033[1m"
+X = "\033[0m"
+
+def run(cmd):
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    return r.returncode == 0, r.stdout + r.stderr
+
+def status(msg, ok=True):
+    sym = f"{G}✓{X}" if ok else f"{R}✗{X}"
+    print(f"  {sym} {msg}")
 
 print(f"\n{O}{B}  ╔══════════════════════════════════════════╗{X}")
 print(f"{O}{B}  ║       🚀  TrackNow Portal Deploy         ║{X}")
 print(f"{O}{B}  ╚══════════════════════════════════════════╝{X}\n")
 
-# ── Step 1: Check file ──
-if not os.path.isfile(PORTAL):
-    print(f"  {R}✗  Portal file not found{X}")
-    print(f"  {D}  Expected: {PORTAL}{X}")
+# Check portal file exists
+portal = os.path.join(REPO, "index.html")
+if not os.path.isfile(portal):
+    print(f"  {R}✗  index.html not found in {REPO}{X}")
     sys.exit(1)
 
-size_kb = os.path.getsize(PORTAL) / 1024
+size_kb = os.path.getsize(portal) / 1024
 print(f"  {G}✓{X}  Portal found {D}({size_kb:.0f} KB){X}")
 
-# ── Step 2: Read & encode ──
-with open(PORTAL, "rb") as f:
-    content_b64 = base64.b64encode(f.read()).decode("utf-8")
-print(f"  {G}✓{X}  Encoded for upload")
+# Pull latest
+ok, out = run("git pull --rebase origin main")
+status("Pulled latest from origin", ok)
+if not ok and "CONFLICT" in out:
+    print(out)
+    sys.exit(1)
 
-# ── Step 3: Get current SHA ──
-print(f"  {D}⟳{X}  Checking current version on GitHub...")
-headers = {
-    "Authorization": f"Bearer {PAT}",
-    "Accept": "application/vnd.github+json",
-    "User-Agent": "TrackNow-Push"
-}
+# Check for changes
+ok, out = run("git status --porcelain")
+if out.strip():
+    print(f"\n  Changed files:")
+    for line in out.strip().splitlines():
+        print(f"    {line}")
 
-sha = None
-try:
-    req = urllib.request.Request(API, headers=headers)
-    with urllib.request.urlopen(req) as resp:
-        data = json.loads(resp.read())
-        sha = data.get("sha", "")
-    print(f"  {G}✓{X}  Existing deploy found {D}(sha: {sha[:7]}...){X}")
-except urllib.error.HTTPError as e:
-    if e.code == 404:
-        print(f"  {G}✓{X}  First deploy — creating new file")
-    else:
-        print(f"  {R}✗  GitHub API error: {e.code}{X}")
+    ok, _ = run("git add -A")
+    status("Staged all changes", ok)
+
+    timestamp = datetime.now().strftime("%d %b %Y %I:%M%p")
+    MSG = f"Portal update — {timestamp}"
+    ok, out = run(f'git commit -m "{MSG}"')
+    if not ok and "nothing to commit" in out:
+        print(f"\n{O}⚠ No changes to commit — portal is up to date{X}\n")
+        sys.exit(0)
+    status("Committed", ok)
+    if not ok:
+        print(out)
         sys.exit(1)
+else:
+    print(f"\n  {D}No local changes to commit.{X}")
+    sys.exit(0)
 
-# ── Step 4: Push ──
-print(f"  {D}⟳{X}  Pushing to GitHub...")
+ok, out = run("git push origin main")
+status("Pushed to GitHub", ok)
+if not ok:
+    ok, out = run("git push --force-with-lease origin main")
+    status("Force-pushed", ok)
 
-from datetime import datetime
-timestamp = datetime.now().strftime("%d %b %Y %I:%M%p")
-
-payload = {
-    "message": f"Portal update — {timestamp}",
-    "content": content_b64
-}
-if sha:
-    payload["sha"] = sha
-
-body = json.dumps(payload).encode("utf-8")
-req = urllib.request.Request(API, data=body, headers={**headers, "Content-Type": "application/json"}, method="PUT")
-
-try:
-    with urllib.request.urlopen(req) as resp:
-        result = json.loads(resp.read())
-    new_sha = result.get("content", {}).get("sha", "")[:7]
+if ok:
     print(f"\n{G}  ═══════════════════════════════════════════{X}")
     print(f"{G}{B}    ✅  DEPLOYED SUCCESSFULLY{X}")
     print(f"{G}  ═══════════════════════════════════════════{X}")
-    print(f"  {D}Commit:{X}  {new_sha}")
-    print(f"  {D}Time:{X}    {timestamp}")
     print(f"  {D}Size:{X}    {size_kb:.0f} KB")
     print(f"\n  {O}{B}🌐  https://tracknow-portal.onrender.com{X}")
     print(f"  {D}Auto-deploys in ~1-2 minutes{X}\n")
-except urllib.error.HTTPError as e:
-    err_body = e.read().decode()
-    try:
-        err_msg = json.loads(err_body).get("message", "Unknown error")
-    except:
-        err_msg = err_body[:200]
+else:
     print(f"\n  {R}{B}❌  DEPLOY FAILED{X}")
-    print(f"  {R}{err_msg}{X}\n")
+    print(f"  {R}{out}{X}\n")
     sys.exit(1)

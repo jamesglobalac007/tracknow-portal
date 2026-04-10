@@ -417,66 +417,7 @@
                     <div class="bg-white rounded-lg p-6 mb-8 box-shadow">
                         <h3 class="text-lg font-bold text-dark mb-4">Hot Leads</h3>
                         <div class="space-y-3">
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-center gap-4 flex-1">
-                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
-                                    <div class="avatar bg-blue-500">ST</div>
-                                    <div class="flex-1">
-                                        <div class="font-600 text-dark">Smith's Transport Pty Ltd</div>
-                                        <div class="text-sm text-gray-500">David Smith | QLD Brisbane</div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-600 text-dark">45 vehicles</div>
-                                    <div class="text-sm text-gray-500">$16,200</div>
-                                </div>
-                                <span class="stage-badge badge-purple ml-4">Demo Booked</span>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-center gap-4 flex-1">
-                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
-                                    <div class="avatar" style="background-color: #2980b9;">PC</div>
-                                    <div class="flex-1">
-                                        <div class="font-600 text-dark">Pacific Civil Contractors</div>
-                                        <div class="text-sm text-gray-500">Sarah Chen | NSW Sydney</div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-600 text-dark">78 vehicles</div>
-                                    <div class="text-sm text-gray-500">$28,080</div>
-                                </div>
-                                <span class="stage-badge badge-amber ml-4">Interested</span>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-center gap-4 flex-1">
-                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
-                                    <div class="avatar" style="background-color: #16a085;">OM</div>
-                                    <div class="flex-1">
-                                        <div class="font-600 text-dark">Outback Mining Services</div>
-                                        <div class="text-sm text-gray-500">James Wilson | WA Perth</div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-600 text-dark">120 vehicles</div>
-                                    <div class="text-sm text-gray-500">$43,200</div>
-                                </div>
-                                <span class="stage-badge badge-gray ml-4">New Lead</span>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-center gap-4 flex-1">
-                                    <button class="star-btn starred" onclick="toggleStar(this)">★</button>
-                                    <div class="avatar" style="background-color: #2c3e50;">BC</div>
-                                    <div class="flex-1">
-                                        <div class="font-600 text-dark">Brisbane City Council</div>
-                                        <div class="text-sm text-gray-500">Angela Torres | QLD Brisbane</div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-600 text-dark">200 vehicles</div>
-                                    <div class="text-sm text-gray-500">$72,000</div>
-                                </div>
-                                <span class="stage-badge badge-amber ml-4">Interested</span>
-                            </div>
+                            <div class="text-sm text-gray-500 p-4">No leads yet</div>
                         </div>
                     </div>
 
@@ -484,41 +425,7 @@
                     <div class="bg-white rounded-lg p-6 box-shadow">
                         <h3 class="text-lg font-bold text-dark mb-4">Recent Activity</h3>
                         <div class="space-y-4">
-                            <div class="activity-item">
-                                <div class="activity-icon bg-blue-100">📧</div>
-                                <div class="flex-1">
-                                    <div class="font-500 text-dark">Email sent to Metro Rentals</div>
-                                    <div class="text-xs text-gray-500">2 hours ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon bg-green-100">✓</div>
-                                <div class="flex-1">
-                                    <div class="font-500 text-dark">Demo booked with Smith's Transport</div>
-                                    <div class="text-xs text-gray-500">5 hours ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon bg-yellow-100">📞</div>
-                                <div class="flex-1">
-                                    <div class="font-500 text-dark">Call with Pacific Civil Contractors</div>
-                                    <div class="text-xs text-gray-500">1 day ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon bg-purple-100">📄</div>
-                                <div class="flex-1">
-                                    <div class="font-500 text-dark">Proposal sent to GreenWaste Solutions</div>
-                                    <div class="text-xs text-gray-500">2 days ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon bg-pink-100">🎉</div>
-                                <div class="flex-1">
-                                    <div class="font-500 text-dark">Metro Rentals deal closed</div>
-                                    <div class="text-xs text-gray-500">3 days ago</div>
-                                </div>
-                            </div>
+                            <div class="text-xs text-gray-500">No recent activity</div>
                         </div>
                     </div>
                 </div>
@@ -553,155 +460,40 @@
 
                     <!-- Board View -->
                     <div id="board-view" class="grid grid-cols-6 gap-4">
-                        <!-- New Lead -->
                         <div>
-                            <div class="font-bold text-dark mb-4">New Lead (2)</div>
+                            <div class="font-bold text-dark mb-4">New Lead (0)</div>
                             <div class="stage-column">
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #16a085;">OM</div>
-                                        <span class="stage-badge badge-gray text-xs">New</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">Outback Mining Services</div>
-                                    <div class="text-xs text-gray-500 mb-2">James Wilson</div>
-                                    <div class="text-xs text-gray-500 mb-2">WA Perth</div>
-                                    <div class="text-xs font-600 text-dark mb-1">120 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$43,200</div>
-                                </div>
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #34495e;">AT</div>
-                                        <span class="stage-badge badge-gray text-xs">New</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">AgriTrack Farms</div>
-                                    <div class="text-xs text-gray-500 mb-2">Peter Brown</div>
-                                    <div class="text-xs text-gray-500 mb-2">NSW Dubbo</div>
-                                    <div class="text-xs font-600 text-dark mb-1">15 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$5,400</div>
-                                </div>
+                                <div class="text-xs text-gray-400 p-4">No leads</div>
                             </div>
                         </div>
-
-                        <!-- Contacted -->
                         <div>
-                            <div class="font-bold text-dark mb-4">Contacted (2)</div>
+                            <div class="font-bold text-dark mb-4">Contacted (0)</div>
                             <div class="stage-column">
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #2980b9;">QD</div>
-                                        <span class="stage-badge badge-blue text-xs">Contacted</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">QuickDrop Couriers</div>
-                                    <div class="text-xs text-gray-500 mb-2">Tom Nguyen</div>
-                                    <div class="text-xs text-gray-500 mb-2">QLD Gold Coast</div>
-                                    <div class="text-xs font-600 text-dark mb-1">22 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$7,920</div>
-                                </div>
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #1a6fa8;">CE</div>
-                                        <span class="stage-badge badge-blue text-xs">Contacted</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">Cairns Earthmoving</div>
-                                    <div class="text-xs text-gray-500 mb-2">Rob Taylor</div>
-                                    <div class="text-xs text-gray-500 mb-2">QLD Cairns</div>
-                                    <div class="text-xs font-600 text-dark mb-1">28 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$10,080</div>
-                                </div>
+                                <div class="text-xs text-gray-400 p-4">No leads</div>
                             </div>
                         </div>
-
-                        <!-- Interested -->
                         <div>
-                            <div class="font-bold text-dark mb-4">Interested (2)</div>
+                            <div class="font-bold text-dark mb-4">Interested (0)</div>
                             <div class="stage-column">
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #2980b9;">PC</div>
-                                        <span class="stage-badge badge-amber text-xs">Interested</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">Pacific Civil Contractors</div>
-                                    <div class="text-xs text-gray-500 mb-2">Sarah Chen</div>
-                                    <div class="text-xs text-gray-500 mb-2">NSW Sydney</div>
-                                    <div class="text-xs font-600 text-dark mb-1">78 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$28,080</div>
-                                </div>
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #2c3e50;">BC</div>
-                                        <span class="stage-badge badge-amber text-xs">Interested</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">Brisbane City Council</div>
-                                    <div class="text-xs text-gray-500 mb-2">Angela Torres</div>
-                                    <div class="text-xs text-gray-500 mb-2">QLD Brisbane</div>
-                                    <div class="text-xs font-600 text-dark mb-1">200 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$72,000</div>
-                                </div>
+                                <div class="text-xs text-gray-400 p-4">No leads</div>
                             </div>
                         </div>
-
-                        <!-- Demo Booked -->
                         <div>
-                            <div class="font-bold text-dark mb-4">Demo Booked (2)</div>
+                            <div class="font-bold text-dark mb-4">Demo Booked (0)</div>
                             <div class="stage-column">
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #3498db;">ST</div>
-                                        <span class="stage-badge badge-purple text-xs">Demo</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">Smith's Transport</div>
-                                    <div class="text-xs text-gray-500 mb-2">David Smith</div>
-                                    <div class="text-xs text-gray-500 mb-2">QLD Brisbane</div>
-                                    <div class="text-xs font-600 text-dark mb-1">45 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$16,200</div>
-                                </div>
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #20303c;">SF</div>
-                                        <span class="stage-badge badge-purple text-xs">Demo</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">SecureFleet Logistics</div>
-                                    <div class="text-xs text-gray-500 mb-2">Karen White</div>
-                                    <div class="text-xs text-gray-500 mb-2">SA Adelaide</div>
-                                    <div class="text-xs font-600 text-dark mb-1">67 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$24,120</div>
-                                </div>
+                                <div class="text-xs text-gray-400 p-4">No leads</div>
                             </div>
                         </div>
-
-                        <!-- Proposal Sent -->
                         <div>
-                            <div class="font-bold text-dark mb-4">Proposal Sent (1)</div>
+                            <div class="font-bold text-dark mb-4">Proposal Sent (0)</div>
                             <div class="stage-column">
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #16a085;">GW</div>
-                                        <span class="stage-badge badge-pink text-xs">Proposal</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">GreenWaste Solutions</div>
-                                    <div class="text-xs text-gray-500 mb-2">Mike O'Brien</div>
-                                    <div class="text-xs text-gray-500 mb-2">VIC Melbourne</div>
-                                    <div class="text-xs font-600 text-dark mb-1">32 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$11,520</div>
-                                </div>
+                                <div class="text-xs text-gray-400 p-4">No leads</div>
                             </div>
                         </div>
-
-                        <!-- Closed Won -->
                         <div>
-                            <div class="font-bold text-dark mb-4">Closed Won (1)</div>
+                            <div class="font-bold text-dark mb-4">Closed Won (0)</div>
                             <div class="stage-column">
-                                <div class="lead-card">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="avatar" style="background-color: #1abc9c;">MR</div>
-                                        <span class="stage-badge badge-green text-xs">Closed</span>
-                                    </div>
-                                    <div class="font-600 text-dark text-sm">Metro Rentals Australia</div>
-                                    <div class="text-xs text-gray-500 mb-2">Lisa Park</div>
-                                    <div class="text-xs text-gray-500 mb-2">VIC Melbourne</div>
-                                    <div class="text-xs font-600 text-dark mb-1">55 vehicles</div>
-                                    <div class="text-xs text-green-600 font-600">$19,800</div>
-                                </div>
+                                <div class="text-xs text-gray-400 p-4">No leads</div>
                             </div>
                         </div>
                     </div>
@@ -723,66 +515,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="font-600">Smith's Transport Pty Ltd</td>
-                                        <td>Transport & Logistics</td>
-                                        <td>QLD Brisbane</td>
-                                        <td><span class="stage-badge badge-purple">Demo Booked</span></td>
-                                        <td>45</td>
-                                        <td>$16,200</td>
-                                        <td>2 hours ago</td>
-                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="font-600">Pacific Civil Contractors</td>
-                                        <td>Civil</td>
-                                        <td>NSW Sydney</td>
-                                        <td><span class="stage-badge badge-amber">Interested</span></td>
-                                        <td>78</td>
-                                        <td>$28,080</td>
-                                        <td>1 day ago</td>
-                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="font-600">GreenWaste Solutions</td>
-                                        <td>Storage & Waste</td>
-                                        <td>VIC Melbourne</td>
-                                        <td><span class="stage-badge badge-pink">Proposal Sent</span></td>
-                                        <td>32</td>
-                                        <td>$11,520</td>
-                                        <td>3 days ago</td>
-                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="font-600">Outback Mining Services</td>
-                                        <td>Mining & Resources</td>
-                                        <td>WA Perth</td>
-                                        <td><span class="stage-badge badge-gray">New Lead</span></td>
-                                        <td>120</td>
-                                        <td>$43,200</td>
-                                        <td>1 week ago</td>
-                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="font-600">QuickDrop Couriers</td>
-                                        <td>Transport & Logistics</td>
-                                        <td>QLD Gold Coast</td>
-                                        <td><span class="stage-badge badge-blue">Contacted</span></td>
-                                        <td>22</td>
-                                        <td>$7,920</td>
-                                        <td>2 days ago</td>
-                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="font-600">Brisbane City Council</td>
-                                        <td>Service</td>
-                                        <td>QLD Brisbane</td>
-                                        <td><span class="stage-badge badge-amber">Interested</span></td>
-                                        <td>200</td>
-                                        <td>$72,000</td>
-                                        <td>5 days ago</td>
-                                        <td><button class="text-blue-500 text-sm">Edit</button></td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -941,66 +673,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td><input type="checkbox" class="scraper-checkbox"></td>
-                                        <td class="font-600">ABC Heavy Haulage</td>
-                                        <td>12 345 678 901</td>
-                                        <td>Transport & Logistics</td>
-                                        <td>QLD Townsville</td>
-                                        <td>~30</td>
-                                        <td><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ABN Lookup</span></td>
-                                        <td><button class="text-blue-500 text-sm">View</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="scraper-checkbox"></td>
-                                        <td class="font-600">Sunshine Coast Earthworks</td>
-                                        <td>23 456 789 012</td>
-                                        <td>Civil</td>
-                                        <td>QLD Maroochydore</td>
-                                        <td>~15</td>
-                                        <td><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Google Maps</span></td>
-                                        <td><button class="text-blue-500 text-sm">View</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="scraper-checkbox"></td>
-                                        <td class="font-600">Murray River Transport</td>
-                                        <td>34 567 890 123</td>
-                                        <td>Transport & Logistics</td>
-                                        <td>VIC Mildura</td>
-                                        <td>~50</td>
-                                        <td><span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Yellow Pages</span></td>
-                                        <td><button class="text-blue-500 text-sm">View</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="scraper-checkbox"></td>
-                                        <td class="font-600">Top End Mining Contractors</td>
-                                        <td>45 678 901 234</td>
-                                        <td>Mining & Resources</td>
-                                        <td>NT Katherine</td>
-                                        <td>~80</td>
-                                        <td><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ABN Lookup</span></td>
-                                        <td><button class="text-blue-500 text-sm">View</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="scraper-checkbox"></td>
-                                        <td class="font-600">Clean City Waste</td>
-                                        <td>56 789 012 345</td>
-                                        <td>Storage & Waste</td>
-                                        <td>NSW Wollongong</td>
-                                        <td>~25</td>
-                                        <td><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Google Maps</span></td>
-                                        <td><button class="text-blue-500 text-sm">View</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="scraper-checkbox"></td>
-                                        <td class="font-600">Pilbara Plant Hire</td>
-                                        <td>67 890 123 456</td>
-                                        <td>Service</td>
-                                        <td>WA Karratha</td>
-                                        <td>~40</td>
-                                        <td><span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">LinkedIn</span></td>
-                                        <td><button class="text-blue-500 text-sm">View</button></td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>

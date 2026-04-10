@@ -511,20 +511,7 @@ label{font-size:11px;font-weight:600;color:var(--text-muted);display:block;margi
 
 <script>
 // ═══════════ DATA ═══════════
-const LEADS=[
-{id:1,co:"Smith's Transport Pty Ltd",name:"David Smith",ind:"Transport & Logistics",st:"QLD",city:"Brisbane",stage:"demo",v:45,val:16200,last:"28 Mar",star:true},
-{id:2,co:"Pacific Civil Contractors",name:"Sarah Chen",ind:"Civil",st:"NSW",city:"Sydney",stage:"interested",v:78,val:28080,last:"27 Mar",star:true},
-{id:3,co:"GreenWaste Solutions",name:"Mike O'Brien",ind:"Storage & Waste",st:"VIC",city:"Melbourne",stage:"proposal",v:32,val:11520,last:"29 Mar",star:false},
-{id:4,co:"Outback Mining Services",name:"James Wilson",ind:"Mining & Resources",st:"WA",city:"Perth",stage:"new",v:120,val:43200,last:"30 Mar",star:true},
-{id:5,co:"QuickDrop Couriers",name:"Tom Nguyen",ind:"Transport & Logistics",st:"QLD",city:"Gold Coast",stage:"contacted",v:22,val:7920,last:"26 Mar",star:false},
-{id:6,co:"Brisbane City Council",name:"Angela Torres",ind:"Service",st:"QLD",city:"Brisbane",stage:"interested",v:200,val:72000,last:"25 Mar",star:true},
-{id:7,co:"AgriTrack Farms",name:"Peter Brown",ind:"Live Stock & Pets",st:"NSW",city:"Dubbo",stage:"new",v:15,val:5400,last:"30 Mar",star:false},
-{id:8,co:"Metro Rentals Australia",name:"Lisa Park",ind:"Service",st:"VIC",city:"Melbourne",stage:"closed",v:55,val:19800,last:"20 Mar",star:true},
-{id:9,co:"Cairns Earthmoving",name:"Rob Taylor",ind:"Civil",st:"QLD",city:"Cairns",stage:"contacted",v:28,val:10080,last:"29 Mar",star:false},
-{id:10,co:"SecureFleet Logistics",name:"Karen White",ind:"Transport & Logistics",st:"SA",city:"Adelaide",stage:"demo",v:67,val:24120,last:"28 Mar",star:false},
-{id:11,co:"Darwin Waste Services",name:"Chris Martin",ind:"Storage & Waste",st:"NT",city:"Darwin",stage:"new",v:18,val:6480,last:"31 Mar",star:false},
-{id:12,co:"Hobart Bus Lines",name:"Emma Scott",ind:"Transport & Logistics",st:"TAS",city:"Hobart",stage:"interested",v:42,val:15120,last:"27 Mar",star:false}
-];
+const LEADS=[];
 
 const STAGES=[
 {id:"new",label:"New Lead",color:"#64748b",bg:"#f1f5f9"},
@@ -535,130 +522,20 @@ const STAGES=[
 {id:"closed",label:"Closed Won",color:"#059669",bg:"#ecfdf5"}
 ];
 
-const SCRAPERS=[
-// ═══ TRANSPORT & LOGISTICS (Yellow Pages + enriched) ═══
-{name:"Gold Coast Crane Trucks & Transport",ind:"Transport & Logistics",st:"QLD",city:"Gold Coast",fleet:12,src:"Yellow Pages",email:"info@goldcoastcranetrucks.com.au",phone:"0413 024 259",website:"goldcoastcranetrucks.com.au",contact:"Alberto Marques"},
-{name:"Slingshot Haulage Pty Ltd",ind:"Transport & Logistics",st:"QLD",city:"Darwin",fleet:30,src:"Yellow Pages",email:"admin@slingshotgroup.com.au",phone:"08 8971 1788",website:"slingshotgroup.com.au",contact:"Leigh Dehne"},
-{name:"Intrans Logistics Pty Ltd",ind:"Transport & Logistics",st:"QLD",city:"Cairns",fleet:20,src:"Yellow Pages",email:"info@intranslogistics.com.au",phone:"07 4035 1861",website:"intranslogistics.com.au",contact:""},
-{name:"Land Transport",ind:"Transport & Logistics",st:"QLD",city:"Torrington",fleet:45,src:"Yellow Pages",email:"enquiries@landtransport.com.au",phone:"07 4659 1333",website:"landtransport.com.au",contact:""},
-{name:"Pattel's Heavy Haulage Townsville",ind:"Transport & Logistics",st:"QLD",city:"Townsville",fleet:25,src:"Yellow Pages",email:"info@pattels.com.au",phone:"07 4774 6422",website:"pattels.com.au",contact:""},
-{name:"Phoenix Distribution Pty Ltd",ind:"Transport & Logistics",st:"QLD",city:"Berrinba",fleet:18,src:"Yellow Pages",email:"info@phoenixdistribution.com.au",phone:"07 3803 7266",website:"phoenixdistribution.com.au",contact:""},
-{name:"Blacks Transport (QLD) Pty Ltd",ind:"Transport & Logistics",st:"QLD",city:"Brisbane",fleet:35,src:"Yellow Pages",email:"admin@blackstransport.com.au",phone:"07 3277 0717",website:"blackstransport.com.au",contact:"Bruce Black"},
-{name:"Dunstan's Low Loader Haulage",ind:"Transport & Logistics",st:"QLD",city:"Yatala",fleet:22,src:"Yellow Pages",email:"info@dunstanshaulage.com.au",phone:"07 5514 6467",website:"dunstanshaulage.com.au",contact:""},
-{name:"Morgan's Long Distance Transport",ind:"Transport & Logistics",st:"QLD",city:"Yandina",fleet:30,src:"Yellow Pages",email:"bookings@morganstransport.com.au",phone:"07 2110 5033",website:"morganstransport.com.au",contact:""},
-{name:"Mort & Co Transport Pty Ltd",ind:"Transport & Logistics",st:"QLD",city:"Pittsworth",fleet:50,src:"Yellow Pages",email:"transport@mortco.com.au",phone:"07 4693 3852",website:"mortco.com.au",contact:""},
-{name:"Freightrite Transport",ind:"Transport & Logistics",st:"QLD",city:"Richlands",fleet:40,src:"Yellow Pages",email:"enquiries@freightritetransport.com.au",phone:"07 3727 5999",website:"freightritetransport.com.au",contact:""},
-{name:"Carey's Freight Lines",ind:"Transport & Logistics",st:"NSW",city:"Taminda",fleet:28,src:"Yellow Pages",email:"admin@careysfreight.com.au",phone:"02 7202 0126",website:"careysfreight.com.au",contact:""},
-{name:"Warren Transport",ind:"Transport & Logistics",st:"QLD",city:"Proserpine",fleet:20,src:"Yellow Pages",email:"enquiries@warrentransport.com.au",phone:"07 4945 2200",website:"warrentransport.com.au",contact:""},
-{name:"JTS Transport Australia",ind:"Transport & Logistics",st:"QLD",city:"Greenmount",fleet:15,src:"Yellow Pages",email:"info@jtstransport.com.au",phone:"0417 794 602",website:"jtstransport.com.au",contact:"Jason"},
-{name:"Burdekin Haulage",ind:"Transport & Logistics",st:"QLD",city:"Home Hill",fleet:18,src:"Yellow Pages",email:"admin@burdekinhaulage.com.au",phone:"07 4783 5822",website:"burdekinhaulage.com.au",contact:""},
-{name:"Tuxworth & Woods Carriers",ind:"Transport & Logistics",st:"QLD",city:"Weipa",fleet:22,src:"Yellow Pages",email:"",phone:"07 4069 7183",website:"",contact:""},
-{name:"Stanhope Transport",ind:"Transport & Logistics",st:"QLD",city:"Clermont",fleet:20,src:"Yellow Pages",email:"",phone:"07 4983 1369",website:"",contact:""},
-{name:"St George Freightlines",ind:"Transport & Logistics",st:"QLD",city:"Rocklea",fleet:25,src:"Yellow Pages",email:"admin@stgeorgefreightlines.com.au",phone:"07 3274 1509",website:"stgeorgefreightlines.com.au",contact:""},
-{name:"Cootes Transport Group",ind:"Transport & Logistics",st:"QLD",city:"Pinkenba",fleet:60,src:"Yellow Pages",email:"enquiries@cootestransport.com.au",phone:"07 3260 2288",website:"cootestransport.com.au",contact:""},
-{name:"Cooloola Heavy Haulage",ind:"Transport & Logistics",st:"QLD",city:"East Deep Creek",fleet:15,src:"Yellow Pages",email:"",phone:"07 5483 9600",website:"",contact:""},
-{name:"Johnston Doug & Janelle",ind:"Transport & Logistics",st:"QLD",city:"Tablelands",fleet:12,src:"Yellow Pages",email:"",phone:"07 4095 4637",website:"",contact:"Doug Johnston"},
-// ═══ CIVIL / EARTHMOVING (Yellow Pages) ═══
-{name:"M & K Plant Hire",ind:"Civil",st:"QLD",city:"Capalaba",fleet:18,src:"Yellow Pages",email:"info@mkplanthire.com.au",phone:"07 2145 6462",website:"mkplanthire.com.au",contact:""},
-{name:"Big M Diggers",ind:"Civil",st:"QLD",city:"Jimboomba",fleet:12,src:"Yellow Pages",email:"admin@bigmdiggers.com.au",phone:"0438 124 350",website:"bigmdiggers.com.au",contact:""},
-{name:"Bebrok Excavations",ind:"Civil",st:"QLD",city:"Sunshine Coast",fleet:20,src:"Yellow Pages",email:"info@bebrok.com.au",phone:"07 5453 4422",website:"bebrok.com.au",contact:""},
-{name:"Waterson Diesel Pty Ltd",ind:"Civil",st:"QLD",city:"Callemondah",fleet:15,src:"Yellow Pages",email:"hire@watersondiesel.com.au",phone:"0412 553 542",website:"watersondiesel.com.au",contact:""},
-{name:"Rhino Excavator & Bobcat Hire",ind:"Civil",st:"QLD",city:"Cairns",fleet:10,src:"Yellow Pages",email:"info@rhinoexcavator.com.au",phone:"0428 184 666",website:"rhinoexcavator.com.au",contact:""},
-{name:"T's Plant Hire",ind:"Civil",st:"QLD",city:"Cloncurry",fleet:14,src:"Yellow Pages",email:"admin@tsplanthire.com.au",phone:"07 4922 1079",website:"tsplanthire.com.au",contact:""},
-{name:"Funnell Earthmoving Pty Ltd",ind:"Civil",st:"QLD",city:"Parkwood",fleet:10,src:"Yellow Pages",email:"info@funnellearthmoving.com.au",phone:"0409 478 237",website:"funnellearthmoving.com.au",contact:""},
-{name:"Greg Thompson Earthmoving",ind:"Civil",st:"QLD",city:"Rockhampton",fleet:12,src:"Yellow Pages",email:"admin@gregthompsonearthmoving.com.au",phone:"0407 156 662",website:"gregthompsonearthmoving.com.au",contact:"Greg Thompson"},
-{name:"Cheshire Contractors",ind:"Civil",st:"QLD",city:"Woree",fleet:30,src:"Yellow Pages",email:"info@cheshirecontractors.com.au",phone:"07 4052 2700",website:"cheshirecontractors.com.au",contact:""},
-{name:"All Drott Services",ind:"Civil",st:"QLD",city:"Loganholme",fleet:10,src:"Yellow Pages",email:"",phone:"07 3801 3223",website:"",contact:""},
-{name:"Leighton Sand & Gravel Pty Ltd",ind:"Civil",st:"QLD",city:"Riverbend",fleet:15,src:"Yellow Pages",email:"",phone:"07 2110 8328",website:"",contact:""},
-{name:"Triple S Earthmoving & Pipelaying",ind:"Civil",st:"QLD",city:"Portsmith",fleet:12,src:"Yellow Pages",email:"admin@triplesearthmoving.com.au",phone:"07 4035 3100",website:"triplesarthmoving.com.au",contact:""},
-// ═══ MINING & RESOURCES (Yellow Pages WA) ═══
-{name:"Ausdrill Limited",ind:"Mining & Resources",st:"WA",city:"Canning Vale",fleet:120,src:"Yellow Pages",email:"info@ausdrill.com.au",phone:"08 9311 5666",website:"ausdrill.com.au",contact:""},
-{name:"Doolan's Heavy Haulage Pty Ltd",ind:"Mining & Resources",st:"WA",city:"Maddington",fleet:40,src:"Yellow Pages",email:"admin@doolans.com.au",phone:"08 9452 0595",website:"doolans.com.au",contact:""},
-{name:"Malley Group",ind:"Mining & Resources",st:"WA",city:"Karratha",fleet:30,src:"Yellow Pages",email:"admin@malleygroup.com.au",phone:"08 9185 5555",website:"malleygroup.com.au",contact:""},
-{name:"Desert Sands Cartage Contractors",ind:"Mining & Resources",st:"WA",city:"Laverton",fleet:25,src:"Yellow Pages",email:"info@desertsandscartage.com.au",phone:"08 6365 4935",website:"desertsandscartage.com.au",contact:"Rex Ryles"},
-{name:"Westbird Mining Services",ind:"Mining & Resources",st:"WA",city:"South Boulder",fleet:18,src:"Yellow Pages",email:"",phone:"08 9093 1094",website:"",contact:""},
-{name:"MMT Mining Services",ind:"Mining & Resources",st:"WA",city:"Welshpool",fleet:15,src:"Yellow Pages",email:"sales@mmtmining.com.au",phone:"08 9361 7646",website:"mmtmining.com.au",contact:""},
-{name:"Drillpower",ind:"Mining & Resources",st:"WA",city:"Narngulu",fleet:12,src:"Yellow Pages",email:"info@drillpower.com.au",phone:"08 9965 2686",website:"drillpower.com.au",contact:""},
-{name:"Regal Engineering & Line Boring",ind:"Mining & Resources",st:"WA",city:"South Boulder",fleet:10,src:"Yellow Pages",email:"info@regalengineering.com.au",phone:"08 9093 2791",website:"regalengineering.com.au",contact:""},
-{name:"Bradken",ind:"Mining & Resources",st:"WA",city:"Wundowie",fleet:50,src:"Yellow Pages",email:"enquiries@bradken.com",phone:"08 9449 8333",website:"bradken.com",contact:""},
-{name:"Transmin Pty Ltd",ind:"Mining & Resources",st:"WA",city:"Perth",fleet:35,src:"Yellow Pages",email:"info@transmin.com.au",phone:"1300 905 389",website:"transmin.com.au",contact:""},
-{name:"Maptek",ind:"Mining & Resources",st:"WA",city:"Northbridge",fleet:15,src:"Yellow Pages",email:"sales@maptek.com.au",phone:"08 6211 0000",website:"maptek.com.au",contact:""},
-{name:"Goanna Fleet Management",ind:"Mining & Resources",st:"WA",city:"Karratha",fleet:20,src:"Yellow Pages",email:"info@goannafleet.com.au",phone:"08 9143 1019",website:"goannafleet.com.au",contact:""},
-{name:"Afkos",ind:"Mining & Resources",st:"WA",city:"Perth",fleet:18,src:"Yellow Pages",email:"sales@afkos.com.au",phone:"08 9385 0378",website:"afkos.com.au",contact:""},
-// ═══ STORAGE & WASTE (Yellow Pages QLD) ═══
-{name:"Waste Water Works",ind:"Storage & Waste",st:"QLD",city:"Bohle",fleet:15,src:"Yellow Pages",email:"info@wastewaterworks.com.au",phone:"07 3053 5112",website:"wastewaterworks.com.au",contact:"Dean Luck"},
-{name:"North Queensland Recycling Agents",ind:"Storage & Waste",st:"QLD",city:"Bungalow",fleet:12,src:"Yellow Pages",email:"info@nqra.com.au",phone:"07 4051 6679",website:"nqra.com.au",contact:""},
-{name:"NORHIRE Pty Ltd",ind:"Storage & Waste",st:"QLD",city:"Westcourt",fleet:10,src:"Yellow Pages",email:"info@norhire.com.au",phone:"07 4054 7344",website:"norhire.com.au",contact:""},
-{name:"Active Skip Bins",ind:"Storage & Waste",st:"QLD",city:"Sharon",fleet:8,src:"Yellow Pages",email:"info@activeskipbins.com.au",phone:"0427 536 155",website:"activeskipbins.com.au",contact:""},
-{name:"Dalby Skip Bin Hire",ind:"Storage & Waste",st:"QLD",city:"Dalby",fleet:6,src:"Yellow Pages",email:"hire@dalbyskipbinhire.com.au",phone:"0473 833 629",website:"dalbyskipbinhire.com.au",contact:""},
-{name:"Hervey Bay Liquid Waste",ind:"Storage & Waste",st:"QLD",city:"Dundowran Beach",fleet:8,src:"Yellow Pages",email:"info@herveybayliquidwaste.com.au",phone:"0409 488 674",website:"herveybayliquidwaste.com.au",contact:""},
-{name:"Bin King Skip Hire",ind:"Storage & Waste",st:"QLD",city:"Walligan",fleet:10,src:"Yellow Pages",email:"info@binkingskiphire.com.au",phone:"0428 648 600",website:"binkingskiphire.com.au",contact:""},
-{name:"Dumpit Handy Bins",ind:"Storage & Waste",st:"QLD",city:"Caboolture",fleet:12,src:"Yellow Pages",email:"info@dumpithandybins.com.au",phone:"07 5432 4696",website:"dumpithandybins.com.au",contact:""},
-{name:"Brisbane Drum Exchange",ind:"Storage & Waste",st:"QLD",city:"Murarrie",fleet:8,src:"Yellow Pages",email:"sales@brisbanedrumexchange.com.au",phone:"07 3390 6719",website:"brisbanedrumexchange.com.au",contact:""},
-{name:"Garlo's",ind:"Storage & Waste",st:"QLD",city:"Roma",fleet:15,src:"Yellow Pages",email:"admin@garlos.com.au",phone:"07 4570 1800",website:"garlos.com.au",contact:""},
-{name:"B&Y Services Group",ind:"Storage & Waste",st:"QLD",city:"Wamuran",fleet:10,src:"Yellow Pages",email:"info@byservicesgroup.com.au",phone:"07 5496 6988",website:"byservicesgroup.com.au",contact:""},
-{name:"Enviroking Pty Ltd",ind:"Storage & Waste",st:"NSW",city:"Black Hill",fleet:18,src:"Yellow Pages",email:"enquiries@enviroking.com.au",phone:"02 7908 0245",website:"enviroking.com.au",contact:""},
-{name:"IBS Skip Bins",ind:"Storage & Waste",st:"QLD",city:"Brisbane",fleet:10,src:"Yellow Pages",email:"info@ibsskipbins.com.au",phone:"0412 578 655",website:"ibsskipbins.com.au",contact:""},
-{name:"Cleanaway",ind:"Storage & Waste",st:"QLD",city:"Kalkadoon",fleet:80,src:"Yellow Pages",email:"enquiries@cleanaway.com.au",phone:"07 4743 5320",website:"cleanaway.com.au",contact:""},
-{name:"D&R Lavis Waste Services",ind:"Storage & Waste",st:"QLD",city:"Portsmith",fleet:8,src:"Yellow Pages",email:"admin@drlaviswaste.com.au",phone:"0417 154 325",website:"drlaviswaste.com.au",contact:""},
-// ═══ SERVICE / FLEET (Yellow Pages) ═══
-{name:"Future Fleet Pty Ltd",ind:"Service",st:"QLD",city:"Cleveland",fleet:20,src:"Yellow Pages",email:"info@futurefleet.com.au",phone:"07 3821 7814",website:"futurefleet.com.au",contact:""},
-{name:"Fleet Australia",ind:"Service",st:"WA",city:"Osborne Park",fleet:30,src:"Yellow Pages",email:"info@fleetaustralia.com.au",phone:"08 9340 3602",website:"fleetaustralia.com.au",contact:""},
-{name:"Pulse Fleet Management",ind:"Service",st:"WA",city:"Rivervale",fleet:15,src:"Yellow Pages",email:"admin@pulsefleet.com.au",phone:"08 9477 5615",website:"pulsefleet.com.au",contact:""},
-{name:"Hermes Fleet Management",ind:"Service",st:"NSW",city:"Bega",fleet:10,src:"Yellow Pages",email:"admin@hermesfleet.com.au",phone:"0419 788 453",website:"hermesfleet.com.au",contact:""},
-{name:"Toll Fleet Services",ind:"Service",st:"WA",city:"Perth Airport",fleet:80,src:"Yellow Pages",email:"fleet@tollgroup.com",phone:"08 9436 1100",website:"tollgroup.com",contact:""},
-{name:"Fleetcare",ind:"Service",st:"SA",city:"Adelaide",fleet:100,src:"Yellow Pages",email:"enquiries@fleetcare.com.au",phone:"13 4333",website:"fleetcare.com.au",contact:""},
-{name:"SG Fleet",ind:"Service",st:"NSW",city:"Pymble",fleet:150,src:"Yellow Pages",email:"enquiries@sgfleet.com",phone:"1300 138 235",website:"sgfleet.com",contact:""},
-{name:"Summit Fleet Leasing & Management",ind:"Service",st:"NSW",city:"Rydalmere",fleet:60,src:"Yellow Pages",email:"info@summitfleet.com.au",phone:"1800 259 259",website:"summitfleet.com.au",contact:""},
-{name:"Eastern Fleet Management",ind:"Service",st:"VIC",city:"Kilsyth",fleet:25,src:"Yellow Pages",email:"admin@easternfleet.com.au",phone:"1800 650 555",website:"easternfleet.com.au",contact:""},
-{name:"Select Fleet Management",ind:"Service",st:"NSW",city:"Woolloomooloo",fleet:20,src:"Yellow Pages",email:"info@selectfleet.com.au",phone:"02 8356 6777",website:"selectfleet.com.au",contact:""},
-// ═══ ORIGINAL DATABASE (enriched) ═══
-{name:"ABC Heavy Haulage",ind:"Transport & Logistics",st:"QLD",city:"Townsville",fleet:30,src:"Google Maps",email:"info@abchaulage.com.au",phone:"07 4721 3456",website:"abchaulage.com.au",contact:"Mark Davidson"},
-{name:"Murray River Transport",ind:"Transport & Logistics",st:"VIC",city:"Mildura",fleet:50,src:"Google Maps",email:"dispatch@murrayriver.com.au",phone:"03 5022 1789",website:"murrayrivertransport.com.au",contact:"Steve Murray"},
-{name:"Outback Express Freight",ind:"Transport & Logistics",st:"QLD",city:"Mt Isa",fleet:65,src:"Industry Directory",email:"operations@outbackexpress.com.au",phone:"07 4743 2100",website:"outbackexpress.com.au",contact:"Craig Thompson"},
-{name:"Pacific Coast Logistics",ind:"Transport & Logistics",st:"NSW",city:"Newcastle",fleet:42,src:"LinkedIn",email:"sales@pacificcoastlogistics.com.au",phone:"02 4929 5678",website:"pacificcoastlogistics.com.au",contact:"Rachel Wong"},
-{name:"Red Desert Haulage",ind:"Transport & Logistics",st:"SA",city:"Port Augusta",fleet:35,src:"Google Maps",email:"admin@reddeserthaulage.com.au",phone:"08 8642 3311",website:"reddeserthaulage.com.au",contact:"Kevin O'Neill"},
-{name:"NorthStar Freight Services",ind:"Transport & Logistics",st:"NT",city:"Darwin",fleet:40,src:"Google Maps",email:"darwin@northstarfreight.com.au",phone:"08 8981 6622",website:"northstarfreight.com.au",contact:"Tina Morales"},
-{name:"Sunshine Coast Earthworks",ind:"Civil",st:"QLD",city:"Maroochydore",fleet:15,src:"Google Maps",email:"admin@scew.com.au",phone:"07 5443 7890",website:"sunshinecoastearthworks.com.au",contact:"Brad Morrison"},
-{name:"Central Coast Civil",ind:"Civil",st:"NSW",city:"Gosford",fleet:22,src:"Industry Directory",email:"enquiries@centralcoastcivil.com.au",phone:"02 4323 5566",website:"centralcoastcivil.com.au",contact:"Jason Clarke"},
-{name:"Titan Earthmoving",ind:"Civil",st:"QLD",city:"Gladstone",fleet:35,src:"Google Maps",email:"ops@titanearthmoving.com.au",phone:"07 4972 3344",website:"titanearthmoving.com.au",contact:"Nathan Webb"},
-{name:"Southern Cross Civil Group",ind:"Civil",st:"VIC",city:"Ballarat",fleet:28,src:"LinkedIn",email:"projects@southerncrosscivil.com.au",phone:"03 5331 9900",website:"southerncrosscivil.com.au",contact:"Darren Kemp"},
-{name:"Top End Mining Contractors",ind:"Mining & Resources",st:"NT",city:"Katherine",fleet:80,src:"Industry Directory",email:"ops@topendmining.com.au",phone:"08 8972 1234",website:"topendmining.com.au",contact:"Dave Richardson"},
-{name:"Pilbara Drilling Services",ind:"Mining & Resources",st:"WA",city:"Newman",fleet:60,src:"LinkedIn",email:"enquiries@pilbaradrilling.com.au",phone:"08 9175 3388",website:"pilbaradrilling.com.au",contact:"Shane Cooper"},
-{name:"Bowen Basin Mining Support",ind:"Mining & Resources",st:"QLD",city:"Moranbah",fleet:95,src:"Industry Directory",email:"ops@bowenbasinsupport.com.au",phone:"07 4941 5500",website:"bowenbasinsupport.com.au",contact:"Luke Brennan"},
-{name:"Hunter Valley Mining Services",ind:"Mining & Resources",st:"NSW",city:"Singleton",fleet:70,src:"Website Scrape",email:"admin@hvmining.com.au",phone:"02 6571 4411",website:"hvmining.com.au",contact:"Matt O'Connell"},
-{name:"Clean City Waste",ind:"Storage & Waste",st:"NSW",city:"Wollongong",fleet:25,src:"Google Maps",email:"hello@cleancity.com.au",phone:"02 4228 3344",website:"cleancitywaste.com.au",contact:"Fiona Walsh"},
-{name:"EcoWaste Solutions",ind:"Storage & Waste",st:"VIC",city:"Dandenong",fleet:30,src:"Google Maps",email:"info@ecowaste.com.au",phone:"03 9794 5566",website:"ecowaste.com.au",contact:"Raj Patel"},
-{name:"Metro Waste Management",ind:"Storage & Waste",st:"NSW",city:"Penrith",fleet:45,src:"LinkedIn",email:"operations@metrowaste.com.au",phone:"02 4722 8800",website:"metrowaste.com.au",contact:"Simon Hart"},
-{name:"Pilbara Plant Hire",ind:"Service",st:"WA",city:"Karratha",fleet:40,src:"LinkedIn",email:"hire@pilbaraplant.com.au",phone:"08 9185 3344",website:"pilbaraplanthire.com.au",contact:"Joanne Mitchell"},
-{name:"National Fleet Services",ind:"Service",st:"VIC",city:"Tullamarine",fleet:120,src:"Industry Directory",email:"fleet@nationalfleetservices.com.au",phone:"03 9338 7700",website:"nationalfleetservices.com.au",contact:"Andrew Cole"},
-{name:"Aussie Crane & Rigging",ind:"Service",st:"QLD",city:"Brisbane",fleet:55,src:"Google Maps",email:"bookings@aussiecrane.com.au",phone:"07 3274 4455",website:"aussiecrane.com.au",contact:"Tony Blackwood"},
-{name:"MedFleet Patient Transport",ind:"Medical & Personal Care",st:"NSW",city:"Sydney",fleet:60,src:"LinkedIn",email:"admin@medfleet.com.au",phone:"02 9267 8800",website:"medfleet.com.au",contact:"Dr. Sarah Lin"},
-{name:"CareLink Home Services",ind:"Medical & Personal Care",st:"VIC",city:"Bendigo",fleet:22,src:"Industry Directory",email:"info@carelinkhome.com.au",phone:"03 5443 6677",website:"carelinkhome.com.au",contact:"Wendy Turner"},
-{name:"Tropical Health Transport",ind:"Medical & Personal Care",st:"QLD",city:"Townsville",fleet:15,src:"Google Maps",email:"bookings@tropicalhealth.com.au",phone:"07 4772 3344",website:"tropicalhealthtransport.com.au",contact:"Dr. Anil Kumar"},
-{name:"WA Medical Couriers",ind:"Medical & Personal Care",st:"WA",city:"Perth",fleet:28,src:"Website Scrape",email:"dispatch@wamedcouriers.com.au",phone:"08 9322 5566",website:"wamedcouriers.com.au",contact:"Lisa Carpenter"},
-{name:"Drover's Run Livestock",ind:"Live Stock & Pets",st:"QLD",city:"Longreach",fleet:18,src:"Google Maps",email:"admin@droversrun.com.au",phone:"07 4658 1122",website:"droversrunlivestock.com.au",contact:"Ted McAllister"},
-{name:"Southern Livestock Carriers",ind:"Live Stock & Pets",st:"NSW",city:"Dubbo",fleet:25,src:"Industry Directory",email:"transport@southernlivestock.com.au",phone:"02 6882 3344",website:"southernlivestock.com.au",contact:"Bill Hastings"},
-{name:"Outback Cattle Transport",ind:"Live Stock & Pets",st:"NT",city:"Tennant Creek",fleet:30,src:"Industry Directory",email:"bookings@outbackcattle.com.au",phone:"08 8962 2233",website:"outbackcattle.com.au",contact:"Jim Rawlings"},
-{name:"PetMove Australia",ind:"Live Stock & Pets",st:"VIC",city:"Melbourne",fleet:12,src:"LinkedIn",email:"hello@petmove.com.au",phone:"03 9878 5566",website:"petmove.com.au",contact:"Natalie Voss"},
-{name:"Austeel Manufacturing",ind:"Manufacturing",st:"NSW",city:"Wollongong",fleet:35,src:"LinkedIn",email:"sales@austeel.com.au",phone:"02 4227 3344",website:"austeel.com.au",contact:"Peter Zhang"},
-{name:"QLD Concrete & Precast",ind:"Manufacturing",st:"QLD",city:"Ipswich",fleet:28,src:"Google Maps",email:"orders@qldconcrete.com.au",phone:"07 3281 5566",website:"qldconcrete.com.au",contact:"Maria Santos"},
-{name:"WA Steel & Pipe",ind:"Manufacturing",st:"WA",city:"Welshpool",fleet:40,src:"Industry Directory",email:"enquiries@wasteel.com.au",phone:"08 9351 7788",website:"wasteel.com.au",contact:"Carmen Diaz"},
-{name:"Pacific Timber Products",ind:"Manufacturing",st:"VIC",city:"Traralgon",fleet:20,src:"Industry Directory",email:"info@pacifictimber.com.au",phone:"03 5174 2233",website:"pacifictimber.com.au",contact:"Keith Oldfield"}
-];
+const SCRAPERS=[];
 
 let scraperFiltered = [...SCRAPERS];
 let selectedScrapeRows = new Set();
 
 const INDUSTRIES=[
-{name:"Civil",count:342,color:"#2563eb"},
-{name:"Service",count:287,color:"#7c3aed"},
-{name:"Transport & Logistics",count:203,color:"#0891b2"},
-{name:"Storage & Waste",count:156,color:"#059669"},
-{name:"Medical & Personal Care",count:128,color:"#db2777"},
-{name:"Live Stock & Pets",count:94,color:"#d97706"},
-{name:"Manufacturing",count:167,color:"#64748b"},
-{name:"Mining & Resources",count:89,color:"#dc2626"}
+{name:"Civil",count:0,color:"#2563eb"},
+{name:"Service",count:0,color:"#7c3aed"},
+{name:"Transport & Logistics",count:0,color:"#0891b2"},
+{name:"Storage & Waste",count:0,color:"#059669"},
+{name:"Medical & Personal Care",count:0,color:"#db2777"},
+{name:"Live Stock & Pets",count:0,color:"#d97706"},
+{name:"Manufacturing",count:0,color:"#64748b"},
+{name:"Mining & Resources",count:0,color:"#dc2626"}
 ];
 
 const CAMPAIGNS=[
@@ -668,7 +545,7 @@ const CAMPAIGNS=[
 {name:"Mining Sector — WA Focus",status:"draft",sent:0,opened:0,clicked:0,replies:0}
 ];
 
-const STATES_DATA=[{st:"QLD",leads:87,val:156000},{st:"NSW",leads:64,val:112000},{st:"VIC",leads:52,val:94000},{st:"WA",leads:38,val:72000},{st:"SA",leads:21,val:38000},{st:"NT",leads:12,val:22000},{st:"TAS",leads:8,val:14000},{st:"ACT",leads:5,val:9000}];
+const STATES_DATA=[{st:"QLD",leads:0,val:0},{st:"NSW",leads:0,val:0},{st:"VIC",leads:0,val:0},{st:"WA",leads:0,val:0},{st:"SA",leads:0,val:0},{st:"NT",leads:0,val:0},{st:"TAS",leads:0,val:0},{st:"ACT",leads:0,val:0}];
 
 // ═══════════ CHART DEFAULTS ═══════════
 Chart.defaults.font.family = "'Inter',system-ui,sans-serif";
@@ -702,18 +579,12 @@ function initDashboard() {
   }).join('');
 
   // Recent Activity
-  const activities = [
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>', bg: 'var(--accent-bg)', color: 'var(--accent)', text: 'Info pack sent to <strong>Cairns Earthmoving</strong>', time: '2 hours ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', bg: 'var(--purple-bg)', color: 'var(--purple)', text: 'Demo completed with <strong>SecureFleet Logistics</strong>', time: '5 hours ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>', bg: 'var(--accent-bg)', color: 'var(--accent)', text: 'New lead scraped: <strong>Outback Mining Services</strong>', time: '1 day ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', bg: 'var(--warning-bg)', color: 'var(--warning)', text: 'Proposal sent to <strong>GreenWaste Solutions</strong>', time: '2 days ago' },
-    { icon: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>', bg: 'var(--success-bg)', color: 'var(--success)', text: 'Deal closed — <strong>Metro Rentals, 55 units</strong>', time: '11 days ago' }
-  ];
-  document.getElementById('recentActivity').innerHTML = activities.map(a => `
+  const activities = [];
+  document.getElementById('recentActivity').innerHTML = activities.length > 0 ? activities.map(a => `
     <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;${a !== activities[activities.length-1] ? 'border-bottom:1px solid #f1f5f9' : ''}">
       <div style="width:32px;height:32px;border-radius:8px;background:${a.bg};color:${a.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">${a.icon}</div>
       <div style="flex:1"><div style="font-size:13px;color:var(--text-secondary);line-height:1.5">${a.text}</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px">${a.time}</div></div>
-    </div>`).join('');
+    </div>`).join('') : '<div style="font-size:13px;color:var(--text-muted)">No recent activity</div>';
 
   // Pipeline Legend
   document.getElementById('pipelineLegend').innerHTML = STAGES.map((s, i) => {
