@@ -2314,9 +2314,9 @@ function setView(v) {
 const FOLLOW_UPS = {
   'fleet-report': [
     {type:'email', day:0, subject:'Your Fleet Report & Demo — {company}', body:'Hi {name},\n\nAs discussed, please find attached your Fleet Report for {company}. This outlines the hidden costs within your fleet — including fuel slippage, unauthorised use, idle time, and maintenance inefficiencies — and shows how TrackNow GPS tracking can recover significant savings annually.\n\nWe have also included a short demo video so you can see exactly how the platform works for fleets like yours.\n\nHappy to jump on a quick call to walk through it.\n\nKind regards,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Overview & Optimisation Report plus demo for {company}. Some eye-opening numbers on fleet savings in there. Happy to chat anytime. — TrackNow GPS'},
-    {type:'email', day:3, subject:'Following up — Fleet Overview Report for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Overview report and demo video? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Overview report we sent. Any questions? Happy to chat. — TrackNow GPS'}
+    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Optimisation Report plus demo for {company}. Some eye-opening numbers on fleet savings in there. Happy to chat anytime. — TrackNow GPS'},
+    {type:'email', day:3, subject:'Following up — Fleet Optimisation Report for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Optimisation Report and demo video? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
+    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Optimisation Report we sent. Any questions? Happy to chat. — TrackNow GPS'}
   ],
   'proposal': [
     {type:'email', day:0, subject:'Your TrackNow GPS Proposal — {company}', body:'Hi {name},\n\nPlease find attached your TrackNow GPS proposal for {company}. This includes your custom hardware and software pricing, fleet savings summary, and contract terms based on the fleet details we discussed.\n\nHappy to make any adjustments — just let me know.\n\nCheers,\nTrackNow GPS Team'},
@@ -6141,15 +6141,15 @@ function renderProspects() {
             style="font-size:11px;padding:4px 8px;border:1px solid #444;color:${notesCount?'#FFA028':'#666'};background:#111;border-radius:0;cursor:pointer;font-weight:600;position:relative">📝${notesCount?' '+notesCount:''}</button>
           <button onclick="openProspectFleetProfile(${p.id})" title="Fleet Profile & Products"
             style="font-size:10px;padding:4px 8px;border:1px solid #0088FF;color:#0088FF;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">📊 Fleet</button>
-          <button onclick="sendProspectFleetReport(${p.id})" title="View Fleet Overview Report"
+          <button onclick="sendProspectFleetReport(${p.id})" title="View Fleet Optimisation Report"
             style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'📄 View Report':'📄 Generate'}</button>
-          ${p.status==='warm'?'<button onclick="emailFleetOverview('+p.id+')" title="Email Fleet Overview to client" style="font-size:10px;padding:4px 8px;border:1px solid #0098d4;color:#fff;background:#0098d4;border-radius:0;cursor:pointer;font-weight:600">✉ Send</button>':''}
+          <button onclick="emailFleetOverview(${p.id})" title="Email Fleet Optimisation Report to client" style="font-size:10px;padding:4px 8px;border:1px solid #0098d4;color:#fff;background:#0098d4;border-radius:0;cursor:pointer;font-weight:600">✉ Send</button>
           <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline (Proposal stage)"
             style="font-size:10px;padding:4px 8px;border:1px solid #FFA028;color:#FFA028;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
           <button onclick="deleteProspect(${p.id})"
             style="font-size:10px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">✕</button>
         </div>
-        ${p.status==='warm' && p.fleetReportSentDate ? '<div style="font-size:10px;color:#0088FF;margin-top:4px">📄 Fleet overview sent '+p.fleetReportSentDate+'</div>' : ''}
+        ${p.status==='warm' && p.fleetReportSentDate ? '<div style="font-size:10px;color:#0088FF;margin-top:4px">📄 Fleet Optimisation Report sent '+p.fleetReportSentDate+'</div>' : ''}
         ${p.status==='warm' && p.callbackDate ? '<div style="font-size:10px;color:#FFA028;margin-top:2px">📞 Follow-up: '+p.callbackDate+(p.callbackTime?' @ '+p.callbackTime:'')+'</div>' : ''}
       </td>
     </tr>
@@ -6870,7 +6870,7 @@ function moveCustomerToPipeline(id) {
     lineItems: custLines
   });
   saveData(); renderCustomers(); renderCustStats(); renderPipeline();
-  showToast(c.co + ' added to Pipeline — Fleet Overview Sent. ' + c.trackers + ' trackers @ $' + c.subPrice.toFixed(2) + '/mo');
+  showToast(c.co + ' added to Pipeline — Fleet Optimisation Report Sent. ' + c.trackers + ' trackers @ $' + c.subPrice.toFixed(2) + '/mo');
 }
 
 // ── LINE ITEMS HELPERS ──────────────────────────────────────────
@@ -7369,7 +7369,7 @@ function generateFleetReport() {
 
   // ── BUILD REPORT HTML ──
   const reportWin = window.open('', '_blank', 'width=900,height=1100');
-  reportWin.document.write(`<!DOCTYPE html><html><head><title>Fleet Overview &amp; Optimisation Report — ${l.co}</title>
+  reportWin.document.write(`<!DOCTYPE html><html><head><title>Fleet Optimisation Report — ${l.co}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -7416,7 +7416,7 @@ function generateFleetReport() {
 <div class="header">
   <div>
     <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:36px;margin-bottom:8px">
-    <div class="subtitle">Fleet Overview &amp; Optimisation Report</div>
+    <div class="subtitle">Fleet Optimisation Report</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
     <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   </div>
@@ -7544,7 +7544,7 @@ function generateFleetReport() {
 </div>
 </body></html>`);
   reportWin.document.close();
-  showToast('Fleet Overview report generated for ' + l.co);
+  showToast('Fleet Optimisation Report generated for ' + l.co);
 }
 
 // ── Send Fleet Report from Prospects tab ──────────────────────────
@@ -7585,122 +7585,133 @@ function sendProspectFleetReport(prospectId) {
 }
 
 // ── Email Send Helpers ──────────────────────────────────────────
-var _pendingEmail = {};
+var _epPending = null; // stores {to, subject, body, type}
 
-function closeEmailPreview() { document.getElementById('emailPreviewModal').style.display = 'none'; }
-
-function _showEmailPreview(to, subject, htmlBody, plainBody, docType) {
-  _pendingEmail = { to: to, subject: subject, plainBody: plainBody, docType: docType };
-  document.getElementById('ep_to').value = to;
-  document.getElementById('ep_subject').value = subject;
-  document.getElementById('ep_title').textContent = 'Send ' + docType;
-  document.getElementById('ep_body').innerHTML = htmlBody;
-  document.getElementById('emailPreviewModal').style.display = 'flex';
-}
-
-function sendEmailFromPortal() {
-  var to = document.getElementById('ep_to').value;
-  var subject = document.getElementById('ep_subject').value;
-  var body = _pendingEmail.plainBody || '';
-  // Open Gmail compose with pre-filled fields (sends from sales@tracknow.com.au if logged in)
-  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+function _openGmailCompose(to, subject, body) {
+  var url = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1' +
     '&to=' + encodeURIComponent(to) +
     '&su=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
-  window.open(gmailUrl, '_blank');
-  closeEmailPreview();
-  showToast(_pendingEmail.docType + ' email opened in Gmail for sending');
+  window.open(url, '_blank');
 }
 
-function _emailSignature() {
-  return '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0">' +
-    '<div style="display:flex;align-items:center;gap:12px">' +
-    '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:28px">' +
-    '<div>' +
-    '<div style="font-size:13px;font-weight:700;color:#0a1726">TrackNow GPS Sales Team</div>' +
-    '<div style="font-size:11px;color:#666">1300 TRACK NOW &middot; sales@tracknow.com.au</div>' +
-    '<div style="font-size:11px;color:#0098d4"><a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>' +
-    '</div></div></div>';
-}
-
-function _emailSignaturePlain() {
+function _tnSig() {
   return '\n\n—\nTrackNow GPS Sales Team\n1300 TRACK NOW\nsales@tracknow.com.au\nwww.tracknow.com.au';
+}
+
+function _markSig() {
+  return '\n\n—\nMark Spielmeyer\nDirector — TrackNow GPS\n1300 TRACK NOW\nsales@tracknow.com.au\nwww.tracknow.com.au';
+}
+
+function _showEmailPreview(opts) {
+  // opts: { to, subject, body, attachment, sigName, sigTitle, type }
+  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '' };
+  document.getElementById('ep_title').textContent = '📧 ' + (opts.type === 'fleet' ? 'Fleet Optimisation Report' : opts.type === 'proposal' ? 'Proposal' : opts.type === 'agreement' ? 'Service Agreement' : 'Email') + ' — Preview';
+  document.getElementById('ep_to').textContent = opts.to;
+  document.getElementById('ep_subject').textContent = opts.subject;
+  // Attachment
+  if (opts.attachment) {
+    document.getElementById('ep_attachRow').style.display = 'flex';
+    document.getElementById('ep_attachName').textContent = opts.attachment;
+  } else {
+    document.getElementById('ep_attachRow').style.display = 'none';
+  }
+  // Body — convert newlines to HTML
+  var bodyLines = opts.body.split('\n');
+  var html = '';
+  for (var i = 0; i < bodyLines.length; i++) {
+    var line = bodyLines[i];
+    if (line.trim() === '') { html += '<br>'; }
+    else if (line.startsWith('—')) { break; } // stop at signature block
+    else { html += '<div>' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'; }
+  }
+  document.getElementById('ep_body').innerHTML = html;
+  // Footer / signature
+  document.getElementById('ep_sigName').textContent = opts.sigName || 'TrackNow GPS Sales Team';
+  document.getElementById('ep_sigTitle').textContent = opts.sigTitle || 'sales@tracknow.com.au';
+  document.getElementById('emailPreviewModal').style.display = 'flex';
+}
+
+function closeEmailPreview() {
+  document.getElementById('emailPreviewModal').style.display = 'none';
+  _epPending = null;
+}
+
+function sendEmailFromPortal() {
+  if (!_epPending) return;
+  _openGmailCompose(_epPending.to, _epPending.subject, _epPending.body);
+  var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
+  showToast('Gmail compose opened — ' + typeLabel + ' ready to send');
+  closeEmailPreview();
 }
 
 function emailFleetOverview(prospectId) {
   var p = PROSPECTS.find(function(x){return x.id===prospectId;});
   if (!p) return;
-  if (!p.email) { showToast('No email address for ' + p.co + ' — add one first'); return; }
+  if (!p.email) { showToast('No email address for ' + p.co + ' — add one in the prospect details first','warn'); return; }
   var name = p.name || 'there';
-  var subject = 'Fleet Overview & Optimisation Report — ' + p.co;
-  var html = '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#333;line-height:1.6">' +
-    '<p>Hi ' + name + ',</p>' +
-    '<p>Thank you for taking the time to speak with us about your fleet.</p>' +
-    '<p>Please find attached your personalised <strong>Fleet Overview &amp; Optimisation Report</strong> for <strong>' + p.co + '</strong>. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.</p>' +
-    '<p>We would love the opportunity to walk you through the numbers and show you a quick demo of the TrackNow platform.</p>' +
-    '<p>Feel free to reply to this email or call us on <strong>1300 TRACK NOW</strong>.</p>' +
-    '<p>Kind regards,</p>' +
-    _emailSignature() + '</div>';
-  var plain = 'Hi ' + name + ',\n\n' +
+  var subject = 'Fleet Optimisation Report — ' + p.co;
+  var body = 'Hi ' + name + ',\n\n' +
     'Thank you for taking the time to speak with us about your fleet.\n\n' +
-    'Please find attached your personalised Fleet Overview & Optimisation Report for ' + p.co + '. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.\n\n' +
+    'Please find attached your personalised Fleet Optimisation Report for ' + p.co + '. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.\n\n' +
     'We would love the opportunity to walk you through the numbers and show you a quick demo of the TrackNow platform.\n\n' +
     'Feel free to reply to this email or call us on 1300 TRACK NOW.\n\n' +
-    'Kind regards,' + _emailSignaturePlain();
-  _showEmailPreview(p.email, subject, html, plain, 'Fleet Overview Report');
+    'Kind regards,' + _tnSig();
+  _showEmailPreview({
+    to: p.email,
+    subject: subject,
+    body: body,
+    attachment: 'Fleet_Optimisation_Report_' + p.co.replace(/[^a-zA-Z0-9]/g,'_') + '.pdf',
+    sigName: 'TrackNow GPS Sales Team',
+    sigTitle: 'Fleet Tracking Solutions',
+    type: 'fleet'
+  });
 }
 
 function emailProposal(leadId) {
   var l = LEADS.find(function(x){return x.id===leadId;});
   if (!l) return;
-  if (!l.email) { showToast('No email address for ' + l.co + ' — add one first'); return; }
+  if (!l.email) { showToast('No email address for ' + l.co + ' — add one in the deal first','warn'); return; }
   var name = l.name || 'there';
   var totalUnits = l.lineItems ? l.lineItems.reduce(function(s,li){return s+(li.qty||0);},0) : (l.v||0);
   var subject = 'TrackNow GPS Proposal — ' + l.co;
-  var html = '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#333;line-height:1.6">' +
-    '<p>Hi ' + name + ',</p>' +
-    '<p>Thank you for your interest in TrackNow GPS fleet tracking.</p>' +
-    '<p>Please find attached your proposal for <strong>' + totalUnits + ' GPS tracking units</strong> for <strong>' + l.co + '</strong>. This includes full pricing, contract terms, and service details.</p>' +
-    '<p>If you have any questions or would like to discuss the proposal, please don\'t hesitate to reach out. We\'re here to help.</p>' +
-    '<p>Kind regards,</p>' +
-    _emailSignature() + '</div>';
-  var plain = 'Hi ' + name + ',\n\n' +
+  var body = 'Hi ' + name + ',\n\n' +
     'Thank you for your interest in TrackNow GPS fleet tracking.\n\n' +
     'Please find attached your proposal for ' + totalUnits + ' GPS tracking units for ' + l.co + '. This includes full pricing, contract terms, and service details.\n\n' +
     'If you have any questions or would like to discuss the proposal, please don\'t hesitate to reach out. We\'re here to help.\n\n' +
-    'Kind regards,' + _emailSignaturePlain();
-  _showEmailPreview(l.email, subject, html, plain, 'Proposal');
+    'Kind regards,' + _tnSig();
+  _showEmailPreview({
+    to: l.email,
+    subject: subject,
+    body: body,
+    attachment: 'TrackNow_Proposal_' + l.co.replace(/[^a-zA-Z0-9]/g,'_') + '.pdf',
+    sigName: 'TrackNow GPS Sales Team',
+    sigTitle: 'Fleet Tracking Solutions',
+    type: 'proposal'
+  });
 }
 
 function emailAgreement(leadId) {
   var l = LEADS.find(function(x){return x.id===leadId;});
   if (!l) return;
-  if (!l.email) { showToast('No email address for ' + l.co + ' — add one first'); return; }
+  if (!l.email) { showToast('No email address for ' + l.co + ' — add one in the deal first','warn'); return; }
   var name = l.name || 'there';
   var subject = 'TrackNow GPS Service Agreement — ' + l.co;
-  var html = '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#333;line-height:1.6">' +
-    '<p>Hi ' + name + ',</p>' +
-    '<p>Thank you for choosing TrackNow GPS.</p>' +
-    '<p>Please find attached the <strong>Service Agreement</strong> for <strong>' + l.co + '</strong>. You can review the terms and sign digitally using the secure link provided.</p>' +
-    '<p>Once signed, our team will be in touch within 24 hours to schedule your installation.</p>' +
-    '<p>If you have any questions about the agreement, please don\'t hesitate to reach out.</p>' +
-    '<p>Kind regards,</p>' +
-    '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0">' +
-    '<div style="display:flex;align-items:center;gap:12px">' +
-    '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:28px">' +
-    '<div>' +
-    '<div style="font-size:13px;font-weight:700;color:#0a1726">Mark Spielmeyer</div>' +
-    '<div style="font-size:11px;color:#666">Director &middot; TrackNow GPS</div>' +
-    '<div style="font-size:11px;color:#666">1300 TRACK NOW &middot; sales@tracknow.com.au</div>' +
-    '<div style="font-size:11px;color:#0098d4"><a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>' +
-    '</div></div></div></div>';
-  var plain = 'Hi ' + name + ',\n\n' +
+  var body = 'Hi ' + name + ',\n\n' +
     'Thank you for choosing TrackNow GPS.\n\n' +
     'Please find attached the Service Agreement for ' + l.co + '. You can review the terms and sign digitally using the secure link provided.\n\n' +
     'Once signed, our team will be in touch within 24 hours to schedule your installation.\n\n' +
     'If you have any questions about the agreement, please don\'t hesitate to reach out.\n\n' +
-    'Kind regards,\n\nMark Spielmeyer\nDirector — TrackNow GPS\n1300 TRACK NOW\nsales@tracknow.com.au\nwww.tracknow.com.au';
-  _showEmailPreview(l.email, subject, html, plain, 'Service Agreement');
+    'Kind regards,' + _markSig();
+  _showEmailPreview({
+    to: l.email,
+    subject: subject,
+    body: body,
+    attachment: 'TrackNow_Service_Agreement_' + l.co.replace(/[^a-zA-Z0-9]/g,'_') + '.pdf',
+    sigName: 'Mark Spielmeyer',
+    sigTitle: 'Director — TrackNow GPS',
+    type: 'agreement'
+  });
 }
 
 let _prospectFleetId = null;
@@ -8660,7 +8671,7 @@ function doLogin() {
 
       <button onclick="generateFleetReportFromProspect()" class="btn btn-primary" style="width:100%;padding:12px;font-size:13px;font-weight:700;letter-spacing:.5px">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        GENERATE &amp; SEND FLEET OVERVIEW
+        GENERATE FLEET OPTIMISATION REPORT
       </button>
     </div>
     <div class="modal-footer">
@@ -8676,34 +8687,53 @@ function doLogin() {
 <!-- ═══════════ NEW CAMPAIGN MODAL ═══════════ -->
 <!-- ═══════════ EMAIL PREVIEW & SEND MODAL ═══════════ -->
 <div class="modal-overlay" id="emailPreviewModal" style="display:none" onclick="if(event.target===this)closeEmailPreview()">
-  <div class="modal-box" style="width:640px;max-width:95vw">
+  <div class="modal-box" style="width:660px;max-width:95vw">
     <div class="modal-header">
-      <div class="modal-title" id="ep_title">Send Email</div>
+      <div class="modal-title" id="ep_title">📧 Email Preview</div>
       <button class="modal-close" onclick="closeEmailPreview()">&times;</button>
     </div>
-    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
-      <div style="margin-bottom:12px">
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto;padding:0">
+      <div style="padding:16px 20px;border-bottom:1px solid #1a1a1a">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:50px;flex-shrink:0">From:</label>
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:60px;flex-shrink:0">From:</label>
           <div style="font-size:12px;color:#0098d4;font-weight:600">sales@tracknow.com.au</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:50px;flex-shrink:0">To:</label>
-          <input type="text" id="ep_to" style="flex:1;padding:6px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit" readonly>
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:60px;flex-shrink:0">To:</label>
+          <div id="ep_to" style="font-size:12px;color:#CCC;font-weight:500"></div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:50px;flex-shrink:0">Subject:</label>
-          <input type="text" id="ep_subject" style="flex:1;padding:6px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:60px;flex-shrink:0">Subject:</label>
+          <div id="ep_subject" style="font-size:12px;color:#fff;font-weight:600"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center" id="ep_attachRow">
+          <label style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;width:60px;flex-shrink:0">Attach:</label>
+          <div id="ep_attach" style="font-size:11px;color:#FFA028;font-weight:500;display:flex;align-items:center;gap:4px">📎 <span id="ep_attachName"></span></div>
         </div>
       </div>
-      <div style="background:#fff;border:1px solid #ddd;padding:24px;color:#333" id="ep_body">
+      <div style="background:#fafafa;padding:24px 28px;color:#333;font-size:13px;line-height:1.7;font-family:Arial,sans-serif" id="ep_body">
+      </div>
+      <div style="background:#f0f4f8;border-top:2px solid #0098d4;padding:16px 28px" id="ep_footer">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <div style="width:36px;height:36px;background:#0098d4;border-radius:4px;display:flex;align-items:center;justify-content:center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div>
+            <div id="ep_sigName" style="font-size:12px;font-weight:700;color:#0a1726"></div>
+            <div id="ep_sigTitle" style="font-size:10px;color:#555"></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#555;line-height:1.6">
+          📞 1300 TRACK NOW &nbsp;|&nbsp; ✉ sales@tracknow.com.au<br>
+          🌐 <span style="color:#0098d4">www.tracknow.com.au</span>
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="closeEmailPreview()">Cancel</button>
-      <button class="btn btn-primary" id="ep_sendBtn" onclick="sendEmailFromPortal()" style="background:#0098d4;border-color:#0098d4">
+      <button class="btn btn-primary" id="ep_sendBtn" onclick="sendEmailFromPortal()" style="background:#0098d4;border-color:#0098d4;display:flex;align-items:center;gap:6px">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Send from sales@tracknow.com.au
+        Open in Gmail
       </button>
     </div>
   </div>
