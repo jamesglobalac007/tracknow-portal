@@ -568,6 +568,7 @@ select option{background:#0a0a0a;color:#FFA028}
         <option value="new">New</option>
         <option value="callback">Callback Scheduled</option>
         <option value="qualified">Qualified</option>
+        <option value="warm">Warm — Report Sent</option>
         <option value="not-ready">Not Ready</option>
         <option value="not-interested">Not Interested</option>
       </select>
@@ -2085,6 +2086,8 @@ let LEADS = (function() {
   } catch(e){}
   return [];
 })();
+// Migrate any old 'fleet-report' stage leads to 'proposal'
+LEADS.forEach(function(l) { if (l.stage === 'fleet-report') l.stage = 'proposal'; });
 
 // ── PROSPECTS DATA ────────────────────────────────────────────────────────
 const _DEFAULT_PROSPECTS = [];
@@ -2123,7 +2126,6 @@ let _prospSortDir = 1;
 
 
 const STAGES=[
-{id:"fleet-report",label:"Fleet Report Sent",color:"#0088FF",bg:"rgba(0,136,255,.1)"},
 {id:"proposal",label:"Proposal Sent",color:"#7c3aed",bg:"rgba(124,58,237,.1)"},
 {id:"agreement",label:"Agreement Sent",color:"#db2777",bg:"rgba(219,39,119,.1)"},
 {id:"closed",label:"Closed Won",color:"#059669",bg:"rgba(0,204,102,.1)"}
@@ -2542,7 +2544,7 @@ function renderPipeline() {
             <div style="font-size:10px;color:#666;margin-bottom:4px">${l.name} · ${l.city}, ${l.st}</div>
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             <button onclick="event.stopPropagation();openDealProducts(${l.id})" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#FFA028';this.style.background='#111'" onmouseout="this.style.borderColor='#332200';this.style.background='#080808'">EDIT PRODUCTS & PRICING</button>
-            ${l.stage==='fleet-report'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+');setTimeout(generateFleetReport,300)" style="width:100%;padding:5px;background:rgba(0,136,255,.08);border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.15)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.3)\';this.style.background=\'rgba(0,136,255,.08)\'">📄 SEND FLEET REPORT</button>':''}
+            ${''/* Fleet report removed from pipeline — now on Prospects tab */}
             ${l.stage==='proposal'?'<button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 SEND PROPOSAL</button>':''}
             ${l.stage==='agreement'?'<button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="width:100%;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍️ SEND AGREEMENT</button>':''}
             ${renderFollowUpBar(l)}
@@ -3172,11 +3174,11 @@ function addOneToPipeline(idx) {
   if (exists) { alert(r.name + ' is already in your pipeline.'); return; }
   LEADS.push({
     id: Date.now(), co: r.name, name: r.contact || '', ind: r.ind, st: r.st, city: r.city,
-    stage: 'fleet-report', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
+    stage: 'proposal', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
     last: new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short'}), lastTs: Date.now(), star: false
   });
   saveData();
-  showToast(r.name + ' added to pipeline — Fleet Report Sent');
+  showToast(r.name + ' added to pipeline — Proposal Stage');
 }
 function addSelectedToPipeline() {
   let added = 0;
@@ -3185,7 +3187,7 @@ function addSelectedToPipeline() {
     if (!LEADS.find(l => l.co === r.name)) {
       LEADS.push({
         id: Date.now() + added, co: r.name, name: r.contact || '', ind: r.ind, st: r.st, city: r.city,
-        stage: 'fleet-report', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
+        stage: 'proposal', v: r.fleet, val: Math.round(r.fleet * 29.95 * 12), subPrice: 29.95, deviceType: 'OBD2 Plug-In', term: 24, sim: '',
         last: new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short'}), lastTs: Date.now(), star: false
       });
       added++;
@@ -3497,7 +3499,7 @@ function initAnalytics() {
   const _fStages = [
     { label: "Prospects", key: "new", c: "#0088FF" },
     { label: "Qualified", key: "contacted", c: "#FFA028" },
-    { label: "Fleet Report Sent", key: "fleet-report", c: "#0088FF" },
+    { label: "Warm (Report Sent)", key: "warm", c: "#0088FF" },
     { label: "Proposal Sent", key: "proposal", c: "#7c3aed" },
     { label: "Agreement Sent", key: "agreement", c: "#db2777" },
     { label: "Closed Won", key: "closed", c: "#00CC66" }
@@ -5729,7 +5731,7 @@ function copyEmailsToClipboard() {
 // ═══════════ ADD LEAD MODAL ═══════════
 function openAddLead() {
   // Pre-fill stage as "new"
-  document.getElementById('ml_stage').value = 'fleet-report';
+  document.getElementById('ml_stage').value = 'proposal';
   document.getElementById('ml_error').textContent = '';
   document.getElementById('addLeadModal').style.display='flex';
   setTimeout(() => document.getElementById('ml_co').focus(), 100);
@@ -5839,6 +5841,7 @@ const PROSPECT_STATUS = {
   'new':           {label:'New',                color:'#FFA028', bg:'rgba(0,136,255,.1)'},
   'callback':      {label:'Callback Scheduled', color:'#FFA028', bg:'rgba(255,160,40,.12)'},
   'qualified':     {label:'Qualified',          color:'#00CC66', bg:'rgba(0,204,102,.12)'},
+  'warm':          {label:'Warm — Report Sent', color:'#0088FF', bg:'rgba(0,136,255,.15)'},
   'not-ready':     {label:'Not Ready',          color:'#d97706', bg:'rgba(217,119,6,.12)'},
   'not-interested':{label:'Not Interested',     color:'#666', bg:'#111'},
 };
@@ -5883,7 +5886,7 @@ function renderCustStats() {
   }).length;
 
   el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' + [
-    {label:'Prospects', val: PROSPECTS.length, sub: PROSPECTS.filter(p=>p.status==='new').length + ' new', color:'#FFA028'},
+    {label:'Prospects', val: PROSPECTS.length, sub: PROSPECTS.filter(p=>p.status==='new').length + ' new · ' + PROSPECTS.filter(p=>p.status==='warm').length + ' warm', color:'#FFA028'},
     {label:'Live Customers', val: activeCust.length, sub: totalTrackers + ' trackers deployed', color:'#00CC66'},
     {label:'Monthly Revenue', val: '$' + mrr.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','), sub: '$' + (mrr*12).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',') + ' ARR', color:'#7c3aed'},
     {label:'Outstanding', val: '$' + outstanding.toFixed(2), sub: renewalDue + ' renewal' + (renewalDue===1?'':'s') + ' due soon', color: outstanding > 0 ? '#dc2626' : '#64748b'},
@@ -6073,14 +6076,20 @@ function renderProspects() {
       </td>
       <td style="padding:12px 14px;font-size:12px;color:#666">${p.added}</td>
       <td style="padding:12px 14px">
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
           <button onclick="toggleProspectNotes(${p.id})" title="Notes"
             style="font-size:11px;padding:4px 8px;border:1px solid #444;color:${notesCount?'#FFA028':'#666'};background:#111;border-radius:0;cursor:pointer;font-weight:600;position:relative">📝${notesCount?' '+notesCount:''}</button>
-          <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline"
-            style="font-size:11px;padding:4px 9px;border:1px solid #FFA028;color:#FFA028;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
+          <button onclick="openProspectFleetProfile(${p.id})" title="Fleet Profile & Products"
+            style="font-size:10px;padding:4px 8px;border:1px solid #0088FF;color:#0088FF;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">📊 Fleet</button>
+          <button onclick="sendProspectFleetReport(${p.id})" title="Generate & Send Fleet Report"
+            style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'✓ Report Sent':'📄 Send Report'}</button>
+          <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline (Proposal stage)"
+            style="font-size:10px;padding:4px 8px;border:1px solid #FFA028;color:#FFA028;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
           <button onclick="deleteProspect(${p.id})"
-            style="font-size:11px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">X</button>
+            style="font-size:10px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">✕</button>
         </div>
+        ${p.status==='warm' && p.fleetReportSentDate ? '<div style="font-size:10px;color:#0088FF;margin-top:4px">📄 Fleet report sent '+p.fleetReportSentDate+'</div>' : ''}
+        ${p.status==='warm' && p.callbackDate ? '<div style="font-size:10px;color:#FFA028;margin-top:2px">📞 Follow-up: '+p.callbackDate+(p.callbackTime?' @ '+p.callbackTime:'')+'</div>' : ''}
       </td>
     </tr>
     <tr id="notesRow-${p.id}" style="display:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
@@ -6761,15 +6770,17 @@ function moveProspectToPipeline(id) {
   LEADS.push({
     id: Date.now(), co: p.co, name: p.name || '', email: p.email || '',
     phone: p.phone || '', ind: p.ind || '', v: units,
-    city: '', st: '', stage: 'fleet-report', val: annualVal, notes: p.notes || '',
+    city: '', st: '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
-    lineItems: [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:199, hwInstall:0}]
+    lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:199, hwInstall:0}],
+    _productsSet: !!(p.lineItems && p.lineItems.length),
+    fleetSegments: p.fleetSegments || null
   });
   const i = PROSPECTS.findIndex(x => x.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
   saveData();
-  showToast(p.co + ' moved to Pipeline — Fleet Report Sent');
+  showToast(p.co + ' moved to Pipeline — Proposal Stage');
   // Defer heavy renders so the toast + UI responds instantly
   requestAnimationFrame(function() {
     renderProspects(); renderCustStats(); renderPipeline();
@@ -6792,7 +6803,7 @@ function moveCustomerToPipeline(id) {
   LEADS.push({
     id: Date.now(), co: c.co, name: c.contact || '', email: c.email || '',
     phone: c.phone || '', ind: c.sector || '', v: c.trackers,
-    city: '', st: '', stage: 'fleet-report', val: annualVal, notes: c.notes || '',
+    city: '', st: '', stage: 'proposal', val: annualVal, notes: c.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: c.trackers, subPrice: c.subPrice, term: c.term || 24, sim: '',
     lineItems: custLines
@@ -6864,11 +6875,17 @@ function calcLeadFromLines(lead) {
 
 // ── DEAL PRODUCTS MODAL ────────────────────────────────────────
 let _dealProductsLeadId = null;
+let _dealProductsSource = 'lead'; // 'lead' or 'prospect'
+function _getDealEntity() {
+  if (_dealProductsSource === 'prospect') return PROSPECTS.find(x => x.id === _dealProductsLeadId);
+  return _getDealEntity();
+}
 
-function openDealProducts(leadId) {
-  const l = LEADS.find(x => x.id === leadId);
-  if (!l) return;
+function openDealProducts(leadId, source) {
+  _dealProductsSource = source || 'lead';
   _dealProductsLeadId = leadId;
+  const l = _getDealEntity();
+  if (!l) return;
   if (!l.lineItems) l.lineItems = [{type:l.deviceType||'OBD2 Plug-In',qty:l.v||1,sub:l.subPrice||29.95,asset:'Vehicle',hwType:HW_MAP[l.deviceType]||'OBD2 Plug-In Device',hwPrice:HW_PRICES[HW_MAP[l.deviceType]]||149,hwInstall:0}];
   document.getElementById('dp_title').textContent = l.co + ' — Deal Products';
   document.getElementById('dp_term').value = l.term || 24;
@@ -6885,11 +6902,14 @@ function openDealProducts(leadId) {
 
 function closeDealProducts() {
   document.getElementById('dealProductsModal').style.display = 'none';
+  if (_dealProductsSource === 'prospect') { _saveProspects(); renderProspects(); }
+  else { saveData(); renderPipeline(); }
   _dealProductsLeadId = null;
+  _dealProductsSource = 'lead';
 }
 
 function renderDealProductLines() {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems) return;
   const c = document.getElementById('dp_lines');
   const lbl = 'font-size:9px;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px';
@@ -6967,7 +6987,7 @@ function renderDealProductLines() {
 }
 
 function addLineItem() {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l) return;
   if (!l.lineItems) l.lineItems = [];
   l.lineItems.push({type:'OBD2 Plug-In',qty:1,sub:29.95,asset:'',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0});
@@ -6976,7 +6996,7 @@ function addLineItem() {
 }
 
 function removeLineItem(idx) {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems || l.lineItems.length <= 1) return;
   l.lineItems.splice(idx, 1);
   renderDealProductLines();
@@ -6984,14 +7004,14 @@ function removeLineItem(idx) {
 }
 
 function updateLineItem(idx, field, value) {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems[idx]) return;
   l.lineItems[idx][field] = value;
   updateDealProductTotals();
 }
 
 function toggleInstallCost(idx, val) {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems[idx]) return;
   const amt = document.getElementById('dp_installAmt_'+idx);
   if (val === 'yes') {
@@ -7006,7 +7026,7 @@ function toggleInstallCost(idx, val) {
 }
 
 function autoFillLinePrices(idx) {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems[idx]) return;
   const li = l.lineItems[idx];
   // Get term from the term dropdown (default 24)
@@ -7024,7 +7044,7 @@ function autoFillLinePrices(idx) {
 }
 
 function applyTermPricing(idx) {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems[idx]) return;
   const termEl = document.getElementById('dp_term_' + idx);
   const term = termEl ? parseInt(termEl.value) : 24;
@@ -7036,7 +7056,7 @@ function applyTermPricing(idx) {
 }
 
 function autoFillLineHwPrice(idx) {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems[idx]) return;
   l.lineItems[idx].hwPrice = HW_PRICES[l.lineItems[idx].hwType] || 0;
   l.lineItems[idx].hwInstall = HW_INSTALL_DEFAULT[l.lineItems[idx].hwType] || 0;
@@ -7045,7 +7065,7 @@ function autoFillLineHwPrice(idx) {
 }
 
 function updateDealProductTotals() {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l || !l.lineItems) return;
   // Revenue from product lines (what you CHARGE the customer)
   const hwDeviceRevenue = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwPrice||0), 0);
@@ -7070,7 +7090,7 @@ function updateDealProductTotals() {
 
 function recalcContractValue() {
   // Get total units from product lines
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   const totalUnits = (l && l.lineItems) ? l.lineItems.reduce((s,li) => s + (li.qty||0), 0) : 0;
   // Read revenue from the displayed summary
   const parseVal = (el) => { const t = el ? el.textContent.replace(/[$,]/g,'') : '0'; return parseFloat(t) || 0; };
@@ -7099,7 +7119,7 @@ function recalcContractValue() {
 }
 
 function saveDealProducts() {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l) return;
   // Read term and SIM from inline fields (first product line has them)
   const termEl = document.getElementById('dp_term_0');
@@ -7117,10 +7137,18 @@ function saveDealProducts() {
     const primary = l.lineItems.reduce((a,b) => (b.qty||0) > (a.qty||0) ? b : a, l.lineItems[0]);
     l.deviceType = primary.type;
   }
-  saveData();
-  closeDealProducts();
-  renderPipeline();
-  showToast('Deal products updated for ' + l.co);
+  if (_dealProductsSource === 'prospect') {
+    // Also store fleet segments on the prospect
+    l.fleetSegments = _fpSegments.slice();
+    _saveProspects();
+    closeDealProducts();
+    renderProspects();
+  } else {
+    saveData();
+    closeDealProducts();
+    renderPipeline();
+  }
+  showToast('Products updated for ' + l.co);
 }
 
 // ── Fleet Profile Report Generator ─────────────────────────────
@@ -7191,11 +7219,18 @@ function renderFleetSegments() {
 }
 // Auto-add one segment when fleet profile opens
 function initFleetProfile() {
-  if (_fpSegments.length === 0) addFleetSegment('trucks');
+  const entity = _getDealEntity();
+  // Load saved fleet segments if entity has them
+  if (entity && entity.fleetSegments && entity.fleetSegments.length) {
+    _fpSegments = entity.fleetSegments.map(function(s) { return Object.assign({}, s); });
+    renderFleetSegments();
+  } else if (_fpSegments.length === 0) {
+    addFleetSegment('trucks');
+  }
 }
 
 function generateFleetReport() {
-  const l = LEADS.find(x => x.id === _dealProductsLeadId);
+  const l = _getDealEntity();
   if (!l) { showToast('No lead selected'); return; }
   if (_fpSegments.length === 0) { showToast('Add at least one vehicle category'); return; }
 
@@ -7401,6 +7436,13 @@ function generateFleetReport() {
   </div>
 </div>
 
+<div style="border:3px solid #0098d4;padding:24px;margin:30px 0;text-align:center;background:#f6f8fb">
+  <div style="font-size:16px;font-weight:800;color:#0a1726;margin-bottom:6px">See TrackNow in Action</div>
+  <div style="font-size:12px;color:#5a6675;margin-bottom:14px;line-height:1.5">Watch our demo video to see how TrackNow can transform your fleet management, reduce costs, and give you full visibility of every vehicle.</div>
+  <a href="https://www.tracknow.com.au/demo" target="_blank" style="display:inline-block;padding:12px 36px;background:#0098d4;color:#fff;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.5px">▶ Watch Demo Video</a>
+  <div style="font-size:10px;color:#999;margin-top:10px">tracknow.com.au/demo</div>
+</div>
+
 <div class="footer">
   <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; tracknow.com.au</div>
   <div>Confidential &mdash; prepared for ${l.co}</div>
@@ -7411,6 +7453,33 @@ function generateFleetReport() {
 </body></html>`);
   reportWin.document.close();
   showToast('Fleet Profile generated for ' + l.co);
+}
+
+// ── Send Fleet Report from Prospects tab ──────────────────────────
+function sendProspectFleetReport(prospectId) {
+  _dealProductsSource = 'prospect';
+  _dealProductsLeadId = prospectId;
+  const p = _getDealEntity();
+  if (!p) return;
+  // Ensure fleet segments exist
+  if (p.fleetSegments && p.fleetSegments.length) _fpSegments = p.fleetSegments.slice();
+  else if (_fpSegments.length === 0) { showToast('Open Fleet Profile first to add vehicle categories'); return; }
+  generateFleetReport();
+  // Mark prospect as warm
+  p.status = 'warm';
+  p.fleetReportSentDate = new Date().toLocaleDateString('en-AU');
+  // Set auto follow-up: callback in 2 days
+  const followUp = new Date(); followUp.setDate(followUp.getDate() + 2);
+  p.callbackDate = followUp.toISOString().split('T')[0];
+  p.callbackTime = '10:00';
+  _saveProspects();
+  renderProspects();
+  _dealProductsSource = 'lead';
+  _dealProductsLeadId = null;
+}
+
+function openProspectFleetProfile(prospectId) {
+  openDealProducts(prospectId, 'prospect');
 }
 
 // ── Add Units / Upsell modal ────────────────────────────────────
@@ -7482,7 +7551,7 @@ function saveAddUnits() {
   LEADS.push({
     id: Date.now(), co: c.co, name: '', email: '',
     phone: '', ind: c.sector || '', v: qty || hwQty,
-    city: '', st: '', stage: 'fleet-report', val: annualVal,
+    city: '', st: '', stage: 'proposal', val: annualVal,
     notes: desc,
     star: true, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: qty, subPrice: sub, upsellCustId: custId,
@@ -7812,7 +7881,7 @@ function doLogin() {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Industry</label><select id="ml_ind"><option>Transport &amp; Logistics</option><option>Civil &amp; Construction</option><option>Mining &amp; Resources</option><option>Service</option><option>Storage &amp; Waste</option><option>Manufacturing</option><option>Live Stock &amp; Pets</option></select></div>
-        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="fleet-report">Fleet Report Sent</option><option value="proposal">Proposal Sent</option><option value="agreement">Agreement Sent</option><option value="closed">Closed Won</option></select></div>
+        <div class="form-group"><label>Stage</label><select id="ml_stage"><option value="proposal">Proposal Sent</option><option value="agreement">Agreement Sent</option><option value="closed">Closed Won</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>State</label><select id="ml_st"><option>QLD</option><option>NSW</option><option>VIC</option><option>WA</option><option>SA</option><option>TAS</option><option>NT</option><option>ACT</option></select></div>
