@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push script — Generate button warning toast + popup blocker fix."""
+"""Push script — 30-day cancellation notice update for proposal & agreement."""
 import subprocess, os, sys, glob as _glob
 
 # Find the tracknow-portal repo
@@ -51,7 +51,35 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 changed = False
 
-# ── FIX 1: Generate button shows warning toast instead of reopening fleet data panel ──
+# ── FIX 1: Update proposal cancellation clause ──
+OLD_PROP = """<strong>6. Cancellation:</strong> Either party may terminate with 30 days written notice after the minimum term. Early termination fees may apply."""
+
+NEW_PROP = """<strong>6. Cancellation &amp; 30-Day Notice:</strong> Either party may cancel the subscription by providing a minimum of 30 days written notice. This notice period applies after the minimum term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term."""
+
+if OLD_PROP in t:
+    t = t.replace(OLD_PROP, NEW_PROP)
+    changed = True
+    status("Updated proposal cancellation clause — 30-day notice")
+elif NEW_PROP in t:
+    status("Proposal cancellation clause already updated (skipping)")
+else:
+    print(f"  {R}✗ Could not find proposal cancellation clause{X}")
+
+# ── FIX 2: Update agreement termination clause ──
+OLD_AGR = """<strong>Termination:</strong> Either party may terminate this agreement with 30 days written notice after the minimum term. Early termination during the initial term will incur an early exit fee equal to the remaining monthly fees for the balance of the term. Upon termination, all GPS devices must be made available for collection within 14 days."""
+
+NEW_AGR = """<strong>Cancellation &amp; 30-Day Notice:</strong> Either party may cancel the subscription by providing a minimum of 30 days written notice. This notice period applies after the minimum contract term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and all fees remain billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term. Upon cancellation, all GPS devices remain the property of TrackNow GPS and must be made available for collection within 14 days."""
+
+if OLD_AGR in t:
+    t = t.replace(OLD_AGR, NEW_AGR)
+    changed = True
+    status("Updated agreement cancellation clause — 30-day notice")
+elif NEW_AGR in t:
+    status("Agreement cancellation clause already updated (skipping)")
+else:
+    print(f"  {R}✗ Could not find agreement cancellation clause{X}")
+
+# ── FIX 3: Generate button warning toast (from previous push) ──
 OLD_TOAST = """  // If no fleet data yet, open the fleet profile modal instead
   if (!p.fleetSegments || !p.fleetSegments.length) {
     openProspectFleetProfile(prospectId);
@@ -68,23 +96,19 @@ NEW_TOAST = """  // If no fleet data saved yet, show clear message — don't re-
 if OLD_TOAST in t:
     t = t.replace(OLD_TOAST, NEW_TOAST)
     changed = True
-    status("Generate button now shows warning toast instead of reopening fleet panel")
+    status("Generate button warning toast fix applied")
 elif NEW_TOAST in t:
-    status("Warning toast fix already applied (skipping)")
-else:
-    print(f"  {R}✗ Could not find fleet data check pattern{X}")
+    status("Generate button warning toast already applied (skipping)")
 
-# ── FIX 2: Replace window.open popup with Blob URL to avoid popup blockers ──
+# ── FIX 4: Popup blocker fix (from previous push) ──
 OLD_POPUP = """const reportWin = window.open('', '_blank', 'width=900,height=1100');
   reportWin.document.write(`"""
-
 NEW_POPUP = """// Use a Blob URL to avoid popup blockers
   const reportHTML = `"""
 
 OLD_CLOSE = """</body></html>`);
   reportWin.document.close();
   showToast('Fleet Optimisation Report generated for ' + l.co);"""
-
 NEW_CLOSE = """</body></html>`;
   var blob = new Blob([reportHTML], {type: 'text/html'});
   var url = URL.createObjectURL(blob);
@@ -96,14 +120,14 @@ NEW_CLOSE = """</body></html>`;
 if OLD_POPUP in t:
     t = t.replace(OLD_POPUP, NEW_POPUP)
     changed = True
-    status("Replaced window.open with Blob URL approach")
+    status("Popup blocker fix applied")
 elif NEW_POPUP in t:
-    status("Blob URL fix already applied (skipping)")
+    status("Popup blocker fix already applied (skipping)")
 
 if OLD_CLOSE in t:
     t = t.replace(OLD_CLOSE, NEW_CLOSE)
     changed = True
-    status("Replaced document.write/close with Blob link click")
+    status("Blob link click fix applied")
 elif NEW_CLOSE in t:
     status("Blob link click fix already applied (skipping)")
 
@@ -117,7 +141,7 @@ if out.strip():
     ok, _ = run("git add -A")
     status("Staged all changes", ok)
 
-    MSG = "fix: generate button shows save-first warning + blob URL popup fix"
+    MSG = "update: 30-day cancellation notice in proposal and agreement T&Cs"
     ok, out = run(f'git commit -m "{MSG}"')
     status("Committed", ok)
 
