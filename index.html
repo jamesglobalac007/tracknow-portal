@@ -7383,8 +7383,8 @@ function generateFleetReport() {
   const fleetOverviewRows = segResults.map(sr => `<tr><td style="font-weight:600">${sr.label}</td><td style="text-align:center">${sr.qty}</td><td style="text-align:center">${sr.km.toLocaleString()}</td><td style="text-align:center">${sr.consumption}L</td><td style="text-align:center">${sr.slippage}%</td><td style="text-align:center">${sr.idle}h</td></tr>`).join('');
 
   // ── BUILD REPORT HTML ──
-  const reportWin = window.open('', '_blank', 'width=900,height=1100');
-  reportWin.document.write(`<!DOCTYPE html><html><head><title>Fleet Optimisation Report — ${l.co}</title>
+  // Use a Blob URL to avoid popup blockers
+  const reportHTML = `<!DOCTYPE html><html><head><title>Fleet Optimisation Report — ${l.co}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -7557,8 +7557,12 @@ function generateFleetReport() {
 <div class="disclaimer">
   This report is based on estimated fleet data provided and industry benchmarks. Actual savings may vary based on fleet usage, driver behaviour, and operational factors. Figures are projections only and do not constitute financial advice. &copy; ${new Date().getFullYear()} Track Now Proprietary Limited. All rights reserved.
 </div>
-</body></html>`);
-  reportWin.document.close();
+</body></html>`;
+  var blob = new Blob([reportHTML], {type: 'text/html'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
   showToast('Fleet Optimisation Report generated for ' + l.co);
 }
 
