@@ -2508,7 +2508,8 @@ function openProposalDoc(leadId) {
   .callout{background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6}
   .terms{font-size:10px;color:#888;line-height:1.6;margin-top:20px}
   .footer{margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888}
-  @media print{body{padding:20px}.no-print{display:none}}
+  .print-only{display:none}
+  @media print{body{padding:20px}.no-print{display:none}.print-only{display:block !important}}
 </style></head><body>
 <div class="no-print" style="text-align:right;margin-bottom:20px">
   <button onclick="window.print()" style="padding:10px 24px;background:#0098d4;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Print / Save as PDF</button>
@@ -2638,6 +2639,35 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
       </div>
     </div>
   </div>
+</div>
+
+<!-- DIGITAL ACCEPT — visible on screen, hidden on print -->
+<div class="no-print" style="text-align:center;margin:30px 0;padding:24px;background:#f0f9ff;border:2px solid #0098d4;border-radius:8px">
+  <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:8px">Ready to proceed?</div>
+  <a href="mailto:sales@tracknow.com.au?subject=${encodeURIComponent('ACCEPTED: Proposal #TN-' + String(l.id).padStart(4,'0') + ' — ' + l.co)}&body=${encodeURIComponent('Hi TrackNow,\n\nI am pleased to confirm acceptance of the proposal #TN-' + String(l.id).padStart(4,'0') + ' for ' + l.co + '.\n\nPlease proceed with the next steps.\n\nKind regards,\n' + (l.name || ''))}" style="display:inline-block;padding:16px 48px;background:#0098d4;color:#fff;font-size:16px;font-weight:800;text-decoration:none;border-radius:6px;letter-spacing:.5px">✓ Accept Proposal</a>
+  <p style="font-size:11px;color:#888;margin-top:10px">Clicking above will open your email client with a pre-filled acceptance to TrackNow GPS.</p>
+</div>
+
+<!-- PRINT ACCEPT — hidden on screen, visible on print -->
+<div class="print-only" style="margin:30px 0;padding:24px;border:2px solid #333;page-break-inside:avoid">
+  <div style="font-size:14px;font-weight:800;text-align:center;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Acceptance of Proposal</div>
+  <div style="font-size:12px;line-height:2;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="display:inline-block;width:18px;height:18px;border:2px solid #333;margin-right:8px;flex-shrink:0"></span>
+      <span>I, <strong>${l.name || '___________________'}</strong>, on behalf of <strong>${l.co}</strong>, accept this proposal and its terms and conditions as outlined above.</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:20px">
+    <div>
+      <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Signature</div>
+      <div style="border-bottom:1px solid #333;height:40px"></div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Date</div>
+      <div style="border-bottom:1px solid #333;height:40px"></div>
+    </div>
+  </div>
+  <p style="font-size:10px;color:#888;text-align:center;margin-top:16px">Please tick the box, sign, and return this page via email to <strong>sales@tracknow.com.au</strong> or fax to 1300 TRACK NOW.</p>
 </div>
 
 <div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div><div>Confidential &mdash; prepared for ${l.co}</div></div>
@@ -2796,8 +2826,12 @@ function openAgreementDoc(leadId) {
   .accept-btn{display:block;width:100%;padding:16px;background:#0098d4;color:#fff;font-size:16px;font-weight:800;text-align:center;border:none;cursor:pointer;margin-top:30px;letter-spacing:1px}
   .accept-btn:hover{background:#007bb5}
   .accepted-msg{display:none;text-align:center;padding:20px;background:#e8f5e9;color:#2e7d32;font-weight:700;font-size:16px;margin-top:30px;border:2px solid #2e7d32}
-  @media print{.accept-btn,.no-print{display:none !important}.accepted-msg{display:block !important}}
+  .print-only{display:none}
+  @media print{.accept-btn,.no-print{display:none !important}.accepted-msg{display:block !important}.print-only{display:block !important}}
 </style></head><body>
+<div class="no-print" style="text-align:right;margin-bottom:20px">
+  <button onclick="window.print()" style="padding:10px 24px;background:#0098d4;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Print / Save as PDF</button>
+</div>
 <div class="header">
   <div>
     <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
@@ -2898,10 +2932,32 @@ function openAgreementDoc(leadId) {
   </div>
 </div>
 
-<button class="accept-btn no-print" onclick="var cn=document.getElementById('sig_client_name').value.trim();var cs=document.getElementById('sig_client_sig').value.trim();if(!cn||!cs){alert('Please enter your full name and signature to proceed.');return;}this.style.display='none';document.getElementById('acceptedMsg').style.display='block';document.getElementById('acceptedMsg').innerHTML='✓ Agreement Signed &mdash; '+cn+' &middot; ${today}';window.print()">
+<button class="accept-btn no-print" onclick="var cn=document.getElementById('sig_client_name').value.trim();var cs=document.getElementById('sig_client_sig').value.trim();if(!cn||!cs){alert('Please enter your full name and signature to proceed.');return;}this.style.display='none';document.getElementById('acceptedMsg').style.display='block';document.getElementById('acceptedMsg').innerHTML='✓ Agreement Signed &mdash; '+cn+' &middot; ${today}';window.open('mailto:sales@tracknow.com.au?subject='+encodeURIComponent('SIGNED: Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} — ${l.co}')+'&body='+encodeURIComponent('Hi TrackNow,\\n\\nI am pleased to confirm acceptance and signing of the Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} for ${l.co}.\\n\\nSigned by: '+cn+'\\n\\nPlease proceed with the next steps.\\n\\nKind regards'),'_self');setTimeout(function(){window.print()},500)">
   ✓ SIGN &amp; ACCEPT AGREEMENT
 </button>
 <div class="accepted-msg" id="acceptedMsg">✓ Agreement Signed — ${today}</div>
+
+<!-- PRINT ACCEPT — hidden on screen, visible on print -->
+<div class="print-only" style="margin:30px 0;padding:24px;border:2px solid #333;page-break-inside:avoid">
+  <div style="font-size:14px;font-weight:800;text-align:center;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Acceptance of Agreement</div>
+  <div style="font-size:12px;line-height:2;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="display:inline-block;width:18px;height:18px;border:2px solid #333;margin-right:8px;flex-shrink:0"></span>
+      <span>I, <strong>${l.name || '___________________'}</strong>, on behalf of <strong>${l.co}</strong>, accept this service agreement and its terms and conditions as outlined above.</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:20px">
+    <div>
+      <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Signature</div>
+      <div style="border-bottom:1px solid #333;height:40px"></div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Date</div>
+      <div style="border-bottom:1px solid #333;height:40px"></div>
+    </div>
+  </div>
+  <p style="font-size:10px;color:#888;text-align:center;margin-top:16px">Please tick the box, sign, and return this page via email to <strong>sales@tracknow.com.au</strong> or fax to 1300 TRACK NOW.</p>
+</div>
 
 <div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">
   <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
@@ -8160,6 +8216,19 @@ function sendEmailFromPortal() {
     var line = bodyLines[i];
     if (line.trim() === '') { htmlBody += '<br>'; }
     else { htmlBody += '<p style="margin:0 0 4px">' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>'; }
+  }
+
+  // Add Accept button for proposals and agreements
+  if (_epPending.type === 'proposal' || _epPending.type === 'agreement') {
+    var acceptLabel = _epPending.type === 'proposal' ? 'Accept Proposal' : 'Accept Agreement';
+    var acceptSubject = encodeURIComponent((_epPending.type === 'proposal' ? 'ACCEPTED: ' : 'SIGNED: ') + _epPending.subject);
+    var acceptBody = encodeURIComponent('Hi TrackNow,\n\nI am pleased to confirm acceptance of the ' + (_epPending.type === 'proposal' ? 'proposal' : 'service agreement') + '.\n\nPlease proceed with the next steps.\n\nKind regards');
+    var mailtoLink = 'mailto:sales@tracknow.com.au?subject=' + acceptSubject + '&body=' + acceptBody;
+    htmlBody += '<br><div style="text-align:center;margin:24px 0">' +
+      '<a href="' + mailtoLink + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
+      '✓ ' + acceptLabel + '</a>' +
+      '</div>' +
+      '<p style="text-align:center;color:#888;font-size:12px;margin:0">Clicking the button above will open your email client with a pre-filled acceptance reply.</p>';
   }
 
   var templateParams = {
