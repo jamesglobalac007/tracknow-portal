@@ -2585,17 +2585,6 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 </table>
 
 
-<h2>Terms &amp; Conditions</h2>
-<div class="terms">
-  <p><strong>1. Service Period:</strong> ${isMTM ? 'This agreement operates on a month-to-month basis from the installation date. Either party may cancel by providing 30 days written notice.' : 'This agreement commences on the installation date and continues for ' + term + ' months.'}</p>
-  <p style="margin-top:6px"><strong>2. Payment:</strong> ${isMTM ? 'Hardware and installation fees are payable upfront prior to activation. Monthly subscription fees are billed in advance on the 1st of each month via direct debit.' : 'All fees (hardware, software, and extras) are combined into a single monthly payment of ' + fmt(totalMonthly) + ', billed in advance on the 1st of each month via direct debit. No upfront payment is required.'}</p>
-  <p style="margin-top:6px"><strong>3. Hardware:</strong> ${isContract ? 'All GPS devices remain the property of TrackNow GPS until the hardware component has been paid in full over the contract term (' + term + ' months). The hardware cost of ' + fmt(hwTotal) + ' is included in the combined monthly payment.' : (hwTotal > 0 ? 'Hardware totalling ' + fmt(hwTotal) + ' is payable upfront prior to installation. Upon payment, devices become the property of the client.' : 'All GPS devices remain the property of TrackNow GPS. Devices are provided at no upfront cost for the duration of the agreement.')}</p>
-  <p style="margin-top:6px"><strong>4. Installation:</strong> Professional installation is included and will be scheduled at a mutually agreed time to minimise operational disruption.</p>
-  <p style="margin-top:6px"><strong>5. Support:</strong> 24/7 technical support is included. Response times: Critical issues within 2 hours, standard queries within 24 hours.</p>
-  <p style="margin-top:6px"><strong>6. Cancellation &amp; 30-Day Notice:</strong> ${isMTM ? 'Either party may cancel the subscription by providing 30 days written notice via email to support@tracknow.com.au. The subscription remains active and billable until the end of the notice period.' : 'Either party may cancel by providing 30 days written notice. This notice period applies after the minimum term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term.'}</p>
-  <p style="margin-top:6px"><strong>7. Privacy:</strong> All fleet data is stored securely in Australian data centres and is accessible only to authorised personnel.</p>
-</div>
-
 <!-- NEXT STEPS — visible on screen -->
 <div class="no-print" style="margin-top:30px;padding:28px;border:2px solid #0098d4;text-align:center;background:#f0f9ff">
   <div style="font-size:16px;font-weight:800;color:#0a1726;margin-bottom:8px">Next Steps</div>
