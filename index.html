@@ -1167,6 +1167,64 @@ select option{background:#0a0a0a;color:#FFA028}
     <!-- ── SOCIAL MEDIA TAB ── -->
     <div id="mktSection-social" style="display:none">
 
+      <!-- Connected Social Accounts -->
+      <div class="card" style="margin-bottom:20px;border-left:3px solid #0098d4">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div class="section-title">Connected Accounts</div>
+            <div class="section-sub">Your TrackNow social media profiles — click any to open</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddSocialAccount()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Account
+          </button>
+        </div>
+        <div id="connectedAccountsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+          <!-- rendered by JS -->
+        </div>
+        <div id="connectedAccountsEmpty" style="display:none;text-align:center;padding:24px;color:#666;font-size:13px">
+          No accounts connected yet. Click <strong>Add Account</strong> to get started.
+        </div>
+      </div>
+
+      <!-- Add/Edit Social Account Modal -->
+      <div class="modal-overlay" id="socialAccountModal" style="display:none" onclick="if(event.target===this)closeSocialAccountModal()">
+        <div class="modal" style="max-width:480px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h2 style="font-size:16px;font-weight:700;color:#FFA028" id="sa_modalTitle">Add Social Account</h2>
+            <button onclick="closeSocialAccountModal()" style="background:none;border:none;color:#666;font-size:18px;cursor:pointer">&times;</button>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Platform</label>
+            <select id="sa_platform" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff" onchange="updateSocialAccountURL()">
+              <option value="facebook">Facebook</option>
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="youtube">YouTube</option>
+              <option value="twitter">X (Twitter)</option>
+              <option value="linkedin">LinkedIn</option>
+            </select>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Handle / Username</label>
+            <input type="text" id="sa_handle" placeholder="e.g. @TrackNowGPS or TrackNow_GPS" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff" oninput="updateSocialAccountURL()">
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Profile URL</label>
+            <input type="text" id="sa_url" placeholder="https://..." style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff">
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Login Email (for your records — stored locally only)</label>
+            <input type="text" id="sa_email" placeholder="e.g. sales@tracknow.com.au" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff">
+          </div>
+          <input type="hidden" id="sa_editId" value="">
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <button class="btn btn-primary" style="flex:1" onclick="saveSocialAccount()">Save Account</button>
+            <button class="btn btn-secondary" onclick="closeSocialAccountModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Platform selector pills -->
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
         <button class="social-pill active" id="spill-all" onclick="setSocialPlatform('all',this)">All Platforms</button>
@@ -5294,9 +5352,138 @@ function showMktTab(tab, btn) {
 }
 
 // ── Init Marketing Hub ────────────────────────────────────────────────────
+// ═══════════ CONNECTED SOCIAL ACCOUNTS ═══════════
+var _defaultSocialAccounts = [
+  { id:'sa_ig_1', platform:'instagram', handle:'TrackNow_GPS', url:'https://www.instagram.com/TrackNow_GPS', email:'sales@tracknow.com.au', addedDate:'2026-04-12' }
+];
+var SOCIAL_ACCOUNTS = JSON.parse(localStorage.getItem('tn_social_accounts') || 'null') || _defaultSocialAccounts;
+if (!localStorage.getItem('tn_social_accounts')) localStorage.setItem('tn_social_accounts', JSON.stringify(SOCIAL_ACCOUNTS));
+
+var SOCIAL_PLATFORM_META = {
+  facebook:  { name:'Facebook',  color:'#1877F2', icon:'<svg width="16" height="16" fill="#1877F2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>', urlTemplate:'https://www.facebook.com/{handle}' },
+  instagram: { name:'Instagram', color:'#E1306C', icon:'<svg width="16" height="16" fill="none" stroke="#E1306C" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>', urlTemplate:'https://www.instagram.com/{handle}' },
+  tiktok:    { name:'TikTok',    color:'#010101', icon:'<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#fff" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.05a8.16 8.16 0 004.77 1.52V7.12a4.85 4.85 0 01-1-.43z"/></svg>', urlTemplate:'https://www.tiktok.com/@{handle}' },
+  youtube:   { name:'YouTube',   color:'#FF0000', icon:'<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#FF0000" d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.5v2.1c0 2.3.3 4.5.3 4.5s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22.2 12 22.2 12 22.2s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.5v-2.1C23.3 9.2 23 7 23 7zm-13.5 8.9V8.1l8.1 3.9-8.1 3.9z"/></svg>', urlTemplate:'https://www.youtube.com/@{handle}' },
+  twitter:   { name:'X (Twitter)', color:'#CCC', icon:'<svg width="16" height="16" fill="#CCC" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.849L1.254 2.25H8.08l4.261 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>', urlTemplate:'https://x.com/{handle}' },
+  linkedin:  { name:'LinkedIn',  color:'#0A66C2', icon:'<svg width="16" height="16" fill="#0A66C2" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>', urlTemplate:'https://www.linkedin.com/company/{handle}' }
+};
+
+function saveSocialAccounts() {
+  localStorage.setItem('tn_social_accounts', JSON.stringify(SOCIAL_ACCOUNTS));
+}
+
+function renderConnectedAccounts() {
+  var grid = document.getElementById('connectedAccountsGrid');
+  var empty = document.getElementById('connectedAccountsEmpty');
+  if (!grid) return;
+  if (!SOCIAL_ACCOUNTS.length) {
+    grid.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  grid.style.display = 'grid';
+  if (empty) empty.style.display = 'none';
+  grid.innerHTML = SOCIAL_ACCOUNTS.map(function(acc) {
+    var meta = SOCIAL_PLATFORM_META[acc.platform] || {};
+    var handle = acc.handle || '';
+    var displayHandle = handle.charAt(0) === '@' ? handle : '@' + handle;
+    return '<div style="padding:14px;background:#0a0a0a;border:1px solid #222;border-left:3px solid ' + (meta.color || '#666') + ';transition:border-color .15s;cursor:pointer" onmouseover="this.style.borderColor=\'' + (meta.color || '#666') + '\'" onmouseout="this.style.borderLeftColor=\'' + (meta.color || '#666') + '\';this.style.borderTopColor=\'#222\';this.style.borderRightColor=\'#222\';this.style.borderBottomColor=\'#222\'">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<span>' + (meta.icon || '') + '</span>' +
+        '<span style="font-size:12px;font-weight:700;color:' + (meta.color || '#CCC') + '">' + (meta.name || acc.platform) + '</span>' +
+      '</div>' +
+      '<a href="' + (acc.url || '#') + '" target="_blank" rel="noopener" style="font-size:13px;font-weight:600;color:#FFA028;text-decoration:none;display:block;margin-bottom:4px" title="Open profile">' + displayHandle + ' <span style="font-size:10px;color:#666">↗</span></a>' +
+      (acc.email ? '<div style="font-size:10px;color:#555;margin-bottom:8px">Login: ' + acc.email + '</div>' : '') +
+      '<div style="display:flex;gap:6px;margin-top:8px">' +
+        '<button onclick="event.stopPropagation();editSocialAccount(\'' + acc.id + '\')" style="font-size:10px;padding:3px 8px;background:#111;border:1px solid #333;color:#999;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#999\'">✏ Edit</button>' +
+        '<button onclick="event.stopPropagation();removeSocialAccount(\'' + acc.id + '\')" style="font-size:10px;padding:3px 8px;background:#111;border:1px solid #333;color:#666;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor=\'#dc2626\';this.style.color=\'#dc2626\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#666\'">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function updateSocialAccountURL() {
+  var platform = document.getElementById('sa_platform').value;
+  var handle = (document.getElementById('sa_handle').value || '').replace(/^@/, '').trim();
+  var meta = SOCIAL_PLATFORM_META[platform];
+  if (meta && handle) {
+    document.getElementById('sa_url').value = meta.urlTemplate.replace('{handle}', handle);
+  }
+}
+
+function openAddSocialAccount() {
+  document.getElementById('sa_modalTitle').textContent = 'Add Social Account';
+  document.getElementById('sa_platform').value = 'facebook';
+  document.getElementById('sa_handle').value = '';
+  document.getElementById('sa_url').value = '';
+  document.getElementById('sa_email').value = '';
+  document.getElementById('sa_editId').value = '';
+  document.getElementById('socialAccountModal').style.display = 'flex';
+}
+
+function editSocialAccount(id) {
+  var acc = SOCIAL_ACCOUNTS.find(function(a) { return a.id === id; });
+  if (!acc) return;
+  document.getElementById('sa_modalTitle').textContent = 'Edit Social Account';
+  document.getElementById('sa_platform').value = acc.platform;
+  document.getElementById('sa_handle').value = acc.handle || '';
+  document.getElementById('sa_url').value = acc.url || '';
+  document.getElementById('sa_email').value = acc.email || '';
+  document.getElementById('sa_editId').value = id;
+  document.getElementById('socialAccountModal').style.display = 'flex';
+}
+
+function closeSocialAccountModal() {
+  document.getElementById('socialAccountModal').style.display = 'none';
+}
+
+function saveSocialAccount() {
+  var platform = document.getElementById('sa_platform').value;
+  var handle = document.getElementById('sa_handle').value.trim();
+  var url = document.getElementById('sa_url').value.trim();
+  var email = document.getElementById('sa_email').value.trim();
+  var editId = document.getElementById('sa_editId').value;
+  if (!handle) { showToast('Please enter a handle or username', 'warn'); return; }
+  if (!url) {
+    var meta = SOCIAL_PLATFORM_META[platform];
+    if (meta) url = meta.urlTemplate.replace('{handle}', handle.replace(/^@/, ''));
+  }
+  if (editId) {
+    var acc = SOCIAL_ACCOUNTS.find(function(a) { return a.id === editId; });
+    if (acc) {
+      acc.platform = platform;
+      acc.handle = handle;
+      acc.url = url;
+      acc.email = email;
+    }
+  } else {
+    SOCIAL_ACCOUNTS.push({
+      id: 'sa_' + Date.now(),
+      platform: platform,
+      handle: handle,
+      url: url,
+      email: email,
+      addedDate: new Date().toISOString().slice(0, 10)
+    });
+  }
+  saveSocialAccounts();
+  renderConnectedAccounts();
+  closeSocialAccountModal();
+  showToast((SOCIAL_PLATFORM_META[platform] || {}).name + ' account ' + (editId ? 'updated' : 'added') + ' ✓');
+}
+
+function removeSocialAccount(id) {
+  if (!confirm('Remove this social account?')) return;
+  SOCIAL_ACCOUNTS = SOCIAL_ACCOUNTS.filter(function(a) { return a.id !== id; });
+  saveSocialAccounts();
+  renderConnectedAccounts();
+  showToast('Account removed');
+}
+
 function initMarketing() {
   recalcAllMetrics();
   renderMktOverview();
+  renderConnectedAccounts();
   buildSegment();
 }
 
