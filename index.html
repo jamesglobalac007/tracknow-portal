@@ -2609,7 +2609,10 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
           <div id="clientSigPreview" style="font-family:'Brush Script MT','Segoe Script','Comic Sans MS',cursive;font-size:28px;color:#1a1a1a;min-height:40px;padding:8px 0;border-bottom:2px solid #333"></div>
         </div>
         <div id="clientSigDraw" style="display:none">
-          <canvas id="clientSigCanvas" width="340" height="100" style="border:1px solid #ccc;background:#fff;cursor:crosshair;width:100%;display:block"></canvas>
+          <canvas id="clientSigCanvas" width="340" height="100" style="border:1px solid #ccc;background:#fff;cursor:crosshair;width:100%;display:block"
+            onmousedown="this._d=true;var x=this.getContext('2d');x.strokeStyle='#1a1a1a';x.lineWidth=2;x.lineCap='round';x.beginPath();var r=this.getBoundingClientRect();x.moveTo((event.clientX-r.left)*(this.width/r.width),(event.clientY-r.top)*(this.height/r.height))"
+            onmousemove="if(!this._d)return;var x=this.getContext('2d'),r=this.getBoundingClientRect();x.lineTo((event.clientX-r.left)*(this.width/r.width),(event.clientY-r.top)*(this.height/r.height));x.stroke()"
+            onmouseup="this._d=false" onmouseleave="this._d=false"></canvas>
           <button onclick="var c=document.getElementById('clientSigCanvas');c.getContext('2d').clearRect(0,0,c.width,c.height)" class="no-print" style="margin-top:4px;padding:3px 10px;font-size:9px;border:1px solid #ccc;background:#f5f5f5;color:#666;cursor:pointer;font-family:inherit">Clear</button>
         </div>
       </div>
@@ -2634,22 +2637,6 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
     </div>
   </div>
 </div>
-
-<script>
-(function(){
-  var canvas = document.getElementById('clientSigCanvas');
-  if(!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var drawing = false;
-  ctx.strokeStyle = '#1a1a1a';
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  canvas.addEventListener('mousedown', function(e){ drawing=true; ctx.beginPath(); var r=canvas.getBoundingClientRect(); ctx.moveTo((e.clientX-r.left)*(canvas.width/r.width),(e.clientY-r.top)*(canvas.height/r.height)); });
-  canvas.addEventListener('mousemove', function(e){ if(!drawing) return; var r=canvas.getBoundingClientRect(); ctx.lineTo((e.clientX-r.left)*(canvas.width/r.width),(e.clientY-r.top)*(canvas.height/r.height)); ctx.stroke(); });
-  canvas.addEventListener('mouseup', function(){ drawing=false; });
-  canvas.addEventListener('mouseleave', function(){ drawing=false; });
-})();
-</script>
 
 <div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div><div>Confidential &mdash; prepared for ${l.co}</div></div>
 </body></html>`);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — inline signing section for proposal."""
+"""HOTFIX — fix broken script tag in proposal signing section."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Proposal signing section + blue headings\033[0m")
+print(f"\n\033[1m🚀 HOTFIX: Fix login — remove script tag from proposal template\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,19 +35,11 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Proposal: inline signing, blue headings, AH trucks/cars/vans, remove payment box
+COMMIT_MSG = """HOTFIX: fix login by removing script tag from proposal template
 
-Signing section:
-- Removed DocuSign placeholder
-- Client side: auto date, type name or draw signature with cursor
-- TrackNow side: Mark Speelmeyer pre-loaded with signature
-- Canvas drawing with mouse support
-- TYPE/DRAW toggle buttons (hidden on print)
-
-Also includes:
-- h3 pricing headings now blue matching h2
-- After-hours restricted to trucks, cars, vans only
-- Removed blue monthly payment summary box"""
+The signing section script tag inside the openProposalDoc template literal
+was being parsed as an actual script close tag, breaking the main page JS.
+Replaced with inline event handlers on the canvas element."""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
@@ -60,7 +52,8 @@ status("Pushed to GitHub", ok)
 
 if ok:
     print(f"\n\033[92m{'='*50}")
-    print(f"  ✓ ALL DONE — deploying to Render")
+    print(f"  ✓ HOTFIX PUSHED — deploying to Render now")
+    print(f"  ✓ Login will work in ~1-2 minutes")
     print(f"{'='*50}\033[0m\n")
 else:
     print(f"\n\033[91m✗ Push failed:\033[0m\n{out}")
