@@ -7920,6 +7920,13 @@ function generateFleetReport() {
   const netAnnualBenefit = totalAnnualSaving - trackNowAnnualCost;
   const roi = trackNowAnnualCost > 0 ? Math.round((netAnnualBenefit / trackNowAnnualCost) * 100) : 0;
 
+  // Summary values for report display (weighted averages across segments)
+  const _totalQ = segResults.reduce((s, sr) => s + sr.qty, 0) || 1;
+  const workHrs = Math.round(segResults.reduce((s, sr) => s + sr.workHrs * sr.qty, 0) / _totalQ * 10) / 10;
+  const idleHrs = Math.round(segResults.reduce((s, sr) => s + sr.idleHrsDay * sr.qty, 0) / _totalQ * 10) / 10;
+  const afterHrsPct = Math.round(segResults.reduce((s, sr) => s + sr.afterHrsPct * sr.qty, 0) / _totalQ * 10) / 10;
+  const wastedMinsPerVehicle = Math.round(workHrs * 60 * (slipPct / 100));
+
   // Fleet overview rows for multi-segment
   const fleetOverviewRows = segResults.map(sr => `<tr><td style="font-weight:600">${sr.label}</td><td style="text-align:center">${sr.qty}</td><td style="text-align:center">${sr.km.toLocaleString()}</td><td style="text-align:center">${sr.consumption}L/100km</td></tr>`).join('');
 
