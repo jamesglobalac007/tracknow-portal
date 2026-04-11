@@ -750,7 +750,17 @@ select option{background:#0a0a0a;color:#FFA028}
               <option value="Solar Powered">Solar Powered — $44.95/mo</option>
             </select></div>
           <div><label class="form-label">Asset / Vehicle Type</label>
-            <input id="au_asset" class="form-input" placeholder="e.g. Trucks, Excavators"></div>
+            <select id="au_asset" class="form-input">
+              <option value="">— Select Asset —</option>
+              <option value="Trucks / Heavy Vehicles">Trucks / Heavy Vehicles</option>
+              <option value="Vans / Light Commercial">Vans / Light Commercial</option>
+              <option value="Utes / Dual Cab">Utes / Dual Cab</option>
+              <option value="Plant / Equipment">Plant / Equipment</option>
+              <option value="Cars / Service Vehicles">Cars / Service Vehicles</option>
+              <option value="Excavators / Earthmoving">Excavators / Earthmoving</option>
+              <option value="Trailers / Unpowered Assets">Trailers / Unpowered Assets</option>
+              <option value="Refrigerated Vehicles">Refrigerated Vehicles</option>
+            </select></div>
           <div><label class="form-label">No. of Software Units</label>
             <input id="au_qty" class="form-input" type="number" placeholder="e.g. 5"></div>
           <div><label class="form-label">Sub Price ($/unit/mo)</label>
