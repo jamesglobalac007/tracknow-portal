@@ -2830,9 +2830,27 @@ function openAgreementDoc(leadId) {
         <input type="text" id="sig_client_title" value="" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit" placeholder="e.g. Director, Fleet Manager">
       </div>
       <div style="margin-bottom:10px">
-        <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Signature (type your name to sign)</label>
-        <input type="text" id="sig_client_sig" value="" style="width:100%;padding:10px;border:1px solid #ccc;font-family:'Brush Script MT','Segoe Script',cursive;font-size:22px;color:#1a1a1a" placeholder="Type your full name" oninput="document.getElementById('sig_client_preview').textContent=this.value">
-        <div id="sig_client_preview" style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1a1a1a;min-height:36px;margin-top:6px;border-bottom:2px solid #0098d4;padding:4px 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</label>
+          <div style="display:flex;gap:4px" class="no-print">
+            <button onclick="document.getElementById('agrSigType').style.display='block';document.getElementById('agrSigDraw').style.display='none'" style="padding:3px 10px;font-size:9px;border:1px solid #0098d4;background:#f0f9ff;color:#0098d4;cursor:pointer;font-weight:600;font-family:inherit">TYPE</button>
+            <button onclick="document.getElementById('agrSigType').style.display='none';document.getElementById('agrSigDraw').style.display='block'" style="padding:3px 10px;font-size:9px;border:1px solid #0098d4;background:#f0f9ff;color:#0098d4;cursor:pointer;font-weight:600;font-family:inherit">DRAW</button>
+          </div>
+        </div>
+        <div id="agrSigType" style="display:block">
+          <input type="text" id="sig_client_sig" value="" style="width:100%;padding:10px;border:1px solid #ccc;font-family:'Brush Script MT','Segoe Script',cursive;font-size:22px;color:#1a1a1a" placeholder="Type your full name to sign" oninput="document.getElementById('sig_client_preview').textContent=this.value">
+          <div id="sig_client_preview" style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1a1a1a;min-height:36px;margin-top:6px;border-bottom:2px solid #0098d4;padding:4px 0"></div>
+        </div>
+        <div id="agrSigDraw" style="display:none">
+          <canvas id="agrSigCanvas" width="340" height="100" style="border:1px solid #ccc;background:#fff;cursor:crosshair;width:100%;display:block"
+            onmousedown="this._d=true;var x=this.getContext('2d');x.strokeStyle='#1a1a1a';x.lineWidth=2;x.lineCap='round';x.beginPath();var r=this.getBoundingClientRect();x.moveTo((event.clientX-r.left)*(this.width/r.width),(event.clientY-r.top)*(this.height/r.height))"
+            onmousemove="if(!this._d)return;var x=this.getContext('2d'),r=this.getBoundingClientRect();x.lineTo((event.clientX-r.left)*(this.width/r.width),(event.clientY-r.top)*(this.height/r.height));x.stroke()"
+            onmouseup="this._d=false" onmouseleave="this._d=false"
+            ontouchstart="event.preventDefault();this._d=true;var x=this.getContext('2d');x.strokeStyle='#1a1a1a';x.lineWidth=2;x.lineCap='round';x.beginPath();var r=this.getBoundingClientRect();var t=event.touches[0];x.moveTo((t.clientX-r.left)*(this.width/r.width),(t.clientY-r.top)*(this.height/r.height))"
+            ontouchmove="event.preventDefault();if(!this._d)return;var x=this.getContext('2d'),r=this.getBoundingClientRect(),t=event.touches[0];x.lineTo((t.clientX-r.left)*(this.width/r.width),(t.clientY-r.top)*(this.height/r.height));x.stroke()"
+            ontouchend="this._d=false"></canvas>
+          <button onclick="var c=document.getElementById('agrSigCanvas');c.getContext('2d').clearRect(0,0,c.width,c.height)" class="no-print" style="margin-top:4px;padding:3px 10px;font-size:9px;border:1px solid #ccc;background:#f5f5f5;color:#666;cursor:pointer;font-family:inherit">Clear</button>
+        </div>
       </div>
       <div>
         <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Date</label>
@@ -2862,7 +2880,7 @@ function openAgreementDoc(leadId) {
   </div>
 </div>
 
-<button class="accept-btn no-print" onclick="var cn=document.getElementById('sig_client_name').value.trim();var cs=document.getElementById('sig_client_sig').value.trim();if(!cn||!cs){alert('Please enter your full name and signature to proceed.');return;}this.style.display='none';document.getElementById('acceptedMsg').style.display='block';document.getElementById('acceptedMsg').innerHTML='✓ Agreement Signed &mdash; '+cn+' &middot; ${today}';window.open('mailto:sales@tracknow.com.au?subject='+encodeURIComponent('SIGNED: Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} — ${l.co}')+'&body='+encodeURIComponent('Hi TrackNow,\\n\\nI am pleased to confirm acceptance and signing of the Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} for ${l.co}.\\n\\nSigned by: '+cn+'\\n\\nPlease proceed with the next steps.\\n\\nKind regards'),'_self');setTimeout(function(){window.print()},500)">
+<button class="accept-btn no-print" onclick="var cn=document.getElementById('sig_client_name').value.trim();var cs=document.getElementById('sig_client_sig').value.trim();var cv=document.getElementById('agrSigCanvas');var hasDrawn=false;if(cv){var ctx=cv.getContext('2d');var px=ctx.getImageData(0,0,cv.width,cv.height).data;for(var i=3;i<px.length;i+=4){if(px[i]>0){hasDrawn=true;break;}}}if(!cn||(!cs&&!hasDrawn)){alert('Please enter your full name and provide a signature (type or draw) to proceed.');return;}this.style.display='none';document.getElementById('acceptedMsg').style.display='block';document.getElementById('acceptedMsg').innerHTML='✓ Agreement Signed &mdash; '+cn+' &middot; ${today}';window.open('mailto:sales@tracknow.com.au?subject='+encodeURIComponent('SIGNED: Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} — ${l.co}')+'&body='+encodeURIComponent('Hi TrackNow,\\n\\nI am pleased to confirm acceptance and signing of the Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} for ${l.co}.\\n\\nSigned by: '+cn+'\\n\\nPlease proceed with the next steps.\\n\\nKind regards'),'_self');setTimeout(function(){window.print()},500)">
   ✓ SIGN &amp; ACCEPT AGREEMENT
 </button>
 <div class="accepted-msg" id="acceptedMsg">✓ Agreement Signed — ${today}</div>
