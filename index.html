@@ -2422,7 +2422,7 @@ function openProposalDoc(leadId) {
   if (!l) return;
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
   const subPrice = l.subPrice || 29.95;
-  const term = l.term || 24;
+  const term = l.term != null ? l.term : 24;
   const monthlySubOnly = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.sub||0), 0) : (totalUnits * subPrice);
   const hwTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * ((li.hwPrice||0) + (li.hwInstall||0)), 0) : 0;
   const payType = l.paymentType || 'upfront';
@@ -2613,7 +2613,7 @@ function renderPipeline() {
         <td style="font-weight:600;${hp?'':'color:#333'}">${hp ? l.v : '—'}</td>
         <td style="font-weight:700;${hp?'color:#FFA028':'color:#333'}">${hp ? '$'+mrr.toFixed(2) : '—'}</td>
         <td style="font-weight:600;${hp?'color:#999':'color:#333'}">${hp ? '$'+l.val.toLocaleString() : '—'}</td>
-        <td style="font-size:11px;${hp?'color:#666':'color:#333'}">${hp ? (l.term==1?'MTM':(l.term||24)+'mo') : '—'}</td>
+        <td style="font-size:11px;${hp?'color:#666':'color:#333'}">${hp ? (l.term==0||l.term==1?'MTM':(l.term||24)+'mo') : '—'}</td>
         <td><button onclick="event.stopPropagation();openDealProducts(${l.id})" style="background:none;border:1px solid #333;color:#FFA028;font-size:9px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Edit</button></td>
       </tr>`; }).join('')}</tbody></table></div>`;
   }
@@ -2624,7 +2624,7 @@ function openAgreementDoc(leadId) {
   if (!l) return;
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 1);
   const subPrice = l.subPrice || 29.95;
-  const term = l.term || 24;
+  const term = l.term != null ? l.term : 24;
   const monthlySubOnly = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.sub||0), 0) : (totalUnits * subPrice);
   const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
@@ -6945,7 +6945,6 @@ const OPTIONAL_EXTRAS = [
   { id: 'fitment',    name: 'Certified Fitment',   price: 88,  unit: '/unit',        desc: 'On-site install by auto-electricians' },
   { id: 'supervisor', name: 'Supervisor 365',       price: 15,  unit: '/asset/mo',    desc: '24/7 active monitoring for high-value assets' },
   { id: 'cable-kit',  name: 'Cable Accessory Kit',  price: 35,  unit: '/kit',         desc: 'Non-standard wiring harnesses' },
-  { id: 'freight',    name: 'Freight (Overnight)',   price: 15,  unit: '/order',       desc: 'Overnight Australia-wide delivery' },
   { id: 'wiatag',     name: 'WiaTag Employee GPS',  price: 18,  unit: '/device/mo',   desc: 'Smartphone GPS tracking — no hardware' }
 ];
 
@@ -6977,7 +6976,7 @@ function openDealProducts(leadId, source) {
   if (!l) return;
   if (!l.lineItems) l.lineItems = [{type:l.deviceType||'OBD2 Plug-In',qty:l.v||1,sub:l.subPrice||29.95,asset:'Vehicle',hwType:HW_MAP[l.deviceType]||'OBD2 Plug-In Device',hwPrice:HW_PRICES[HW_MAP[l.deviceType]]||149,hwInstall:0}];
   document.getElementById('dp_title').textContent = l.co + ' — Deal Products';
-  document.getElementById('dp_term').value = l.term || 24;
+  document.getElementById('dp_term').value = l.term != null ? l.term : 24;
   document.getElementById('dp_sim').value = l.sim || '';
   // Load saved Cost of Goods per unit (manual entries, independent from product lines)
   document.getElementById('dp_hwCost_input').value = l.hwCostOfGoods || 0;
@@ -7064,7 +7063,7 @@ function renderDealProductLines() {
           <select id="dp_term_${i}" onchange="applyTermPricing(${i});updateDealProductTotals()" style="width:100%;${inp}">
             <option value="0" ${l.term==0||l.term==1?'selected':''}>MTM</option>
             <option value="12" ${l.term==12?'selected':''}>12 mo</option>
-            <option value="24" ${(l.term||24)==24?'selected':''}>24 mo</option>
+            <option value="24" ${(l.term!=null?l.term:24)==24?'selected':''}>24 mo</option>
             <option value="36" ${l.term==36?'selected':''}>36 mo</option>
             <option value="60" ${l.term==60?'selected':''}>60 mo</option>
           </select>
@@ -7142,7 +7141,7 @@ function autoFillLinePrices(idx) {
   const li = l.lineItems[idx];
   // Get term from the term dropdown (default 24)
   const termEl = document.getElementById('dp_term_' + idx);
-  const term = termEl ? parseInt(termEl.value) : (l.term || 24);
+  const term = termEl ? parseInt(termEl.value) : (l.term != null ? l.term : 24);
   // Look up price from matrix
   const matrix = PRICING_MATRIX[li.type];
   li.sub = matrix ? (matrix[term] || matrix[24] || 26) : 26;
@@ -7184,7 +7183,8 @@ function updateDealProductTotals() {
   const hwRevenue = hwDeviceRevenue + hwInstallRevenue;
   const monthlySubOnly = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
   const termEl = document.getElementById('dp_term_0');
-  const term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
+  const termRaw = termEl ? parseInt(termEl.value) : parseInt(document.getElementById('dp_term').value);
+  const term = isNaN(termRaw) ? 24 : termRaw;
 
   // ── Payment type logic ──
   const hwRevEl = document.getElementById('dp_hwRevenue');
@@ -7283,7 +7283,8 @@ function saveDealProducts() {
   // Read term and SIM from inline fields (first product line has them)
   const termEl = document.getElementById('dp_term_0');
   const simEl = document.getElementById('dp_sim_0');
-  l.term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
+  const termRaw2 = termEl ? parseInt(termEl.value) : parseInt(document.getElementById('dp_term').value);
+  l.term = isNaN(termRaw2) ? 24 : termRaw2;
   l.sim = simEl ? simEl.value : document.getElementById('dp_sim').value;
   l.paymentType = _dpPaymentType;
   // Save Cost of Goods per unit (manual entries, independent from product lines)
@@ -7313,14 +7314,14 @@ function saveDealProducts() {
 
 // ── Fleet Profile Report Generator ─────────────────────────────
 const FLEET_BENCHMARKS = {
-  trucks:     { label:'Trucks / Heavy Vehicles',   km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4 },
-  vans:       { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3 },
-  utes:       { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3 },
-  equipment:  { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5 },
-  cars:       { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2 },
-  excavators: { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5 },
-  trailers:   { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0 },
-  refrigerated:{ label:'Refrigerated Vehicles',     km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4 }
+  trucks:     { label:'Trucks / Heavy Vehicles',   km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8 },
+  vans:       { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8, idleHrsDay: 1.5, afterHrsPct: 10 },
+  utes:       { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8, idleHrsDay: 1.5, afterHrsPct: 12 },
+  equipment:  { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6, idleHrsDay: 3.0, afterHrsPct: 5 },
+  cars:       { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8, idleHrsDay: 1.0, afterHrsPct: 15 },
+  excavators: { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6, idleHrsDay: 3.5, afterHrsPct: 3 },
+  trailers:   { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0, idleHrsDay: 0, afterHrsPct: 5 },
+  refrigerated:{ label:'Refrigerated Vehicles',     km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 6 }
 };
 let _fpSegments = [];
 let _fpSegId = 0;
@@ -7332,7 +7333,7 @@ function _autoRecalcProspectCosts() {
 function addFleetSegment(type) {
   type = type || 'trucks';
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, selected: true };
+  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, selected: true };
   _fpSegments.push(seg);
   renderFleetSegments();
   renderCalcAssetChips();
@@ -7348,7 +7349,7 @@ function updateFleetSegType(id, type) {
   const seg = _fpSegments.find(s => s.id === id);
   if (!seg) return;
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle;
+  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8;
   renderFleetSegments();
   renderCalcAssetChips();
   _autoRecalcProspectCosts();
@@ -7373,32 +7374,115 @@ function toggleCalcAsset(calcKey, segId) {
   _autoRecalcProspectCosts();
 }
 function renderCalcAssetChips() {
-  var calcs = [
-    { key: 'calcSlip', containerId: 'pfp_slipAssets', color: '#0098d4', label: 'Assets for this calculator:' },
-    { key: 'calcIdle', containerId: 'pfp_idleAssets', color: '#d97706', label: 'Assets for this calculator:' },
-    { key: 'calcAH',   containerId: 'pfp_ahAssets',   color: '#dc2626', label: 'Assets for this calculator:' }
-  ];
-  calcs.forEach(function(calc) {
-    var container = document.getElementById(calc.containerId);
-    if (!container) return;
-    if (_fpSegments.length === 0) { container.innerHTML = ''; return; }
-    var selectedSegs = _fpSegments.filter(function(s) { return s.selected !== false; });
-    if (selectedSegs.length === 0) { container.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; return; }
-    var html = '<span style="font-size:8px;color:#666;margin-right:4px;line-height:22px">' + calc.label + '</span>';
-    selectedSegs.forEach(function(seg) {
-      var active = seg[calc.key] !== false;
-      var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
-      var shortLabel = label.split('/')[0].trim();
-      html += '<button onclick="toggleCalcAsset(\'' + calc.key + '\',' + seg.id + ')" style="' +
-        'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
-        'border:1px solid ' + (active ? calc.color : '#333') + ';' +
-        'color:' + (active ? calc.color : '#555') + ';' +
-        'background:' + (active ? 'rgba(' + (calc.color === '#0098d4' ? '0,152,212' : calc.color === '#d97706' ? '217,119,6' : '220,38,38') + ',.1)' : '#111') + ';' +
-        'cursor:pointer;font-family:inherit;transition:all .15s' +
-        '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>';
-    });
-    container.innerHTML = html;
-  });
+  var selectedSegs = _fpSegments.filter(function(s) { return s.selected !== false; });
+
+  // ── Slippage: asset rows with editable working hours per asset ──
+  var slipContainer = document.getElementById('pfp_slipAssets');
+  if (slipContainer) {
+    if (_fpSegments.length === 0) { slipContainer.innerHTML = ''; }
+    else if (selectedSegs.length === 0) { slipContainer.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; }
+    else {
+      var shtml = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select assets &amp; set working hours per type:</div>';
+      selectedSegs.forEach(function(seg) {
+        var active = seg.calcSlip !== false;
+        var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
+        var shortLabel = label.split('/')[0].trim();
+        var wh = seg.workHrs != null ? seg.workHrs : 8;
+        shtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+          '<button onclick="toggleCalcAsset(\'calcSlip\',' + seg.id + ')" style="' +
+            'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
+            'border:1px solid ' + (active ? '#0098d4' : '#333') + ';' +
+            'color:' + (active ? '#0098d4' : '#555') + ';' +
+            'background:' + (active ? 'rgba(0,152,212,.1)' : '#111') + ';' +
+            'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
+          '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
+          (active ? '<span style="font-size:8px;color:#0098d4">Hrs/Day:</span>' +
+            '<input type="number" value="' + wh + '" min="0" max="24" step="0.5" ' +
+            'onchange="updateSegWorkHrs(' + seg.id + ',this.value)" ' +
+            'oninput="updateSegWorkHrs(' + seg.id + ',this.value)" ' +
+            'style="width:50px;padding:3px;background:#111;border:1px solid #0098d4;color:#0098d4;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
+          '</div>';
+      });
+      slipContainer.innerHTML = shtml;
+    }
+  }
+
+  // ── Idle Time: asset rows with editable idle hrs/day per asset ──
+  var idleContainer = document.getElementById('pfp_idleAssets');
+  if (idleContainer) {
+    if (_fpSegments.length === 0) { idleContainer.innerHTML = ''; }
+    else if (selectedSegs.length === 0) { idleContainer.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; }
+    else {
+      var ihtml = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select assets &amp; set idle hours per type:</div>';
+      selectedSegs.forEach(function(seg) {
+        var active = seg.calcIdle !== false;
+        var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
+        var shortLabel = label.split('/')[0].trim();
+        var ih = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
+        ihtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+          '<button onclick="toggleCalcAsset(\'calcIdle\',' + seg.id + ')" style="' +
+            'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
+            'border:1px solid ' + (active ? '#d97706' : '#333') + ';' +
+            'color:' + (active ? '#d97706' : '#555') + ';' +
+            'background:' + (active ? 'rgba(217,119,6,.1)' : '#111') + ';' +
+            'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
+          '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
+          (active ? '<span style="font-size:8px;color:#d97706">Idle Hrs/Day:</span>' +
+            '<input type="number" value="' + ih + '" min="0" max="10" step="0.5" ' +
+            'onchange="updateSegIdleHrs(' + seg.id + ',this.value)" ' +
+            'oninput="updateSegIdleHrs(' + seg.id + ',this.value)" ' +
+            'style="width:50px;padding:3px;background:#111;border:1px solid #d97706;color:#d97706;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
+          '</div>';
+      });
+      idleContainer.innerHTML = ihtml;
+    }
+  }
+
+  // ── After-Hours: asset rows with editable after-hours % per asset ──
+  var ahContainer = document.getElementById('pfp_ahAssets');
+  if (ahContainer) {
+    if (_fpSegments.length === 0) { ahContainer.innerHTML = ''; }
+    else if (selectedSegs.length === 0) { ahContainer.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; }
+    else {
+      var ahtml = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select assets &amp; set after-hours % per type:</div>';
+      selectedSegs.forEach(function(seg) {
+        var active = seg.calcAH !== false;
+        var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
+        var shortLabel = label.split('/')[0].trim();
+        var ap = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
+        ahtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+          '<button onclick="toggleCalcAsset(\'calcAH\',' + seg.id + ')" style="' +
+            'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
+            'border:1px solid ' + (active ? '#dc2626' : '#333') + ';' +
+            'color:' + (active ? '#dc2626' : '#555') + ';' +
+            'background:' + (active ? 'rgba(220,38,38,.1)' : '#111') + ';' +
+            'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
+          '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
+          (active ? '<span style="font-size:8px;color:#dc2626">After-Hrs %:</span>' +
+            '<input type="number" value="' + ap + '" min="0" max="50" step="1" ' +
+            'onchange="updateSegAfterHrsPct(' + seg.id + ',this.value)" ' +
+            'oninput="updateSegAfterHrsPct(' + seg.id + ',this.value)" ' +
+            'style="width:50px;padding:3px;background:#111;border:1px solid #dc2626;color:#dc2626;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
+          '</div>';
+      });
+      ahContainer.innerHTML = ahtml;
+    }
+  }
+}
+function updateSegWorkHrs(segId, val) {
+  var seg = _fpSegments.find(function(s) { return s.id === segId; });
+  if (seg) seg.workHrs = parseFloat(val) || 0;
+  _autoRecalcProspectCosts();
+}
+function updateSegIdleHrs(segId, val) {
+  var seg = _fpSegments.find(function(s) { return s.id === segId; });
+  if (seg) seg.idleHrsDay = parseFloat(val) || 0;
+  _autoRecalcProspectCosts();
+}
+function updateSegAfterHrsPct(segId, val) {
+  var seg = _fpSegments.find(function(s) { return s.id === segId; });
+  if (seg) seg.afterHrsPct = parseFloat(val) || 0;
+  _autoRecalcProspectCosts();
 }
 function updateFleetSegVal(id, field, val) {
   const seg = _fpSegments.find(s => s.id === id);
@@ -7450,44 +7534,43 @@ function generateFleetReport() {
 
   const fuelPrice = parseFloat((document.getElementById('fp_fuelPrice') || document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
   const fraudPct = parseFloat((document.getElementById('fp_fraudPct') || document.getElementById('pfp_fraudPct') || {}).value) || 3;
-  const workHrs = parseFloat((document.getElementById('pfp_workHrs') || {}).value) || 8;
   const slipPct = parseFloat((document.getElementById('pfp_slipPct') || {}).value) || 5;
-  const idleHrs = parseFloat((document.getElementById('pfp_idleHrs') || {}).value) || 1.5;
   const idleBurnRate = parseFloat((document.getElementById('pfp_idleBurnRate') || {}).value) || 3.5;
-  const afterHrsPct = parseFloat((document.getElementById('pfp_afterHrsPct') || {}).value) || 8;
   const wearCostKm = parseFloat((document.getElementById('pfp_wearCostKm') || {}).value) || 0.12;
   const subPrice = l.subPrice || 29.95;
   const _reportSegments = _fpSegments.filter(seg => seg.selected !== false);
   const totalUnits = _reportSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
   const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
 
-  // ── PER-SEGMENT CALCULATIONS — Working Hours Model with per-calc asset selection ──
+  // ── PER-SEGMENT CALCULATIONS — Per-asset working hours, idle hours, after-hours % ──
   let annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
-  const wastedMinsPerVehicle = workHrs * 60 * (slipPct / 100);
-  const wastedHrsPerVehicle = wastedMinsPerVehicle / 60;
   const segResults = _reportSegments.map(seg => {
     const q = seg.qty || 0;
     const weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
     const aFuel = weeklyFuel * 52;
-    // Per-calculator asset selection: only include if segment opted in
     const inSlip = seg.calcSlip !== false;
     const inIdle = seg.calcIdle !== false;
     const inAH = seg.calcAH !== false;
-    // Slippage: working hours model (only if this asset selected for slippage calc)
-    const avgSpeedKmHr = (seg.km / 5) / workHrs;
+    // Per-asset values
+    const segWorkHrs = seg.workHrs != null ? seg.workHrs : 8;
+    const segIdleHrs = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
+    const segAhPct = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
+    // Slippage: per-asset working hours model
+    const wastedHrs = segWorkHrs * (slipPct / 100);
+    const avgSpeedKmHr = segWorkHrs > 0 ? (seg.km / 5) / segWorkHrs : 0;
     const fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
-    const slip = inSlip ? wastedHrsPerVehicle * fuelPerHr * fuelPrice * q * 260 : 0;
-    // Idle: direct burn rate model (only if this asset selected for idle calc)
-    const idle = inIdle ? q * idleHrs * idleBurnRate * fuelPrice * 260 : 0;
+    const slip = inSlip ? wastedHrs * fuelPerHr * fuelPrice * q * 260 : 0;
+    // Idle: per-asset idle hours
+    const idle = inIdle ? q * segIdleHrs * idleBurnRate * fuelPrice * 260 : 0;
     const ins = q * seg.insurance;
-    // After-hours (only if this asset selected for AH calc)
-    const ahKm = inAH ? q * (afterHrsPct / 100) * seg.km * 52 : 0;
+    // After-hours: per-asset %
+    const ahKm = inAH ? q * (segAhPct / 100) * seg.km * 52 : 0;
     const ahCost = ahKm * (seg.consumption / 100) * fuelPrice;
-    const exKm = inAH ? q * seg.km * (afterHrsPct / 100) * 52 : 0;
+    const exKm = inAH ? q * seg.km * (segAhPct / 100) * 52 : 0;
     const wear = exKm * wearCostKm;
     const fraud = aFuel * (fraudPct / 100);
     annualSlippage += slip; annualIdleWaste += idle; totalInsurance += ins; afterHoursCost += ahCost; annualWear += wear; annualFraud += fraud;
-    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, aFuel, slip, idle, ins, ahCost, wear, fraud, inSlip, inIdle, inAH };
+    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, aFuel, slip, idle, ins, ahCost, wear, fraud, inSlip, inIdle, inAH, workHrs: segWorkHrs, idleHrsDay: segIdleHrs, afterHrsPct: segAhPct };
   });
 
   const annualFuelSaving = annualSlippage * 0.60;
@@ -7875,24 +7958,11 @@ function openProspectFleetProfile(prospectId) {
   }
   renderFleetSegments();
   renderCalcAssetChips();
-  // Fuel slippage inputs — 3-calculator model
+  // Global calculator inputs
   document.getElementById('pfp_fuelPrice').value = p.fuelPrice || 2.15;
-  document.getElementById('pfp_workHrs').value = p.workHrs != null ? p.workHrs : 8;
   document.getElementById('pfp_slipPct').value = p.slipPct != null ? p.slipPct : 5;
-  document.getElementById('pfp_idleHrs').value = p.idleHrs != null ? p.idleHrs : 1.5;
   document.getElementById('pfp_idleBurnRate').value = p.idleBurnRate != null ? p.idleBurnRate : 3.5;
-  document.getElementById('pfp_afterHrsPct').value = p.afterHrsPct != null ? p.afterHrsPct : 8;
   document.getElementById('pfp_wearCostKm').value = p.wearCostKm != null ? p.wearCostKm : 0.12;
-  // Hidden cost & fraud inputs — restore saved values per tab
-  if (p.hcData) {
-    if (p.hcData.hire) { var h = p.hcData.hire; document.getElementById('pfp_hc_hire_machines').value = h.machines||5; document.getElementById('pfp_hc_hire_rate').value = h.rate||450; document.getElementById('pfp_hc_hire_fraudDays').value = h.fraudDays||3; document.getElementById('pfp_hc_hire_fuel').value = h.fuel||120; document.getElementById('pfp_hc_hire_wear').value = h.wear||60; document.getElementById('pfp_hc_hire_gps').value = h.gps||34.95; }
-    if (p.hcData.idle) { var d = p.hcData.idle; document.getElementById('pfp_hc_idle_trucks').value = d.trucks||10; document.getElementById('pfp_hc_idle_mins').value = d.mins||45; document.getElementById('pfp_hc_idle_burn').value = d.burn||3.5; document.getElementById('pfp_hc_idle_fuelPrice').value = d.fuelPrice||2.15; document.getElementById('pfp_hc_idle_days').value = d.days||22; document.getElementById('pfp_hc_idle_reduction').value = d.reduction||45; }
-    if (p.hcData.service) { var s = p.hcData.service; document.getElementById('pfp_hc_svc_vehicles').value = s.vehicles||6; document.getElementById('pfp_hc_svc_wastedHrs').value = s.wastedHrs||4; document.getElementById('pfp_hc_svc_labourRate').value = s.labourRate||45; document.getElementById('pfp_hc_svc_km').value = s.km||80; document.getElementById('pfp_hc_svc_costKm').value = s.costKm||0.72; document.getElementById('pfp_hc_svc_afterHrs').value = s.afterHrs||5; }
-  }
-  // Restore HC tab
-  _pfpHCTab = (p.hcTab) || 'hire';
-  var tabBtn = document.querySelectorAll('.pfp-hc-tab')[_pfpHCTab === 'idle' ? 1 : _pfpHCTab === 'service' ? 2 : 0];
-  if (tabBtn) setPfpHCTab(_pfpHCTab, tabBtn);
   document.getElementById('prospectFleetModal').style.display = 'flex';
   recalcProspectCosts();
 }
@@ -7905,19 +7975,9 @@ function saveProspectFleet() {
   if (!p) return;
   p.fleetSegments = _fpSegments.slice();
   p.fuelPrice = parseFloat(document.getElementById('pfp_fuelPrice').value) || 2.15;
-  p.workHrs = parseFloat(document.getElementById('pfp_workHrs').value) || 8;
   p.slipPct = parseFloat(document.getElementById('pfp_slipPct').value) || 5;
-  p.idleHrs = parseFloat(document.getElementById('pfp_idleHrs').value) || 1.5;
   p.idleBurnRate = parseFloat(document.getElementById('pfp_idleBurnRate').value) || 3.5;
-  p.afterHrsPct = parseFloat(document.getElementById('pfp_afterHrsPct').value) || 8;
   p.wearCostKm = parseFloat(document.getElementById('pfp_wearCostKm').value) || 0.12;
-  // Save hidden cost & fraud calculator data
-  p.hcTab = _pfpHCTab;
-  p.hcData = {
-    hire: { machines: parseFloat(document.getElementById('pfp_hc_hire_machines').value)||5, rate: parseFloat(document.getElementById('pfp_hc_hire_rate').value)||450, fraudDays: parseFloat(document.getElementById('pfp_hc_hire_fraudDays').value)||3, fuel: parseFloat(document.getElementById('pfp_hc_hire_fuel').value)||120, wear: parseFloat(document.getElementById('pfp_hc_hire_wear').value)||60, gps: parseFloat(document.getElementById('pfp_hc_hire_gps').value)||34.95 },
-    idle: { trucks: parseFloat(document.getElementById('pfp_hc_idle_trucks').value)||10, mins: parseFloat(document.getElementById('pfp_hc_idle_mins').value)||45, burn: parseFloat(document.getElementById('pfp_hc_idle_burn').value)||3.5, fuelPrice: parseFloat(document.getElementById('pfp_hc_idle_fuelPrice').value)||2.15, days: parseFloat(document.getElementById('pfp_hc_idle_days').value)||22, reduction: parseFloat(document.getElementById('pfp_hc_idle_reduction').value)||45 },
-    service: { vehicles: parseFloat(document.getElementById('pfp_hc_svc_vehicles').value)||6, wastedHrs: parseFloat(document.getElementById('pfp_hc_svc_wastedHrs').value)||4, labourRate: parseFloat(document.getElementById('pfp_hc_svc_labourRate').value)||45, km: parseFloat(document.getElementById('pfp_hc_svc_km').value)||80, costKm: parseFloat(document.getElementById('pfp_hc_svc_costKm').value)||0.72, afterHrs: parseFloat(document.getElementById('pfp_hc_svc_afterHrs').value)||5 }
-  };
   // Update fleet count from segments
   p.fleet = _fpSegments.reduce(function(s, seg) { return s + (seg.qty || 0); }, 0);
   p.trackers = p.fleet;
@@ -7933,18 +7993,9 @@ function generateFleetReportFromProspect() {
   // Save fleet data to prospect first
   p.fleetSegments = _fpSegments.slice();
   p.fuelPrice = parseFloat(document.getElementById('pfp_fuelPrice').value) || 2.15;
-  p.workHrs = parseFloat(document.getElementById('pfp_workHrs').value) || 8;
   p.slipPct = parseFloat(document.getElementById('pfp_slipPct').value) || 5;
-  p.idleHrs = parseFloat(document.getElementById('pfp_idleHrs').value) || 1.5;
   p.idleBurnRate = parseFloat(document.getElementById('pfp_idleBurnRate').value) || 3.5;
-  p.afterHrsPct = parseFloat(document.getElementById('pfp_afterHrsPct').value) || 8;
   p.wearCostKm = parseFloat(document.getElementById('pfp_wearCostKm').value) || 0.12;
-  p.hcTab = _pfpHCTab;
-  p.hcData = {
-    hire: { machines: parseFloat(document.getElementById('pfp_hc_hire_machines').value)||5, rate: parseFloat(document.getElementById('pfp_hc_hire_rate').value)||450, fraudDays: parseFloat(document.getElementById('pfp_hc_hire_fraudDays').value)||3, fuel: parseFloat(document.getElementById('pfp_hc_hire_fuel').value)||120, wear: parseFloat(document.getElementById('pfp_hc_hire_wear').value)||60, gps: parseFloat(document.getElementById('pfp_hc_hire_gps').value)||34.95 },
-    idle: { trucks: parseFloat(document.getElementById('pfp_hc_idle_trucks').value)||10, mins: parseFloat(document.getElementById('pfp_hc_idle_mins').value)||45, burn: parseFloat(document.getElementById('pfp_hc_idle_burn').value)||3.5, fuelPrice: parseFloat(document.getElementById('pfp_hc_idle_fuelPrice').value)||2.15, days: parseFloat(document.getElementById('pfp_hc_idle_days').value)||22, reduction: parseFloat(document.getElementById('pfp_hc_idle_reduction').value)||45 },
-    service: { vehicles: parseFloat(document.getElementById('pfp_hc_svc_vehicles').value)||6, wastedHrs: parseFloat(document.getElementById('pfp_hc_svc_wastedHrs').value)||4, labourRate: parseFloat(document.getElementById('pfp_hc_svc_labourRate').value)||45, km: parseFloat(document.getElementById('pfp_hc_svc_km').value)||80, costKm: parseFloat(document.getElementById('pfp_hc_svc_costKm').value)||0.72, afterHrs: parseFloat(document.getElementById('pfp_hc_svc_afterHrs').value)||5 }
-  };
   p.fleet = _fpSegments.reduce(function(s, seg) { return s + (seg.qty || 0); }, 0);
   p.trackers = p.fleet;
   // Set up entity context for generateFleetReport
@@ -7977,20 +8028,7 @@ function generateFleetReportFromProspect() {
 }
 
 // ── Prospect Hidden Costs & Fraud Calculator ─────────────────────
-var _pfpHCTab = 'hire';
 
-function setPfpHCTab(tab, btn) {
-  _pfpHCTab = tab;
-  document.querySelectorAll('.pfp-hc-tab').forEach(function(b) {
-    if (b === btn) { b.style.border = '1px solid #0098d4'; b.style.background = 'rgba(0,152,212,.15)'; b.style.color = '#0098d4'; }
-    else { b.style.border = '1px solid #333'; b.style.background = '#111'; b.style.color = '#999'; }
-  });
-  ['hire','idle','service'].forEach(function(t) {
-    var p = document.getElementById('pfp_hcPanel_' + t);
-    if (p) p.style.display = t === tab ? '' : 'none';
-  });
-  recalcProspectCosts();
-}
 
 function recalcProspectCosts() {
   var bd = document.getElementById('pfp_costBreakdown');
@@ -8002,22 +8040,12 @@ function recalcProspectCosts() {
     return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a1a1a"><span style="font-size:11px;color:#999">' + label + '</span><span style="font-size:12px;font-weight:700;color:' + (color||'#0098d4') + '">' + fmt(cost) + '</span></div>';
   };
 
-  // ── 2A. FUEL SLIPPAGE — WORKING HOURS MODEL ──
-  // Model: Working hours per day × slippage % = wasted hours/mins → fuel cost
-  // Reference: Industry avg slippage 3-8% of operational hours (Radius Fleet Data AU, 2024)
+  // ── GLOBAL INPUTS (shared across calculators) ──
   var fuelPrice = parseFloat((document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
-  var workHrs = parseFloat((document.getElementById('pfp_workHrs') || {}).value) || 8;
   var slipPct = parseFloat((document.getElementById('pfp_slipPct') || {}).value) || 5;
-
-  // ── 2B. IDLE TIME ──
-  // Reference: Radius.com AU — idle burn rates: light van 1-1.5 L/hr, medium 2.5-3.5 L/hr,
-  // heavy 3.5-4.5+ L/hr. Trucks idle up to 20% of driving time.
-  var idleHrs = parseFloat((document.getElementById('pfp_idleHrs') || {}).value) || 1.5;
   var idleBurnRate = parseFloat((document.getElementById('pfp_idleBurnRate') || {}).value) || 3.5;
-
-  // ── 2C. AFTER-HOURS USE ──
-  var afterHrsPct = parseFloat((document.getElementById('pfp_afterHrsPct') || {}).value) || 8;
   var wearCostKm = parseFloat((document.getElementById('pfp_wearCostKm') || {}).value) || 0.12;
+  // Per-asset values: workHrs, idleHrsDay, afterHrsPct are read from each segment
 
   var annualSlippage = 0, annualIdleWaste = 0, afterHoursCost = 0, annualWear = 0;
   var totalUnits = 0, totalAnnualFuelSpend = 0;
@@ -8040,41 +8068,44 @@ function recalcProspectCosts() {
     totalAnnualFuelSpend += weeklyFuel * 52;
   });
 
-  // 2A: Slippage — Working Hours model (only selected assets for this calc)
+  // 2A: Slippage — Working Hours model (per-asset workHrs)
   _slipSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     slipUnits += q;
-    var wastedMinsPerVehicle = workHrs * 60 * (slipPct / 100);
+    var segWorkHrs = seg.workHrs != null ? seg.workHrs : 8;
+    var wastedMinsPerVehicle = segWorkHrs * 60 * (slipPct / 100);
     var wastedHrsPerVehicle = wastedMinsPerVehicle / 60;
     totalWastedMinsDay += wastedMinsPerVehicle * q;
-    var avgSpeedKmHr = (seg.km / 5) / workHrs;
+    var avgSpeedKmHr = segWorkHrs > 0 ? (seg.km / 5) / segWorkHrs : 0;
     var fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
     var slipFuelPerVehicleDay = wastedHrsPerVehicle * fuelPerHr * fuelPrice;
     totalSlipFuelDay += slipFuelPerVehicleDay * q;
     annualSlippage += slipFuelPerVehicleDay * q * 260;
   });
 
-  // 2B: Idle Time — direct burn rate model (only selected assets for this calc)
+  // 2B: Idle Time — direct burn rate model (per-asset idleHrsDay)
   _idleSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     idleUnits += q;
-    var idleLitresDay = idleHrs * idleBurnRate;
+    var segIdleHrs = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
+    var idleLitresDay = segIdleHrs * idleBurnRate;
     var idleCostDay = idleLitresDay * fuelPrice;
     totalIdleLitresDay += idleLitresDay * q;
     totalIdleCostDay += idleCostDay * q;
     annualIdleWaste += idleCostDay * q * 260;
   });
 
-  // 2C: After-Hours Use (only selected assets for this calc)
+  // 2C: After-Hours Use (per-asset afterHrsPct)
   _ahSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     ahUnits += q;
-    var ahKmWeek = q * (afterHrsPct / 100) * seg.km;
+    var segAhPct = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
+    var ahKmWeek = q * (segAhPct / 100) * seg.km;
     totalAhKmWeek += ahKmWeek;
     var ahFuelWeek = ahKmWeek * (seg.consumption / 100) * fuelPrice;
     totalAhFuelWeek += ahFuelWeek;
     afterHoursCost += ahFuelWeek * 52;
-    var exKm = q * seg.km * (afterHrsPct / 100) * 52;
+    var exKm = q * seg.km * (segAhPct / 100) * 52;
     annualWear += exKm * wearCostKm;
   });
 
@@ -8089,12 +8120,17 @@ function recalcProspectCosts() {
 
   var slipBd = document.getElementById('pfp_slipBreakdown');
   if (slipBd) {
-    var wMins = slipUnits > 0 ? (workHrs * 60 * (slipPct / 100)) : 0;
-    var wHrs = wMins / 60;
+    var slipDetail = '';
+    _slipSegments.forEach(function(seg) {
+      var sLabel = ((FLEET_BENCHMARKS[seg.type]||{}).label||seg.type).split('/')[0].trim();
+      var sw = seg.workHrs != null ? seg.workHrs : 8;
+      var wm = sw * 60 * (slipPct / 100);
+      slipDetail += '<div style="font-size:10px;color:#aaa">' + sLabel + ': ' + fmtN(sw,1) + ' hrs × ' + fmtN(slipPct,1) + '% = <b style="color:#dc2626">' + fmtN(wm,0) + ' mins</b> wasted/vehicle/day</div>';
+    });
     slipBd.innerHTML =
       '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
       '<div style="font-size:9px;color:#888;margin-bottom:4px">Assets: ' + (slipAssetNames || 'None selected') + ' — <b>' + slipUnits + '</b> vehicles</div>' +
-      '<div>' + fmtN(workHrs,1) + ' working hrs × ' + fmtN(slipPct,1) + '% slippage = <b style="color:#dc2626">' + fmtN(wMins,0) + ' mins</b> (' + fmtN(wHrs,2) + ' hrs) wasted per vehicle per day</div>' +
+      slipDetail +
       '<div>Across <b>' + slipUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalWastedMinsDay,0) + ' mins</b> total wasted daily</div>' +
       '<div>Daily fleet fuel waste: <b style="color:#dc2626">' + fmt(totalSlipFuelDay) + '</b></div>' +
       '<div>Annual fuel slippage loss (260 days): <b style="color:#dc2626">' + fmt(annualSlippage) + '</b></div>' +
@@ -8102,10 +8138,17 @@ function recalcProspectCosts() {
   }
   var idleBd = document.getElementById('pfp_idleBreakdown');
   if (idleBd) {
+    var idleDetail = '';
+    _idleSegments.forEach(function(seg) {
+      var iLabel = ((FLEET_BENCHMARKS[seg.type]||{}).label||seg.type).split('/')[0].trim();
+      var sih = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
+      var litD = sih * idleBurnRate;
+      idleDetail += '<div style="font-size:10px;color:#aaa">' + iLabel + ': ' + fmtN(sih,1) + ' idle hrs × ' + fmtN(idleBurnRate,1) + ' L/hr = <b style="color:#dc2626">' + fmtN(litD,1) + ' L</b> wasted/vehicle/day</div>';
+    });
     idleBd.innerHTML =
       '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
       '<div style="font-size:9px;color:#888;margin-bottom:4px">Assets: ' + (idleAssetNames || 'None selected') + ' — <b>' + idleUnits + '</b> vehicles</div>' +
-      '<div>' + fmtN(idleHrs,1) + ' idle hrs/day × ' + fmtN(idleBurnRate,1) + ' L/hr = <b style="color:#dc2626">' + fmtN(idleHrs * idleBurnRate,1) + ' litres</b> wasted per vehicle per day</div>' +
+      idleDetail +
       '<div>Across <b>' + idleUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalIdleLitresDay,1) + ' litres</b> wasted daily</div>' +
       '<div>Daily idle cost @ $' + fmtN(fuelPrice,2) + '/L: <b style="color:#dc2626">' + fmt(totalIdleCostDay) + '</b></div>' +
       '<div>Annual idle waste (260 days): <b style="color:#dc2626">' + fmt(annualIdleWaste) + '</b></div>' +
@@ -8113,72 +8156,27 @@ function recalcProspectCosts() {
   }
   var ahBd = document.getElementById('pfp_afterHrsBreakdown');
   if (ahBd) {
+    var ahDetail = '';
+    _ahSegments.forEach(function(seg) {
+      var aLabel = ((FLEET_BENCHMARKS[seg.type]||{}).label||seg.type).split('/')[0].trim();
+      var sap = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
+      var akm = (seg.qty||0) * (sap / 100) * seg.km;
+      ahDetail += '<div style="font-size:10px;color:#aaa">' + aLabel + ': ' + fmtN(sap,0) + '% of ' + seg.km + ' km/wk × ' + (seg.qty||0) + ' = <b style="color:#dc2626">' + fmtN(akm,0) + ' km/wk</b> after-hours</div>';
+    });
     ahBd.innerHTML =
       '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
       '<div style="font-size:9px;color:#888;margin-bottom:4px">Assets: ' + (ahAssetNames || 'None selected') + ' — <b>' + ahUnits + '</b> vehicles</div>' +
-      '<div>' + afterHrsPct + '% of weekly km driven after hours = <b style="color:#dc2626">' + fmtN(totalAhKmWeek,0) + ' km/week</b></div>' +
+      ahDetail +
+      '<div>Total after-hours km/week: <b style="color:#dc2626">' + fmtN(totalAhKmWeek,0) + ' km</b></div>' +
       '<div>After-hours fuel cost/week: <b style="color:#dc2626">' + fmt(totalAhFuelWeek) + '</b></div>' +
       '<div>Annual after-hours fuel: <b style="color:#dc2626">' + fmt(afterHoursCost) + '</b></div>' +
       '<div>Excess wear @ $' + wearCostKm.toFixed(2) + '/km: <b style="color:#dc2626">' + fmt(annualWear) + '</b> /year</div>' +
       '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> After-hours fleet use typically 5-12% of total mileage — industry benchmarks (AUS Fleet Managers Assoc.).</div>';
   }
 
-  // ── HIDDEN COST & FRAUD CALCULATOR INPUTS ──
-  var hcMonthlyLoss = 0, hcAnnualLoss = 0, hcGpsSaves = 0, hcGpsCost = 0;
-  var hcLabel = '';
-
-  if (_pfpHCTab === 'hire') {
-    var machines = parseFloat((document.getElementById('pfp_hc_hire_machines') || {}).value) || 5;
-    var rate = parseFloat((document.getElementById('pfp_hc_hire_rate') || {}).value) || 450;
-    var fraudDays = parseFloat((document.getElementById('pfp_hc_hire_fraudDays') || {}).value) || 3;
-    var fuelDay = parseFloat((document.getElementById('pfp_hc_hire_fuel') || {}).value) || 120;
-    var wearDay = parseFloat((document.getElementById('pfp_hc_hire_wear') || {}).value) || 60;
-    var gpsMo = parseFloat((document.getElementById('pfp_hc_hire_gps') || {}).value) || 34.95;
-    var lostRevenue = machines * fraudDays * rate;
-    var hiddenFuel = machines * fraudDays * fuelDay;
-    var hiddenWear = machines * fraudDays * wearDay;
-    hcMonthlyLoss = lostRevenue + hiddenFuel + hiddenWear;
-    hcAnnualLoss = hcMonthlyLoss * 12;
-    hcGpsCost = machines * gpsMo * 12;
-    hcGpsSaves = hcAnnualLoss * 0.85;
-    hcLabel = 'Equipment Hire Fraud';
-  } else if (_pfpHCTab === 'idle') {
-    var trucks = parseFloat((document.getElementById('pfp_hc_idle_trucks') || {}).value) || 10;
-    var idleMins = parseFloat((document.getElementById('pfp_hc_idle_mins') || {}).value) || 45;
-    var burnRate = parseFloat((document.getElementById('pfp_hc_idle_burn') || {}).value) || 3.5;
-    var idleFuelPrice = parseFloat((document.getElementById('pfp_hc_idle_fuelPrice') || {}).value) || 2.15;
-    var workDays = parseFloat((document.getElementById('pfp_hc_idle_days') || {}).value) || 22;
-    var reduction = parseFloat((document.getElementById('pfp_hc_idle_reduction') || {}).value) || 45;
-    var idleHrsDay = idleMins / 60;
-    var litresPerTruckDay = idleHrsDay * burnRate;
-    var fuelCostPerTruckDay = litresPerTruckDay * idleFuelPrice;
-    hcMonthlyLoss = fuelCostPerTruckDay * trucks * workDays;
-    hcAnnualLoss = hcMonthlyLoss * 12;
-    hcGpsSaves = hcAnnualLoss * (reduction / 100);
-    hcGpsCost = trucks * 34.95 * 12;
-    hcLabel = 'Truck Idle Time';
-  } else if (_pfpHCTab === 'service') {
-    var vehicles = parseFloat((document.getElementById('pfp_hc_svc_vehicles') || {}).value) || 6;
-    var wastedHrs = parseFloat((document.getElementById('pfp_hc_svc_wastedHrs') || {}).value) || 4;
-    var labourRate = parseFloat((document.getElementById('pfp_hc_svc_labourRate') || {}).value) || 45;
-    var unauthKm = parseFloat((document.getElementById('pfp_hc_svc_km') || {}).value) || 80;
-    var costKm = parseFloat((document.getElementById('pfp_hc_svc_costKm') || {}).value) || 0.72;
-    var ahTrips = parseFloat((document.getElementById('pfp_hc_svc_afterHrs') || {}).value) || 5;
-    var wastedLabourWeek = vehicles * wastedHrs * labourRate;
-    var unauthKmCostWeek = vehicles * unauthKm * costKm;
-    var afterHrsCostWeek = ahTrips * 25 * costKm;
-    var weeklyLoss = wastedLabourWeek + unauthKmCostWeek + afterHrsCostWeek;
-    hcMonthlyLoss = weeklyLoss * 4.33;
-    hcAnnualLoss = hcMonthlyLoss * 12;
-    hcGpsSaves = hcAnnualLoss * 0.70;
-    hcGpsCost = vehicles * 29.95 * 12;
-    hcLabel = 'Service Fleet Accountability';
-  }
-
   // ── COMBINED TOTALS ──
-  var totalAnnualLoss = fuelSlippageLoss + hcAnnualLoss;
-  var fuelSlippageSaving = (annualSlippage * 0.60) + (annualIdleWaste * 0.50) + (afterHoursCost * 0.90) + (annualWear * 0.50);
-  var totalAnnualSaving = fuelSlippageSaving + hcGpsSaves;
+  var totalAnnualLoss = fuelSlippageLoss;
+  var totalAnnualSaving = (annualSlippage * 0.60) + (annualIdleWaste * 0.50) + (afterHoursCost * 0.90) + (annualWear * 0.50);
 
   // ── BUILD SUMMARY HTML ──
   var selCount = _selectedSegments.length;
@@ -8186,20 +8184,14 @@ function recalcProspectCosts() {
   var selLabel = selCount === totalCount ? (totalCount + ' categor' + (totalCount===1?'y':'ies')) : (selCount + ' of ' + totalCount + ' selected');
   var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:10px;color:#666">' + totalUnits + ' vehicles across ' + selLabel + '</div><div style="font-size:10px;color:#5a6675">Annual fuel spend: <b style="color:#0098d4">' + fmt(totalAnnualFuelSpend) + '</b></div></div>';
 
-  // Fuel & Fleet Losses — 3 calculators
+  // Fleet Losses — 3 calculators
   html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fleet Losses (Annual)</div>';
-  html += row('1. Fuel Slippage — ' + slipPct + '% of ' + workHrs + 'hr working day', annualSlippage, '#dc2626');
-  html += row('2. Idle Time — ' + idleHrs + ' hrs/day @ ' + idleBurnRate + ' L/hr', annualIdleWaste, '#dc2626');
-  html += row('3. After-Hours Use — ' + afterHrsPct + '% of km', afterHoursCost, '#dc2626');
+  html += row('1. Fuel Slippage — ' + slipPct + '% slippage (per-asset hrs)', annualSlippage, '#dc2626');
+  html += row('2. Idle Time — per-asset idle hrs @ ' + idleBurnRate + ' L/hr', annualIdleWaste, '#dc2626');
+  html += row('3. After-Hours Use — per-asset %', afterHoursCost, '#dc2626');
   html += row('Excess Wear & Maintenance ($' + wearCostKm.toFixed(2) + '/km)', annualWear, '#dc2626');
-  html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a1a1a"><span style="font-size:11px;font-weight:700;color:#dc2626">Subtotal — Fleet Losses</span><span style="font-size:12px;font-weight:800;color:#dc2626">' + fmt(fuelSlippageLoss) + '</span></div>';
 
-  // Hidden Cost & Fraud losses
-  html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">Hidden Cost &amp; Fraud — ' + hcLabel + ' (Annual)</div>';
-  html += row(hcLabel + ' — Monthly Loss', hcMonthlyLoss, '#dc2626');
-  html += row(hcLabel + ' — Annual Loss', hcAnnualLoss, '#dc2626');
-
-  // TOTAL combined
+  // TOTAL
   html += '<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid #dc2626"><span style="font-size:13px;font-weight:800;color:#dc2626">TOTAL ANNUAL LOSS</span><span style="font-size:15px;font-weight:800;color:#dc2626">' + fmt(totalAnnualLoss) + '</span></div>';
 
   // GPS Recovery
@@ -8208,14 +8200,7 @@ function recalcProspectCosts() {
   html += row('2. Idle Time Reduction (50%)', annualIdleWaste * 0.50, '#0098d4');
   html += row('3. After-Hours Eliminated (90%)', afterHoursCost * 0.90, '#0098d4');
   html += row('Reduced Wear & Maintenance (50%)', annualWear * 0.50, '#0098d4');
-  html += row(hcLabel + ' — GPS Recovery', hcGpsSaves, '#0098d4');
   html += '<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid #0098d4"><span style="font-size:13px;font-weight:800;color:#0098d4">TOTAL ANNUAL SAVING</span><span style="font-size:15px;font-weight:800;color:#0098d4">' + fmt(totalAnnualSaving) + '</span></div>';
-
-  // ROI line
-  if (hcGpsCost > 0) {
-    var roi = Math.round(((totalAnnualSaving - hcGpsCost) / hcGpsCost) * 100);
-    html += '<div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:2px"><span style="font-size:11px;color:#666">GPS Investment / ROI</span><span style="font-size:12px;font-weight:700;color:#0098d4">' + fmt(hcGpsCost) + ' / <b>' + roi + '%</b> ROI</span></div>';
-  }
 
   bd.innerHTML = html;
 }
@@ -8793,14 +8778,10 @@ function doLogin() {
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">How many hours per day is each asset running? Slippage % shows how much of that time is wasted — unnecessary detours, extended routes, unauthorised use.</div>
         <div id="pfp_slipAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div>
             <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
             <input type="number" id="pfp_fuelPrice" value="2.15" min="0.5" step="0.05" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Working Hrs/Day</label>
-            <input type="number" id="pfp_workHrs" value="8" min="1" max="24" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
           <div>
             <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Slippage %</label>
@@ -8818,14 +8799,10 @@ function doLogin() {
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Time spent with the engine running but not moving — waiting, breaks, left running. Burns fuel and adds engine hours for nothing.</div>
         <div id="pfp_idleAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div>
-            <label style="font-size:8px;color:#d97706;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Idle Hrs/Day (per asset)</label>
-            <input type="number" id="pfp_idleHrs" value="1.5" min="0" max="10" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#d97706;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Avg Burn Rate (L/hr idle)</label>
-            <input type="number" id="pfp_idleBurnRate" value="3.5" min="0.5" max="20" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <input type="number" id="pfp_idleBurnRate" value="3.5" min="0.5" max="20" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;max-width:200px">
           </div>
         </div>
         <div id="pfp_idleBreakdown" style="background:#111;border:1px solid #222;padding:10px;margin-top:8px;font-size:11px;color:#CCC;line-height:1.8"></div>
@@ -8839,108 +8816,21 @@ function doLogin() {
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Vehicles used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk.</div>
         <div id="pfp_ahAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div>
-            <label style="font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">After-Hours Use %</label>
-            <input type="number" id="pfp_afterHrsPct" value="8" min="0" max="50" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-          </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Wear Cost $/km (excess)</label>
-            <input type="number" id="pfp_wearCostKm" value="0.12" min="0" max="1" step="0.01" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <input type="number" id="pfp_wearCostKm" value="0.12" min="0" max="1" step="0.01" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;max-width:200px">
           </div>
         </div>
         <div id="pfp_afterHrsBreakdown" style="background:#111;border:1px solid #222;padding:10px;margin-top:8px;font-size:11px;color:#CCC;line-height:1.8"></div>
       </div>
 
-      <!-- ── 3. HIDDEN COST & FRAUD CALCULATOR ── -->
-      <div style="background:#080808;border:1px solid rgba(0,152,212,.25);padding:14px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <svg width="14" height="14" fill="none" stroke="#0098d4" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-          <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">Hidden Cost &amp; Fraud Calculator</div>
-        </div>
-        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Select a scenario — inputs change based on fleet type. Results feed into the summary below.</div>
-
-        <!-- Scenario tabs -->
-        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="pfp_hcTabs">
-          <button onclick="setPfpHCTab('hire',this)" class="pfp-hc-tab" style="padding:4px 10px;font-size:9px;font-weight:700;border:1px solid #0098d4;background:rgba(0,152,212,.15);color:#0098d4;cursor:pointer;font-family:inherit;letter-spacing:.3px">Equipment Hire</button>
-          <button onclick="setPfpHCTab('idle',this)" class="pfp-hc-tab" style="padding:4px 10px;font-size:9px;font-weight:700;border:1px solid #333;background:#111;color:#999;cursor:pointer;font-family:inherit;letter-spacing:.3px">Truck Idle Time</button>
-          <button onclick="setPfpHCTab('service',this)" class="pfp-hc-tab" style="padding:4px 10px;font-size:9px;font-weight:700;border:1px solid #333;background:#111;color:#999;cursor:pointer;font-family:inherit;letter-spacing:.3px">Service Fleet</button>
-        </div>
-
-        <!-- Equipment Hire Fraud -->
-        <div id="pfp_hcPanel_hire">
-          <div style="font-size:9px;color:#CCC;line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.12)"><b style="color:#0098d4">The problem:</b> Customers hiring machinery lie about usage days — they use it for 5 days but claim 3. You lose hire revenue AND cop extra fuel, wear and maintenance.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Machines on Hire</label>
-              <input type="number" id="pfp_hc_hire_machines" value="5" min="1" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Daily Hire Rate $</label>
-              <input type="number" id="pfp_hc_hire_rate" value="450" min="1" step="10" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Unreported Days/Mo</label>
-              <input type="number" id="pfp_hc_hire_fraudDays" value="3" min="0" max="20" step="1" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Fuel Cost/Day $</label>
-              <input type="number" id="pfp_hc_hire_fuel" value="120" min="0" step="10" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Wear & Maint/Day $</label>
-              <input type="number" id="pfp_hc_hire_wear" value="60" min="0" step="10" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">GPS Cost/Machine/Mo</label>
-              <input type="number" id="pfp_hc_hire_gps" value="34.95" min="0" step="0.05" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-          </div>
-        </div>
-
-        <!-- Truck Idle Fraud — accountability angle (fuel cost from 2B above, this is about the fraud/misuse dimension) -->
-        <div id="pfp_hcPanel_idle" style="display:none">
-          <div style="font-size:9px;color:#CCC;line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.12)"><b style="color:#0098d4">The problem:</b> Drivers deliberately leave engines idling — personal comfort, avoiding restarts, or inflating engine hours. This section calculates the <b>accountability gap</b> beyond the base idle cost (see calculator 2 above).</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Number of Trucks</label>
-              <input type="number" id="pfp_hc_idle_trucks" value="10" min="1" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Avg Idle Mins/Day</label>
-              <input type="number" id="pfp_hc_idle_mins" value="45" min="0" max="480" step="5" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Fuel Burn Idle (L/hr)</label>
-              <input type="number" id="pfp_hc_idle_burn" value="3.5" min="0.5" max="15" step="0.5" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Fuel Price $/L</label>
-              <input type="number" id="pfp_hc_idle_fuelPrice" value="2.15" min="0.5" step="0.05" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Working Days/Month</label>
-              <input type="number" id="pfp_hc_idle_days" value="22" min="1" max="31" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">GPS Reduction %</label>
-              <select id="pfp_hc_idle_reduction" onchange="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit">
-                <option value="30">Conservative 30%</option>
-                <option value="45" selected>Typical 45%</option>
-                <option value="60">Optimistic 60%</option>
-              </select></div>
-          </div>
-        </div>
-
-        <!-- Service Fleet Accountability -->
-        <div id="pfp_hcPanel_service" style="display:none">
-          <div style="font-size:9px;color:#CCC;line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.12)"><b style="color:#0098d4">The problem:</b> Service vehicles — drivers claim they started at 6am, finished at 5pm, but GPS says otherwise. Personal trips, detours, inflated hours. You're paying wages, fuel and wear for unproductive time.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Number of Vehicles</label>
-              <input type="number" id="pfp_hc_svc_vehicles" value="6" min="1" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Wasted Hrs/Driver/Wk</label>
-              <input type="number" id="pfp_hc_svc_wastedHrs" value="4" min="0" max="40" step="0.5" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Hourly Labour Cost $</label>
-              <input type="number" id="pfp_hc_svc_labourRate" value="45" min="10" step="5" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Unauth km/Vehicle/Wk</label>
-              <input type="number" id="pfp_hc_svc_km" value="80" min="0" step="10" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Running Cost $/km</label>
-              <input type="number" id="pfp_hc_svc_costKm" value="0.72" min="0.1" step="0.02" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-            <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">After-Hrs Trips/Wk</label>
-              <input type="number" id="pfp_hc_svc_afterHrs" value="5" min="0" step="1" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── 4. HIDDEN COSTS SUMMARY (auto-calculated) ── -->
+      <!-- ── FLEET COSTS SUMMARY (auto-calculated) ── -->
       <div style="background:#080808;border:1px solid rgba(0,152,212,.25);padding:14px;margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">
             <svg width="12" height="12" fill="none" stroke="#0098d4" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:4px"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Hidden Costs &amp; Savings Summary
+            Fleet Losses &amp; Savings Summary
           </div>
           <button onclick="recalcProspectCosts()" style="font-size:9px;padding:3px 10px;border:1px solid #0098d4;color:#0098d4;background:#111;cursor:pointer;font-family:inherit;font-weight:600">↻ Recalculate</button>
         </div>

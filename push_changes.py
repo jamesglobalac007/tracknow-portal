@@ -1,84 +1,54 @@
 #!/usr/bin/env python3
-"""Push script — Per-calculator asset selection + payment structure toggle."""
-import subprocess, os, sys, glob
+"""Push — per-asset calculator values + remove HC + MTM fix."""
+import subprocess, os, sys
 
-HOME = os.path.expanduser("~")
-CANDIDATES = [
-    os.path.join(HOME, "mds", "tracknow-portal"),
-    os.path.join(HOME, "MDS", "tracknow-portal"),
-]
-REPO = None
-for c in CANDIDATES:
-    if os.path.isdir(os.path.join(c, ".git")):
-        REPO = c
-        break
-if not REPO:
-    print("\033[91m✗ Could not find tracknow-portal repo\033[0m")
+# Find the repo — use the directory this script lives in
+REPO = os.path.dirname(os.path.abspath(__file__))
+if not os.path.isdir(os.path.join(REPO, ".git")):
+    print("\033[91m✗ Not a git repo: " + REPO + "\033[0m")
     sys.exit(1)
 
 os.chdir(REPO)
+print(f"\n\033[1m🚀 Pushing per-asset values + HC removal + MTM fix\033[0m")
+print(f"  Repo: {REPO}\n")
 
 def run(cmd):
-    r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    return r.returncode == 0, r.stdout + r.stderr
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=REPO)
+    return r.returncode == 0, r.stdout.strip() + "\n" + r.stderr.strip()
 
 def status(msg, ok=True):
     sym = "\033[92m✓\033[0m" if ok else "\033[91m✗\033[0m"
     print(f"  {sym} {msg}")
 
-print(f"\n\033[1m🚀 Pushing asset selection + payment structure to GitHub\033[0m")
-print(f"  Repo: {REPO}\n")
-
-for lockfile in glob.glob(os.path.join(REPO, ".git", "*.lock")):
-    os.remove(lockfile)
-    status(f"Removed stale lock: {os.path.basename(lockfile)}")
-
+# Pull first
 ok, out = run("git pull origin main")
-if not ok and "Already up to date" not in out:
-    status("Pull from origin", False)
-    print(out)
-    sys.exit(1)
-status("Pulled latest from origin")
+status("Pulled latest")
 
-ok, diff_out = run("git diff --name-only")
-ok2, untracked = run("git ls-files --others --exclude-standard")
-changed = [f.strip() for f in diff_out.strip().split("\n") if f.strip()]
-new_files = [f.strip() for f in untracked.strip().split("\n") if f.strip()]
+# Stage everything
+ok, out = run("git add -A")
+status("Staged all changes", ok)
 
-if not changed and not new_files:
-    print("\n  ⚠ No changes detected — nothing to push.")
+# Check if there's anything to commit
+ok, out = run("git diff --cached --name-only")
+files = [f.strip() for f in out.strip().split("\n") if f.strip()]
+if not files:
+    print("\n  ⚠ No staged changes — nothing to push.")
     sys.exit(0)
 
-for f in changed:
-    status(f"Modified: {f}")
-for f in new_files:
-    status(f"New file: {f}")
+for f in files:
+    status(f"  → {f}")
 
-COMMIT_MSG = """Add per-calculator asset selection and payment structure toggle
+COMMIT_MSG = """Per-asset calculator values, remove hidden cost section, fix MTM
 
-Per-calculator asset selection:
-- Each calculator (Slippage, Idle, After-Hours) gets asset type chips
-- Toggle which vehicle categories apply to each calculator
-- E.g. idle time only for trucks/equipment, after-hours only for vans/utes
-- Breakdown shows which assets included and their unit counts
-- Fleet report respects per-calculator asset selection
-- Selections persist with fleet profile data
+- Per-asset working hours for Fuel Slippage calculator
+- Per-asset idle hours for Idle Time calculator
+- Per-asset after-hours % for After-Hours Use calculator
+- Removed Hidden Cost & Fraud calculator section entirely
+- Fixed MTM term dropdown (value 0 was treated as falsy)
+- Removed Freight Overnight from optional extras
+- All 3 calculator breakdowns show per-asset detail"""
 
-Payment structure (Monthly vs Contract):
-- New toggle in deal products: Monthly or Contract
-- Monthly: hardware paid upfront, then subscription only
-- Contract: hardware spread across term, added to monthly
-- Proposal and agreement dynamically reflect payment type
-- Hardware ownership T&Cs adjust per payment method"""
-
-all_files = changed + new_files
-run("git add " + " ".join(f'"{f}"' for f in all_files))
-status("Staged files")
-
-ok, out = run(f'git commit -m """{COMMIT_MSG}"""')
-if not ok and "nothing to commit" in out:
-    print("\n  ⚠ Nothing to commit.")
-    sys.exit(0)
+ok, out = run('git commit -m """' + COMMIT_MSG + '"""')
 status("Committed", ok)
 if not ok:
     print(out)
@@ -90,7 +60,6 @@ status("Pushed to GitHub", ok)
 if ok:
     print(f"\n\033[92m{'='*50}")
     print(f"  ✓ ALL DONE — deploying to Render")
-    print(f"  Asset selection + payment toggle live shortly")
     print(f"{'='*50}\033[0m\n")
 else:
     print(f"\n\033[91m✗ Push failed:\033[0m\n{out}")
