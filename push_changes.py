@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — marketing calendar + vertical alignment + asset dropdown."""
+"""Push — collapsible breakdowns + remove included in monthly callout."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Marketing calendar + alignment + asset dropdown\033[0m")
+print(f"\n\033[1m🚀 Pushing: Collapsible breakdowns + remove monthly payment callout\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,24 +35,16 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Marketing calendar + vertical alignment + asset dropdown
+COMMIT_MSG = """Collapsible calculation breakdowns + remove monthly payment callout
 
-Marketing Hub calendar:
-- 5 platforms: LinkedIn, Facebook, Instagram, Google Business, X
-- 4-week rotating content plan auto-generated per month
-- Content types: product features, ROI/savings, industry news, testimonials
-- 3-4 posts per week across all platforms
-- Color-coded platform legend
-- Posts display on calendar day cells with platform and description
+Fleet calculators:
+- Slippage, idle, after-hours breakdowns now collapsed by default
+- Click arrow to expand/collapse each breakdown section
+- Color-coded arrows matching each calculator section
 
-Layout fixes:
-- Fleet segments stack vertically (flex-direction column)
-- Slippage, idle, after-hours asset rows stack vertically
-- All asset rows full width
-
-Deal products:
-- Asset field changed from text input to dropdown select
-- Options from FLEET_BENCHMARKS (all vehicle types)"""
+Proposal:
+- Removed Included in Monthly Payment callout for contract pricing
+- Payable Upfront callout remains for MTM"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)

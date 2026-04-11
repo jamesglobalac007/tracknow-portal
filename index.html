@@ -2534,7 +2534,7 @@ ${hwTotal > 0 ? `<h3>Hardware &amp; Installation</h3>
     <tr class="subtotal"><td colspan="3">Hardware &amp; Installation Total</td><td style="text-align:right">${fmt(hwTotal)}</td></tr>
   </tbody>
 </table>
-${isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : '<div class="callout"><strong style="color:#0098d4">Included in Monthly Payment:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is spread across ' + term + ' months at <strong>' + fmt(hwPerMonth) + '/mo</strong> — no upfront cost required.</div>'}` : ''}
+${isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : ''}` : ''}
 
 <h3>Software Subscription</h3>
 <table>
@@ -9028,7 +9028,13 @@ function doLogin() {
             <input type="number" id="pfp_slipPct" value="5" min="0" max="40" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
         </div>
-        <div id="pfp_slipBreakdown" style="background:#111;border:1px solid #222;padding:10px;font-size:11px;color:#CCC;line-height:1.8"></div>
+        <div style="margin-top:8px">
+          <div onclick="var bd=document.getElementById('pfp_slipBreakdown');var a=this.querySelector('.bd-arrow');if(bd.style.display==='none'){bd.style.display='';a.textContent='▼'}else{bd.style.display='none';a.textContent='▶'}" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none">
+            <span class="bd-arrow" style="font-size:9px;color:#0098d4">▶</span>
+            <span style="font-size:9px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">Calculation Breakdown</span>
+          </div>
+          <div id="pfp_slipBreakdown" style="display:none;background:#111;border:1px solid #222;padding:10px;font-size:11px;color:#CCC;line-height:1.8"></div>
+        </div>
       </div>
 
       <!-- ── 2B. IDLE TIME CALCULATOR ── -->
@@ -9045,7 +9051,13 @@ function doLogin() {
             <input type="number" id="pfp_idleBurnRate" value="3.5" min="0.5" max="20" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;max-width:200px">
           </div>
         </div>
-        <div id="pfp_idleBreakdown" style="background:#111;border:1px solid #222;padding:10px;margin-top:8px;font-size:11px;color:#CCC;line-height:1.8"></div>
+        <div style="margin-top:8px">
+          <div onclick="var bd=document.getElementById('pfp_idleBreakdown');var a=this.querySelector('.bd-arrow');if(bd.style.display==='none'){bd.style.display='';a.textContent='▼'}else{bd.style.display='none';a.textContent='▶'}" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none">
+            <span class="bd-arrow" style="font-size:9px;color:#d97706">▶</span>
+            <span style="font-size:9px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px">Calculation Breakdown</span>
+          </div>
+          <div id="pfp_idleBreakdown" style="display:none;background:#111;border:1px solid #222;padding:10px;font-size:11px;color:#CCC;line-height:1.8"></div>
+        </div>
       </div>
 
       <!-- ── 2C. AFTER-HOURS USE CALCULATOR ── -->
@@ -9062,7 +9074,13 @@ function doLogin() {
             <input type="number" id="pfp_wearCostKm" value="0.12" min="0" max="1" step="0.01" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;max-width:200px">
           </div>
         </div>
-        <div id="pfp_afterHrsBreakdown" style="background:#111;border:1px solid #222;padding:10px;margin-top:8px;font-size:11px;color:#CCC;line-height:1.8"></div>
+        <div style="margin-top:8px">
+          <div onclick="var bd=document.getElementById('pfp_afterHrsBreakdown');var a=this.querySelector('.bd-arrow');if(bd.style.display==='none'){bd.style.display='';a.textContent='▼'}else{bd.style.display='none';a.textContent='▶'}" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none">
+            <span class="bd-arrow" style="font-size:9px;color:#dc2626">▶</span>
+            <span style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">Calculation Breakdown</span>
+          </div>
+          <div id="pfp_afterHrsBreakdown" style="display:none;background:#111;border:1px solid #222;padding:10px;font-size:11px;color:#CCC;line-height:1.8"></div>
+        </div>
       </div>
 
       <!-- ── FLEET COSTS SUMMARY (auto-calculated) ── -->
