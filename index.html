@@ -2423,7 +2423,12 @@ function openProposalDoc(leadId) {
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
   const subPrice = l.subPrice || 29.95;
   const term = l.term || 24;
-  const monthly = totalUnits * subPrice;
+  const monthlySubOnly = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.sub||0), 0) : (totalUnits * subPrice);
+  const hwTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * ((li.hwPrice||0) + (li.hwInstall||0)), 0) : 0;
+  const payType = l.paymentType || 'upfront';
+  const isSpread = payType === 'spread' && term > 0;
+  const hwPerMonth = isSpread ? hwTotal / term : 0;
+  const monthly = isSpread ? (monthlySubOnly + hwPerMonth) : monthlySubOnly;
   const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
 
@@ -2467,17 +2472,21 @@ function openProposalDoc(leadId) {
 <table>
   <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Monthly</th></tr></thead>
   <tbody>
-    ${l.lineItems ? l.lineItems.map(li => '<tr><td style="font-weight:600">' + li.type + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>').join('') : '<tr><td style="font-weight:600">GPS Tracking Unit</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthly) + '</td></tr>'}
+    ${l.lineItems ? l.lineItems.map(li => '<tr><td style="font-weight:600">' + li.type + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>').join('') : '<tr><td style="font-weight:600">GPS Tracking Unit</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>'}
+    ${isSpread ? '<tr><td style="font-weight:600;color:#0098d4">Hardware &amp; Installation (spread over ' + term + ' months)</td><td>' + totalUnits + '</td><td>' + fmt(hwPerMonth) + '/mo</td><td style="text-align:right;font-weight:600;color:#0098d4">' + fmt(hwPerMonth) + '</td></tr>' : ''}
     <tr class="total"><td colspan="3">Total Monthly</td><td style="text-align:right">${fmt(monthly)}</td></tr>
   </tbody>
 </table>
+${!isSpread && hwTotal > 0 ? '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:12px;margin-bottom:16px;font-size:12px"><strong style="color:#0098d4">One-Time Payment:</strong> Hardware &amp; installation — <strong>' + fmt(hwTotal) + '</strong> payable upfront before activation.</div>' : ''}
 
 <h2>Contract Terms</h2>
 <table>
   <tbody>
-    <tr><td style="font-weight:600;width:40%">Contract Term</td><td>${term} months</td></tr>
-    <tr><td style="font-weight:600">Total Contract Value</td><td style="font-weight:700;color:#0098d4">${fmt(monthly * term)}</td></tr>
-    <tr><td style="font-weight:600">Hardware</td><td>Included — no upfront cost</td></tr>
+    <tr><td style="font-weight:600;width:40%">Contract Term</td><td>${term > 0 ? term + ' months' : 'Month-to-Month'}</td></tr>
+    <tr><td style="font-weight:600">Total Contract Value</td><td style="font-weight:700;color:#0098d4">${fmt(monthly * (term > 0 ? term : 12))}</td></tr>
+    <tr><td style="font-weight:600">Payment Structure</td><td style="font-weight:600;color:#0098d4">${isSpread ? 'Contract — hardware cost spread across ' + term + ' months' : 'Monthly — hardware paid upfront'}</td></tr>
+    <tr><td style="font-weight:600">Hardware</td><td>${isSpread ? 'Included in monthly payment — ' + fmt(hwPerMonth) + '/mo over ' + term + ' months' : (hwTotal > 0 ? fmt(hwTotal) + ' payable upfront' : 'Included — no upfront cost')}</td></tr>
+    <tr><td style="font-weight:600">Monthly Subscription</td><td>${isSpread ? fmt(monthly) + '/mo (software ' + fmt(monthlySubOnly) + ' + hardware ' + fmt(hwPerMonth) + ')' : fmt(monthlySubOnly) + '/mo'}</td></tr>
     <tr><td style="font-weight:600">Installation</td><td>Included — scheduled at your convenience</td></tr>
     <tr><td style="font-weight:600">Support</td><td>24/7 Australian-based support</td></tr>
     <tr><td style="font-weight:600">Billing</td><td>Monthly in advance</td></tr>
@@ -2495,7 +2504,7 @@ function openProposalDoc(leadId) {
 <div class="terms">
   <p><strong>1. Service Period:</strong> This agreement commences on the installation date and continues for ${term} months.</p>
   <p style="margin-top:6px"><strong>2. Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit.</p>
-  <p style="margin-top:6px"><strong>3. Hardware:</strong> All GPS devices remain the property of TrackNow GPS. Devices are provided at no upfront cost for the duration of the contract.</p>
+  <p style="margin-top:6px"><strong>3. Hardware:</strong> ${isSpread ? 'All GPS devices remain the property of TrackNow GPS until the hardware component has been paid in full over the contract term. The hardware cost of ' + fmt(hwTotal) + ' is spread across ' + term + ' monthly payments of ' + fmt(hwPerMonth) + ', included in the combined monthly charge.' : (hwTotal > 0 ? 'Hardware totalling ' + fmt(hwTotal) + ' is payable upfront prior to installation. Upon payment, devices become the property of the client.' : 'All GPS devices remain the property of TrackNow GPS. Devices are provided at no upfront cost for the duration of the contract.')}</p>
   <p style="margin-top:6px"><strong>4. Installation:</strong> Professional installation is included and will be scheduled at a mutually agreed time to minimise operational disruption.</p>
   <p style="margin-top:6px"><strong>5. Support:</strong> 24/7 technical support is included. Response times: Critical issues within 2 hours, standard queries within 24 hours.</p>
   <p style="margin-top:6px"><strong>6. Cancellation &amp; 30-Day Notice:</strong> Either party may cancel the subscription by providing a minimum of 30 days written notice. This notice period applies after the minimum term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term.</p>
@@ -2616,10 +2625,14 @@ function openAgreementDoc(leadId) {
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 1);
   const subPrice = l.subPrice || 29.95;
   const term = l.term || 24;
-  const monthly = totalUnits * subPrice;
+  const monthlySubOnly = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.sub||0), 0) : (totalUnits * subPrice);
   const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
   const hwTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)), 0) : 0;
+  const payType = l.paymentType || 'upfront';
+  const isSpread = payType === 'spread' && term > 0;
+  const hwPerMonth = isSpread ? hwTotal / term : 0;
+  const monthly = isSpread ? (monthlySubOnly + hwPerMonth) : monthlySubOnly;
 
   const win = window.open('', '_blank', 'width=900,height=1100');
   win.document.write(`<!DOCTYPE html><html><head><title>Agreement — ${l.co}</title>
@@ -2673,7 +2686,7 @@ function openAgreementDoc(leadId) {
   <table>
     <tr><th>Device</th><th>Asset</th><th>Qty</th><th>Hardware</th><th>Monthly Sub</th></tr>
     ${l.lineItems ? l.lineItems.map(li => '<tr><td>'+(li.hwType||li.type||'GPS Tracker')+'</td><td>'+(li.asset||'Vehicles')+'</td><td style="text-align:center">'+(li.qty||0)+'</td><td>'+fmt((li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)))+'</td><td>'+fmt((li.qty||0)*(li.sub||subPrice))+'/mo</td></tr>').join('') : '<tr><td>GPS Tracker</td><td>Vehicles</td><td style="text-align:center">'+totalUnits+'</td><td>'+fmt(hwTotal)+'</td><td>'+fmt(monthly)+'/mo</td></tr>'}
-    <tr class="total-row"><td colspan="3">TOTAL</td><td>${fmt(hwTotal)} once-off</td><td>${fmt(monthly)}/mo</td></tr>
+    <tr class="total-row"><td colspan="3">TOTAL</td><td>${isSpread ? fmt(hwTotal) + ' (spread over ' + term + 'mo)' : (hwTotal > 0 ? fmt(hwTotal) + ' upfront' : '$0.00')}</td><td>${fmt(monthly)}/mo${isSpread ? ' <span style="font-size:10px;color:#888">(incl. hardware)</span>' : ''}</td></tr>
   </table>
 </div>
 
@@ -2682,7 +2695,7 @@ function openAgreementDoc(leadId) {
   <div class="terms"><ol>
     <li><strong>Term &amp; Commencement:</strong> This agreement is for a minimum term of ${term} months commencing from the date of installation of the GPS tracking devices. The agreement automatically renews on a month-to-month basis unless either party provides 30 days written notice prior to the end of the initial term or any renewal period.</li>
     <li><strong>Fees &amp; Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit. All prices are in Australian dollars and exclusive of GST. A valid payment method must be provided prior to installation. Late payments may incur an administration fee of $15.00 per overdue invoice.</li>
-    <li><strong>Hardware Ownership &amp; Care:</strong> All GPS tracking devices, SIM cards, and associated hardware remain the sole property of Track Now Proprietary Limited (ABN 12 634 559 970) for the duration of this agreement. The Client is responsible for the reasonable care and protection of installed devices. Damaged, lost, or stolen devices may be replaced at the Client's cost at the then-current replacement price.</li>
+    <li><strong>Hardware Ownership &amp; Care:</strong> ${isSpread ? 'GPS tracking devices, SIM cards, and associated hardware are being financed over the ' + term + '-month contract term at ' + fmt(hwPerMonth) + '/month (total hardware value: ' + fmt(hwTotal) + '). Hardware remains the property of Track Now Proprietary Limited until fully paid. Upon completion of all payments, ownership transfers to the Client.' : 'All GPS tracking devices, SIM cards, and associated hardware remain the sole property of Track Now Proprietary Limited (ABN 12 634 559 970) for the duration of this agreement.'} The Client is responsible for the reasonable care and protection of installed devices. Damaged, lost, or stolen devices may be replaced at the Client's cost at the then-current replacement price.</li>
     <li><strong>Installation &amp; Access:</strong> Professional installation is included at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time. The Client agrees to provide safe and reasonable access to all vehicles and assets listed in this agreement for the purpose of installation, maintenance, and removal of GPS devices.</li>
     <li><strong>Service Level &amp; Support:</strong> TrackNow GPS provides 24/7 platform access, real-time GPS tracking, geofence alerts, driver behaviour monitoring, fuel reconciliation, and automated reporting. Technical support is available 24/7 via phone and email. Critical issues will be responded to within 2 business hours; standard queries within 1 business day.</li>
     <li><strong>Data, Privacy &amp; Security:</strong> All fleet tracking data is stored securely in Australian-based data centres and is accessible only to authorised personnel nominated by the Client. TrackNow GPS complies with the Australian Privacy Act 1988 and will not share, sell, or disclose Client data to third parties without prior written consent, except as required by law. Data is retained for 12 months after termination and then securely deleted.</li>
@@ -6970,6 +6983,9 @@ function openDealProducts(leadId, source) {
   document.getElementById('dp_hwCost_input').value = l.hwCostOfGoods || 0;
   document.getElementById('dp_swCost_input').value = l.swCostOfGoods || 0;
   document.getElementById('dp_installCost_input').value = l.installCostOfGoods || 0;
+  // Restore payment type
+  _dpPaymentType = l.paymentType || 'upfront';
+  setPaymentType(_dpPaymentType);
   renderDealProductLines();
   updateDealProductTotals();
   initFleetProfile();
@@ -7166,18 +7182,47 @@ function updateDealProductTotals() {
   const hwDeviceRevenue = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwPrice||0), 0);
   const hwInstallRevenue = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.hwInstall||0), 0);
   const hwRevenue = hwDeviceRevenue + hwInstallRevenue;
-  const monthlyTotal = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
+  const monthlySubOnly = l.lineItems.reduce((s,li) => s + (li.qty||0) * (li.sub||0), 0);
   const termEl = document.getElementById('dp_term_0');
   const term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
-  const swRevenue = monthlyTotal * term;
-  const totalRevenue = hwRevenue + swRevenue;
-  // Populate REVENUE lines in Deal Summary (NOT the cost inputs)
+
+  // ── Payment type logic ──
   const hwRevEl = document.getElementById('dp_hwRevenue');
-  if (hwRevEl) hwRevEl.textContent = '$' + Math.round(hwRevenue).toLocaleString();
   const swRevEl = document.getElementById('dp_swRevenue');
-  if (swRevEl) swRevEl.textContent = '$' + Math.round(swRevenue).toLocaleString();
   const totRevEl = document.getElementById('dp_totalRevenue');
-  if (totRevEl) totRevEl.textContent = '$' + Math.round(totalRevenue).toLocaleString();
+  const hwRevLabel = document.getElementById('dp_hwRevenueLabel');
+  const swRevLabel = document.getElementById('dp_swRevenueLabel');
+  const spreadInfoEl = document.getElementById('dp_spreadInfo');
+
+  if (_dpPaymentType === 'spread' && term > 0) {
+    // CONTRACT: hardware spread across term, added to monthly
+    const hwPerMonth = hwRevenue / term;
+    const combinedMonthly = monthlySubOnly + hwPerMonth;
+    const swRevenue = combinedMonthly * term;
+    const totalRevenue = swRevenue; // no separate upfront
+    if (hwRevEl) hwRevEl.textContent = '$0 (spread)';
+    if (hwRevLabel) hwRevLabel.textContent = 'Revenue (Hardware Upfront)';
+    if (swRevEl) swRevEl.textContent = '$' + Math.round(swRevenue).toLocaleString();
+    if (swRevLabel) swRevLabel.textContent = 'Revenue (Combined Monthly × ' + term + 'mo)';
+    if (totRevEl) totRevEl.textContent = '$' + Math.round(totalRevenue).toLocaleString();
+    if (spreadInfoEl) {
+      spreadInfoEl.style.display = '';
+      spreadInfoEl.innerHTML = '<div style="font-size:10px;color:#FFA028;font-weight:700;margin-bottom:4px">CONTRACT PAYMENT BREAKDOWN</div>' +
+        '<div style="font-size:11px;color:#CCC">Software subscription: <b>$' + monthlySubOnly.toFixed(2) + '/mo</b></div>' +
+        '<div style="font-size:11px;color:#CCC">Hardware + install ($' + Math.round(hwRevenue).toLocaleString() + ' ÷ ' + term + ' months): <b>$' + hwPerMonth.toFixed(2) + '/mo</b></div>' +
+        '<div style="font-size:12px;font-weight:800;color:#FFA028;margin-top:4px;padding-top:4px;border-top:1px solid #332200">Combined monthly: $' + combinedMonthly.toFixed(2) + '/mo × ' + term + ' months = $' + Math.round(swRevenue).toLocaleString() + '</div>';
+    }
+  } else {
+    // MONTHLY/UPFRONT: hardware paid upfront, then monthly sub only
+    const swRevenue = monthlySubOnly * (term > 0 ? term : 12);
+    const totalRevenue = hwRevenue + swRevenue;
+    if (hwRevEl) hwRevEl.textContent = '$' + Math.round(hwRevenue).toLocaleString();
+    if (hwRevLabel) hwRevLabel.textContent = 'Revenue (Hardware + Install)';
+    if (swRevEl) swRevEl.textContent = '$' + Math.round(swRevenue).toLocaleString();
+    if (swRevLabel) swRevLabel.textContent = 'Revenue (Software × ' + (term > 0 ? term : 'MTM') + ')';
+    if (totRevEl) totRevEl.textContent = '$' + Math.round(totalRevenue).toLocaleString();
+    if (spreadInfoEl) spreadInfoEl.style.display = 'none';
+  }
   // DO NOT touch dp_hwCost_input or dp_swCost_input — those are manual Cost of Goods entries
   // Now recalc net contract value using whatever's in the cost boxes
   recalcContractValue();
@@ -7213,6 +7258,25 @@ function recalcContractValue() {
   if (valEl) valEl.textContent = '$' + Math.round(netValue).toLocaleString();
 }
 
+// ── Payment Type: 'upfront' (hardware paid upfront) vs 'spread' (hardware added to monthly over term) ──
+var _dpPaymentType = 'upfront';
+function setPaymentType(type) {
+  _dpPaymentType = type;
+  const upBtn = document.getElementById('dp_payBtn_upfront');
+  const spBtn = document.getElementById('dp_payBtn_spread');
+  const explainer = document.getElementById('dp_paymentExplainer');
+  if (type === 'upfront') {
+    if (upBtn) { upBtn.style.border = '2px solid #FFA028'; upBtn.style.background = 'rgba(255,160,40,.12)'; upBtn.style.color = '#FFA028'; }
+    if (spBtn) { spBtn.style.border = '2px solid #333'; spBtn.style.background = '#111'; spBtn.style.color = '#999'; }
+    if (explainer) explainer.innerHTML = '<b style="color:#FFA028">Monthly:</b> Customer pays hardware + install upfront, then only the software subscription each month. Best for customers who want to own the hardware outright.';
+  } else {
+    if (spBtn) { spBtn.style.border = '2px solid #FFA028'; spBtn.style.background = 'rgba(255,160,40,.12)'; spBtn.style.color = '#FFA028'; }
+    if (upBtn) { upBtn.style.border = '2px solid #333'; upBtn.style.background = '#111'; upBtn.style.color = '#999'; }
+    if (explainer) explainer.innerHTML = '<b style="color:#FFA028">Contract:</b> Hardware + install cost is spread across the full contract term and added to the monthly subscription. Reduces the customer\'s upfront cashflow outlay — they pay one combined monthly amount.';
+  }
+  updateDealProductTotals();
+}
+
 function saveDealProducts() {
   const l = _getDealEntity();
   if (!l) return;
@@ -7221,6 +7285,7 @@ function saveDealProducts() {
   const simEl = document.getElementById('dp_sim_0');
   l.term = termEl ? parseInt(termEl.value) || 24 : parseInt(document.getElementById('dp_term').value) || 24;
   l.sim = simEl ? simEl.value : document.getElementById('dp_sim').value;
+  l.paymentType = _dpPaymentType;
   // Save Cost of Goods per unit (manual entries, independent from product lines)
   l.hwCostOfGoods = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
   l.swCostOfGoods = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
@@ -8537,6 +8602,25 @@ function doLogin() {
       <div id="dp_lines"></div>
       <input type="hidden" id="dp_term" value="24">
       <input type="hidden" id="dp_sim" value="">
+
+      <!-- ── PAYMENT TYPE SELECTOR ── -->
+      <div style="background:#080808;border:1px solid #332200;padding:14px;margin:14px 0 12px">
+        <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Payment Structure</div>
+        <div style="display:flex;gap:8px" id="dp_paymentTypeBtns">
+          <button onclick="setPaymentType('upfront')" id="dp_payBtn_upfront" style="flex:1;padding:10px;border:2px solid #FFA028;background:rgba(255,160,40,.12);color:#FFA028;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:all .15s">
+            <div style="font-size:13px;margin-bottom:4px">💳 MONTHLY</div>
+            <div style="font-size:9px;font-weight:400;color:#999;line-height:1.4">Hardware paid upfront<br>Then monthly subscription only</div>
+          </button>
+          <button onclick="setPaymentType('spread')" id="dp_payBtn_spread" style="flex:1;padding:10px;border:2px solid #333;background:#111;color:#999;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:all .15s">
+            <div style="font-size:13px;margin-bottom:4px">📋 CONTRACT</div>
+            <div style="font-size:9px;font-weight:400;color:#666;line-height:1.4">Hardware cost spread across term<br>Added to monthly subscription</div>
+          </button>
+        </div>
+        <div id="dp_paymentExplainer" style="margin-top:10px;padding:8px 10px;background:#111;border:1px solid #222;font-size:10px;color:#CCC;line-height:1.5">
+          <b style="color:#FFA028">Monthly:</b> Customer pays hardware + install upfront, then only the software subscription each month. Best for customers who want to own the hardware outright.
+        </div>
+      </div>
+
       <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">Cost of Goods</div>
       <div style="display:flex;gap:8px">
         <div style="flex:1;background:#080808;border:1px solid #332200;padding:12px;text-align:center">
@@ -8564,14 +8648,15 @@ function doLogin() {
           <div id="dp_installCostTotal" style="font-size:9px;color:#666;margin-top:4px">× 0 units = $0</div>
         </div>
       </div>
+      <div id="dp_spreadInfo" style="display:none;background:#080808;border:1px solid #332200;padding:12px;margin-top:10px"></div>
       <div style="background:#080808;border:1px solid #1a1a1a;padding:12px;margin-top:10px">
         <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Deal Summary</div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">
-          <span style="font-size:11px;color:#FFA028">Revenue (Hardware + Install)</span>
+          <span id="dp_hwRevenueLabel" style="font-size:11px;color:#FFA028">Revenue (Hardware + Install)</span>
           <span id="dp_hwRevenue" style="font-size:13px;font-weight:700;color:#FFA028">$0</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">
-          <span style="font-size:11px;color:#FFA028">Revenue (Software × Term)</span>
+          <span id="dp_swRevenueLabel" style="font-size:11px;color:#FFA028">Revenue (Software × Term)</span>
           <span id="dp_swRevenue" style="font-size:13px;font-weight:700;color:#FFA028">$0</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a1a">

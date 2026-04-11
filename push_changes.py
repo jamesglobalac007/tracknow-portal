@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push script — 3-calculator model + industry references + report update. Commits and pushes."""
+"""Push script — Payment type (monthly vs contract spread) for deal products + proposal + agreement."""
 import subprocess, os, sys, glob
 
 # Find the repo
@@ -27,7 +27,7 @@ def status(msg, ok=True):
     sym = "\033[92m✓\033[0m" if ok else "\033[91m✗\033[0m"
     print(f"  {sym} {msg}")
 
-print(f"\n\033[1m🚀 Pushing 3-calculator update to GitHub\033[0m")
+print(f"\n\033[1m🚀 Pushing payment structure update to GitHub\033[0m")
 print(f"  Repo: {REPO}\n")
 
 # Clear stale lock files
@@ -59,16 +59,15 @@ for f in new_files:
     status(f"New file: {f}")
 
 # 3. Stage, commit, push
-COMMIT_MSG = """Restructure fuel calculators into 3 separate models with industry references
+COMMIT_MSG = """Add payment structure toggle — Monthly (hardware upfront) vs Contract (spread)
 
-- Split fuel slippage into 3 calculators: Working Hours, Idle Time, After-Hours
-- New working-hours model: workHrs x slippage% = wasted mins/hrs per day
-- Idle time now uses direct burn rate (L/hr) from Radius Fleet Data AU
-- Each calculator shows transparent breakdown with source references
-- Updated fleet report to use new calculation model
-- Added industry data source citations (Radius.com AU 2024)
-- Save/restore new fields (workHrs, idleBurnRate) in prospect data
-- Clarified Hidden Cost idle tab as accountability/fraud focus"""
+- New payment type selector in deal products: Monthly or Contract
+- Monthly: customer pays hardware upfront, then subscription only
+- Contract: hardware cost spread across full term, added to monthly amount
+- Deal summary dynamically updates with spread breakdown
+- Proposal updated: shows payment structure, hardware terms, combined monthly
+- Agreement updated: hardware ownership clause adjusts per payment type
+- Payment type saved/restored per lead"""
 
 all_files = changed + new_files
 run("git add " + " ".join(f'"{f}"' for f in all_files))
@@ -87,10 +86,10 @@ ok, out = run("git push origin main")
 status("Pushed to GitHub", ok)
 
 if ok:
-    print(f"\n\033[92m{'='*45}")
+    print(f"\n\033[92m{'='*50}")
     print(f"  ✓ ALL DONE — deploying to Render")
-    print(f"  3 calculators + industry refs live shortly")
-    print(f"{'='*45}\033[0m\n")
+    print(f"  Payment structure toggle live shortly")
+    print(f"{'='*50}\033[0m\n")
 else:
     print(f"\n\033[91m✗ Push failed:\033[0m\n{out}")
     sys.exit(1)
