@@ -6,22 +6,29 @@
 <title>TrackNow — Sales & Marketing Portal</title>
 <script>
 /* Early lead capture — runs immediately before any external resources load.
-   When the website form creates a hidden iframe pointing here with ?new_prospect=1,
-   this queues the lead into localStorage so it's picked up on next portal login. */
+   ?new_prospect=1 with name/email params → silent queue (iframe from website).
+   ?new_prospect=1 WITHOUT params → show landing page form (from social media links). */
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
     if (p.get('new_prospect') !== '1') return;
     var name = p.get('name') || '';
     var email = p.get('email') || '';
-    if (!name && !email) return;
-    var lead = { name:name, email:email, mobile:p.get('mobile')||'', company:p.get('company')||'', type:p.get('type')||'demo', product:p.get('product')||'', ts:new Date().toISOString() };
-    var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
-    if (!queue.some(function(q){ return q.email && email && q.email.toLowerCase() === email.toLowerCase(); })) {
-      queue.push(lead);
-      localStorage.setItem('tn_website_leads', JSON.stringify(queue));
+    var source = p.get('source') || 'social';
+    if (name || email) {
+      // Silent capture (iframe from website)
+      var lead = { name:name, email:email, mobile:p.get('mobile')||'', company:p.get('company')||'', type:p.get('type')||'demo', product:p.get('product')||'', source:source, ts:new Date().toISOString() };
+      var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
+      if (!queue.some(function(q){ return q.email && email && q.email.toLowerCase() === email.toLowerCase(); })) {
+        queue.push(lead);
+        localStorage.setItem('tn_website_leads', JSON.stringify(queue));
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    } else {
+      // No params — show landing page form (social media CTA)
+      window._showLeadForm = true;
+      window._leadSource = source;
     }
-    window.history.replaceState({}, '', window.location.pathname);
   } catch(e){}
 })();
 </script>
@@ -277,6 +284,85 @@ select option{background:#0a0a0a;color:#FFA028}
   <option value="Emnify">
   <option value="Hologram">
 </datalist>
+
+<!-- ═══════════ SOCIAL LANDING PAGE ═══════════ -->
+<div id="leadFormOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#000;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="width:100%;max-width:480px">
+      <!-- Logo -->
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0098d4,#00b4e6);display:flex;align-items:center;justify-content:center">
+            <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span style="font-size:24px;font-weight:800;color:#0098d4;letter-spacing:1px;font-family:'JetBrains Mono',monospace">TRACK<span style="color:#0098d4">NOW</span></span>
+        </div>
+        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
+      </div>
+
+      <!-- Form Card -->
+      <div id="leadFormCard" style="background:#0a0a0a;border:1px solid #222;padding:32px">
+        <h1 style="font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Get Your Free Fleet Savings Report</h1>
+        <p style="font-size:13px;color:#999;text-align:center;margin-bottom:28px;line-height:1.6">Find out how much your fleet could save with GPS tracking. Fill in your details and our team will be in touch within 24 hours.</p>
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Your Name *</label>
+          <input type="text" id="lf_name" placeholder="e.g. John Smith" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='#0098d4'" onblur="this.style.borderColor='#222'">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Company Name *</label>
+          <input type="text" id="lf_company" placeholder="e.g. Smith Transport" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='#0098d4'" onblur="this.style.borderColor='#222'">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Email Address *</label>
+          <input type="email" id="lf_email" placeholder="john@smithtransport.com.au" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='#0098d4'" onblur="this.style.borderColor='#222'">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Mobile Number *</label>
+          <input type="tel" id="lf_mobile" placeholder="0400 000 000" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='#0098d4'" onblur="this.style.borderColor='#222'">
+        </div>
+        <div style="margin-bottom:24px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">How many vehicles in your fleet?</label>
+          <select id="lf_fleet" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none">
+            <option value="">Select...</option>
+            <option value="1-5">1–5 vehicles</option>
+            <option value="6-15">6–15 vehicles</option>
+            <option value="16-50">16–50 vehicles</option>
+            <option value="51-100">51–100 vehicles</option>
+            <option value="100+">100+ vehicles</option>
+          </select>
+        </div>
+
+        <div id="lf_error" style="display:none;color:#dc2626;font-size:12px;text-align:center;margin-bottom:12px"></div>
+
+        <button onclick="submitLeadForm()" style="width:100%;padding:14px;background:#0098d4;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s" onmouseover="this.style.background='#007ab3'" onmouseout="this.style.background='#0098d4'">
+          GET MY FREE FLEET REPORT →
+        </button>
+
+        <p style="font-size:10px;color:#555;text-align:center;margin-top:16px;line-height:1.5">No spam, no obligation. Our fleet specialist will review your details and call you back within 24 hours with a personalised savings report.</p>
+      </div>
+
+      <!-- Thank You (hidden until submit) -->
+      <div id="leadFormThanks" style="display:none;background:#0a0a0a;border:1px solid #222;padding:40px;text-align:center">
+        <div style="font-size:40px;margin-bottom:16px">✓</div>
+        <h2 style="font-size:20px;font-weight:800;color:#0098d4;margin-bottom:12px;font-family:'JetBrains Mono',monospace">You're In!</h2>
+        <p style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:8px">Thanks for your interest in TrackNow GPS.</p>
+        <p style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:24px">Our fleet specialist will be in touch within <strong style="color:#FFA028">24 hours</strong> with your personalised Fleet Savings Report.</p>
+        <div style="padding:16px;background:#000;border:1px solid #222;margin-bottom:20px">
+          <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">In the meantime</div>
+          <p style="font-size:13px;color:#999">Check your email — we'll send a confirmation shortly.</p>
+        </div>
+        <a href="https://www.tracknow.com.au" style="color:#0098d4;font-size:13px;text-decoration:none;font-weight:600">Visit tracknow.com.au →</a>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center;margin-top:24px">
+        <div style="font-size:10px;color:#444">Track Now Proprietary Limited · ABN 12 634 559 970</div>
+        <div style="font-size:10px;color:#444;margin-top:4px">www.tracknow.com.au</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════ LOGIN OVERLAY ═══════════ -->
 <div id="loginOverlay">
@@ -9716,6 +9802,94 @@ function doLogout() {
   document.getElementById('loginOverlay').style.opacity = '1';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPass').value = '';
+}
+
+// ═══════════ SOCIAL LANDING PAGE FORM ═══════════
+// Show landing form if ?new_prospect=1 was hit without params
+(function() {
+  if (!window._showLeadForm) return;
+  var loginOverlay = document.getElementById('loginOverlay');
+  var leadForm = document.getElementById('leadFormOverlay');
+  if (loginOverlay) loginOverlay.style.display = 'none';
+  if (leadForm) leadForm.style.display = 'block';
+})();
+
+function submitLeadForm() {
+  var name = (document.getElementById('lf_name').value || '').trim();
+  var company = (document.getElementById('lf_company').value || '').trim();
+  var email = (document.getElementById('lf_email').value || '').trim();
+  var mobile = (document.getElementById('lf_mobile').value || '').trim();
+  var fleet = (document.getElementById('lf_fleet').value || '');
+  var errEl = document.getElementById('lf_error');
+
+  // Validate
+  if (!name || !company || !email || !mobile) {
+    errEl.textContent = 'Please fill in all required fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (email.indexOf('@') < 1) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  // Save to lead queue (same as website capture)
+  var lead = {
+    name: name,
+    email: email,
+    mobile: mobile,
+    company: company,
+    type: 'fleet-report',
+    product: fleet ? fleet + ' vehicles' : '',
+    source: window._leadSource || 'social',
+    ts: new Date().toISOString()
+  };
+  var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
+  if (!queue.some(function(q) { return q.email && email && q.email.toLowerCase() === email.toLowerCase(); })) {
+    queue.push(lead);
+    localStorage.setItem('tn_website_leads', JSON.stringify(queue));
+  }
+
+  // Send notification email via EmailJS
+  var _ejs_loaded = false;
+  function sendNotify() {
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+      to_email: 'sales@tracknow.com.au',
+      subject: 'NEW LEAD from ' + (window._leadSource || 'Social Media').toUpperCase() + ' — ' + company,
+      from_name: name,
+      message_html: '<h2 style="color:#0098d4">New Lead from Social Media</h2>' +
+        '<p><strong>Source:</strong> ' + (window._leadSource || 'social') + '</p>' +
+        '<p><strong>Name:</strong> ' + name + '</p>' +
+        '<p><strong>Company:</strong> ' + company + '</p>' +
+        '<p><strong>Email:</strong> ' + email + '</p>' +
+        '<p><strong>Mobile:</strong> ' + mobile + '</p>' +
+        '<p><strong>Fleet Size:</strong> ' + (fleet || 'Not specified') + '</p>' +
+        '<p style="color:#888;font-size:12px;margin-top:16px">This lead was captured from the TrackNow social media landing page. Log into the portal to view in Customers tab.</p>'
+    }).then(function() {
+      console.log('Lead notification sent to sales@tracknow.com.au');
+    }).catch(function(err) {
+      console.warn('Lead notification failed:', err);
+    });
+  }
+
+  // Load EmailJS on demand and send
+  if (typeof emailjs !== 'undefined') {
+    sendNotify();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() { emailjs.init('OoTzGVR6EezbqlWDx'); sendNotify(); };
+    document.head.appendChild(s);
+  }
+
+  // Show thank you
+  document.getElementById('leadFormCard').style.display = 'none';
+  document.getElementById('leadFormThanks').style.display = 'block';
+
+  // Clean URL
+  window.history.replaceState({}, '', window.location.pathname);
 }
 
 function doLogin() {
