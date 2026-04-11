@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — after-hours trucks/cars/vans + remove monthly payment box from proposal."""
+"""Push — blue headings for pricing sections."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: AH trucks/cars/vans + remove proposal payment box\033[0m")
+print(f"\n\033[1m🚀 Pushing: Blue pricing headings + MTM wording verified\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,17 +35,12 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """After-hours: trucks/cars/vans only + remove proposal payment box
+COMMIT_MSG = """Proposal: blue pricing headings, AH trucks/cars/vans, remove payment box
 
-After-hours calculator:
-- Only trucks, cars, vans now appear as selectable options
-- Trucks added back (calcAH true, default 8%)
-- Utes and refrigerated excluded (calcAH false)
-- Updated description text
-
-Proposal:
-- Removed blue monthly payment summary box below pricing schedule
-- Pricing sections (Hardware, Software, Extras) flow into Agreement Details"""
+- h3 headings (Hardware, Software, Extras) now blue #0098d4 matching h2
+- After-hours calculator restricted to trucks, cars, vans only
+- Removed blue monthly payment summary box from proposal
+- MTM wording confirmed: hardware upfront + subscription-only monthly"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
