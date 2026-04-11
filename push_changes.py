@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Push — per-asset calculator values + remove HC + MTM fix."""
+"""Push — all calculator, proposal, payment & agreement updates."""
 import subprocess, os, sys
 
-# Find the repo — use the directory this script lives in
 REPO = os.path.dirname(os.path.abspath(__file__))
 if not os.path.isdir(os.path.join(REPO, ".git")):
     print("\033[91m✗ Not a git repo: " + REPO + "\033[0m")
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing per-asset values + HC removal + MTM fix\033[0m")
+print(f"\n\033[1m🚀 Pushing: Full calculator + proposal + agreement updates\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -20,33 +19,51 @@ def status(msg, ok=True):
     sym = "\033[92m✓\033[0m" if ok else "\033[91m✗\033[0m"
     print(f"  {sym} {msg}")
 
-# Pull first
 ok, out = run("git pull origin main")
 status("Pulled latest")
 
-# Stage everything
 ok, out = run("git add -A")
 status("Staged all changes", ok)
 
-# Check if there's anything to commit
 ok, out = run("git diff --cached --name-only")
 files = [f.strip() for f in out.strip().split("\n") if f.strip()]
 if not files:
-    print("\n  ⚠ No staged changes — nothing to push.")
+    print("\n  No staged changes — nothing to push.")
     sys.exit(0)
 
 for f in files:
-    status(f"  → {f}")
+    status(f"  {f}")
 
-COMMIT_MSG = """Per-asset calculator values, remove hidden cost section, fix MTM
+COMMIT_MSG = """Per-asset calculators + proposal restructure + payment lock + agreement update
 
-- Per-asset working hours for Fuel Slippage calculator
-- Per-asset idle hours for Idle Time calculator
-- Per-asset after-hours % for After-Hours Use calculator
+Calculators — per-asset values for all 3:
+- Fuel slippage: per-asset working hrs/day
+- Idle cost: per-asset idle hrs/day
+- After-hours: per-asset AH % (vehicles only by default)
+- Trucks, equipment, excavators, trailers: calcAH=false, afterHrsPct=0
+- Removed global calculator inputs (workHrs, idleHrs, afterHrsPct)
 - Removed Hidden Cost & Fraud calculator section entirely
-- Fixed MTM term dropdown (value 0 was treated as falsy)
+
+Payment structure locked to term:
+- MTM (month-to-month): auto-selects Monthly, disables Contract
+- 12/24/36/60mo contract: auto-selects Contract, disables Monthly
+- Lock note shows active mode and reason
+- Fixed MTM term persistence (0 was treated as falsy)
+
+Proposal document restructured:
+- 3 separate pricing sections: Hardware, Software, Optional Extras
+- MTM: hardware upfront + monthly subscription
+- Contract: hardware spread into single monthly amount
+- Removed Contract Value field
+- Blue highlighted total monthly payment box with breakdown
+
+Agreement stage card updated:
+- Replaced Fleet Optimisation Report indicator with VIEW PROPOSAL button
+- Agreement card now shows: View Proposal + View Agreement + Send
+
+Other:
 - Removed Freight Overnight from optional extras
-- All 3 calculator breakdowns show per-asset detail"""
+- Summary renamed to Fleet Losses & Savings Summary"""
 
 ok, out = run('git commit -m """' + COMMIT_MSG + '"""')
 status("Committed", ok)

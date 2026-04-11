@@ -2423,14 +2423,68 @@ function openProposalDoc(leadId) {
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
   const subPrice = l.subPrice || 29.95;
   const term = l.term != null ? l.term : 24;
+  const isMTM = term === 0;
+  const isContract = term > 0;
   const monthlySubOnly = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.sub||0), 0) : (totalUnits * subPrice);
-  const hwTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * ((li.hwPrice||0) + (li.hwInstall||0)), 0) : 0;
-  const payType = l.paymentType || 'upfront';
-  const isSpread = payType === 'spread' && term > 0;
-  const hwPerMonth = isSpread ? hwTotal / term : 0;
-  const monthly = isSpread ? (monthlySubOnly + hwPerMonth) : monthlySubOnly;
+  // Hardware: device + install per line
+  const hwDeviceTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.hwPrice||0), 0) : 0;
+  const hwInstallTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.hwInstall||0), 0) : 0;
+  const hwTotal = hwDeviceTotal + hwInstallTotal;
+  // Optional extras — separate one-time vs monthly
+  const allExtras = [];
+  let extrasMonthlyTotal = 0;
+  let extrasOnetimeTotal = 0;
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      if (li.extras && li.extras.length) {
+        li.extras.forEach(function(exId) {
+          const ex = OPTIONAL_EXTRAS.find(function(e) { return e.id === exId; });
+          if (!ex) return;
+          const isMonthly = ex.unit && ex.unit.indexOf('/mo') > -1;
+          const qty = li.qty || 0;
+          const cost = isMonthly ? qty * ex.price : qty * ex.price;
+          allExtras.push({ name: ex.name, qty: qty, unitPrice: ex.price, unit: ex.unit, total: cost, isMonthly: isMonthly, lineType: li.type });
+          if (isMonthly) extrasMonthlyTotal += cost;
+          else extrasOnetimeTotal += cost;
+        });
+      }
+    });
+  }
+  // For contract: hardware spread + extras spread into monthly
+  const hwPerMonth = isContract ? hwTotal / term : 0;
+  const extrasOnetimePerMonth = isContract && extrasOnetimeTotal > 0 ? extrasOnetimeTotal / term : 0;
+  // Total monthly the customer pays
+  const totalMonthly = isMTM ? monthlySubOnly + extrasMonthlyTotal : (monthlySubOnly + hwPerMonth + extrasMonthlyTotal + extrasOnetimePerMonth);
   const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+
+  // Build hardware rows
+  let hwRows = '';
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      const q = li.qty || 0;
+      const devPrice = li.hwPrice || 0;
+      const instPrice = li.hwInstall || 0;
+      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td>' + q + '</td><td>' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
+      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td>' + q + '</td><td>' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
+    });
+  }
+
+  // Build software rows
+  let swRows = '';
+  if (l.lineItems) {
+    swRows = l.lineItems.map(function(li) {
+      return '<tr><td style="font-weight:600">' + li.type + ' Subscription' + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>';
+    }).join('');
+  } else {
+    swRows = '<tr><td style="font-weight:600">GPS Tracking Subscription</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>';
+  }
+
+  // Build extras rows
+  let extrasRows = '';
+  allExtras.forEach(function(ex) {
+    extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td>' + ex.qty + '</td><td>' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
+  });
 
   const win = window.open('', '_blank', 'width=900,height=1100');
   win.document.write(`<!DOCTYPE html><html><head><title>Proposal — ${l.co}</title>
@@ -2439,15 +2493,17 @@ function openProposalDoc(leadId) {
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Inter',sans-serif;background:#fff;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto}
   .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #0098d4}
-  .logo{font-size:24px;font-weight:800;color:#0098d4;letter-spacing:-.5px} .logo span{color:#333}
   h2{font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1}
+  h3{font-size:12px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
   table{width:100%;border-collapse:collapse;margin-bottom:16px}
   th{text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee}
   td{padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px}
   .total td{border-top:2px solid #1a1a1a;font-weight:800;font-size:13px}
+  .subtotal td{border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333}
   .sign-box{background:#f0f9ff;border:2px solid #0088FF;padding:24px;margin:30px 0;text-align:center;border-radius:8px}
   .sign-btn{display:inline-block;padding:14px 40px;background:#0088FF;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:6px;cursor:pointer;text-decoration:none;letter-spacing:.5px}
   .sign-btn:hover{background:#0066CC}
+  .callout{background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6}
   .terms{font-size:10px;color:#888;line-height:1.6;margin-top:20px}
   .footer{margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888}
   @media print{body{padding:20px}.no-print{display:none}}
@@ -2469,27 +2525,58 @@ function openProposalDoc(leadId) {
 <p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will supply, install, and maintain GPS tracking devices across your fleet of <strong>${totalUnits} vehicles/assets</strong>. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>
 
 <h2>Pricing Schedule</h2>
+
+${hwTotal > 0 ? `<h3>Hardware &amp; Installation</h3>
+<table>
+  <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead>
+  <tbody>
+    ${hwRows}
+    <tr class="subtotal"><td colspan="3">Hardware &amp; Installation Total</td><td style="text-align:right">${fmt(hwTotal)}</td></tr>
+  </tbody>
+</table>
+${isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : '<div class="callout"><strong style="color:#0098d4">Included in Monthly Payment:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is spread across ' + term + ' months at <strong>' + fmt(hwPerMonth) + '/mo</strong> — no upfront cost required.</div>'}` : ''}
+
+<h3>Software Subscription</h3>
 <table>
   <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Monthly</th></tr></thead>
   <tbody>
-    ${l.lineItems ? l.lineItems.map(li => '<tr><td style="font-weight:600">' + li.type + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>').join('') : '<tr><td style="font-weight:600">GPS Tracking Unit</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>'}
-    ${isSpread ? '<tr><td style="font-weight:600;color:#0098d4">Hardware &amp; Installation (spread over ' + term + ' months)</td><td>' + totalUnits + '</td><td>' + fmt(hwPerMonth) + '/mo</td><td style="text-align:right;font-weight:600;color:#0098d4">' + fmt(hwPerMonth) + '</td></tr>' : ''}
-    <tr class="total"><td colspan="3">Total Monthly</td><td style="text-align:right">${fmt(monthly)}</td></tr>
+    ${swRows}
+    <tr class="subtotal"><td colspan="3">Software Monthly Total</td><td style="text-align:right">${fmt(monthlySubOnly)}/mo</td></tr>
   </tbody>
 </table>
-${!isSpread && hwTotal > 0 ? '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:12px;margin-bottom:16px;font-size:12px"><strong style="color:#0098d4">One-Time Payment:</strong> Hardware &amp; installation — <strong>' + fmt(hwTotal) + '</strong> payable upfront before activation.</div>' : ''}
 
-<h2>Contract Terms</h2>
+${allExtras.length > 0 ? `<h3>Optional Extras</h3>
+<table>
+  <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Cost</th></tr></thead>
+  <tbody>
+    ${extrasRows}
+    ${extrasMonthlyTotal > 0 ? '<tr class="subtotal"><td colspan="3">Monthly Extras</td><td style="text-align:right">' + fmt(extrasMonthlyTotal) + '/mo</td></tr>' : ''}
+    ${extrasOnetimeTotal > 0 ? '<tr class="subtotal"><td colspan="3">One-Time Extras' + (isContract ? ' (spread over ' + term + ' months)' : '') + '</td><td style="text-align:right">' + fmt(extrasOnetimeTotal) + (isContract ? ' (' + fmt(extrasOnetimePerMonth) + '/mo)' : '') + '</td></tr>' : ''}
+  </tbody>
+</table>` : ''}
+
+<div style="background:#0098d4;color:#fff;padding:16px 20px;margin:20px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-bottom:4px">${isMTM ? 'What You Pay' : 'Your Monthly Payment'}</div>
+      <div style="font-size:24px;font-weight:800">${fmt(totalMonthly)}<span style="font-size:13px;font-weight:600"> /month</span></div>
+    </div>
+    <div style="text-align:right;font-size:11px;line-height:1.6;opacity:.9">
+      ${isMTM ? 'Month-to-Month — no lock-in contract<br>Hardware: ' + fmt(hwTotal) + ' paid upfront' : term + '-month contract<br>Hardware included in monthly payment'}
+      ${allExtras.length > 0 ? '<br>Includes selected extras' : ''}
+    </div>
+  </div>
+  ${isContract ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.3);font-size:11px;opacity:.85"><strong>Monthly breakdown:</strong> Software ' + fmt(monthlySubOnly) + (hwPerMonth > 0 ? ' + Hardware ' + fmt(hwPerMonth) : '') + (extrasMonthlyTotal > 0 ? ' + Extras ' + fmt(extrasMonthlyTotal) : '') + (extrasOnetimePerMonth > 0 ? ' + One-time extras ' + fmt(extrasOnetimePerMonth) : '') + ' = <strong>' + fmt(totalMonthly) + '/mo</strong></div>' : ''}
+</div>
+
+<h2>Agreement Details</h2>
 <table>
   <tbody>
-    <tr><td style="font-weight:600;width:40%">Contract Term</td><td>${term > 0 ? term + ' months' : 'Month-to-Month'}</td></tr>
-    <tr><td style="font-weight:600">Total Contract Value</td><td style="font-weight:700;color:#0098d4">${fmt(monthly * (term > 0 ? term : 12))}</td></tr>
-    <tr><td style="font-weight:600">Payment Structure</td><td style="font-weight:600;color:#0098d4">${isSpread ? 'Contract — hardware cost spread across ' + term + ' months' : 'Monthly — hardware paid upfront'}</td></tr>
-    <tr><td style="font-weight:600">Hardware</td><td>${isSpread ? 'Included in monthly payment — ' + fmt(hwPerMonth) + '/mo over ' + term + ' months' : (hwTotal > 0 ? fmt(hwTotal) + ' payable upfront' : 'Included — no upfront cost')}</td></tr>
-    <tr><td style="font-weight:600">Monthly Subscription</td><td>${isSpread ? fmt(monthly) + '/mo (software ' + fmt(monthlySubOnly) + ' + hardware ' + fmt(hwPerMonth) + ')' : fmt(monthlySubOnly) + '/mo'}</td></tr>
+    <tr><td style="font-weight:600;width:40%">Term</td><td>${isMTM ? 'Month-to-Month — cancel any time with 30 days notice' : term + ' months'}</td></tr>
+    <tr><td style="font-weight:600">Payment</td><td>${isMTM ? 'Hardware ' + fmt(hwTotal) + ' upfront + ' + fmt(totalMonthly) + '/mo subscription' : fmt(totalMonthly) + '/mo — all-inclusive monthly payment'}</td></tr>
     <tr><td style="font-weight:600">Installation</td><td>Included — scheduled at your convenience</td></tr>
     <tr><td style="font-weight:600">Support</td><td>24/7 Australian-based support</td></tr>
-    <tr><td style="font-weight:600">Billing</td><td>Monthly in advance</td></tr>
+    <tr><td style="font-weight:600">Billing</td><td>Monthly in advance via direct debit</td></tr>
   </tbody>
 </table>
 
@@ -2502,12 +2589,12 @@ ${!isSpread && hwTotal > 0 ? '<div style="background:#f0f9ff;border:1px solid #0
 
 <h2>Terms &amp; Conditions</h2>
 <div class="terms">
-  <p><strong>1. Service Period:</strong> This agreement commences on the installation date and continues for ${term} months.</p>
-  <p style="margin-top:6px"><strong>2. Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit.</p>
-  <p style="margin-top:6px"><strong>3. Hardware:</strong> ${isSpread ? 'All GPS devices remain the property of TrackNow GPS until the hardware component has been paid in full over the contract term. The hardware cost of ' + fmt(hwTotal) + ' is spread across ' + term + ' monthly payments of ' + fmt(hwPerMonth) + ', included in the combined monthly charge.' : (hwTotal > 0 ? 'Hardware totalling ' + fmt(hwTotal) + ' is payable upfront prior to installation. Upon payment, devices become the property of the client.' : 'All GPS devices remain the property of TrackNow GPS. Devices are provided at no upfront cost for the duration of the contract.')}</p>
+  <p><strong>1. Service Period:</strong> ${isMTM ? 'This agreement operates on a month-to-month basis from the installation date. Either party may cancel by providing 30 days written notice.' : 'This agreement commences on the installation date and continues for ' + term + ' months.'}</p>
+  <p style="margin-top:6px"><strong>2. Payment:</strong> ${isMTM ? 'Hardware and installation fees are payable upfront prior to activation. Monthly subscription fees are billed in advance on the 1st of each month via direct debit.' : 'All fees (hardware, software, and extras) are combined into a single monthly payment of ' + fmt(totalMonthly) + ', billed in advance on the 1st of each month via direct debit. No upfront payment is required.'}</p>
+  <p style="margin-top:6px"><strong>3. Hardware:</strong> ${isContract ? 'All GPS devices remain the property of TrackNow GPS until the hardware component has been paid in full over the contract term (' + term + ' months). The hardware cost of ' + fmt(hwTotal) + ' is included in the combined monthly payment.' : (hwTotal > 0 ? 'Hardware totalling ' + fmt(hwTotal) + ' is payable upfront prior to installation. Upon payment, devices become the property of the client.' : 'All GPS devices remain the property of TrackNow GPS. Devices are provided at no upfront cost for the duration of the agreement.')}</p>
   <p style="margin-top:6px"><strong>4. Installation:</strong> Professional installation is included and will be scheduled at a mutually agreed time to minimise operational disruption.</p>
   <p style="margin-top:6px"><strong>5. Support:</strong> 24/7 technical support is included. Response times: Critical issues within 2 hours, standard queries within 24 hours.</p>
-  <p style="margin-top:6px"><strong>6. Cancellation &amp; 30-Day Notice:</strong> Either party may cancel the subscription by providing a minimum of 30 days written notice. This notice period applies after the minimum term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term.</p>
+  <p style="margin-top:6px"><strong>6. Cancellation &amp; 30-Day Notice:</strong> ${isMTM ? 'Either party may cancel the subscription by providing 30 days written notice via email to support@tracknow.com.au. The subscription remains active and billable until the end of the notice period.' : 'Either party may cancel by providing 30 days written notice. This notice period applies after the minimum term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term.'}</p>
   <p style="margin-top:6px"><strong>7. Privacy:</strong> All fleet data is stored securely in Australian data centres and is accessible only to authorised personnel.</p>
 </div>
 
@@ -2576,7 +2663,7 @@ function renderPipeline() {
             ${l.stage!=='agreement'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+')" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.background=\'#111\'" onmouseout="this.style.borderColor=\'#332200\';this.style.background=\'#080808\'">EDIT PRODUCTS & PRICING</button>':''}
             ${l.stage==='proposal'?'<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.2);margin-bottom:4px"><span style="font-size:10px;color:#0088FF">📄</span><span style="font-size:10px;color:#0088FF;font-weight:600">Fleet Optimisation Report — Sent</span><span style="font-size:10px;color:#00CC66">✓</span></div>':''}
             ${l.stage==='proposal'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button><button onclick="event.stopPropagation();emailProposal('+l.id+')" style="padding:5px 10px;background:#7c3aed;border:1px solid #7c3aed;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
-            ${l.stage==='agreement'?'<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.2);margin-bottom:4px"><span style="font-size:10px;color:#0088FF">📄</span><span style="font-size:10px;color:#0088FF;font-weight:600">Fleet Optimisation Report — Sent</span><span style="font-size:10px;color:#00CC66">✓</span></div>':''}
+            ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button></div>':''}
             ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍ VIEW AGREEMENT</button><button onclick="event.stopPropagation();emailAgreement('+l.id+')" style="padding:5px 10px;background:#db2777;border:1px solid #db2777;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
             ${renderFollowUpBar(l)}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
@@ -6982,11 +7069,13 @@ function openDealProducts(leadId, source) {
   document.getElementById('dp_hwCost_input').value = l.hwCostOfGoods || 0;
   document.getElementById('dp_swCost_input').value = l.swCostOfGoods || 0;
   document.getElementById('dp_installCost_input').value = l.installCostOfGoods || 0;
-  // Restore payment type
-  _dpPaymentType = l.paymentType || 'upfront';
+  // Restore payment type and lock based on term
+  var openTerm = l.term != null ? l.term : 24;
+  _dpPaymentType = openTerm === 0 ? 'upfront' : (l.paymentType || 'spread');
   setPaymentType(_dpPaymentType);
   renderDealProductLines();
   updateDealProductTotals();
+  lockPaymentType(openTerm);
   initFleetProfile();
   document.getElementById('dealProductsModal').style.display = 'flex';
 }
@@ -7162,6 +7251,13 @@ function applyTermPricing(idx) {
   const matrix = PRICING_MATRIX[li.type];
   if (matrix) li.sub = matrix[term] || matrix[24] || 26;
   l.term = term;
+  // Auto-lock payment structure based on term
+  if (term === 0) {
+    setPaymentType('upfront');  // MTM = Monthly (hardware upfront)
+  } else {
+    setPaymentType('spread');   // Contract = hardware spread across term
+  }
+  lockPaymentType(term);
   renderDealProductLines();
 }
 
@@ -7275,6 +7371,31 @@ function setPaymentType(type) {
     if (explainer) explainer.innerHTML = '<b style="color:#FFA028">Contract:</b> Hardware + install cost is spread across the full contract term and added to the monthly subscription. Reduces the customer\'s upfront cashflow outlay — they pay one combined monthly amount.';
   }
   updateDealProductTotals();
+}
+function lockPaymentType(term) {
+  var upBtn = document.getElementById('dp_payBtn_upfront');
+  var spBtn = document.getElementById('dp_payBtn_spread');
+  var lockNote = document.getElementById('dp_payLockNote');
+  if (!lockNote) {
+    var explainer = document.getElementById('dp_paymentExplainer');
+    if (explainer) {
+      lockNote = document.createElement('div');
+      lockNote.id = 'dp_payLockNote';
+      lockNote.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:9px;font-weight:700;letter-spacing:.3px;text-align:center';
+      explainer.parentNode.insertBefore(lockNote, explainer.nextSibling);
+    }
+  }
+  if (term === 0) {
+    // MTM — lock to Monthly, disable Contract button
+    if (upBtn) { upBtn.onclick = function(){ setPaymentType('upfront'); }; upBtn.style.cursor = 'pointer'; upBtn.style.opacity = '1'; }
+    if (spBtn) { spBtn.onclick = null; spBtn.style.cursor = 'not-allowed'; spBtn.style.opacity = '0.35'; }
+    if (lockNote) { lockNote.style.display = ''; lockNote.style.color = '#0098d4'; lockNote.style.background = 'rgba(0,152,212,.06)'; lockNote.style.border = '1px solid rgba(0,152,212,.15)'; lockNote.innerHTML = '🔒 Month-to-Month — payment locked to <b>Monthly</b> (hardware upfront)'; }
+  } else {
+    // Contract term — lock to Contract, disable Monthly button
+    if (spBtn) { spBtn.onclick = function(){ setPaymentType('spread'); }; spBtn.style.cursor = 'pointer'; spBtn.style.opacity = '1'; }
+    if (upBtn) { upBtn.onclick = null; upBtn.style.cursor = 'not-allowed'; upBtn.style.opacity = '0.35'; }
+    if (lockNote) { lockNote.style.display = ''; lockNote.style.color = '#FFA028'; lockNote.style.background = 'rgba(255,160,40,.06)'; lockNote.style.border = '1px solid rgba(255,160,40,.15)'; lockNote.innerHTML = '🔒 ' + term + '-month contract — payment locked to <b>Contract</b> (hardware spread across term)'; }
+  }
 }
 
 function saveDealProducts() {
