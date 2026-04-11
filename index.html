@@ -624,8 +624,6 @@ select option{background:#0a0a0a;color:#FFA028}
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
             <option value="database">Database</option><option value="walk-in">Walk-In</option>
           </select></div>
-        <input type="hidden" id="pm_fleet" value="0">
-        <input type="hidden" id="pm_trackers" value="0">
         <div><label class="form-label">Subscription Type</label>
           <select id="pm_sub" class="form-input">
             <option value="29.95">OBD2 Plug-In — $29.95/mo</option>
@@ -6440,12 +6438,6 @@ function renderProspects() {
       </td>
       <td style="padding:12px 14px;font-size:13px;color:#FFA028">${p.ind}</td>
       <td style="padding:12px 14px"><span style="font-size:11px;font-weight:700;color:${sm.color};background:${sm.bg};padding:3px 8px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
-      <td style="padding:12px 14px;text-align:center">
-        <input type="number" value="${p.fleet||0}" min="0" onchange="updateProspectField(${p.id},'fleet',this.value)" style="${inputStyle}">
-      </td>
-      <td style="padding:12px 14px;text-align:center">
-        <input type="number" value="${p.trackers||0}" min="0" onchange="updateProspectField(${p.id},'trackers',this.value)" style="${inputStyle}">
-      </td>
       <td style="padding:12px 14px">
         <select onchange="updateProspectField(${p.id},'status',this.value)" style="${selectStyle}">
           ${statusOptions.replace('value="'+p.status+'"', 'value="'+p.status+'" selected')}
@@ -6479,7 +6471,7 @@ function renderProspects() {
       </td>
     </tr>
     <tr id="notesRow-${p.id}" style="display:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td colspan="9" style="padding:0 14px 14px 14px;border-bottom:1px solid #222">
+      <td colspan="7" style="padding:0 14px 14px 14px;border-bottom:1px solid #222">
         <div style="background:#080808;border:1px solid #222;border-left:3px solid #FFA028;padding:10px 14px">
           <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Notes — ${p.co}</div>
           <textarea id="notes-${p.id}" onchange="updateProspectField(${p.id},'notes',this.value)"
@@ -6507,8 +6499,6 @@ function renderProspects() {
         <th style="${thStyle}">Contact</th>
         <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#FFA028':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Source</th>
-        <th onclick="toggleProspSort('fleet')" style="${thStyle};text-align:center;cursor:pointer;user-select:none;color:${_prospSortField==='fleet'?'#FFA028':'#666'}">Fleet ${_prospSortField==='fleet'?(_prospSortDir===1?'▲':'▼'):''}</th>
-        <th style="${thStyle};text-align:center">Trackers</th>
         <th style="${thStyle}">Status</th>
         <th onclick="toggleProspSort('added')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='added'?'#FFA028':'#666'}">Added ${_prospSortField==='added'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Actions</th>
@@ -6534,8 +6524,6 @@ function renderProspects() {
           <th style="${thStyle}">Contact</th>
           <th style="${thStyle}">Industry</th>
           <th style="${thStyle}">Source</th>
-          <th style="${thStyle};text-align:center">Fleet</th>
-          <th style="${thStyle};text-align:center">Trackers</th>
           <th style="${thStyle}">Status</th>
           <th style="${thStyle}">Added</th>
           <th style="${thStyle}">Actions</th>
@@ -7084,8 +7072,8 @@ function saveProspect() {
     email: document.getElementById('pm_email').value.trim(),
     ind: document.getElementById('pm_ind').value,
     source: document.getElementById('pm_source').value,
-    fleet: parseInt(document.getElementById('pm_fleet').value) || 0,
-    trackers: parseInt(document.getElementById('pm_trackers').value) || 0,
+    fleet: 0,
+    trackers: 0,
     subPrice: parseFloat(document.getElementById('pm_sub').value) || 0,
     added: auDate(),
     status: document.getElementById('pm_status').value,
@@ -7096,7 +7084,7 @@ function saveProspect() {
   renderProspects();
   renderCustStats();
   // clear form
-  ['pm_co','pm_name','pm_phone','pm_email','pm_fleet','pm_trackers','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
+  ['pm_co','pm_name','pm_phone','pm_email','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
 }
 
 // ── Save customer ────────────────────────────────────────────────
