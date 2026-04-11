@@ -624,13 +624,6 @@ select option{background:#0a0a0a;color:#FFA028}
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
             <option value="database">Database</option><option value="walk-in">Walk-In</option>
           </select></div>
-        <div><label class="form-label">Subscription Type</label>
-          <select id="pm_sub" class="form-input">
-            <option value="29.95">OBD2 Plug-In — $29.95/mo</option>
-            <option value="34.95">Hardwired — $34.95/mo</option>
-            <option value="44.95">Solar Powered — $44.95/mo</option>
-            <option value="0">Not Decided</option>
-          </select></div>
         <div><label class="form-label">Status</label>
           <select id="pm_status" class="form-input">
             <option value="new">New</option>
@@ -7126,7 +7119,7 @@ function saveProspect() {
     source: document.getElementById('pm_source').value,
     fleet: 0,
     trackers: 0,
-    subPrice: parseFloat(document.getElementById('pm_sub').value) || 0,
+    subPrice: 29.95,
     added: auDate(),
     status: document.getElementById('pm_status').value,
     callbackDate: '', callbackTime: '',
