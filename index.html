@@ -2489,6 +2489,86 @@ function _sendProposalNotify(btn) {
   }
 }
 
+// ── EmailJS agreement notification (called from agreement popup via window.opener) ──
+var _agreementLeadCache = null;
+
+function _sendAgreementNotify(btn) {
+  var ld = _agreementLeadCache;
+  if (!ld) { alert('Error: no lead data. Please close and reopen the agreement.'); return; }
+  var doc = btn.ownerDocument;
+  var cn = doc.getElementById('sig_client_name').value.trim();
+  var cs = doc.getElementById('sig_client_sig').value.trim();
+  var cv = doc.getElementById('agrSigCanvas');
+  var hasDrawn = false;
+  if (cv) {
+    var ctx = cv.getContext('2d');
+    var px = ctx.getImageData(0, 0, cv.width, cv.height).data;
+    for (var i = 3; i < px.length; i += 4) { if (px[i] > 0) { hasDrawn = true; break; } }
+  }
+  if (!cn || (!cs && !hasDrawn)) {
+    alert('Please enter your full name and provide a signature (type or draw) to proceed.');
+    return;
+  }
+  var sigMethod = hasDrawn ? 'Drawn on screen' : 'Typed: ' + cs;
+  var agrNum = 'TN-AGR-' + String(ld.id).padStart(4, '0');
+  var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span> Sending...';
+  // add spinner keyframe
+  if (!doc.getElementById('_spinStyle2')) {
+    var st = doc.createElement('style'); st.id = '_spinStyle2';
+    st.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    doc.head.appendChild(st);
+  }
+
+  function doSend() {
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+      to_email: 'sales@tracknow.com.au',
+      subject: 'SIGNED: Service Agreement ' + agrNum + ' — ' + ld.co,
+      from_name: cn,
+      message_html: '<h2 style="color:#0098d4">Agreement Signed</h2>' +
+        '<p><strong>' + cn + '</strong> from <strong>' + ld.co + '</strong> has signed the service agreement.</p>' +
+        '<p>Agreement: ' + agrNum + '</p>' +
+        '<p>Signature method: ' + sigMethod + '</p>' +
+        '<p>Title: ' + (doc.getElementById('sig_client_title').value.trim() || 'N/A') + '</p>' +
+        '<p>Date: ' + today + '</p>' +
+        '<p>Email: ' + (ld.email || 'N/A') + '</p>' +
+        '<p>Phone: ' + (ld.phone || 'N/A') + '</p>' +
+        '<p style="color:#888;font-size:12px">This notification was sent automatically from the TrackNow agreement document.</p>'
+    }).then(function() {
+      btn.style.display = 'none';
+      var msg = doc.getElementById('acceptedMsg');
+      if (msg) {
+        msg.style.display = 'block';
+        msg.innerHTML = '&#10003; Agreement Signed &mdash; ' + cn + ' &middot; ' + today;
+      }
+    }).catch(function() {
+      btn.disabled = false;
+      btn.innerHTML = '&#10003; SIGN & ACCEPT AGREEMENT';
+      alert('Something went wrong. Please try again or call us on 1300 TRACK NOW.');
+    });
+  }
+
+  if (_emailjsLoaded && typeof emailjs !== 'undefined') {
+    doSend();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() {
+      _emailjsLoaded = true;
+      emailjs.init('OoTzGVR6EezbqlWDx');
+      doSend();
+    };
+    s.onerror = function() {
+      btn.disabled = false;
+      btn.innerHTML = '&#10003; SIGN & ACCEPT AGREEMENT';
+      alert('Could not load email service. Please call us on 1300 TRACK NOW.');
+    };
+    document.head.appendChild(s);
+  }
+}
+
 function openProposalDoc(leadId) {
   const l = LEADS.find(x => x.id === leadId);
   _proposalLeadCache = l;
@@ -2777,6 +2857,7 @@ function renderPipeline() {
 function openAgreementDoc(leadId) {
   const l = LEADS.find(x => x.id === leadId);
   if (!l) return;
+  _agreementLeadCache = l;
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 1);
   const subPrice = l.subPrice || 29.95;
   const term = l.term != null ? l.term : 24;
@@ -2937,7 +3018,7 @@ function openAgreementDoc(leadId) {
   </div>
 </div>
 
-<button class="accept-btn no-print" onclick="var cn=document.getElementById('sig_client_name').value.trim();var cs=document.getElementById('sig_client_sig').value.trim();var cv=document.getElementById('agrSigCanvas');var hasDrawn=false;if(cv){var ctx=cv.getContext('2d');var px=ctx.getImageData(0,0,cv.width,cv.height).data;for(var i=3;i<px.length;i+=4){if(px[i]>0){hasDrawn=true;break;}}}if(!cn||(!cs&&!hasDrawn)){alert('Please enter your full name and provide a signature (type or draw) to proceed.');return;}this.style.display='none';document.getElementById('acceptedMsg').style.display='block';document.getElementById('acceptedMsg').innerHTML='✓ Agreement Signed &mdash; '+cn+' &middot; ${today}';window.open('mailto:sales@tracknow.com.au?subject='+encodeURIComponent('SIGNED: Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} — ${l.co}')+'&body='+encodeURIComponent('Hi TrackNow,\\n\\nI am pleased to confirm acceptance and signing of the Service Agreement TN-AGR-${String(l.id).padStart(4,'0')} for ${l.co}.\\n\\nSigned by: '+cn+'\\n\\nPlease proceed with the next steps.\\n\\nKind regards'),'_self');setTimeout(function(){window.print()},500)">
+<button class="accept-btn no-print" onclick="window.opener._sendAgreementNotify(this)">
   ✓ SIGN &amp; ACCEPT AGREEMENT
 </button>
 <div class="accepted-msg" id="acceptedMsg">✓ Agreement Signed — ${today}</div>
