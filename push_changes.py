@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — all calculator, proposal, payment & agreement updates."""
+"""Push — all calculator, proposal, payment, agreement & MTM fixes."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -31,41 +31,45 @@ if not files:
     print("\n  No staged changes — nothing to push.")
     sys.exit(0)
 
+print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Per-asset calculators + proposal restructure + payment lock + agreement update
+COMMIT_MSG = """Per-asset calculators, proposal restructure, payment lock, agreement update
 
 Calculators — per-asset values for all 3:
 - Fuel slippage: per-asset working hrs/day
 - Idle cost: per-asset idle hrs/day
-- After-hours: per-asset AH % (vehicles only by default)
-- Trucks, equipment, excavators, trailers: calcAH=false, afterHrsPct=0
+- After-hours: per-asset AH pct (vehicles only by default)
+- Trucks, equipment, excavators, trailers default calcAH=false
 - Removed global calculator inputs (workHrs, idleHrs, afterHrsPct)
-- Removed Hidden Cost & Fraud calculator section entirely
+- Removed Hidden Cost and Fraud calculator section entirely
+
+MTM term fix — all instances:
+- Replaced every term||24 pattern with term!=null?term:24
+- Prevents MTM term 0 from being treated as falsy
 
 Payment structure locked to term:
-- MTM (month-to-month): auto-selects Monthly, disables Contract
-- 12/24/36/60mo contract: auto-selects Contract, disables Monthly
-- Lock note shows active mode and reason
-- Fixed MTM term persistence (0 was treated as falsy)
+- MTM auto-selects Monthly, disables Contract button
+- Contract terms auto-select Contract, disable Monthly button
+- Lock note shows active mode with explanation
 
 Proposal document restructured:
-- 3 separate pricing sections: Hardware, Software, Optional Extras
-- MTM: hardware upfront + monthly subscription
-- Contract: hardware spread into single monthly amount
+- 3 pricing sections: Hardware, Software, Optional Extras
+- MTM shows hardware upfront + monthly subscription
+- Contract shows hardware spread into single monthly amount
 - Removed Contract Value field
-- Blue highlighted total monthly payment box with breakdown
+- Blue highlighted total monthly payment box
 
 Agreement stage card updated:
 - Replaced Fleet Optimisation Report indicator with VIEW PROPOSAL button
-- Agreement card now shows: View Proposal + View Agreement + Send
+- Agreement card now shows View Proposal + View Agreement + Send
 
 Other:
 - Removed Freight Overnight from optional extras
-- Summary renamed to Fleet Losses & Savings Summary"""
+- Summary renamed to Fleet Losses and Savings Summary"""
 
-ok, out = run('git commit -m """' + COMMIT_MSG + '"""')
+ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
 if not ok:
     print(out)

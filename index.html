@@ -2700,7 +2700,7 @@ function renderPipeline() {
         <td style="font-weight:600;${hp?'':'color:#333'}">${hp ? l.v : '—'}</td>
         <td style="font-weight:700;${hp?'color:#FFA028':'color:#333'}">${hp ? '$'+mrr.toFixed(2) : '—'}</td>
         <td style="font-weight:600;${hp?'color:#999':'color:#333'}">${hp ? '$'+l.val.toLocaleString() : '—'}</td>
-        <td style="font-size:11px;${hp?'color:#666':'color:#333'}">${hp ? (l.term==0||l.term==1?'MTM':(l.term||24)+'mo') : '—'}</td>
+        <td style="font-size:11px;${hp?'color:#666':'color:#333'}">${hp ? (l.term==0||l.term==1?'MTM':(l.term!=null?l.term:24)+'mo') : '—'}</td>
         <td><button onclick="event.stopPropagation();openDealProducts(${l.id})" style="background:none;border:1px solid #333;color:#FFA028;font-size:9px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Edit</button></td>
       </tr>`; }).join('')}</tbody></table></div>`;
   }
@@ -6981,7 +6981,7 @@ function moveCustomerToPipeline(id) {
     phone: c.phone || '', ind: c.sector || '', v: c.trackers,
     city: '', st: '', stage: 'proposal', val: annualVal, notes: c.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
-    trackers: c.trackers, subPrice: c.subPrice, term: c.term || 24, sim: '',
+    trackers: c.trackers, subPrice: c.subPrice, term: c.term != null ? c.term : 24, sim: '',
     lineItems: custLines
   });
   saveData(); renderCustomers(); renderCustStats(); renderPipeline();
@@ -8458,7 +8458,7 @@ function autoPopulateCustomer(lead) {
   const normName = (lead.co || '').trim().toLowerCase();
   const existing = CUSTOMERS.find(c => (c.co || '').trim().toLowerCase() === normName);
 
-  const dealTerm = lead.term || 24;
+  const dealTerm = lead.term != null ? lead.term : 24;
   const dealSim = lead.sim || '';
   const today = new Date().toLocaleDateString('en-AU');
 
