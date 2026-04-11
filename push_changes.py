@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HOTFIX — fix broken script tag in proposal signing section."""
+"""Push — fix vertical alignment for fleet segments and calculator asset rows."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 HOTFIX: Fix login — remove script tag from proposal template\033[0m")
+print(f"\n\033[1m🚀 Pushing: Fix vertical alignment — fleet segments + calculator assets\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,11 +35,13 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """HOTFIX: fix login by removing script tag from proposal template
+COMMIT_MSG = """Fix vertical alignment for fleet segments and calculator asset rows
 
-The signing section script tag inside the openProposalDoc template literal
-was being parsed as an actual script close tag, breaking the main page JS.
-Replaced with inline event handlers on the canvas element."""
+- Fleet segment cards: display block, width 100%, parent flex-direction column
+- Slippage asset rows: parent changed from flex-wrap to flex-direction column
+- Idle time asset rows: same fix
+- After-hours asset rows: same fix
+- All asset rows now width 100% for consistent stacking"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
@@ -52,8 +54,7 @@ status("Pushed to GitHub", ok)
 
 if ok:
     print(f"\n\033[92m{'='*50}")
-    print(f"  ✓ HOTFIX PUSHED — deploying to Render now")
-    print(f"  ✓ Login will work in ~1-2 minutes")
+    print(f"  ✓ ALL DONE — deploying to Render")
     print(f"{'='*50}\033[0m\n")
 else:
     print(f"\n\033[91m✗ Push failed:\033[0m\n{out}")

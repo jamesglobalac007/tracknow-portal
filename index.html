@@ -7544,7 +7544,7 @@ function renderCalcAssetChips() {
         var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
         var shortLabel = label.split('/')[0].trim();
         var wh = seg.workHrs != null ? seg.workHrs : 8;
-        shtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+        shtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
           '<button onclick="toggleCalcAsset(\'calcSlip\',' + seg.id + ')" style="' +
             'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
             'border:1px solid ' + (active ? '#0098d4' : '#333') + ';' +
@@ -7575,7 +7575,7 @@ function renderCalcAssetChips() {
         var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
         var shortLabel = label.split('/')[0].trim();
         var ih = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
-        ihtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+        ihtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
           '<button onclick="toggleCalcAsset(\'calcIdle\',' + seg.id + ')" style="' +
             'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
             'border:1px solid ' + (active ? '#d97706' : '#333') + ';' +
@@ -7608,7 +7608,7 @@ function renderCalcAssetChips() {
         var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
         var shortLabel = label.split('/')[0].trim();
         var ap = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
-        ahtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+        ahtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
           '<button onclick="toggleCalcAsset(\'calcAH\',' + seg.id + ')" style="' +
             'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
             'border:1px solid ' + (active ? '#dc2626' : '#333') + ';' +
@@ -7658,7 +7658,7 @@ function renderFleetSegments() {
     const isSelected = seg.selected !== false;
     const borderColor = isSelected ? '#0098d4' : '#333';
     const opacity = isSelected ? '1' : '0.45';
-    return `<div style="background:#111;border:1px solid ${borderColor};padding:8px;margin-bottom:6px;position:relative;opacity:${opacity};transition:opacity .2s,border-color .2s">
+    return `<div style="display:block;width:100%;background:#111;border:1px solid ${borderColor};padding:8px;margin-bottom:6px;position:relative;opacity:${opacity};transition:opacity .2s,border-color .2s;box-sizing:border-box">
       <button onclick="removeFleetSegment(${seg.id})" style="position:absolute;top:4px;right:6px;background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;font-weight:700" title="Remove">&times;</button>
       <div style="display:grid;grid-template-columns:auto 2fr 1fr;gap:6px;align-items:end">
         <div style="padding-bottom:2px"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleFleetSegSelected(${seg.id})" style="width:16px;height:16px;accent-color:#0098d4;cursor:pointer" title="Include in slippage calculation &amp; report"></div>
@@ -8922,7 +8922,7 @@ function doLogin() {
         <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">Vehicle Categories</div>
         <div style="font-size:9px;color:#666">Benchmarks auto-fill from industry data</div>
       </div>
-      <div id="pfp_segments" style="margin-bottom:8px"></div>
+      <div id="pfp_segments" style="display:flex;flex-direction:column;margin-bottom:8px"></div>
       <button onclick="addFleetSegment()" class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:18px;padding:6px;font-size:11px">
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         ADD VEHICLE CATEGORY
@@ -8935,7 +8935,7 @@ function doLogin() {
           <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">1. Fuel Slippage — Working Hours</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">How many hours per day is each asset running? Slippage % shows how much of that time is wasted — unnecessary detours, extended routes, unauthorised use.</div>
-        <div id="pfp_slipAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
+        <div id="pfp_slipAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div>
             <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
@@ -8956,7 +8956,7 @@ function doLogin() {
           <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px">2. Idle Time — Engine Running, Not Working</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Time spent with the engine running but not moving — waiting, breaks, left running. Burns fuel and adds engine hours for nothing.</div>
-        <div id="pfp_idleAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
+        <div id="pfp_idleAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#d97706;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Avg Burn Rate (L/hr idle)</label>
@@ -8973,7 +8973,7 @@ function doLogin() {
           <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">3. After-Hours / Unauthorised Use</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Trucks, cars and vans used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk.</div>
-        <div id="pfp_ahAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
+        <div id="pfp_ahAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Wear Cost $/km (excess)</label>
