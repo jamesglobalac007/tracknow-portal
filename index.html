@@ -8346,14 +8346,11 @@ function sendEmailFromPortal() {
   // Add Accept button for proposals and agreements
   if (_epPending.type === 'proposal' || _epPending.type === 'agreement') {
     var acceptLabel = _epPending.type === 'proposal' ? 'Accept Proposal' : 'Accept Agreement';
-    var acceptSubject = encodeURIComponent((_epPending.type === 'proposal' ? 'ACCEPTED: ' : 'SIGNED: ') + _epPending.subject);
-    var acceptBody = encodeURIComponent('Hi TrackNow,\n\nI am pleased to confirm acceptance of the ' + (_epPending.type === 'proposal' ? 'proposal' : 'service agreement') + '.\n\nPlease proceed with the next steps.\n\nKind regards');
-    var mailtoLink = 'mailto:sales@tracknow.com.au?subject=' + acceptSubject + '&body=' + acceptBody;
     htmlBody += '<br><div style="text-align:center;margin:24px 0">' +
-      '<a href="' + mailtoLink + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
+      '<a href="https://tracknow-portal.onrender.com" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
       '✓ ' + acceptLabel + '</a>' +
       '</div>' +
-      '<p style="text-align:center;color:#888;font-size:12px;margin:0">Clicking the button above will open your email client with a pre-filled acceptance reply.</p>';
+      '<p style="text-align:center;color:#888;font-size:12px;margin:0">Click the button above to view and accept via the TrackNow portal.</p>';
   }
 
   var templateParams = {
@@ -8363,18 +8360,38 @@ function sendEmailFromPortal() {
     message_html: htmlBody
   };
 
-  emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
-    .then(function() {
-      var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
-      showToast(typeLabel + ' sent to ' + _epPending.to + ' ✓');
-      closeEmailPreview();
-    })
-    .catch(function(err) {
-      console.error('EmailJS error:', err);
-      showToast('Email failed — ' + (err.text || err.message || 'unknown error'), 'warn');
+  function doSend() {
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
+      .then(function() {
+        var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
+        showToast(typeLabel + ' sent to ' + _epPending.to + ' ✓');
+        closeEmailPreview();
+      })
+      .catch(function(err) {
+        console.error('EmailJS error:', err);
+        showToast('Email failed — ' + (err.text || err.message || 'unknown error'), 'warn');
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      });
+  }
+
+  if (_emailjsLoaded && typeof emailjs !== 'undefined') {
+    doSend();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() {
+      _emailjsLoaded = true;
+      emailjs.init('OoTzGVR6EezbqlWDx');
+      doSend();
+    };
+    s.onerror = function() {
+      showToast('Could not load email service. Please try again.', 'warn');
       btn.disabled = false;
       btn.innerHTML = origHTML;
-    });
+    };
+    document.head.appendChild(s);
+  }
 }
 
 function emailFleetOverview(prospectId) {
