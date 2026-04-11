@@ -639,6 +639,40 @@ select option{background:#0a0a0a;color:#FFA028}
   </div>
 </div>
 
+<!-- ── EDIT PROSPECT MODAL ─────────────────────────────── -->
+<div class="modal-overlay" id="editProspectModal" style="display:none" onclick="if(event.target===this)closeEditProspect()">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header"><h3 class="modal-title">Edit Prospect</h3>
+      <button class="modal-close" onclick="closeEditProspect()">&#10005;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ep_id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">Company *</label><input id="ep_co" class="form-input"></div>
+        <div><label class="form-label">Contact Name</label><input id="ep_name" class="form-input"></div>
+        <div><label class="form-label">Phone</label><input id="ep_phone" class="form-input"></div>
+        <div><label class="form-label">Email</label><input id="ep_email" class="form-input"></div>
+        <div><label class="form-label">Industry</label>
+          <select id="ep_ind" class="form-input">
+            <option value="Transport">Transport</option><option value="Civil">Civil</option>
+            <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option><option value="Other">Other</option>
+          </select></div>
+        <div><label class="form-label">Lead Source</label>
+          <select id="ep_source" class="form-input">
+            <option value="social">Social Media</option>
+            <option value="website">Website Enquiry</option><option value="referral">Referral</option>
+            <option value="database">Database</option><option value="walk-in">Walk-In</option>
+          </select></div>
+      </div>
+      <div style="margin-top:12px"><label class="form-label">Notes</label>
+        <textarea id="ep_notes" class="form-input" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEditProspect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditProspect()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── ADD CUSTOMER MODAL ─────────────────────────────── -->
 <div class="modal-overlay" id="customerModal" style="display:none" onclick="if(event.target===this)closeCustomerModal()">
   <div class="modal" style="max-width:580px">
@@ -2792,7 +2826,9 @@ function renderPipeline() {
             <span class="more-btn" style="color:#555;font-size:10px;font-weight:600;padding:2px 6px">▼ more</span>
           </div>
           <div id="cardExpand_${l.id}" style="display:none;margin-top:6px;border-top:1px solid #1a1a1a;padding-top:6px">
-            <div onclick="event.stopPropagation();var ed=document.getElementById('cardEdit_'+${l.id});ed.style.display=ed.style.display==='none'?'':'none'" style="font-size:10px;color:#666;margin-bottom:4px;cursor:pointer" onmouseover="this.style.color='#0098d4'" onmouseout="this.style.color='#666'" title="Click to edit contact details">${l.name} · ${l.city}, ${l.st} <span style="font-size:8px;color:#555">✏</span></div>
+            <div onclick="event.stopPropagation();var ed=document.getElementById('cardEdit_'+${l.id});ed.style.display=ed.style.display==='none'?'':'none'" style="font-size:10px;color:#0098d4;margin-bottom:2px;cursor:pointer;text-decoration:underline;text-decoration-color:#222;text-underline-offset:2px" onmouseover="this.style.textDecorationColor='#0098d4'" onmouseout="this.style.textDecorationColor='#222'" title="Click to edit contact details">✏ ${l.name} · ${l.city}, ${l.st}</div>
+            ${l.email?'<div style="font-size:9px;color:#666;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✉ '+l.email+'</div>':''}
+            ${l.phone?'<div style="font-size:9px;color:#666;margin-bottom:4px">📞 '+l.phone+'</div>':''}
             <div id="cardEdit_${l.id}" style="display:none;background:#080808;border:1px solid #222;padding:8px;margin-bottom:6px">
               <div style="font-size:8px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Edit Contact Details</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
@@ -6546,10 +6582,10 @@ function renderProspects() {
     const notesCount = p.notes ? p.notes.split('\n').filter(n=>n.trim()).length || 1 : 0;
     return `<tr style="border-bottom:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
       <td style="padding:12px 14px">
-        <div style="font-weight:600;color:#FFA028;font-size:13px">${p.co}</div>
+        <div onclick="openEditProspect(${p.id})" style="font-weight:600;color:#FFA028;font-size:13px;cursor:pointer;text-decoration:underline;text-decoration-color:#333;text-underline-offset:3px" onmouseover="this.style.textDecorationColor='#FFA028'" onmouseout="this.style.textDecorationColor='#333'" title="Click to edit prospect details">${p.co} <span style="font-size:9px;color:#555">✏</span></div>
       </td>
       <td style="padding:12px 14px">
-        <div style="font-size:13px;color:#FFA028">${p.name||'—'}</div>
+        <div onclick="openEditProspect(${p.id})" style="font-size:13px;color:#FFA028;cursor:pointer" title="Click to edit">${p.name||'—'}</div>
         ${p.phone ? '<div style="font-size:11px;font-weight:600"><a href="tel:'+p.phone.replace(/\s/g,'')+'" style="color:#00CC66;text-decoration:none" title="Click to call">📞 '+p.phone+'</a></div>' : ''}
         ${p.email ? '<div style="font-size:11px"><a href="mailto:'+p.email+'" style="color:#0088FF;text-decoration:none" title="Click to email">✉ '+p.email+'</a></div>' : ''}
       </td>
@@ -7202,6 +7238,42 @@ function saveProspect() {
   renderCustStats();
   // clear form
   ['pm_co','pm_name','pm_phone','pm_email','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
+}
+
+// ── Edit Prospect ───────────────────────────────────────────────
+function openEditProspect(id) {
+  var p = PROSPECTS.find(function(x) { return x.id === id; });
+  if (!p) return;
+  document.getElementById('ep_id').value = id;
+  document.getElementById('ep_co').value = p.co || '';
+  document.getElementById('ep_name').value = p.name || '';
+  document.getElementById('ep_phone').value = p.phone || '';
+  document.getElementById('ep_email').value = p.email || '';
+  document.getElementById('ep_ind').value = p.ind || 'Transport';
+  document.getElementById('ep_source').value = p.source || 'social';
+  document.getElementById('ep_notes').value = p.notes || '';
+  document.getElementById('editProspectModal').style.display = 'flex';
+}
+
+function closeEditProspect() {
+  document.getElementById('editProspectModal').style.display = 'none';
+}
+
+function saveEditProspect() {
+  var id = parseInt(document.getElementById('ep_id').value);
+  var p = PROSPECTS.find(function(x) { return x.id === id; });
+  if (!p) return;
+  p.co = document.getElementById('ep_co').value.trim();
+  p.name = document.getElementById('ep_name').value.trim();
+  p.phone = document.getElementById('ep_phone').value.trim();
+  p.email = document.getElementById('ep_email').value.trim();
+  p.ind = document.getElementById('ep_ind').value;
+  p.source = document.getElementById('ep_source').value;
+  p.notes = document.getElementById('ep_notes').value.trim();
+  saveData();
+  closeEditProspect();
+  renderProspects();
+  showToast('Prospect updated — ' + p.co);
 }
 
 // ── Save customer ────────────────────────────────────────────────
