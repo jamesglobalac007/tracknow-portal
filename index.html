@@ -7335,11 +7335,13 @@ function addFleetSegment(type) {
   const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, selected: true };
   _fpSegments.push(seg);
   renderFleetSegments();
+  renderCalcAssetChips();
   _autoRecalcProspectCosts();
 }
 function removeFleetSegment(id) {
   _fpSegments = _fpSegments.filter(s => s.id !== id);
   renderFleetSegments();
+  renderCalcAssetChips();
   _autoRecalcProspectCosts();
 }
 function updateFleetSegType(id, type) {
@@ -7348,6 +7350,7 @@ function updateFleetSegType(id, type) {
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
   seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle;
   renderFleetSegments();
+  renderCalcAssetChips();
   _autoRecalcProspectCosts();
 }
 function toggleFleetSegSelected(id) {
@@ -7355,7 +7358,47 @@ function toggleFleetSegSelected(id) {
   if (!seg) return;
   seg.selected = !seg.selected;
   renderFleetSegments();
+  renderCalcAssetChips();
   _autoRecalcProspectCosts();
+}
+
+// ── Per-calculator asset selection ──
+// Each calculator tracks which segment IDs are included
+// Default: all segments included. Stored as seg.calcSlip, seg.calcIdle, seg.calcAH (booleans)
+function toggleCalcAsset(calcKey, segId) {
+  const seg = _fpSegments.find(s => s.id === segId);
+  if (!seg) return;
+  seg[calcKey] = !(seg[calcKey] !== false);
+  renderCalcAssetChips();
+  _autoRecalcProspectCosts();
+}
+function renderCalcAssetChips() {
+  var calcs = [
+    { key: 'calcSlip', containerId: 'pfp_slipAssets', color: '#0098d4', label: 'Assets for this calculator:' },
+    { key: 'calcIdle', containerId: 'pfp_idleAssets', color: '#d97706', label: 'Assets for this calculator:' },
+    { key: 'calcAH',   containerId: 'pfp_ahAssets',   color: '#dc2626', label: 'Assets for this calculator:' }
+  ];
+  calcs.forEach(function(calc) {
+    var container = document.getElementById(calc.containerId);
+    if (!container) return;
+    if (_fpSegments.length === 0) { container.innerHTML = ''; return; }
+    var selectedSegs = _fpSegments.filter(function(s) { return s.selected !== false; });
+    if (selectedSegs.length === 0) { container.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; return; }
+    var html = '<span style="font-size:8px;color:#666;margin-right:4px;line-height:22px">' + calc.label + '</span>';
+    selectedSegs.forEach(function(seg) {
+      var active = seg[calc.key] !== false;
+      var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
+      var shortLabel = label.split('/')[0].trim();
+      html += '<button onclick="toggleCalcAsset(\'' + calc.key + '\',' + seg.id + ')" style="' +
+        'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
+        'border:1px solid ' + (active ? calc.color : '#333') + ';' +
+        'color:' + (active ? calc.color : '#555') + ';' +
+        'background:' + (active ? 'rgba(' + (calc.color === '#0098d4' ? '0,152,212' : calc.color === '#d97706' ? '217,119,6' : '220,38,38') + ',.1)' : '#111') + ';' +
+        'cursor:pointer;font-family:inherit;transition:all .15s' +
+        '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>';
+    });
+    container.innerHTML = html;
+  });
 }
 function updateFleetSegVal(id, field, val) {
   const seg = _fpSegments.find(s => s.id === id);
@@ -7418,7 +7461,7 @@ function generateFleetReport() {
   const totalUnits = _reportSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
   const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
 
-  // ── PER-SEGMENT CALCULATIONS — Working Hours Model ──
+  // ── PER-SEGMENT CALCULATIONS — Working Hours Model with per-calc asset selection ──
   let annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
   const wastedMinsPerVehicle = workHrs * 60 * (slipPct / 100);
   const wastedHrsPerVehicle = wastedMinsPerVehicle / 60;
@@ -7426,20 +7469,25 @@ function generateFleetReport() {
     const q = seg.qty || 0;
     const weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
     const aFuel = weeklyFuel * 52;
-    // Slippage: working hours model
+    // Per-calculator asset selection: only include if segment opted in
+    const inSlip = seg.calcSlip !== false;
+    const inIdle = seg.calcIdle !== false;
+    const inAH = seg.calcAH !== false;
+    // Slippage: working hours model (only if this asset selected for slippage calc)
     const avgSpeedKmHr = (seg.km / 5) / workHrs;
     const fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
-    const slip = wastedHrsPerVehicle * fuelPerHr * fuelPrice * q * 260;
-    // Idle: direct burn rate model (Radius.com AU benchmarks)
-    const idle = q * idleHrs * idleBurnRate * fuelPrice * 260;
+    const slip = inSlip ? wastedHrsPerVehicle * fuelPerHr * fuelPrice * q * 260 : 0;
+    // Idle: direct burn rate model (only if this asset selected for idle calc)
+    const idle = inIdle ? q * idleHrs * idleBurnRate * fuelPrice * 260 : 0;
     const ins = q * seg.insurance;
-    const ahKm = q * (afterHrsPct / 100) * seg.km * 52;
+    // After-hours (only if this asset selected for AH calc)
+    const ahKm = inAH ? q * (afterHrsPct / 100) * seg.km * 52 : 0;
     const ahCost = ahKm * (seg.consumption / 100) * fuelPrice;
-    const exKm = q * seg.km * (afterHrsPct / 100) * 52;
+    const exKm = inAH ? q * seg.km * (afterHrsPct / 100) * 52 : 0;
     const wear = exKm * wearCostKm;
     const fraud = aFuel * (fraudPct / 100);
     annualSlippage += slip; annualIdleWaste += idle; totalInsurance += ins; afterHoursCost += ahCost; annualWear += wear; annualFraud += fraud;
-    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, aFuel, slip, idle, ins, ahCost, wear, fraud };
+    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, aFuel, slip, idle, ins, ahCost, wear, fraud, inSlip, inIdle, inAH };
   });
 
   const annualFuelSaving = annualSlippage * 0.60;
@@ -7826,6 +7874,7 @@ function openProspectFleetProfile(prospectId) {
     addFleetSegment('trucks');
   }
   renderFleetSegments();
+  renderCalcAssetChips();
   // Fuel slippage inputs — 3-calculator model
   document.getElementById('pfp_fuelPrice').value = p.fuelPrice || 2.15;
   document.getElementById('pfp_workHrs').value = p.workHrs != null ? p.workHrs : 8;
@@ -7975,38 +8024,51 @@ function recalcProspectCosts() {
   var totalWastedMinsDay = 0, totalSlipFuelDay = 0;
   var totalIdleLitresDay = 0, totalIdleCostDay = 0;
   var totalAhKmWeek = 0, totalAhFuelWeek = 0;
+  var slipUnits = 0, idleUnits = 0, ahUnits = 0;
 
+  // Per-calculator asset filtering
   var _selectedSegments = _fpSegments.filter(function(seg) { return seg.selected !== false; });
+  var _slipSegments = _selectedSegments.filter(function(seg) { return seg.calcSlip !== false; });
+  var _idleSegments = _selectedSegments.filter(function(seg) { return seg.calcIdle !== false; });
+  var _ahSegments   = _selectedSegments.filter(function(seg) { return seg.calcAH !== false; });
+
+  // Overall totals (for context row)
   _selectedSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     totalUnits += q;
-    // Base annual fuel spend (for context)
     var weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
-    var aFuel = weeklyFuel * 52;
-    totalAnnualFuelSpend += aFuel;
+    totalAnnualFuelSpend += weeklyFuel * 52;
+  });
 
-    // 2A: Slippage — Working Hours model
-    // wasted minutes per vehicle per day = workHrs × 60 × (slipPct / 100)
+  // 2A: Slippage — Working Hours model (only selected assets for this calc)
+  _slipSegments.forEach(function(seg) {
+    var q = seg.qty || 0;
+    slipUnits += q;
     var wastedMinsPerVehicle = workHrs * 60 * (slipPct / 100);
     var wastedHrsPerVehicle = wastedMinsPerVehicle / 60;
     totalWastedMinsDay += wastedMinsPerVehicle * q;
-    // fuel wasted during slippage time: wasted hrs × avg consumption per hr
-    // avg consumption per hr at operational rate ≈ seg.consumption L/100km × (seg.km/5days/workHrs) km/hr
     var avgSpeedKmHr = (seg.km / 5) / workHrs;
     var fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
     var slipFuelPerVehicleDay = wastedHrsPerVehicle * fuelPerHr * fuelPrice;
     totalSlipFuelDay += slipFuelPerVehicleDay * q;
     annualSlippage += slipFuelPerVehicleDay * q * 260;
+  });
 
-    // 2B: Idle Time — direct burn rate model
-    // Reference: idle burn rate in L/hr (Radius.com AU data: light 1-1.5, medium 2.5-3.5, heavy 3.5-4.5)
+  // 2B: Idle Time — direct burn rate model (only selected assets for this calc)
+  _idleSegments.forEach(function(seg) {
+    var q = seg.qty || 0;
+    idleUnits += q;
     var idleLitresDay = idleHrs * idleBurnRate;
     var idleCostDay = idleLitresDay * fuelPrice;
     totalIdleLitresDay += idleLitresDay * q;
     totalIdleCostDay += idleCostDay * q;
     annualIdleWaste += idleCostDay * q * 260;
+  });
 
-    // 2C: After-Hours Use
+  // 2C: After-Hours Use (only selected assets for this calc)
+  _ahSegments.forEach(function(seg) {
+    var q = seg.qty || 0;
+    ahUnits += q;
     var ahKmWeek = q * (afterHrsPct / 100) * seg.km;
     totalAhKmWeek += ahKmWeek;
     var ahFuelWeek = ahKmWeek * (seg.consumption / 100) * fuelPrice;
@@ -8020,37 +8082,45 @@ function recalcProspectCosts() {
 
   // ── Populate individual breakdown divs ──
   var fmtN = function(n,d) { return n.toFixed(d !== undefined ? d : 1); };
+  // Asset label helpers
+  var slipAssetNames = _slipSegments.map(function(s) { return ((FLEET_BENCHMARKS[s.type]||{}).label||s.type).split('/')[0].trim() + ' (' + (s.qty||0) + ')'; }).join(', ');
+  var idleAssetNames = _idleSegments.map(function(s) { return ((FLEET_BENCHMARKS[s.type]||{}).label||s.type).split('/')[0].trim() + ' (' + (s.qty||0) + ')'; }).join(', ');
+  var ahAssetNames = _ahSegments.map(function(s) { return ((FLEET_BENCHMARKS[s.type]||{}).label||s.type).split('/')[0].trim() + ' (' + (s.qty||0) + ')'; }).join(', ');
+
   var slipBd = document.getElementById('pfp_slipBreakdown');
   if (slipBd) {
-    var wMins = totalUnits > 0 ? (workHrs * 60 * (slipPct / 100)) : 0;
+    var wMins = slipUnits > 0 ? (workHrs * 60 * (slipPct / 100)) : 0;
     var wHrs = wMins / 60;
     slipBd.innerHTML =
       '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
+      '<div style="font-size:9px;color:#888;margin-bottom:4px">Assets: ' + (slipAssetNames || 'None selected') + ' — <b>' + slipUnits + '</b> vehicles</div>' +
       '<div>' + fmtN(workHrs,1) + ' working hrs × ' + fmtN(slipPct,1) + '% slippage = <b style="color:#dc2626">' + fmtN(wMins,0) + ' mins</b> (' + fmtN(wHrs,2) + ' hrs) wasted per vehicle per day</div>' +
-      '<div>Across <b>' + totalUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalWastedMinsDay,0) + ' mins</b> total wasted daily</div>' +
+      '<div>Across <b>' + slipUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalWastedMinsDay,0) + ' mins</b> total wasted daily</div>' +
       '<div>Daily fleet fuel waste: <b style="color:#dc2626">' + fmt(totalSlipFuelDay) + '</b></div>' +
       '<div>Annual fuel slippage loss (260 days): <b style="color:#dc2626">' + fmt(annualSlippage) + '</b></div>' +
-      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> Industry avg slippage 3-8% of operational hours — Radius Fleet Management AU (2024). Formula: working hrs × slip% = wasted time → fuel cost at operational consumption rate.</div>';
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> Industry avg slippage 3-8% of operational hours — Radius Fleet Management AU (2024).</div>';
   }
   var idleBd = document.getElementById('pfp_idleBreakdown');
   if (idleBd) {
     idleBd.innerHTML =
       '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
+      '<div style="font-size:9px;color:#888;margin-bottom:4px">Assets: ' + (idleAssetNames || 'None selected') + ' — <b>' + idleUnits + '</b> vehicles</div>' +
       '<div>' + fmtN(idleHrs,1) + ' idle hrs/day × ' + fmtN(idleBurnRate,1) + ' L/hr = <b style="color:#dc2626">' + fmtN(idleHrs * idleBurnRate,1) + ' litres</b> wasted per vehicle per day</div>' +
-      '<div>Across <b>' + totalUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalIdleLitresDay,1) + ' litres</b> wasted daily</div>' +
+      '<div>Across <b>' + idleUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalIdleLitresDay,1) + ' litres</b> wasted daily</div>' +
       '<div>Daily idle cost @ $' + fmtN(fuelPrice,2) + '/L: <b style="color:#dc2626">' + fmt(totalIdleCostDay) + '</b></div>' +
       '<div>Annual idle waste (260 days): <b style="color:#dc2626">' + fmt(annualIdleWaste) + '</b></div>' +
-      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> Idle burn rates — Radius.com AU: light commercial 1-1.5 L/hr, medium 2.5-3.5 L/hr, heavy 3.5-4.5+ L/hr. Trucks idle up to 20% of driving time (Radius Fleet Data, 2024).</div>';
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> Idle burn rates — Radius.com AU: light 1-1.5 L/hr, medium 2.5-3.5 L/hr, heavy 3.5-4.5+ L/hr (2024).</div>';
   }
   var ahBd = document.getElementById('pfp_afterHrsBreakdown');
   if (ahBd) {
     ahBd.innerHTML =
       '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
+      '<div style="font-size:9px;color:#888;margin-bottom:4px">Assets: ' + (ahAssetNames || 'None selected') + ' — <b>' + ahUnits + '</b> vehicles</div>' +
       '<div>' + afterHrsPct + '% of weekly km driven after hours = <b style="color:#dc2626">' + fmtN(totalAhKmWeek,0) + ' km/week</b></div>' +
       '<div>After-hours fuel cost/week: <b style="color:#dc2626">' + fmt(totalAhFuelWeek) + '</b></div>' +
       '<div>Annual after-hours fuel: <b style="color:#dc2626">' + fmt(afterHoursCost) + '</b></div>' +
       '<div>Excess wear @ $' + wearCostKm.toFixed(2) + '/km: <b style="color:#dc2626">' + fmt(annualWear) + '</b> /year</div>' +
-      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> After-hours fleet use typically 5-12% of total mileage in unmonitored fleets — industry benchmarks (AUS Fleet Managers Association).</div>';
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> After-hours fleet use typically 5-12% of total mileage — industry benchmarks (AUS Fleet Managers Assoc.).</div>';
   }
 
   // ── HIDDEN COST & FRAUD CALCULATOR INPUTS ──
@@ -8722,6 +8792,7 @@ function doLogin() {
           <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">1. Fuel Slippage — Working Hours</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">How many hours per day is each asset running? Slippage % shows how much of that time is wasted — unnecessary detours, extended routes, unauthorised use.</div>
+        <div id="pfp_slipAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
           <div>
             <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
@@ -8746,6 +8817,7 @@ function doLogin() {
           <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px">2. Idle Time — Engine Running, Not Working</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Time spent with the engine running but not moving — waiting, breaks, left running. Burns fuel and adds engine hours for nothing.</div>
+        <div id="pfp_idleAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#d97706;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Idle Hrs/Day (per asset)</label>
@@ -8766,6 +8838,7 @@ function doLogin() {
           <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">3. After-Hours / Unauthorised Use</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Vehicles used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk.</div>
+        <div id="pfp_ahAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">After-Hours Use %</label>

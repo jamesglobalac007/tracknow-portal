@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Push script — Payment type (monthly vs contract spread) for deal products + proposal + agreement."""
+"""Push script — Per-calculator asset selection + payment structure toggle."""
 import subprocess, os, sys, glob
 
-# Find the repo
 HOME = os.path.expanduser("~")
 CANDIDATES = [
     os.path.join(HOME, "mds", "tracknow-portal"),
@@ -27,15 +26,13 @@ def status(msg, ok=True):
     sym = "\033[92m✓\033[0m" if ok else "\033[91m✗\033[0m"
     print(f"  {sym} {msg}")
 
-print(f"\n\033[1m🚀 Pushing payment structure update to GitHub\033[0m")
+print(f"\n\033[1m🚀 Pushing asset selection + payment structure to GitHub\033[0m")
 print(f"  Repo: {REPO}\n")
 
-# Clear stale lock files
 for lockfile in glob.glob(os.path.join(REPO, ".git", "*.lock")):
     os.remove(lockfile)
     status(f"Removed stale lock: {os.path.basename(lockfile)}")
 
-# 1. Pull latest
 ok, out = run("git pull origin main")
 if not ok and "Already up to date" not in out:
     status("Pull from origin", False)
@@ -43,7 +40,6 @@ if not ok and "Already up to date" not in out:
     sys.exit(1)
 status("Pulled latest from origin")
 
-# 2. Check for changes
 ok, diff_out = run("git diff --name-only")
 ok2, untracked = run("git ls-files --others --exclude-standard")
 changed = [f.strip() for f in diff_out.strip().split("\n") if f.strip()]
@@ -58,16 +54,22 @@ for f in changed:
 for f in new_files:
     status(f"New file: {f}")
 
-# 3. Stage, commit, push
-COMMIT_MSG = """Add payment structure toggle — Monthly (hardware upfront) vs Contract (spread)
+COMMIT_MSG = """Add per-calculator asset selection and payment structure toggle
 
-- New payment type selector in deal products: Monthly or Contract
-- Monthly: customer pays hardware upfront, then subscription only
-- Contract: hardware cost spread across full term, added to monthly amount
-- Deal summary dynamically updates with spread breakdown
-- Proposal updated: shows payment structure, hardware terms, combined monthly
-- Agreement updated: hardware ownership clause adjusts per payment type
-- Payment type saved/restored per lead"""
+Per-calculator asset selection:
+- Each calculator (Slippage, Idle, After-Hours) gets asset type chips
+- Toggle which vehicle categories apply to each calculator
+- E.g. idle time only for trucks/equipment, after-hours only for vans/utes
+- Breakdown shows which assets included and their unit counts
+- Fleet report respects per-calculator asset selection
+- Selections persist with fleet profile data
+
+Payment structure (Monthly vs Contract):
+- New toggle in deal products: Monthly or Contract
+- Monthly: hardware paid upfront, then subscription only
+- Contract: hardware spread across term, added to monthly
+- Proposal and agreement dynamically reflect payment type
+- Hardware ownership T&Cs adjust per payment method"""
 
 all_files = changed + new_files
 run("git add " + " ".join(f'"{f}"' for f in all_files))
@@ -88,7 +90,7 @@ status("Pushed to GitHub", ok)
 if ok:
     print(f"\n\033[92m{'='*50}")
     print(f"  ✓ ALL DONE — deploying to Render")
-    print(f"  Payment structure toggle live shortly")
+    print(f"  Asset selection + payment toggle live shortly")
     print(f"{'='*50}\033[0m\n")
 else:
     print(f"\n\033[91m✗ Push failed:\033[0m\n{out}")
