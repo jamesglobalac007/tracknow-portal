@@ -7342,28 +7342,39 @@ function generateFleetReport() {
 
   const fuelPrice = parseFloat((document.getElementById('fp_fuelPrice') || document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
   const fraudPct = parseFloat((document.getElementById('fp_fraudPct') || document.getElementById('pfp_fraudPct') || {}).value) || 3;
+  const workHrs = parseFloat((document.getElementById('pfp_workHrs') || {}).value) || 8;
+  const slipPct = parseFloat((document.getElementById('pfp_slipPct') || {}).value) || 5;
+  const idleHrs = parseFloat((document.getElementById('pfp_idleHrs') || {}).value) || 1.5;
+  const idleBurnRate = parseFloat((document.getElementById('pfp_idleBurnRate') || {}).value) || 3.5;
+  const afterHrsPct = parseFloat((document.getElementById('pfp_afterHrsPct') || {}).value) || 8;
+  const wearCostKm = parseFloat((document.getElementById('pfp_wearCostKm') || {}).value) || 0.12;
   const subPrice = l.subPrice || 29.95;
   const _reportSegments = _fpSegments.filter(seg => seg.selected !== false);
   const totalUnits = _reportSegments.reduce((s, seg) => s + (seg.qty || 0), 0);
   const fmt = n => '$' + Math.round(n).toLocaleString('en-AU');
 
-  // ── PER-SEGMENT CALCULATIONS (only selected segments) ──
+  // ── PER-SEGMENT CALCULATIONS — Working Hours Model ──
   let annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
+  const wastedMinsPerVehicle = workHrs * 60 * (slipPct / 100);
+  const wastedHrsPerVehicle = wastedMinsPerVehicle / 60;
   const segResults = _reportSegments.map(seg => {
     const q = seg.qty || 0;
     const weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
     const aFuel = weeklyFuel * 52;
-    const slip = aFuel * (seg.slippage / 100);
-    const idleFuelPerHr = (seg.consumption / 100) * 3 * fuelPrice;
-    const idle = q * seg.idle * idleFuelPerHr * 260;
+    // Slippage: working hours model
+    const avgSpeedKmHr = (seg.km / 5) / workHrs;
+    const fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
+    const slip = wastedHrsPerVehicle * fuelPerHr * fuelPrice * q * 260;
+    // Idle: direct burn rate model (Radius.com AU benchmarks)
+    const idle = q * idleHrs * idleBurnRate * fuelPrice * 260;
     const ins = q * seg.insurance;
-    const ahKm = q * 0.08 * seg.km * 52;
+    const ahKm = q * (afterHrsPct / 100) * seg.km * 52;
     const ahCost = ahKm * (seg.consumption / 100) * fuelPrice;
-    const exKm = q * seg.km * (seg.slippage / 100) * 52;
-    const wear = exKm * 0.12;
+    const exKm = q * seg.km * (afterHrsPct / 100) * 52;
+    const wear = exKm * wearCostKm;
     const fraud = aFuel * (fraudPct / 100);
     annualSlippage += slip; annualIdleWaste += idle; totalInsurance += ins; afterHoursCost += ahCost; annualWear += wear; annualFraud += fraud;
-    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, slippage: seg.slippage, idle: seg.idle, aFuel, slip, idle: idle, ins, ahCost, wear, fraud };
+    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, aFuel, slip, idle, ins, ahCost, wear, fraud };
   });
 
   const annualFuelSaving = annualSlippage * 0.60;
@@ -7380,7 +7391,7 @@ function generateFleetReport() {
   const roi = trackNowAnnualCost > 0 ? Math.round((netAnnualBenefit / trackNowAnnualCost) * 100) : 0;
 
   // Fleet overview rows for multi-segment
-  const fleetOverviewRows = segResults.map(sr => `<tr><td style="font-weight:600">${sr.label}</td><td style="text-align:center">${sr.qty}</td><td style="text-align:center">${sr.km.toLocaleString()}</td><td style="text-align:center">${sr.consumption}L</td><td style="text-align:center">${sr.slippage}%</td><td style="text-align:center">${sr.idle}h</td></tr>`).join('');
+  const fleetOverviewRows = segResults.map(sr => `<tr><td style="font-weight:600">${sr.label}</td><td style="text-align:center">${sr.qty}</td><td style="text-align:center">${sr.km.toLocaleString()}</td><td style="text-align:center">${sr.consumption}L/100km</td></tr>`).join('');
 
   // ── BUILD REPORT HTML ──
   // Use a Blob URL to avoid popup blockers
@@ -7446,12 +7457,16 @@ function generateFleetReport() {
 
 <h2>Fleet Overview</h2>
 <table class="issue-table" style="margin-bottom:20px">
-  <thead><tr><th>Category</th><th style="text-align:center">Units</th><th style="text-align:center">KM/Week</th><th style="text-align:center">Fuel</th><th style="text-align:center">Slippage</th><th style="text-align:center">Idle/Day</th></tr></thead>
+  <thead><tr><th>Category</th><th style="text-align:center">Units</th><th style="text-align:center">KM/Week</th><th style="text-align:center">Consumption</th></tr></thead>
   <tbody>
     ${fleetOverviewRows}
-    <tr class="total-row"><td>TOTAL FLEET</td><td style="text-align:center">${totalUnits} vehicles</td><td colspan="4"></td></tr>
+    <tr class="total-row"><td>TOTAL FLEET</td><td style="text-align:center">${totalUnits} vehicles</td><td colspan="2"></td></tr>
   </tbody>
 </table>
+<div style="background:#f6f8fb;border:1px solid #e8ebf1;padding:12px;margin-bottom:20px;font-size:11px;color:#333;line-height:1.6">
+  <strong>Calculator Parameters:</strong> Working hours: ${workHrs}hrs/day &middot; Slippage: ${slipPct}% &middot; Idle time: ${idleHrs}hrs/day @ ${idleBurnRate}L/hr burn rate &middot; After-hours use: ${afterHrsPct}% &middot; Fuel: $${fuelPrice.toFixed(2)}/L<br>
+  <span style="font-size:9px;color:#888">Idle burn rates based on Radius Fleet Management AU (2024) industry data. Slippage calculated using working-hours operational model.</span>
+</div>
 
 <h2>Hidden Fleet Costs &mdash; What Your Fleet Is Losing</h2>
 <p style="font-size:12px;color:#666;margin-bottom:16px;line-height:1.5">
@@ -7462,17 +7477,17 @@ function generateFleetReport() {
   <thead><tr><th>Issue</th><th style="text-align:right">Annual Cost</th></tr></thead>
   <tbody>
     <tr>
-      <td><div class="issue-name">Fuel Slippage &amp; Waste</div>
-      <div class="issue-desc">Unauthorised fuel use, inefficient routes, excessive idling across all vehicle categories</div></td>
+      <td><div class="issue-name">Fuel Slippage &mdash; Working Hours (${slipPct}% of ${workHrs}hr day)</div>
+      <div class="issue-desc">${Math.round(wastedMinsPerVehicle)} minutes per vehicle per day lost to inefficient routes, unauthorised detours, and unproductive driving time</div></td>
       <td class="cost">${fmt(annualSlippage)}</td>
     </tr>
     <tr>
-      <td><div class="issue-name">Vehicle Idle Time</div>
-      <div class="issue-desc">Engines running while stationary &mdash; burning fuel with zero productivity</div></td>
+      <td><div class="issue-name">Idle Time (${idleHrs}hrs/day @ ${idleBurnRate}L/hr)</div>
+      <div class="issue-desc">Engines running while stationary &mdash; burning ${(idleHrs * idleBurnRate).toFixed(1)}L per vehicle per day with zero productivity</div></td>
       <td class="cost">${fmt(annualIdleWaste)}</td>
     </tr>
     <tr>
-      <td><div class="issue-name">Unauthorised / After-Hours Use</div>
+      <td><div class="issue-name">After-Hours Use (${afterHrsPct}% of km)</div>
       <div class="issue-desc">Personal use, detours, after-hours driving &mdash; untracked mileage adding fuel, wear and liability costs</div></td>
       <td class="cost">${fmt(afterHoursCost)}</td>
     </tr>
@@ -7555,7 +7570,7 @@ function generateFleetReport() {
   <div>Confidential &mdash; prepared for ${l.co}</div>
 </div>
 <div class="disclaimer">
-  This report is based on estimated fleet data provided and industry benchmarks. Actual savings may vary based on fleet usage, driver behaviour, and operational factors. Figures are projections only and do not constitute financial advice. &copy; ${new Date().getFullYear()} Track Now Proprietary Limited. All rights reserved.
+  This report is based on estimated fleet data provided and industry benchmarks. Idle burn rate benchmarks sourced from Radius Fleet Management Australia (2024) &mdash; light commercial 1-1.5 L/hr, medium 2.5-3.5 L/hr, heavy 3.5-4.5+ L/hr. Fuel slippage calculated using working-hours operational model with industry average slippage rates of 3-8%. Actual savings may vary based on fleet usage, driver behaviour, and operational factors. Figures are projections only and do not constitute financial advice. &copy; ${new Date().getFullYear()} Track Now Proprietary Limited. All rights reserved.
 </div>
 </body></html>`;
   var blob = new Blob([reportHTML], {type: 'text/html'});
@@ -7746,10 +7761,12 @@ function openProspectFleetProfile(prospectId) {
     addFleetSegment('trucks');
   }
   renderFleetSegments();
-  // Fuel slippage inputs
+  // Fuel slippage inputs — 3-calculator model
   document.getElementById('pfp_fuelPrice').value = p.fuelPrice || 2.15;
-  document.getElementById('pfp_slipPct').value = p.slipPct != null ? p.slipPct : 15;
+  document.getElementById('pfp_workHrs').value = p.workHrs != null ? p.workHrs : 8;
+  document.getElementById('pfp_slipPct').value = p.slipPct != null ? p.slipPct : 5;
   document.getElementById('pfp_idleHrs').value = p.idleHrs != null ? p.idleHrs : 1.5;
+  document.getElementById('pfp_idleBurnRate').value = p.idleBurnRate != null ? p.idleBurnRate : 3.5;
   document.getElementById('pfp_afterHrsPct').value = p.afterHrsPct != null ? p.afterHrsPct : 8;
   document.getElementById('pfp_wearCostKm').value = p.wearCostKm != null ? p.wearCostKm : 0.12;
   // Hidden cost & fraud inputs — restore saved values per tab
@@ -7774,8 +7791,10 @@ function saveProspectFleet() {
   if (!p) return;
   p.fleetSegments = _fpSegments.slice();
   p.fuelPrice = parseFloat(document.getElementById('pfp_fuelPrice').value) || 2.15;
-  p.slipPct = parseFloat(document.getElementById('pfp_slipPct').value) || 15;
+  p.workHrs = parseFloat(document.getElementById('pfp_workHrs').value) || 8;
+  p.slipPct = parseFloat(document.getElementById('pfp_slipPct').value) || 5;
   p.idleHrs = parseFloat(document.getElementById('pfp_idleHrs').value) || 1.5;
+  p.idleBurnRate = parseFloat(document.getElementById('pfp_idleBurnRate').value) || 3.5;
   p.afterHrsPct = parseFloat(document.getElementById('pfp_afterHrsPct').value) || 8;
   p.wearCostKm = parseFloat(document.getElementById('pfp_wearCostKm').value) || 0.12;
   // Save hidden cost & fraud calculator data
@@ -7800,8 +7819,10 @@ function generateFleetReportFromProspect() {
   // Save fleet data to prospect first
   p.fleetSegments = _fpSegments.slice();
   p.fuelPrice = parseFloat(document.getElementById('pfp_fuelPrice').value) || 2.15;
-  p.slipPct = parseFloat(document.getElementById('pfp_slipPct').value) || 15;
+  p.workHrs = parseFloat(document.getElementById('pfp_workHrs').value) || 8;
+  p.slipPct = parseFloat(document.getElementById('pfp_slipPct').value) || 5;
   p.idleHrs = parseFloat(document.getElementById('pfp_idleHrs').value) || 1.5;
+  p.idleBurnRate = parseFloat(document.getElementById('pfp_idleBurnRate').value) || 3.5;
   p.afterHrsPct = parseFloat(document.getElementById('pfp_afterHrsPct').value) || 8;
   p.wearCostKm = parseFloat(document.getElementById('pfp_wearCostKm').value) || 0.12;
   p.hcTab = _pfpHCTab;
@@ -7867,38 +7888,105 @@ function recalcProspectCosts() {
     return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a1a1a"><span style="font-size:11px;color:#999">' + label + '</span><span style="font-size:12px;font-weight:700;color:' + (color||'#0098d4') + '">' + fmt(cost) + '</span></div>';
   };
 
-  // ── FUEL SLIPPAGE CALCULATOR INPUTS ──
+  // ── 2A. FUEL SLIPPAGE — WORKING HOURS MODEL ──
+  // Model: Working hours per day × slippage % = wasted hours/mins → fuel cost
+  // Reference: Industry avg slippage 3-8% of operational hours (Radius Fleet Data AU, 2024)
   var fuelPrice = parseFloat((document.getElementById('pfp_fuelPrice') || {}).value) || 2.15;
-  var slipPctOverride = parseFloat((document.getElementById('pfp_slipPct') || {}).value);
-  var idleHrsOverride = parseFloat((document.getElementById('pfp_idleHrs') || {}).value);
+  var workHrs = parseFloat((document.getElementById('pfp_workHrs') || {}).value) || 8;
+  var slipPct = parseFloat((document.getElementById('pfp_slipPct') || {}).value) || 5;
+
+  // ── 2B. IDLE TIME ──
+  // Reference: Radius.com AU — idle burn rates: light van 1-1.5 L/hr, medium 2.5-3.5 L/hr,
+  // heavy 3.5-4.5+ L/hr. Trucks idle up to 20% of driving time.
+  var idleHrs = parseFloat((document.getElementById('pfp_idleHrs') || {}).value) || 1.5;
+  var idleBurnRate = parseFloat((document.getElementById('pfp_idleBurnRate') || {}).value) || 3.5;
+
+  // ── 2C. AFTER-HOURS USE ──
   var afterHrsPct = parseFloat((document.getElementById('pfp_afterHrsPct') || {}).value) || 8;
   var wearCostKm = parseFloat((document.getElementById('pfp_wearCostKm') || {}).value) || 0.12;
 
-  var useSlipOverride = !isNaN(slipPctOverride) && slipPctOverride >= 0;
-  var useIdleOverride = !isNaN(idleHrsOverride) && idleHrsOverride >= 0;
-
   var annualSlippage = 0, annualIdleWaste = 0, afterHoursCost = 0, annualWear = 0;
   var totalUnits = 0, totalAnnualFuelSpend = 0;
+  var totalWastedMinsDay = 0, totalSlipFuelDay = 0;
+  var totalIdleLitresDay = 0, totalIdleCostDay = 0;
+  var totalAhKmWeek = 0, totalAhFuelWeek = 0;
 
   var _selectedSegments = _fpSegments.filter(function(seg) { return seg.selected !== false; });
   _selectedSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     totalUnits += q;
+    // Base annual fuel spend (for context)
     var weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
     var aFuel = weeklyFuel * 52;
     totalAnnualFuelSpend += aFuel;
-    var slipPct = useSlipOverride ? slipPctOverride : (seg.slippage || 0);
-    annualSlippage += aFuel * (slipPct / 100);
-    var idleHrs = useIdleOverride ? idleHrsOverride : (seg.idle || 0);
-    var idleFuelPerHr = (seg.consumption / 100) * 3 * fuelPrice;
-    annualIdleWaste += q * idleHrs * idleFuelPerHr * 260;
-    var ahKm = q * (afterHrsPct / 100) * seg.km * 52;
-    afterHoursCost += ahKm * (seg.consumption / 100) * fuelPrice;
-    var exKm = q * seg.km * (slipPct / 100) * 52;
+
+    // 2A: Slippage — Working Hours model
+    // wasted minutes per vehicle per day = workHrs × 60 × (slipPct / 100)
+    var wastedMinsPerVehicle = workHrs * 60 * (slipPct / 100);
+    var wastedHrsPerVehicle = wastedMinsPerVehicle / 60;
+    totalWastedMinsDay += wastedMinsPerVehicle * q;
+    // fuel wasted during slippage time: wasted hrs × avg consumption per hr
+    // avg consumption per hr at operational rate ≈ seg.consumption L/100km × (seg.km/5days/workHrs) km/hr
+    var avgSpeedKmHr = (seg.km / 5) / workHrs;
+    var fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
+    var slipFuelPerVehicleDay = wastedHrsPerVehicle * fuelPerHr * fuelPrice;
+    totalSlipFuelDay += slipFuelPerVehicleDay * q;
+    annualSlippage += slipFuelPerVehicleDay * q * 260;
+
+    // 2B: Idle Time — direct burn rate model
+    // Reference: idle burn rate in L/hr (Radius.com AU data: light 1-1.5, medium 2.5-3.5, heavy 3.5-4.5)
+    var idleLitresDay = idleHrs * idleBurnRate;
+    var idleCostDay = idleLitresDay * fuelPrice;
+    totalIdleLitresDay += idleLitresDay * q;
+    totalIdleCostDay += idleCostDay * q;
+    annualIdleWaste += idleCostDay * q * 260;
+
+    // 2C: After-Hours Use
+    var ahKmWeek = q * (afterHrsPct / 100) * seg.km;
+    totalAhKmWeek += ahKmWeek;
+    var ahFuelWeek = ahKmWeek * (seg.consumption / 100) * fuelPrice;
+    totalAhFuelWeek += ahFuelWeek;
+    afterHoursCost += ahFuelWeek * 52;
+    var exKm = q * seg.km * (afterHrsPct / 100) * 52;
     annualWear += exKm * wearCostKm;
   });
 
   var fuelSlippageLoss = annualSlippage + annualIdleWaste + afterHoursCost + annualWear;
+
+  // ── Populate individual breakdown divs ──
+  var fmtN = function(n,d) { return n.toFixed(d !== undefined ? d : 1); };
+  var slipBd = document.getElementById('pfp_slipBreakdown');
+  if (slipBd) {
+    var wMins = totalUnits > 0 ? (workHrs * 60 * (slipPct / 100)) : 0;
+    var wHrs = wMins / 60;
+    slipBd.innerHTML =
+      '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
+      '<div>' + fmtN(workHrs,1) + ' working hrs × ' + fmtN(slipPct,1) + '% slippage = <b style="color:#dc2626">' + fmtN(wMins,0) + ' mins</b> (' + fmtN(wHrs,2) + ' hrs) wasted per vehicle per day</div>' +
+      '<div>Across <b>' + totalUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalWastedMinsDay,0) + ' mins</b> total wasted daily</div>' +
+      '<div>Daily fleet fuel waste: <b style="color:#dc2626">' + fmt(totalSlipFuelDay) + '</b></div>' +
+      '<div>Annual fuel slippage loss (260 days): <b style="color:#dc2626">' + fmt(annualSlippage) + '</b></div>' +
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> Industry avg slippage 3-8% of operational hours — Radius Fleet Management AU (2024). Formula: working hrs × slip% = wasted time → fuel cost at operational consumption rate.</div>';
+  }
+  var idleBd = document.getElementById('pfp_idleBreakdown');
+  if (idleBd) {
+    idleBd.innerHTML =
+      '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
+      '<div>' + fmtN(idleHrs,1) + ' idle hrs/day × ' + fmtN(idleBurnRate,1) + ' L/hr = <b style="color:#dc2626">' + fmtN(idleHrs * idleBurnRate,1) + ' litres</b> wasted per vehicle per day</div>' +
+      '<div>Across <b>' + totalUnits + '</b> vehicles = <b style="color:#dc2626">' + fmtN(totalIdleLitresDay,1) + ' litres</b> wasted daily</div>' +
+      '<div>Daily idle cost @ $' + fmtN(fuelPrice,2) + '/L: <b style="color:#dc2626">' + fmt(totalIdleCostDay) + '</b></div>' +
+      '<div>Annual idle waste (260 days): <b style="color:#dc2626">' + fmt(annualIdleWaste) + '</b></div>' +
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> Idle burn rates — Radius.com AU: light commercial 1-1.5 L/hr, medium 2.5-3.5 L/hr, heavy 3.5-4.5+ L/hr. Trucks idle up to 20% of driving time (Radius Fleet Data, 2024).</div>';
+  }
+  var ahBd = document.getElementById('pfp_afterHrsBreakdown');
+  if (ahBd) {
+    ahBd.innerHTML =
+      '<div style="color:#0098d4;font-weight:700;margin-bottom:4px">Calculation Breakdown</div>' +
+      '<div>' + afterHrsPct + '% of weekly km driven after hours = <b style="color:#dc2626">' + fmtN(totalAhKmWeek,0) + ' km/week</b></div>' +
+      '<div>After-hours fuel cost/week: <b style="color:#dc2626">' + fmt(totalAhFuelWeek) + '</b></div>' +
+      '<div>Annual after-hours fuel: <b style="color:#dc2626">' + fmt(afterHoursCost) + '</b></div>' +
+      '<div>Excess wear @ $' + wearCostKm.toFixed(2) + '/km: <b style="color:#dc2626">' + fmt(annualWear) + '</b> /year</div>' +
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> After-hours fleet use typically 5-12% of total mileage in unmonitored fleets — industry benchmarks (AUS Fleet Managers Association).</div>';
+  }
 
   // ── HIDDEN COST & FRAUD CALCULATOR INPUTS ──
   var hcMonthlyLoss = 0, hcAnnualLoss = 0, hcGpsSaves = 0, hcGpsCost = 0;
@@ -7963,13 +8051,13 @@ function recalcProspectCosts() {
   var selLabel = selCount === totalCount ? (totalCount + ' categor' + (totalCount===1?'y':'ies')) : (selCount + ' of ' + totalCount + ' selected');
   var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:10px;color:#666">' + totalUnits + ' vehicles across ' + selLabel + '</div><div style="font-size:10px;color:#5a6675">Annual fuel spend: <b style="color:#0098d4">' + fmt(totalAnnualFuelSpend) + '</b></div></div>';
 
-  // Fuel Slippage losses
-  html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fuel Slippage Losses (Annual)</div>';
-  html += row('Fuel Slippage & Waste (' + (useSlipOverride ? slipPctOverride : 'avg') + '%)', annualSlippage, '#dc2626');
-  html += row('Vehicle Idle Time (' + (useIdleOverride ? idleHrsOverride : 'avg') + ' hrs/day)', annualIdleWaste, '#dc2626');
-  html += row('Unauthorised / After-Hours Use (' + afterHrsPct + '%)', afterHoursCost, '#dc2626');
+  // Fuel & Fleet Losses — 3 calculators
+  html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fleet Losses (Annual)</div>';
+  html += row('1. Fuel Slippage — ' + slipPct + '% of ' + workHrs + 'hr working day', annualSlippage, '#dc2626');
+  html += row('2. Idle Time — ' + idleHrs + ' hrs/day @ ' + idleBurnRate + ' L/hr', annualIdleWaste, '#dc2626');
+  html += row('3. After-Hours Use — ' + afterHrsPct + '% of km', afterHoursCost, '#dc2626');
   html += row('Excess Wear & Maintenance ($' + wearCostKm.toFixed(2) + '/km)', annualWear, '#dc2626');
-  html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a1a1a"><span style="font-size:11px;font-weight:700;color:#dc2626">Subtotal — Fuel Slippage</span><span style="font-size:12px;font-weight:800;color:#dc2626">' + fmt(fuelSlippageLoss) + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1a1a1a"><span style="font-size:11px;font-weight:700;color:#dc2626">Subtotal — Fleet Losses</span><span style="font-size:12px;font-weight:800;color:#dc2626">' + fmt(fuelSlippageLoss) + '</span></div>';
 
   // Hidden Cost & Fraud losses
   html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">Hidden Cost &amp; Fraud — ' + hcLabel + ' (Annual)</div>';
@@ -7981,9 +8069,9 @@ function recalcProspectCosts() {
 
   // GPS Recovery
   html += '<div style="font-size:9px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">GPS Recovery (Annual Savings)</div>';
-  html += row('Fuel Slippage Recovery (60%)', annualSlippage * 0.60, '#0098d4');
-  html += row('Idle Time Reduction (50%)', annualIdleWaste * 0.50, '#0098d4');
-  html += row('After-Hours Eliminated (90%)', afterHoursCost * 0.90, '#0098d4');
+  html += row('1. Fuel Slippage Recovery (60%)', annualSlippage * 0.60, '#0098d4');
+  html += row('2. Idle Time Reduction (50%)', annualIdleWaste * 0.50, '#0098d4');
+  html += row('3. After-Hours Eliminated (90%)', afterHoursCost * 0.90, '#0098d4');
   html += row('Reduced Wear & Maintenance (50%)', annualWear * 0.50, '#0098d4');
   html += row(hcLabel + ' — GPS Recovery', hcGpsSaves, '#0098d4');
   html += '<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid #0098d4"><span style="font-size:13px;font-weight:800;color:#0098d4">TOTAL ANNUAL SAVING</span><span style="font-size:15px;font-weight:800;color:#0098d4">' + fmt(totalAnnualSaving) + '</span></div>';
@@ -8542,39 +8630,68 @@ function doLogin() {
         ADD VEHICLE CATEGORY
       </button>
 
-      <!-- ── 2. FUEL SLIPPAGE CALCULATOR ── -->
+      <!-- ── 2A. FUEL SLIPPAGE CALCULATOR (Working Hours Model) ── -->
       <div style="background:#080808;border:1px solid rgba(0,152,212,.25);padding:14px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">
-            <svg width="12" height="12" fill="none" stroke="#0098d4" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:4px"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
-            Fuel Slippage Calculator
-          </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <svg width="12" height="12" fill="none" stroke="#0098d4" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+          <div style="font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px">1. Fuel Slippage — Working Hours</div>
         </div>
-        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Fuel costs, slippage rates, idle time &amp; unauthorised usage — these inputs drive the hidden costs calculation below</div>
+        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">How many hours per day is each asset running? Slippage % shows how much of that time is wasted — unnecessary detours, extended routes, unauthorised use.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
           <div>
             <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Fuel $/Litre (avg)</label>
             <input type="number" id="pfp_fuelPrice" value="2.15" min="0.5" step="0.05" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
           <div>
-            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Avg Slippage %</label>
-            <input type="number" id="pfp_slipPct" value="15" min="0" max="40" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Working Hrs/Day</label>
+            <input type="number" id="pfp_workHrs" value="8" min="1" max="24" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
           <div>
-            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Idle Hrs/Day</label>
-            <input type="number" id="pfp_idleHrs" value="1.5" min="0" max="10" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Slippage %</label>
+            <input type="number" id="pfp_slipPct" value="5" min="0" max="40" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
         </div>
+        <div id="pfp_slipBreakdown" style="background:#111;border:1px solid #222;padding:10px;font-size:11px;color:#CCC;line-height:1.8"></div>
+      </div>
+
+      <!-- ── 2B. IDLE TIME CALCULATOR ── -->
+      <div style="background:#080808;border:1px solid rgba(217,119,6,.25);padding:14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <svg width="12" height="12" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6"/></svg>
+          <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px">2. Idle Time — Engine Running, Not Working</div>
+        </div>
+        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Time spent with the engine running but not moving — waiting, breaks, left running. Burns fuel and adds engine hours for nothing.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div>
-            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">After-Hours Use %</label>
+            <label style="font-size:8px;color:#d97706;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Idle Hrs/Day (per asset)</label>
+            <input type="number" id="pfp_idleHrs" value="1.5" min="0" max="10" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:8px;color:#d97706;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Avg Burn Rate (L/hr idle)</label>
+            <input type="number" id="pfp_idleBurnRate" value="3.5" min="0.5" max="20" step="0.5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+        </div>
+        <div id="pfp_idleBreakdown" style="background:#111;border:1px solid #222;padding:10px;margin-top:8px;font-size:11px;color:#CCC;line-height:1.8"></div>
+      </div>
+
+      <!-- ── 2C. AFTER-HOURS USE CALCULATOR ── -->
+      <div style="background:#080808;border:1px solid rgba(220,38,38,.25);padding:14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <svg width="12" height="12" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+          <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">3. After-Hours / Unauthorised Use</div>
+        </div>
+        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Vehicles used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <label style="font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">After-Hours Use %</label>
             <input type="number" id="pfp_afterHrsPct" value="8" min="0" max="50" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
           <div>
-            <label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Wear Cost $/km (excess)</label>
+            <label style="font-size:8px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Wear Cost $/km (excess)</label>
             <input type="number" id="pfp_wearCostKm" value="0.12" min="0" max="1" step="0.01" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
           </div>
         </div>
+        <div id="pfp_afterHrsBreakdown" style="background:#111;border:1px solid #222;padding:10px;margin-top:8px;font-size:11px;color:#CCC;line-height:1.8"></div>
       </div>
 
       <!-- ── 3. HIDDEN COST & FRAUD CALCULATOR ── -->
@@ -8613,9 +8730,9 @@ function doLogin() {
           </div>
         </div>
 
-        <!-- Truck Idle Time -->
+        <!-- Truck Idle Fraud — accountability angle (fuel cost from 2B above, this is about the fraud/misuse dimension) -->
         <div id="pfp_hcPanel_idle" style="display:none">
-          <div style="font-size:9px;color:#CCC;line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.12)"><b style="color:#0098d4">The problem:</b> Trucks sitting idle — engine running, burning fuel, adding engine hours — while drivers wait, take breaks, or just leave it running. Adds up to thousands per year.</div>
+          <div style="font-size:9px;color:#CCC;line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.12)"><b style="color:#0098d4">The problem:</b> Drivers deliberately leave engines idling — personal comfort, avoiding restarts, or inflating engine hours. This section calculates the <b>accountability gap</b> beyond the base idle cost (see calculator 2 above).</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
             <div><label style="font-size:8px;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:2px">Number of Trucks</label>
               <input type="number" id="pfp_hc_idle_trucks" value="10" min="1" oninput="recalcProspectCosts()" style="width:100%;padding:5px;background:#111;border:1px solid #333;color:#CCC;font-size:11px;font-family:inherit"></div>
