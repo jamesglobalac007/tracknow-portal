@@ -1268,7 +1268,7 @@ select option{background:#0a0a0a;color:#FFA028}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <div>
           <div class="section-title" id="calMonthLabel">April 2026</div>
-          <div class="section-sub">Social media content schedule — Facebook, LinkedIn, Instagram, YouTube &amp; TikTok</div>
+          <div class="section-sub">Social media content schedule — LinkedIn, Facebook, Instagram, Google Business &amp; X</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-secondary btn-sm" onclick="calNav(-1)">&larr; Prev</button>
@@ -4832,7 +4832,78 @@ function initMarketing() {
 }
 
 // ── Calendar ─────────────────────────────────────────────────────────────
-const CAL_EVENTS = [];
+// Platform colors
+const PLATFORM_COLORS = {
+  'LinkedIn': '#0A66C2',
+  'Facebook': '#1877F2',
+  'Instagram': '#E1306C',
+  'Google Business': '#34A853',
+  'X (Twitter)': '#000000'
+};
+
+// Weekly content schedule — rotating 4-week plan across all platforms
+const WEEKLY_SCHEDULE = [
+  // Week pattern 1
+  [
+    { dow: 1, platform: 'LinkedIn', type: 'ROI / Savings', desc: 'Fleet cost savings post — fuel slippage stats, idle time waste numbers' },
+    { dow: 1, platform: 'X (Twitter)', type: 'ROI / Savings', desc: 'Quick stat thread — "Did you know the avg fleet wastes $14K/yr on fuel slippage?"' },
+    { dow: 3, platform: 'Facebook', type: 'Product Feature', desc: 'GPS tracker feature spotlight — live tracking demo, geofence alerts' },
+    { dow: 3, platform: 'Instagram', type: 'Product Feature', desc: 'Product photo/reel — TK18P dashcam install or device close-up' },
+    { dow: 5, platform: 'Google Business', type: 'Industry News', desc: 'Google Business update — HVNL compliance tips for fleet operators' },
+    { dow: 5, platform: 'X (Twitter)', type: 'Industry News', desc: 'Industry news share — fleet safety regulation updates' }
+  ],
+  // Week pattern 2
+  [
+    { dow: 2, platform: 'LinkedIn', type: 'Industry News', desc: 'HVNL compliance article — how GPS tracking keeps fleets audit-ready' },
+    { dow: 2, platform: 'X (Twitter)', type: 'Industry News', desc: 'Comment on fleet industry trend or news article' },
+    { dow: 4, platform: 'Instagram', type: 'Testimonial', desc: 'Customer win story — before/after results graphic or video' },
+    { dow: 4, platform: 'Facebook', type: 'Testimonial', desc: 'Customer success post — fleet savings case study with real numbers' },
+    { dow: 6, platform: 'Google Business', type: 'Product Feature', desc: 'Google Business post — dashcam AI features, driver behaviour alerts' },
+    { dow: 6, platform: 'X (Twitter)', type: 'Product Feature', desc: 'Product tip — "3 features fleet managers love about TrackNow"' }
+  ],
+  // Week pattern 3
+  [
+    { dow: 1, platform: 'Facebook', type: 'ROI / Savings', desc: 'ROI calculator post — "How much could your fleet save?" with link to quote tool' },
+    { dow: 1, platform: 'X (Twitter)', type: 'ROI / Savings', desc: 'Quick ROI stat — "Our customers save avg 18% on fuel in first 3 months"' },
+    { dow: 3, platform: 'LinkedIn', type: 'Product Feature', desc: 'AI dashcam deep dive — ADAS, DMS, 3-channel recording features' },
+    { dow: 3, platform: 'Instagram', type: 'Product Feature', desc: 'Reel/carousel — dashcam footage showing AI collision alerts in action' },
+    { dow: 5, platform: 'Google Business', type: 'Testimonial', desc: 'Customer review highlight — 5-star review with fleet savings quote' },
+    { dow: 5, platform: 'X (Twitter)', type: 'Testimonial', desc: 'Retweet/quote customer feedback or testimonial' }
+  ],
+  // Week pattern 4
+  [
+    { dow: 2, platform: 'LinkedIn', type: 'Testimonial', desc: 'Case study post — mining/transport client results, ROI breakdown' },
+    { dow: 2, platform: 'X (Twitter)', type: 'Testimonial', desc: 'Customer quote with results — "Reduced idle time by 40% in 2 months"' },
+    { dow: 4, platform: 'Facebook', type: 'Industry News', desc: 'Fleet safety awareness post — tips for reducing fleet incidents' },
+    { dow: 4, platform: 'Instagram', type: 'Industry News', desc: 'Infographic — Top 5 hidden fleet costs most managers miss' },
+    { dow: 6, platform: 'Google Business', type: 'ROI / Savings', desc: 'Google Business offer — free fleet assessment, mention savings potential' },
+    { dow: 6, platform: 'X (Twitter)', type: 'ROI / Savings', desc: 'Fleet savings tip — "Stop paying for fuel your drivers waste after hours"' }
+  ]
+];
+
+// Generate CAL_EVENTS dynamically for the displayed month
+function generateCalEvents(year, month) {
+  var events = [];
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (var day = 1; day <= daysInMonth; day++) {
+    var dt = new Date(year, month, day);
+    var dow = dt.getDay(); // 0=Sun
+    // Which week of the month (0-based)
+    var weekOfMonth = Math.floor((day - 1) / 7) % 4;
+    var weekPlan = WEEKLY_SCHEDULE[weekOfMonth];
+    weekPlan.forEach(function(post) {
+      if (post.dow === dow) {
+        events.push({
+          day: day,
+          platform: post.platform,
+          desc: post.type + ' — ' + post.desc,
+          color: PLATFORM_COLORS[post.platform] || '#FFA028'
+        });
+      }
+    });
+  }
+  return events;
+}
 
 function calNav(dir) {
   if (dir === 0) { calOffset = 0; } else { calOffset += dir; }
@@ -4853,8 +4924,16 @@ function renderCalendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const calEvents = generateCalEvents(year, month);
 
-  let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#222;border:1px solid #222;border-radius:6px;overflow:hidden">';
+  // Platform legend
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">';
+  Object.entries(PLATFORM_COLORS).forEach(function(e) {
+    html += '<div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:' + e[1] + '"></div><span style="font-size:10px;color:#888">' + e[0] + '</span></div>';
+  });
+  html += '</div>';
+
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#222;border:1px solid #222;border-radius:6px;overflow:hidden">';
 
   // Day headers
   ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
@@ -4869,7 +4948,7 @@ function renderCalendar() {
   // Day cells
   for (let day = 1; day <= daysInMonth; day++) {
     const isToday = isCurrentMonth && today.getDate() === day;
-    const dayEvents = CAL_EVENTS.filter(e => e.day === day);
+    const dayEvents = calEvents.filter(e => e.day === day);
     const bg = isToday ? '#111' : '#0a0a0a';
     const border = isToday ? 'border-left:3px solid #FFA028;' : '';
 
