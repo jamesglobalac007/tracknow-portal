@@ -258,6 +258,8 @@ select{font-size:12px;border:1px solid #222;border-radius:0px;padding:7px 10px;b
 select:focus{border-color:#FFA028}
 select option{background:#0a0a0a;color:#FFA028}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init('OoTzGVR6EezbqlWDx');</script>
 </head>
 <body>
 
@@ -8146,10 +8148,39 @@ function closeEmailPreview() {
 
 function sendEmailFromPortal() {
   if (!_epPending) return;
-  _openGmailCompose(_epPending.to, _epPending.subject, _epPending.body);
-  var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
-  showToast('Gmail compose opened — ' + typeLabel + ' ready to send');
-  closeEmailPreview();
+  var btn = document.getElementById('ep_sendBtn');
+  var origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:16px;height:16px;border-width:2px"></span> Sending...';
+
+  // Build full HTML body with signature
+  var bodyLines = _epPending.body.split('\n');
+  var htmlBody = '';
+  for (var i = 0; i < bodyLines.length; i++) {
+    var line = bodyLines[i];
+    if (line.trim() === '') { htmlBody += '<br>'; }
+    else { htmlBody += '<p style="margin:0 0 4px">' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>'; }
+  }
+
+  var templateParams = {
+    to_email:     _epPending.to,
+    subject:      _epPending.subject,
+    from_name:    'TrackNow GPS',
+    message_html: htmlBody
+  };
+
+  emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
+    .then(function() {
+      var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
+      showToast(typeLabel + ' sent to ' + _epPending.to + ' ✓');
+      closeEmailPreview();
+    })
+    .catch(function(err) {
+      console.error('EmailJS error:', err);
+      showToast('Email failed — ' + (err.text || err.message || 'unknown error'), 'warn');
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    });
 }
 
 function emailFleetOverview(prospectId) {
@@ -9199,7 +9230,7 @@ function doLogin() {
       <button class="btn btn-secondary" onclick="closeEmailPreview()">Cancel</button>
       <button class="btn btn-primary" id="ep_sendBtn" onclick="sendEmailFromPortal()" style="background:#0098d4;border-color:#0098d4;display:flex;align-items:center;gap:6px">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Open in Gmail
+        Send Email
       </button>
     </div>
   </div>

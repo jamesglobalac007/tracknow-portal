@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — saveLeadDetails function + pipeline contact editing."""
+"""Push — EmailJS integration for portal SEND buttons."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Pipeline contact editing — saveLeadDetails function\033[0m")
+print(f"\n\033[1m🚀 Pushing: EmailJS email integration — send directly from portal\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,13 +35,15 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Pipeline contact editing — saveLeadDetails function
+COMMIT_MSG = """EmailJS integration — send emails directly from portal
 
-- Clickable contact name on pipeline cards opens inline edit panel
-- Edit: name, company, email, phone, city, state, industry, website
-- SAVE DETAILS button persists changes to localStorage
-- Collapsible calculation breakdowns with toggle arrows
-- Removed Included in Monthly Payment callout for contract proposals"""
+- Added EmailJS SDK (CDN) and initialised with public key
+- sendEmailFromPortal() now calls emailjs.send() via Outlook/M365
+- Emails sent from sales@tracknow.com.au (connected via OAuth)
+- Send button shows loading spinner while sending
+- Success toast confirms delivery, error toast on failure
+- Updated button label from 'Open in Gmail' to 'Send Email'
+- Template: service_5y35h2g / template_gwga9jo with {{{message_html}}}"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
