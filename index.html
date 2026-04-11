@@ -2555,19 +2555,6 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
   </tbody>
 </table>` : ''}
 
-<div style="background:#0098d4;color:#fff;padding:16px 20px;margin:20px 0">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <div>
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-bottom:4px">${isMTM ? 'What You Pay' : 'Your Monthly Payment'}</div>
-      <div style="font-size:24px;font-weight:800">${fmt(totalMonthly)}<span style="font-size:13px;font-weight:600"> /month</span></div>
-    </div>
-    <div style="text-align:right;font-size:11px;line-height:1.6;opacity:.9">
-      ${isMTM ? 'Month-to-Month — no lock-in contract<br>Hardware: ' + fmt(hwTotal) + ' paid upfront' : term + '-month contract<br>Hardware included in monthly payment'}
-      ${allExtras.length > 0 ? '<br>Includes selected extras' : ''}
-    </div>
-  </div>
-  ${isContract ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.3);font-size:11px;opacity:.85"><strong>Monthly breakdown:</strong> Software ' + fmt(monthlySubOnly) + (hwPerMonth > 0 ? ' + Hardware ' + fmt(hwPerMonth) : '') + (extrasMonthlyTotal > 0 ? ' + Extras ' + fmt(extrasMonthlyTotal) : '') + (extrasOnetimePerMonth > 0 ? ' + One-time extras ' + fmt(extrasOnetimePerMonth) : '') + ' = <strong>' + fmt(totalMonthly) + '/mo</strong></div>' : ''}
-</div>
 
 <h2>Agreement Details</h2>
 <table>

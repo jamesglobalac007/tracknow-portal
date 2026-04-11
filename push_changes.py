@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — after-hours calculator: trucks, cars, vans only."""
+"""Push — after-hours trucks/cars/vans + remove monthly payment box from proposal."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: After-hours calculator — trucks, cars, vans only\033[0m")
+print(f"\n\033[1m🚀 Pushing: AH trucks/cars/vans + remove proposal payment box\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,13 +35,17 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """After-hours calculator: restrict to trucks, cars, vans only
+COMMIT_MSG = """After-hours: trucks/cars/vans only + remove proposal payment box
 
-- Trucks now included in after-hours (calcAH true, default 8%)
-- Utes and refrigerated removed from after-hours (calcAH false)
-- After-hours section only renders trucks, cars, vans segments
-- Updated description text to reflect new asset selection
-- Equipment, excavators, trailers remain excluded"""
+After-hours calculator:
+- Only trucks, cars, vans now appear as selectable options
+- Trucks added back (calcAH true, default 8%)
+- Utes and refrigerated excluded (calcAH false)
+- Updated description text
+
+Proposal:
+- Removed blue monthly payment summary box below pricing schedule
+- Pricing sections (Hardware, Software, Extras) flow into Agreement Details"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
