@@ -2750,7 +2750,7 @@ function renderPipeline() {
             </div>
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             ${l.stage!=='agreement'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+')" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.background=\'#111\'" onmouseout="this.style.borderColor=\'#332200\';this.style.background=\'#080808\'">EDIT PRODUCTS & PRICING</button>':''}
-            ${l.stage==='proposal'?'<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.2);margin-bottom:4px"><span style="font-size:10px;color:#0088FF">📄</span><span style="font-size:10px;color:#0088FF;font-weight:600">Fleet Optimisation Report — Sent</span><span style="font-size:10px;color:#00CC66">✓</span></div>':''}
+            ${l.fleetSegments && l.fleetSegments.length?'<button onclick="event.stopPropagation();viewLeadFleetReport('+l.id+')" style="width:100%;padding:5px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.25);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.12)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.25)\';this.style.background=\'rgba(0,136,255,.06)\'">📄 VIEW FLEET REPORT</button>':''}
             ${l.stage==='proposal'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button><button onclick="event.stopPropagation();emailProposal('+l.id+')" style="padding:5px 10px;background:#7c3aed;border:1px solid #7c3aed;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
             ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button></div>':''}
             ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍ VIEW AGREEMENT</button><button onclick="event.stopPropagation();emailAgreement('+l.id+')" style="padding:5px 10px;background:#db2777;border:1px solid #db2777;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
@@ -8087,14 +8087,6 @@ function generateFleetReport() {
   <div style="font-size:13px;margin-top:8px">For every $1 spent on TrackNow, your business saves $${(totalAnnualSaving / trackNowAnnualCost).toFixed(2)}</div>
 </div>
 
-<div style="background:#f6f8fb;border:1px solid #e8ebf1;padding:16px;margin:20px 0">
-  <div style="font-size:13px;font-weight:700;color:#0a1726;margin-bottom:6px">Investment Summary</div>
-  <div style="font-size:12px;color:#333;line-height:1.8">
-    <strong>${totalUnits} units</strong> &times; <strong>$${subPrice.toFixed(2)}/month</strong> = <strong>${fmt(trackNowAnnualCost)}/year</strong><br>
-    No lock-in contracts &middot; No setup fees &middot; Hardware included &middot; Cancel anytime
-  </div>
-</div>
-
 <div style="border:3px solid #0098d4;padding:24px;margin:30px 0;text-align:center;background:#f6f8fb">
   <div style="font-size:16px;font-weight:800;color:#0a1726;margin-bottom:6px">See TrackNow in Action</div>
   <div style="font-size:12px;color:#5a6675;margin-bottom:14px;line-height:1.5">Watch our demo video to see how TrackNow can transform your fleet management, reduce costs, and give you full visibility of every vehicle.</div>
@@ -8152,6 +8144,29 @@ function sendProspectFleetReport(prospectId) {
   renderProspects();
   _dealProductsSource = 'lead';
   _dealProductsLeadId = null;
+}
+
+// ── View Fleet Report from Pipeline ─────────────────────────────
+function viewLeadFleetReport(leadId) {
+  var l = LEADS.find(function(x) { return x.id === leadId; });
+  if (!l) return;
+  if (!l.fleetSegments || !l.fleetSegments.length) {
+    showToast('No fleet data — open Edit Products & Pricing → Fleet Profile to add vehicles first', 'warn');
+    return;
+  }
+  _fpSegments = l.fleetSegments.map(function(s) { return Object.assign({}, s); });
+  _dealProductsSource = 'lead';
+  _dealProductsLeadId = leadId;
+  if (!l.subPrice) l.subPrice = 29.95;
+  var fpFuel = document.getElementById('fp_fuelPrice');
+  var fpFraud = document.getElementById('fp_fraudPct');
+  var origFuel = fpFuel ? fpFuel.value : null;
+  var origFraud = fpFraud ? fpFraud.value : null;
+  if (fpFuel) fpFuel.value = l.fuelPrice || 2.15;
+  if (fpFraud) fpFraud.value = l.fraudPct || 3;
+  generateFleetReport();
+  if (fpFuel && origFuel !== null) fpFuel.value = origFuel;
+  if (fpFraud && origFraud !== null) fpFraud.value = origFraud;
 }
 
 // ── Email Send Helpers ──────────────────────────────────────────
