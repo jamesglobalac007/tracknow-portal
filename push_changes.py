@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — fix vertical alignment for fleet segments and calculator asset rows."""
+"""Push — vertical alignment fix + asset dropdown."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Fix vertical alignment — fleet segments + calculator assets\033[0m")
+print(f"\n\033[1m🚀 Pushing: Vertical alignment + asset dropdown\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,13 +35,17 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Fix vertical alignment for fleet segments and calculator asset rows
+COMMIT_MSG = """Vertical alignment fix + asset dropdown in deal products
 
-- Fleet segment cards: display block, width 100%, parent flex-direction column
-- Slippage asset rows: parent changed from flex-wrap to flex-direction column
-- Idle time asset rows: same fix
-- After-hours asset rows: same fix
-- All asset rows now width 100% for consistent stacking"""
+Layout fixes:
+- Fleet segment cards stack vertically (flex-direction column, width 100%)
+- Slippage, idle, after-hours asset rows all stack vertically
+- Removed flex-wrap that caused side-by-side layout
+
+Asset field:
+- Changed from text input to dropdown select
+- Options populated from FLEET_BENCHMARKS (all vehicle types)
+- Auto-selects current value on edit"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)

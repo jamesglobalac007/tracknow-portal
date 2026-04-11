@@ -7169,7 +7169,10 @@ function renderDealProductLines() {
         </div>
         <div style="flex:1;min-width:100px">
           <label style="${lbl}">Asset</label>
-          <input type="text" value="${li.asset||''}" placeholder="Trucks, Trailers..." onfocus="this.select()" onchange="updateLineItem(${i},'asset',this.value)" style="width:100%;${inp}">
+          <select onchange="updateLineItem(${i},'asset',this.value)" style="width:100%;${inp}">
+            <option value="">— Select Asset —</option>
+            ${Object.entries(FLEET_BENCHMARKS).map(([k,v]) => '<option value="' + v.label + '"' + ((li.asset||'') === v.label ? ' selected' : '') + '>' + v.label + '</option>').join('')}
+          </select>
         </div>
       </div>
       <div style="font-size:9px;font-weight:700;color:#FFA028;letter-spacing:.5px;margin-bottom:4px">SOFTWARE</div>
