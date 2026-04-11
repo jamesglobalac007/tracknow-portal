@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — all calculator, proposal, payment, agreement & MTM fixes."""
+"""Push — after-hours calculator: trucks, cars, vans only."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Full calculator + proposal + agreement updates\033[0m")
+print(f"\n\033[1m🚀 Pushing: After-hours calculator — trucks, cars, vans only\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,39 +35,13 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Per-asset calculators, proposal restructure, payment lock, agreement update
+COMMIT_MSG = """After-hours calculator: restrict to trucks, cars, vans only
 
-Calculators — per-asset values for all 3:
-- Fuel slippage: per-asset working hrs/day
-- Idle cost: per-asset idle hrs/day
-- After-hours: per-asset AH pct (vehicles only by default)
-- Trucks, equipment, excavators, trailers default calcAH=false
-- Removed global calculator inputs (workHrs, idleHrs, afterHrsPct)
-- Removed Hidden Cost and Fraud calculator section entirely
-
-MTM term fix — all instances:
-- Replaced every term||24 pattern with term!=null?term:24
-- Prevents MTM term 0 from being treated as falsy
-
-Payment structure locked to term:
-- MTM auto-selects Monthly, disables Contract button
-- Contract terms auto-select Contract, disable Monthly button
-- Lock note shows active mode with explanation
-
-Proposal document restructured:
-- 3 pricing sections: Hardware, Software, Optional Extras
-- MTM shows hardware upfront + monthly subscription
-- Contract shows hardware spread into single monthly amount
-- Removed Contract Value field
-- Blue highlighted total monthly payment box
-
-Agreement stage card updated:
-- Replaced Fleet Optimisation Report indicator with VIEW PROPOSAL button
-- Agreement card now shows View Proposal + View Agreement + Send
-
-Other:
-- Removed Freight Overnight from optional extras
-- Summary renamed to Fleet Losses and Savings Summary"""
+- Trucks now included in after-hours (calcAH true, default 8%)
+- Utes and refrigerated removed from after-hours (calcAH false)
+- After-hours section only renders trucks, cars, vans segments
+- Updated description text to reflect new asset selection
+- Equipment, excavators, trailers remain excluded"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
