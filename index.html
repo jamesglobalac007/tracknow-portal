@@ -2459,9 +2459,9 @@ function openDemoEmail(leadId) {
   if (!l) return;
   const firstName = l.name.split(' ')[0];
   const subject = encodeURIComponent('Your TrackNow GPS Demo — ' + l.co);
-  const body = encodeURIComponent('Hi ' + firstName + ',\n\nGreat speaking with you. As promised, here is your personalised TrackNow GPS demo for ' + l.co + '.\n\n▶ WATCH DEMO VIDEO\nhttps://tracknow.com.au/demo\n\nIn this demo you will see:\n\n• Live GPS tracking across your entire fleet\n• Real-time fuel monitoring & slippage alerts\n• Geofence boundaries — get notified when vehicles go off-route\n• Driver behaviour scoring — speeding, harsh braking, idle time\n• Automated daily & weekly fleet reports\n• Anti-theft alerts & vehicle recovery\n\nThe demo is based on a fleet similar to yours, so you can see exactly how it would work for ' + l.co + '.\n\nI have also attached a quick overview of the TrackNow platform for your reference.\n\nHappy to jump on a call to walk through anything — just let me know a time that suits.\n\nKind regards,\nTrackNow GPS Team\nteam@tracknow.com.au\n1300 TRACKNOW');
+  const body = encodeURIComponent('Hi ' + firstName + ',\n\nGreat speaking with you. As promised, here is your personalised TrackNow GPS demo for ' + l.co + '.\n\n▶ WATCH DEMO VIDEO\nhttps://tracknow.com.au/demo\n\nIn this demo you will see:\n\n• Live GPS tracking across your entire fleet\n• Real-time fuel monitoring & slippage alerts\n• Geofence boundaries — get notified when vehicles go off-route\n• Driver behaviour scoring — speeding, harsh braking, idle time\n• Automated daily & weekly fleet reports\n• Anti-theft alerts & vehicle recovery\n\nThe demo is based on a fleet similar to yours, so you can see exactly how it would work for ' + l.co + '.\n\nI have also attached a quick overview of the TrackNow platform for your reference.\n\nHappy to jump on a call to walk through anything — just let me know a time that suits.\n\nKind regards,\nTrackNow GPS Sales Team\nsales@tracknow.com.au\n1300 TRACK NOW');
   const email = l.email || '';
-  window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
   showToast('Demo email opened for ' + l.co);
 }
 
@@ -6206,7 +6206,7 @@ function sendEmailBatch(batchIndex) {
   const body = encodeURIComponent(document.getElementById('xBody').value || '');
   const bcc = batch.map(r => r.email).join(',');
   // Open Gmail compose with BCC pre-filled
-  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&from=team@tracknow.com.au&bcc=' + encodeURIComponent(bcc) + '&su=' + subject + '&body=' + body;
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&bcc=' + encodeURIComponent(bcc) + '&su=' + subject + '&body=' + body;
   window.open(gmailUrl, '_blank');
 }
 
@@ -6916,16 +6916,16 @@ function sendOverdueEmail(custId) {
     (c.paymentDueDate ? ', which was due on ' + dueStr : '') + '.\n\n' +
     'Could you please arrange payment at your earliest convenience? If this has already been processed, please disregard this reminder.\n\n' +
     'Happy to discuss if you have any questions or need to set up a payment plan.\n\n' +
-    'Kind regards,\nTrackNow GPS Team\nteam@tracknow.com.au\nwww.tracknow.com.au\n'
+    'Kind regards,\nTrackNow GPS Team\nsales@tracknow.com.au\nwww.tracknow.com.au\n'
   );
   if (email) {
-    window.open('https://mail.google.com/mail/?view=cm&fs=1&from=team@tracknow.com.au&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
     showStageNotification(c.co, 'Email opened', 'Payment reminder to ' + email);
   } else {
     const addr = prompt('No email on file for ' + c.co + '. Enter email address:');
     if (addr && addr.includes('@')) {
       c.email = addr.trim();
-      window.open('https://mail.google.com/mail/?view=cm&fs=1&from=team@tracknow.com.au&to=' + encodeURIComponent(addr.trim()) + '&su=' + subject + '&body=' + body, '_blank');
+      window.open('https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&to=' + encodeURIComponent(addr.trim()) + '&su=' + subject + '&body=' + body, '_blank');
       renderCustomers();
       showStageNotification(c.co, 'Email opened', 'Payment reminder to ' + addr.trim());
     }
@@ -6954,16 +6954,16 @@ function sendRenewalEmail(custId) {
     '• Renewal date: ' + expStr + '\n\n' +
     'No action is required on your end. If you have any questions about your account or would like to make changes, please don\'t hesitate to reach out.\n\n' +
     'Thank you for being a valued TrackNow customer.\n\n' +
-    'Kind regards,\nTrackNow GPS Team\nteam@tracknow.com.au\nwww.tracknow.com.au\n'
+    'Kind regards,\nTrackNow GPS Team\nsales@tracknow.com.au\nwww.tracknow.com.au\n'
   );
   if (email) {
-    window.open('https://mail.google.com/mail/?view=cm&fs=1&from=team@tracknow.com.au&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
     showToast('Renewal email opened for ' + c.co);
   } else {
     const addr = prompt('No email on file for ' + c.co + '. Enter email address:');
     if (addr && addr.includes('@')) {
       c.email = addr.trim();
-      window.open('https://mail.google.com/mail/?view=cm&fs=1&from=team@tracknow.com.au&to=' + encodeURIComponent(addr.trim()) + '&su=' + subject + '&body=' + body, '_blank');
+      window.open('https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&to=' + encodeURIComponent(addr.trim()) + '&su=' + subject + '&body=' + body, '_blank');
       renderCustomers();
       showToast('Renewal email opened for ' + c.co);
     }
@@ -6989,9 +6989,9 @@ function callToRenew(custId) {
       'Hi ' + (c.contact||'Team') + ',\n\n' +
       'Your TrackNow GPS subscription is coming up for renewal and requires your confirmation to continue.\n\n' +
       'Would you be available for a quick call to discuss your renewal options? We\'d love to keep you on board.\n\n' +
-      'Kind regards,\nTrackNow GPS Team\nteam@tracknow.com.au\nwww.tracknow.com.au\n'
+      'Kind regards,\nTrackNow GPS Team\nsales@tracknow.com.au\nwww.tracknow.com.au\n'
     );
-    window.open('https://mail.google.com/mail/?view=cm&fs=1&from=team@tracknow.com.au&to=' + encodeURIComponent(c.email) + '&su=' + subject + '&body=' + body, '_blank');
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&from=sales@tracknow.com.au&to=' + encodeURIComponent(c.email) + '&su=' + subject + '&body=' + body, '_blank');
     showToast('No phone on file — renewal email opened for ' + c.co);
   } else {
     showToast('No contact details on file for ' + c.co);
@@ -8415,14 +8415,31 @@ function sendEmailFromPortal() {
     else { htmlBody += '<p style="margin:0 0 4px">' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>'; }
   }
 
-  // Add Accept button for proposals and agreements
-  if (_epPending.type === 'proposal' || _epPending.type === 'agreement') {
-    var acceptLabel = _epPending.type === 'proposal' ? 'Accept Proposal' : 'Accept Agreement';
-    htmlBody += '<br><div style="text-align:center;margin:24px 0">' +
-      '<a href="https://tracknow-portal.onrender.com" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
-      '✓ ' + acceptLabel + '</a>' +
-      '</div>' +
-      '<p style="text-align:center;color:#888;font-size:12px;margin:0">Click the button above to view and accept via the TrackNow portal.</p>';
+  // Add reply CTA for all types
+  if (_epPending.type === 'fleet') {
+    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
+      '<p style="font-size:14px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Ready to discuss your fleet savings?</p>' +
+      '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply to this email or call us — we\'d love to walk you through the numbers.</p>' +
+      '<a href="tel:1300872256" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:14px;font-weight:bold;padding:12px 32px;text-decoration:none;border-radius:6px">📞 Call 1300 TRACK NOW</a>' +
+      '</div>';
+  }
+  if (_epPending.type === 'proposal') {
+    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
+      '<p style="font-size:14px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Would you like to proceed?</p>' +
+      '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply <strong>YES</strong> to this email and we will prepare your formal agreement.</p>' +
+      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — YES, proceed to agreement') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
+      '✓ Yes, Proceed to Agreement</a>' +
+      '<p style="color:#888;font-size:12px;margin:8px 0 0">Or call us on 1300 TRACK NOW</p>' +
+      '</div>';
+  }
+  if (_epPending.type === 'agreement') {
+    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
+      '<p style="font-size:14px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Ready to sign?</p>' +
+      '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply <strong>APPROVED</strong> to this email to confirm, or call us to discuss any questions.</p>' +
+      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — APPROVED') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
+      '✓ Approve &amp; Sign Agreement</a>' +
+      '<p style="color:#888;font-size:12px;margin:8px 0 0">Or call us on 1300 TRACK NOW</p>' +
+      '</div>';
   }
 
   var templateParams = {
