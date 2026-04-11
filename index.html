@@ -7314,13 +7314,13 @@ function saveDealProducts() {
 
 // ── Fleet Profile Report Generator ─────────────────────────────
 const FLEET_BENCHMARKS = {
-  trucks:     { label:'Trucks / Heavy Vehicles',   km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8 },
+  trucks:     { label:'Trucks / Heavy Vehicles',   km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 0, calcAH: false },
   vans:       { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8, idleHrsDay: 1.5, afterHrsPct: 10 },
   utes:       { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8, idleHrsDay: 1.5, afterHrsPct: 12 },
-  equipment:  { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6, idleHrsDay: 3.0, afterHrsPct: 5 },
+  equipment:  { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6, idleHrsDay: 3.0, afterHrsPct: 0, calcAH: false },
   cars:       { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8, idleHrsDay: 1.0, afterHrsPct: 15 },
-  excavators: { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6, idleHrsDay: 3.5, afterHrsPct: 3 },
-  trailers:   { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0, idleHrsDay: 0, afterHrsPct: 5 },
+  excavators: { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6, idleHrsDay: 3.5, afterHrsPct: 0, calcAH: false },
+  trailers:   { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0, idleHrsDay: 0, afterHrsPct: 0, calcAH: false },
   refrigerated:{ label:'Refrigerated Vehicles',     km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 6 }
 };
 let _fpSegments = [];
@@ -7333,7 +7333,7 @@ function _autoRecalcProspectCosts() {
 function addFleetSegment(type) {
   type = type || 'trucks';
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, selected: true };
+  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, calcAH: b.calcAH !== undefined ? b.calcAH : true, selected: true };
   _fpSegments.push(seg);
   renderFleetSegments();
   renderCalcAssetChips();
@@ -7349,7 +7349,7 @@ function updateFleetSegType(id, type) {
   const seg = _fpSegments.find(s => s.id === id);
   if (!seg) return;
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8;
+  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8; seg.calcAH = b.calcAH !== undefined ? b.calcAH : true;
   renderFleetSegments();
   renderCalcAssetChips();
   _autoRecalcProspectCosts();
@@ -8814,7 +8814,7 @@ function doLogin() {
           <svg width="12" height="12" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
           <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">3. After-Hours / Unauthorised Use</div>
         </div>
-        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Vehicles used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk.</div>
+        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Vehicles (vans, utes, cars) used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk. Not applicable to trucks, plant or equipment.</div>
         <div id="pfp_ahAssets" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr;gap:8px">
           <div>
