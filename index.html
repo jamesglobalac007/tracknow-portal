@@ -259,7 +259,7 @@ select:focus{border-color:#FFA028}
 select option{background:#0a0a0a;color:#FFA028}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('OoTzGVR6EezbqlWDx');</script>
+<script>try{emailjs.init('OoTzGVR6EezbqlWDx');}catch(e){console.warn('EmailJS not loaded yet');}</script>
 </head>
 <body>
 
@@ -2587,7 +2587,7 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 
 <!-- NEXT STEPS — visible on screen -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('OoTzGVR6EezbqlWDx');</script>
+<script>try{emailjs.init('OoTzGVR6EezbqlWDx');}catch(e){console.warn('EmailJS not loaded');}</script>
 <div id="proposalNextSteps" class="no-print" style="margin-top:30px;padding:28px;border:2px solid #0098d4;text-align:center;background:#f0f9ff">
   <div style="font-size:16px;font-weight:800;color:#0a1726;margin-bottom:8px">Next Steps</div>
   <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.6">If you would like to progress to a formal agreement, please let us know and we will prepare everything for you.</p>
