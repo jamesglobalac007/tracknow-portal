@@ -2465,6 +2465,17 @@ function openDemoEmail(leadId) {
   showToast('Demo email opened for ' + l.co);
 }
 
+// ── html2pdf loader for email PDF generation ──
+var _html2pdfLoaded = false;
+function _loadHtml2Pdf(cb) {
+  if (_html2pdfLoaded && typeof html2pdf !== 'undefined') { cb(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  s.onload = function() { _html2pdfLoaded = true; cb(); };
+  s.onerror = function() { console.warn('html2pdf failed to load'); cb(); };
+  document.head.appendChild(s);
+}
+
 // ── EmailJS proposal notification (called from proposal popup via window.opener) ──
 var _proposalLeadCache = null;
 var _emailjsLoaded = false;
@@ -2775,6 +2786,138 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 </body></html>`);
   win.document.close();
   showToast('Proposal generated for ' + l.co);
+}
+
+function _buildProposalEmailHTML(l) {
+  if (!l) return '';
+  var totalUnits = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty || 0); }, 0) : (l.v || 10);
+  var subPrice = l.subPrice || 29.95;
+  var term = l.term != null ? l.term : 24;
+  var isMTM = term === 0;
+  var isContract = term > 0;
+  var monthlySubOnly = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0) * (li.sub||0); }, 0) : (totalUnits * subPrice);
+  var hwDeviceTotal = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0) * (li.hwPrice||0); }, 0) : 0;
+  var hwInstallTotal = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0) * (li.hwInstall||0); }, 0) : 0;
+  var hwTotal = hwDeviceTotal + hwInstallTotal;
+  var allExtras = [];
+  var extrasMonthlyTotal = 0;
+  var extrasOnetimeTotal = 0;
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      if (li.extras && li.extras.length) {
+        li.extras.forEach(function(exId) {
+          var ex = OPTIONAL_EXTRAS.find(function(e) { return e.id === exId; });
+          if (!ex) return;
+          var isMonthly = ex.unit && ex.unit.indexOf('/mo') > -1;
+          var qty = li.qty || 0;
+          var cost = isMonthly ? qty * ex.price : qty * ex.price;
+          allExtras.push({ name: ex.name, qty: qty, unitPrice: ex.price, unit: ex.unit, total: cost, isMonthly: isMonthly, lineType: li.type });
+          if (isMonthly) extrasMonthlyTotal += cost;
+          else extrasOnetimeTotal += cost;
+        });
+      }
+    });
+  }
+  var hwPerMonth = isContract ? hwTotal / term : 0;
+  var extrasOnetimePerMonth = isContract && extrasOnetimeTotal > 0 ? extrasOnetimeTotal / term : 0;
+  var totalMonthly = isMTM ? monthlySubOnly + extrasMonthlyTotal : (monthlySubOnly + hwPerMonth + extrasMonthlyTotal + extrasOnetimePerMonth);
+  var fmt = function(n) { return '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+
+  var hwRows = '';
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      var q = li.qty || 0;
+      var devPrice = li.hwPrice || 0;
+      var instPrice = li.hwInstall || 0;
+      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td>' + q + '</td><td>' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
+      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td>' + q + '</td><td>' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
+    });
+  }
+
+  var swRows = '';
+  if (l.lineItems) {
+    swRows = l.lineItems.map(function(li) {
+      return '<tr><td style="font-weight:600">' + li.type + ' Subscription' + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>';
+    }).join('');
+  } else {
+    swRows = '<tr><td style="font-weight:600">GPS Tracking Subscription</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>';
+  }
+
+  var extrasRows = '';
+  allExtras.forEach(function(ex) {
+    extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td>' + ex.qty + '</td><td>' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
+  });
+
+  var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
+  html += '<div>';
+  html += '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">';
+  html += '<div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>';
+  html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
+  html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '</div>';
+  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700">' + l.co + '</div><div style="font-size:11px;color:#666;margin-top:2px">' + l.name + (l.city ? ' · '+l.city : '') + (l.st ? ', '+l.st : '') + '</div><div style="font-size:11px;color:#666">' + (l.email || '') + '</div><div style="font-size:11px;color:#666">' + today + '</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-' + String(l.id).padStart(4,'0') + '</div></div>';
+  html += '</div>';
+
+  html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Scope of Service</h2>';
+  html += '<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will supply, install, and maintain GPS tracking devices across your fleet of <strong>' + totalUnits + ' vehicles/assets</strong>. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>';
+
+  html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Pricing Schedule</h2>';
+
+  if (hwTotal > 0) {
+    html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Hardware &amp; Installation</h3>';
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+    html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Total</th></tr></thead>';
+    html += '<tbody>';
+    html += hwRows;
+    html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Hardware &amp; Installation Total</td><td style="text-align:right;padding:10px 12px">' + fmt(hwTotal) + '</td></tr>';
+    html += '</tbody></table>';
+    if (isMTM) {
+      html += '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>';
+    }
+  }
+
+  html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Software Subscription</h3>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Monthly</th></tr></thead>';
+  html += '<tbody>';
+  html += swRows;
+  html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Software Monthly Total</td><td style="text-align:right;padding:10px 12px">' + fmt(monthlySubOnly) + '/mo</td></tr>';
+  html += '</tbody></table>';
+
+  if (allExtras.length > 0) {
+    html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Optional Extras</h3>';
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+    html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Cost</th></tr></thead>';
+    html += '<tbody>';
+    html += extrasRows;
+    if (extrasMonthlyTotal > 0) {
+      html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Monthly Extras</td><td style="text-align:right;padding:10px 12px">' + fmt(extrasMonthlyTotal) + '/mo</td></tr>';
+    }
+    if (extrasOnetimeTotal > 0) {
+      html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">One-Time Extras' + (isContract ? ' (spread over ' + term + ' months)' : '') + '</td><td style="text-align:right;padding:10px 12px">' + fmt(extrasOnetimeTotal) + (isContract ? ' (' + fmt(extrasOnetimePerMonth) + '/mo)' : '') + '</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+
+  html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Agreement Details</h2>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<tbody>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Term</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (isMTM ? 'Month-to-Month — cancel any time with 30 days notice' : term + ' months') + '</td></tr>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Payment</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (isMTM ? 'Hardware ' + fmt(hwTotal) + ' upfront + ' + fmt(totalMonthly) + '/mo subscription' : fmt(totalMonthly) + '/mo — all-inclusive monthly payment') + '</td></tr>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Installation</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Included — scheduled at your convenience</td></tr>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Support</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">24/7 Australian-based support</td></tr>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Billing</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Monthly in advance via direct debit</td></tr>';
+  html += '</tbody></table>';
+
+  html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
+  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '<div>Confidential — prepared for ' + l.co + '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  return html;
 }
 
 function renderPipeline() {
@@ -3089,6 +3232,85 @@ function openAgreementDoc(leadId) {
 </body></html>`);
   win.document.close();
   showToast('Agreement opened for ' + l.co);
+}
+
+function _buildAgreementEmailHTML(l) {
+  if (!l) return '';
+  var totalUnits = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty || 0); }, 0) : (l.v || 1);
+  var subPrice = l.subPrice || 29.95;
+  var term = l.term != null ? l.term : 24;
+  var monthlySubOnly = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0) * (li.sub||0); }, 0) : (totalUnits * subPrice);
+  var fmt = function(n) { return '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+  var hwTotal = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)); }, 0) : 0;
+  var payType = l.paymentType || 'upfront';
+  var isSpread = payType === 'spread' && term > 0;
+  var hwPerMonth = isSpread ? hwTotal / term : 0;
+  var monthly = isSpread ? (monthlySubOnly + hwPerMonth) : monthlySubOnly;
+
+  var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px;font-size:13px;line-height:1.6">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
+  html += '<div>';
+  html += '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">';
+  html += '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-top:4px">Service Agreement</div>';
+  html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
+  html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '</div>';
+  html += '<div style="text-align:right;font-size:12px;color:#666"><div style="font-weight:600;color:#1a1a1a">' + l.co + '</div><div>' + (l.name || '') + '</div><div>' + (l.email || '') + '</div><div>' + today + '</div><div>Ref: TN-AGR-' + String(l.id).padStart(4,'0') + '</div></div>';
+  html += '</div>';
+
+  html += '<div style="margin-bottom:28px">';
+  html += '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Agreement Details</div>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<tr><td style="width:40%;color:#888;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Company</td><td style="font-weight:600;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + l.co + '</td></tr>';
+  html += '<tr><td style="color:#888;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Contact</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (l.name || '—') + '</td></tr>';
+  html += '<tr><td style="color:#888;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Email</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (l.email || '—') + '</td></tr>';
+  html += '<tr><td style="color:#888;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Contract Term</td><td style="font-weight:600;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + term + ' months</td></tr>';
+  html += '<tr><td style="color:#888;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Start Date</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Upon installation</td></tr>';
+  html += '</table>';
+  html += '</div>';
+
+  html += '<div style="margin-bottom:28px">';
+  html += '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Hardware &amp; Software</div>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<tr><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0">Device</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0">Asset</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0">Qty</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0">Hardware</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0">Monthly Sub</th></tr>';
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      html += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (li.hwType||li.type||'GPS Tracker') + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (li.asset||'Vehicles') + '</td><td style="text-align:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (li.qty||0) + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt((li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0))) + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt((li.qty||0)*(li.sub||subPrice)) + '/mo</td></tr>';
+    });
+  } else {
+    html += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">GPS Tracker</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Vehicles</td><td style="text-align:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + totalUnits + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt(hwTotal) + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt(monthly) + '/mo</td></tr>';
+  }
+  html += '<tr style="font-weight:700;border-top:2px solid #0098d4;font-size:14px"><td colspan="3" style="padding:10px 12px">TOTAL</td><td style="padding:10px 12px">' + (isSpread ? fmt(hwTotal) + ' (spread over ' + term + 'mo)' : (hwTotal > 0 ? fmt(hwTotal) + ' upfront' : '$0.00')) + '</td><td style="padding:10px 12px">' + fmt(monthly) + '/mo' + (isSpread ? ' <span style="font-size:10px;color:#888">(incl. hardware)</span>' : '') + '</td></tr>';
+  html += '</table>';
+  html += '</div>';
+
+  html += '<div style="margin-bottom:28px">';
+  html += '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Terms &amp; Conditions</div>';
+  html += '<ol style="list-style:none;padding:0;margin:0;font-size:11px;color:#666;line-height:1.8">';
+  html += '<li style="margin-bottom:4px"><strong>Term &amp; Commencement:</strong> This agreement is for a minimum term of ' + term + ' months commencing from the date of installation of the GPS tracking devices. The agreement automatically renews on a month-to-month basis unless either party provides 30 days written notice prior to the end of the initial term or any renewal period.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Fees &amp; Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit. All prices are in Australian dollars and exclusive of GST. A valid payment method must be provided prior to installation. Late payments may incur an administration fee of $15.00 per overdue invoice.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Hardware Ownership &amp; Care:</strong> ' + (isSpread ? 'GPS tracking devices, SIM cards, and associated hardware are being financed over the ' + term + '-month contract term at ' + fmt(hwPerMonth) + '/month (total hardware value: ' + fmt(hwTotal) + '). Hardware remains the property of Track Now Proprietary Limited until fully paid. Upon completion of all payments, ownership transfers to the Client.' : 'All GPS tracking devices, SIM cards, and associated hardware remain the sole property of Track Now Proprietary Limited (ABN 12 634 559 970) for the duration of this agreement.') + ' The Client is responsible for the reasonable care and protection of installed devices. Damaged, lost, or stolen devices may be replaced at the Client\'s cost at the then-current replacement price.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Installation &amp; Access:</strong> Professional installation is included at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time. The Client agrees to provide safe and reasonable access to all vehicles and assets listed in this agreement for the purpose of installation, maintenance, and removal of GPS devices.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Service Level &amp; Support:</strong> TrackNow GPS provides 24/7 platform access, real-time GPS tracking, geofence alerts, driver behaviour monitoring, fuel reconciliation, and automated reporting. Technical support is available 24/7 via phone and email. Critical issues will be responded to within 2 business hours; standard queries within 1 business day.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Data, Privacy &amp; Security:</strong> All fleet tracking data is stored securely in Australian-based data centres and is accessible only to authorised personnel nominated by the Client. TrackNow GPS complies with the Australian Privacy Act 1988 and will not share, sell, or disclose Client data to third parties without prior written consent, except as required by law. Data is retained for 12 months after termination and then securely deleted.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Intellectual Property:</strong> The TrackNow GPS platform, software, dashboards, and reporting tools remain the intellectual property of Track Now Proprietary Limited. The Client is granted a non-exclusive, non-transferable licence to use the platform for the duration of this agreement.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Limitation of Liability:</strong> To the maximum extent permitted by law, TrackNow GPS\'s liability under this agreement is limited to the total fees paid by the Client in the 12 months preceding the claim. TrackNow GPS is not liable for indirect, consequential, or incidental losses including but not limited to loss of revenue, data, or business opportunity. GPS tracking relies on satellite and cellular networks which may be subject to coverage limitations.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Indemnification:</strong> The Client agrees to indemnify and hold harmless Track Now Proprietary Limited, its directors, officers, and employees from any claims, damages, or expenses arising from the Client\'s use of the GPS tracking system or breach of this agreement.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Cancellation &amp; 30-Day Notice:</strong> Either party may cancel the subscription by providing a minimum of 30 days written notice. This notice period applies after the minimum contract term and during any month-to-month renewal period. Cancellation requests must be submitted in writing via email to support@tracknow.com.au. The subscription remains active and all fees remain billable until the end of the 30-day notice period. Early termination during the initial contract term will incur an early exit fee equal to the remaining monthly fees for the balance of the term. Upon cancellation, all GPS devices remain the property of TrackNow GPS and must be made available for collection within 14 days.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Force Majeure:</strong> Neither party shall be liable for failure to perform obligations due to circumstances beyond reasonable control, including but not limited to natural disasters, government actions, network outages, or pandemic events.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Dispute Resolution:</strong> In the event of a dispute, both parties agree to first attempt resolution through good-faith negotiation. If unresolved within 30 days, the dispute shall be referred to mediation in Queensland, Australia. This agreement is governed by the laws of Queensland and the Commonwealth of Australia.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Entire Agreement:</strong> This document constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, and agreements. Any amendments must be made in writing and signed by both parties.</li>';
+  html += '</ol>';
+  html += '</div>';
+
+  html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
+  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '<div>Confidential — prepared for ' + l.co + '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  return html;
 }
 
 // ═══════════ LEAD NOTES MODAL ═══════════
@@ -8287,6 +8509,125 @@ function generateFleetReport() {
   showToast('Fleet Optimisation Report generated for ' + l.co);
 }
 
+function _buildFleetEmailHTML(p) {
+  if (!p) return '';
+  var fuelPrice = 2.15;
+  var fraudPct = 3;
+  var slipPct = 5;
+  var idleBurnRate = 3.5;
+  var wearCostKm = 0.12;
+  var subPrice = p.subPrice || 29.95;
+  var _reportSegments = (p.fleetSegments || []).filter(function(seg) { return seg.selected !== false; });
+  var totalUnits = _reportSegments.reduce(function(s, seg) { return s + (seg.qty || 0); }, 0);
+  var fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-AU'); };
+
+  var annualSlippage = 0, annualIdleWaste = 0, totalInsurance = 0, afterHoursCost = 0, annualWear = 0, annualFraud = 0;
+  var segResults = _reportSegments.map(function(seg) {
+    var q = seg.qty || 0;
+    var weeklyFuel = q * seg.km * (seg.consumption / 100) * fuelPrice;
+    var aFuel = weeklyFuel * 52;
+    var inSlip = seg.calcSlip !== false;
+    var inIdle = seg.calcIdle !== false;
+    var inAH = seg.calcAH !== false;
+    var segWorkHrs = seg.workHrs != null ? seg.workHrs : 8;
+    var segIdleHrs = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
+    var segAhPct = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
+    var wastedHrs = segWorkHrs * (slipPct / 100);
+    var avgSpeedKmHr = segWorkHrs > 0 ? (seg.km / 5) / segWorkHrs : 0;
+    var fuelPerHr = (seg.consumption / 100) * avgSpeedKmHr;
+    var slip = inSlip ? wastedHrs * fuelPerHr * fuelPrice * q * 260 : 0;
+    var idle = inIdle ? q * segIdleHrs * idleBurnRate * fuelPrice * 260 : 0;
+    var ins = q * seg.insurance;
+    var ahKm = inAH ? q * (segAhPct / 100) * seg.km * 52 : 0;
+    var ahCost = ahKm * (seg.consumption / 100) * fuelPrice;
+    var exKm = inAH ? q * seg.km * (segAhPct / 100) * 52 : 0;
+    var wear = exKm * wearCostKm;
+    var fraud = aFuel * (fraudPct / 100);
+    annualSlippage += slip; annualIdleWaste += idle; totalInsurance += ins; afterHoursCost += ahCost; annualWear += wear; annualFraud += fraud;
+    return { type: seg.type, label: (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type, qty: q, km: seg.km, consumption: seg.consumption, insurance: seg.insurance, aFuel: aFuel, slip: slip, idle: idle, ins: ins, ahCost: ahCost, wear: wear, fraud: fraud, inSlip: inSlip, inIdle: inIdle, inAH: inAH, workHrs: segWorkHrs, idleHrsDay: segIdleHrs, afterHrsPct: segAhPct };
+  });
+
+  var annualFuelSaving = annualSlippage * 0.60;
+  var annualIdleSaving = annualIdleWaste * 0.50;
+  var annualInsSaving = totalInsurance * 0.15;
+  var afterHoursSaving = afterHoursCost * 0.90;
+  var wearSaving = annualWear * 0.50;
+  var fraudSaving = annualFraud * 0.85;
+
+  var totalAnnualLoss = annualSlippage + annualIdleWaste + afterHoursCost + annualWear + annualFraud;
+  var totalAnnualSaving = annualFuelSaving + annualIdleSaving + annualInsSaving + afterHoursSaving + wearSaving + fraudSaving;
+  var trackNowAnnualCost = totalUnits * subPrice * 12;
+  var netAnnualBenefit = totalAnnualSaving - trackNowAnnualCost;
+  var roi = trackNowAnnualCost > 0 ? Math.round((netAnnualBenefit / trackNowAnnualCost) * 100) : 0;
+
+  var _totalQ = segResults.reduce(function(s, sr) { return s + sr.qty; }, 0) || 1;
+  var workHrs = Math.round(segResults.reduce(function(s, sr) { return s + sr.workHrs * sr.qty; }, 0) / _totalQ * 10) / 10;
+  var idleHrs = Math.round(segResults.reduce(function(s, sr) { return s + sr.idleHrsDay * sr.qty; }, 0) / _totalQ * 10) / 10;
+  var afterHrsPct = Math.round(segResults.reduce(function(s, sr) { return s + sr.afterHrsPct * sr.qty; }, 0) / _totalQ * 10) / 10;
+  var wastedMinsPerVehicle = Math.round(workHrs * 60 * (slipPct / 100));
+
+  var fleetOverviewRows = segResults.map(function(sr) { return '<tr><td style="font-weight:600">' + sr.label + '</td><td style="text-align:center">' + sr.qty + '</td><td style="text-align:center">' + sr.km.toLocaleString() + '</td><td style="text-align:center">' + sr.consumption + 'L/100km</td></tr>'; }).join('');
+
+  var html = '<div style="font-family:Inter,sans-serif;background:#fff;color:#0b1320;padding:0;max-width:800px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
+  html += '<div>';
+  html += '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:36px;margin-bottom:8px">';
+  html += '<div style="font-size:11px;color:#5a6675;margin-top:4px">Fleet Optimisation Report</div>';
+  html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
+  html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '</div>';
+  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0a1726">' + p.co + '</div><div style="font-size:11px;color:#5a6675;margin-top:2px">' + p.name + (p.city ? ' · '+p.city : '') + (p.st ? ', '+p.st : '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.email || '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.ind || '') + '</div><div style="font-size:11px;color:#5a6675">Prepared: ' + new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'}) + '</div></div>';
+  html += '</div>';
+
+  html += '<h2 style="font-size:15px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:28px 0 14px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Fleet Overview</h2>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:20px">';
+  html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Category</th><th style="text-align:center;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Units</th><th style="text-align:center;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">KM/Week</th><th style="text-align:center;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Consumption</th></tr></thead>';
+  html += '<tbody>';
+  html += fleetOverviewRows;
+  html += '<tr style="border-top:2px solid #0a1726;font-weight:800;font-size:13px;padding-top:12px"><td style="padding:10px 12px">TOTAL FLEET</td><td style="text-align:center;padding:10px 12px">' + totalUnits + ' vehicles</td><td colspan="2" style="padding:10px 12px"></td></tr>';
+  html += '</tbody></table>';
+  html += '<div style="background:#f6f8fb;border:1px solid #e8ebf1;padding:12px;margin-bottom:20px;font-size:11px;color:#333;line-height:1.6">';
+  html += '<strong>Calculator Parameters:</strong> Working hours: ' + workHrs + 'hrs/day &middot; Slippage: ' + slipPct + '% &middot; Idle time: ' + idleHrs + 'hrs/day @ ' + idleBurnRate + 'L/hr burn rate &middot; After-hours use: ' + afterHrsPct + '% &middot; Fuel: $' + fuelPrice.toFixed(2) + '/L<br>';
+  html += '<span style="font-size:9px;color:#888">Idle burn rates based on Radius Fleet Management AU (2024) industry data. Slippage calculated using working-hours operational model.</span>';
+  html += '</div>';
+
+  html += '<h2 style="font-size:15px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:28px 0 14px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Hidden Fleet Costs — What Your Fleet Is Losing</h2>';
+  html += '<p style="font-size:12px;color:#666;margin-bottom:16px;line-height:1.5">Every fleet has hidden costs that go unnoticed without GPS tracking and fleet management. Based on your fleet of <strong>' + totalUnits + ' vehicles</strong> across <strong>' + segResults.length + ' categor' + (segResults.length===1?'y':'ies') + '</strong>, here is what these issues are likely costing your business annually.</p>';
+
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Issue</th><th style="text-align:right;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Annual Cost</th></tr></thead>';
+  html += '<tbody>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Fuel Slippage — Working Hours (' + slipPct + '% of ' + workHrs + 'hr day)</div><div style="font-size:11px;color:#7a8595;margin-top:2px">' + Math.round(wastedMinsPerVehicle) + ' minutes per vehicle per day lost to inefficient routes, unauthorised detours, and unproductive driving time</div></td><td style="font-weight:700;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(annualSlippage) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Idle Time (' + idleHrs + 'hrs/day @ ' + idleBurnRate + 'L/hr)</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Engines running while stationary — burning ' + (idleHrs * idleBurnRate).toFixed(1) + 'L per vehicle per day with zero productivity</div></td><td style="font-weight:700;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(annualIdleWaste) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">After-Hours Use (' + afterHrsPct + '% of km)</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Personal use, detours, after-hours driving — untracked mileage adding fuel, wear and liability costs</div></td><td style="font-weight:700;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(afterHoursCost) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Excess Wear &amp; Maintenance</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Unnecessary kilometres from poor routing and misuse accelerate servicing, tyre replacement and depreciation</div></td><td style="font-weight:700;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(annualWear) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Fuel Card Fraud &amp; Misuse</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Fuel card skimming, personal fills, phantom transactions — est. ' + fraudPct + '% of fuel spend unaccounted for</div></td><td style="font-weight:700;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(annualFraud) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Insurance Premium Overpayment</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Without GPS, insurers charge higher premiums — tracked fleets typically receive 10–20% discounts</div></td><td style="font-weight:700;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(totalInsurance - annualInsSaving) + ' <span style="font-size:10px;color:#888">(potential saving: ' + fmt(annualInsSaving) + ')</span></td></tr>';
+  html += '<tr style="border-top:2px solid #0a1726;font-weight:800;font-size:13px"><td style="color:#0a1726;padding:10px 12px">TOTAL ESTIMATED ANNUAL LOSS</td><td style="font-size:16px;color:#0a1726;text-align:right;padding:10px 12px">' + fmt(totalAnnualLoss) + '</td></tr>';
+  html += '</tbody></table>';
+
+  html += '<h2 style="font-size:15px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:28px 0 14px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Your Projected Savings</h2>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Saving Category</th><th style="text-align:right;font-size:10px;font-weight:700;color:#5a6675;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #e8ebf1">Annual Saving</th></tr></thead>';
+  html += '<tbody>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Fuel Slippage Recovery</div><div style="font-size:11px;color:#7a8595;margin-top:2px">GPS reduces fuel waste by up to 60% through route optimisation and accountability</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(annualFuelSaving) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Idle Time Reduction</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Idle alerts and driver coaching cut unnecessary engine running by ~50%</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(annualIdleSaving) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Fuel Card Fraud Prevention</div><div style="font-size:11px;color:#7a8595;margin-top:2px">GPS + fuel card reconciliation eliminates ~85% of fraudulent or personal fuel use</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(fraudSaving) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Insurance Premium Discount</div><div style="font-size:11px;color:#7a8595;margin-top:2px">GPS-tracked fleets qualify for 10–20% premium reductions</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(annualInsSaving) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Unauthorised Use Eliminated</div><div style="font-size:11px;color:#7a8595;margin-top:2px">After-hours and personal use drops 90%+ with live tracking visibility</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(afterHoursSaving) + '</td></tr>';
+  html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Reduced Wear &amp; Maintenance</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Fewer unnecessary kilometres = less servicing, tyres, and depreciation</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(wearSaving) + '</td></tr>';
+  html += '<tr style="border-top:2px solid #0098d4;font-weight:800;font-size:13px;color:#0098d4"><td style="padding:10px 12px">TOTAL PROJECTED ANNUAL SAVING</td><td style="font-size:16px;text-align:right;padding:10px 12px">' + fmt(totalAnnualSaving) + '</td></tr>';
+  html += '</tbody></table>';
+
+  html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
+  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '<div>Confidential — prepared for ' + p.co + '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  return html;
+}
+
 // ── Send Fleet Report from Prospects tab ──────────────────────────
 function sendProspectFleetReport(prospectId) {
   const p = PROSPECTS.find(x => x.id === prospectId);
@@ -8366,8 +8707,8 @@ function _markSig() {
 }
 
 function _showEmailPreview(opts) {
-  // opts: { to, subject, body, attachment, sigName, sigTitle, type }
-  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '' };
+  // opts: { to, subject, body, attachment, sigName, sigTitle, type, docHTML }
+  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '', docHTML: opts.docHTML || '' };
   document.getElementById('ep_title').textContent = '📧 ' + (opts.type === 'fleet' ? 'Fleet Optimisation Report' : opts.type === 'proposal' ? 'Proposal' : opts.type === 'agreement' ? 'Service Agreement' : 'Email') + ' — Preview';
   document.getElementById('ep_to').textContent = opts.to;
   document.getElementById('ep_subject').textContent = opts.subject;
@@ -8415,6 +8756,14 @@ function sendEmailFromPortal() {
     else { htmlBody += '<p style="margin:0 0 4px">' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>'; }
   }
 
+  // Insert full document content inline
+  if (_epPending.docHTML) {
+    htmlBody += '<br><hr style="border:none;border-top:2px solid #0098d4;margin:24px 0">';
+    htmlBody += '<div style="font-size:11px;color:#888;text-align:center;margin-bottom:16px;font-style:italic">Full document enclosed below</div>';
+    htmlBody += _epPending.docHTML;
+    htmlBody += '<hr style="border:none;border-top:2px solid #0098d4;margin:24px 0">';
+  }
+
   // Add reply CTA for all types
   if (_epPending.type === 'fleet') {
     htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
@@ -8455,6 +8804,30 @@ function sendEmailFromPortal() {
         var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
         showToast(typeLabel + ' sent to ' + _epPending.to + ' ✓');
         closeEmailPreview();
+
+        // Auto-download PDF if document content exists
+        if (_epPending.docHTML) {
+          _loadHtml2Pdf(function() {
+            if (typeof html2pdf === 'undefined') return;
+            var container = document.createElement('div');
+            container.innerHTML = _epPending.docHTML;
+            container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;color:#1a1a1a;font-family:Inter,sans-serif;padding:40px';
+            document.body.appendChild(container);
+            var filename = _epPending.type === 'fleet' ? 'Fleet_Report' : _epPending.type === 'proposal' ? 'Proposal' : 'Agreement';
+            filename += '_' + (_epPending.subject || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
+            html2pdf().set({
+              margin: [10, 10, 10, 10],
+              filename: filename,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(container).save().then(function() {
+              document.body.removeChild(container);
+            }).catch(function() {
+              document.body.removeChild(container);
+            });
+          });
+        }
       })
       .catch(function(err) {
         console.error('EmailJS error:', err);
@@ -8491,10 +8864,11 @@ function emailFleetOverview(prospectId) {
   var subject = 'Fleet Optimisation Report — ' + p.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for taking the time to speak with us about your fleet.\n\n' +
-    'Please find attached your personalised Fleet Optimisation Report for ' + p.co + '. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.\n\n' +
+    'Please find your personalised Fleet Optimisation Report for ' + p.co + ' enclosed below. This report outlines the hidden costs impacting your fleet and the projected savings GPS tracking can deliver.\n\n' +
     'We would love the opportunity to walk you through the numbers and show you a quick demo of the TrackNow platform.\n\n' +
     'Feel free to reply to this email or call us on 1300 TRACK NOW.\n\n' +
     'Kind regards,' + _tnSig();
+  var docHTML = _buildFleetEmailHTML(p);
   _showEmailPreview({
     to: p.email,
     subject: subject,
@@ -8502,7 +8876,8 @@ function emailFleetOverview(prospectId) {
     attachment: 'Fleet_Optimisation_Report_' + p.co.replace(/[^a-zA-Z0-9]/g,'_') + '.pdf',
     sigName: 'TrackNow GPS Sales Team',
     sigTitle: 'Fleet Tracking Solutions',
-    type: 'fleet'
+    type: 'fleet',
+    docHTML: docHTML
   });
 }
 
@@ -8515,9 +8890,10 @@ function emailProposal(leadId) {
   var subject = 'TrackNow GPS Proposal — ' + l.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for your interest in TrackNow GPS fleet tracking.\n\n' +
-    'Please find attached your proposal for ' + totalUnits + ' GPS tracking units for ' + l.co + '. This includes full pricing, contract terms, and service details.\n\n' +
+    'Please find your proposal for ' + totalUnits + ' GPS tracking units for ' + l.co + ' enclosed below. This includes full pricing, contract terms, and service details.\n\n' +
     'If you have any questions or would like to discuss the proposal, please don\'t hesitate to reach out. We\'re here to help.\n\n' +
     'Kind regards,' + _tnSig();
+  var docHTML = _buildProposalEmailHTML(l);
   _showEmailPreview({
     to: l.email,
     subject: subject,
@@ -8525,7 +8901,8 @@ function emailProposal(leadId) {
     attachment: 'TrackNow_Proposal_' + l.co.replace(/[^a-zA-Z0-9]/g,'_') + '.pdf',
     sigName: 'TrackNow GPS Sales Team',
     sigTitle: 'Fleet Tracking Solutions',
-    type: 'proposal'
+    type: 'proposal',
+    docHTML: docHTML
   });
 }
 
@@ -8537,10 +8914,11 @@ function emailAgreement(leadId) {
   var subject = 'TrackNow GPS Service Agreement — ' + l.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for choosing TrackNow GPS.\n\n' +
-    'Please find attached the Service Agreement for ' + l.co + '. You can review the terms and sign digitally using the secure link provided.\n\n' +
-    'Once signed, our team will be in touch within 24 hours to schedule your installation.\n\n' +
+    'Please find the Service Agreement for ' + l.co + ' enclosed below. You can review the terms and the full agreement details.\n\n' +
+    'Once you\'re ready, please reply to this email or contact us to proceed with signing.\n\n' +
     'If you have any questions about the agreement, please don\'t hesitate to reach out.\n\n' +
     'Kind regards,' + _markSig();
+  var docHTML = _buildAgreementEmailHTML(l);
   _showEmailPreview({
     to: l.email,
     subject: subject,
@@ -8548,7 +8926,8 @@ function emailAgreement(leadId) {
     attachment: 'TrackNow_Service_Agreement_' + l.co.replace(/[^a-zA-Z0-9]/g,'_') + '.pdf',
     sigName: 'Mark Speelmeyer',
     sigTitle: 'Director — TrackNow GPS',
-    type: 'agreement'
+    type: 'agreement',
+    docHTML: docHTML
   });
 }
 
