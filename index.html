@@ -2567,12 +2567,6 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
   </tbody>
 </table>
 
-<div class="sign-box">
-  <div style="font-size:16px;font-weight:700;color:#0088FF;margin-bottom:6px">Ready to proceed?</div>
-  <div style="font-size:12px;color:#666;margin-bottom:16px">Review the terms below and sign digitally to get started</div>
-  <a class="sign-btn" href="#" onclick="alert('DocuSign integration — this will connect to your DocuSign account to capture the client signature digitally.');return false;">✍ Sign with DocuSign</a>
-  <div style="font-size:10px;color:#888;margin-top:10px">Powered by DocuSign · Secure digital signature</div>
-</div>
 
 <h2>Terms &amp; Conditions</h2>
 <div class="terms">
@@ -2585,10 +2579,77 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
   <p style="margin-top:6px"><strong>7. Privacy:</strong> All fleet data is stored securely in Australian data centres and is accessible only to authorised personnel.</p>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px;padding-top:20px;border-top:1px solid #eee">
-  <div><div style="border-bottom:1px solid #ccc;height:50px;margin-bottom:6px"></div><div style="font-size:10px;color:#888">Client Signature · ${l.name}, ${l.co}</div><div style="font-size:10px;color:#888;margin-top:2px">Date: _______________</div></div>
-  <div><div style="border-bottom:1px solid #ccc;height:50px;margin-bottom:6px"></div><div style="font-size:10px;color:#888">TrackNow GPS Representative</div><div style="font-size:10px;color:#888;margin-top:2px">Date: _______________</div></div>
+<div style="margin-top:30px;padding-top:20px;border-top:2px solid #0098d4">
+  <h2 style="margin-top:0">Acceptance &amp; Signatures</h2>
+  <p style="font-size:11px;color:#666;margin-bottom:20px">By signing below, both parties agree to the terms and conditions outlined in this proposal.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">
+    <!-- CLIENT SIDE -->
+    <div style="border:1px solid #e0e0e0;padding:20px;background:#fafafa">
+      <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Client</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:#888;margin-bottom:4px">Full Name</div>
+        <div style="font-size:13px;font-weight:600;color:#333">${l.name}</div>
+        <div style="font-size:11px;color:#666">${l.co}</div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:#888;margin-bottom:4px">Date</div>
+        <div style="font-size:13px;font-weight:600;color:#333">${today}</div>
+      </div>
+      <div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:10px;color:#888">Signature — type name or draw below</div>
+          <div style="display:flex;gap:4px" class="no-print">
+            <button onclick="document.getElementById('clientSigType').style.display='block';document.getElementById('clientSigDraw').style.display='none'" style="padding:3px 10px;font-size:9px;border:1px solid #0098d4;background:#f0f9ff;color:#0098d4;cursor:pointer;font-weight:600;font-family:inherit">TYPE</button>
+            <button onclick="document.getElementById('clientSigType').style.display='none';document.getElementById('clientSigDraw').style.display='block'" style="padding:3px 10px;font-size:9px;border:1px solid #0098d4;background:#f0f9ff;color:#0098d4;cursor:pointer;font-weight:600;font-family:inherit">DRAW</button>
+          </div>
+        </div>
+        <div id="clientSigType" style="display:block">
+          <input type="text" id="clientTypedSig" placeholder="Type full name to sign..." oninput="document.getElementById('clientSigPreview').textContent=this.value" style="width:100%;padding:10px;border:1px solid #ccc;font-size:16px;font-family:'Brush Script MT','Segoe Script','Comic Sans MS',cursive;background:#fff;box-sizing:border-box">
+          <div id="clientSigPreview" style="font-family:'Brush Script MT','Segoe Script','Comic Sans MS',cursive;font-size:28px;color:#1a1a1a;min-height:40px;padding:8px 0;border-bottom:2px solid #333"></div>
+        </div>
+        <div id="clientSigDraw" style="display:none">
+          <canvas id="clientSigCanvas" width="340" height="100" style="border:1px solid #ccc;background:#fff;cursor:crosshair;width:100%;display:block"></canvas>
+          <button onclick="var c=document.getElementById('clientSigCanvas');c.getContext('2d').clearRect(0,0,c.width,c.height)" class="no-print" style="margin-top:4px;padding:3px 10px;font-size:9px;border:1px solid #ccc;background:#f5f5f5;color:#666;cursor:pointer;font-family:inherit">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKNOW SIDE — pre-loaded -->
+    <div style="border:1px solid #e0e0e0;padding:20px;background:#fafafa">
+      <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">TrackNow GPS</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:#888;margin-bottom:4px">Full Name</div>
+        <div style="font-size:13px;font-weight:600;color:#333">Mark Speelmeyer</div>
+        <div style="font-size:11px;color:#666">Director — TrackNow GPS</div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:#888;margin-bottom:4px">Date</div>
+        <div style="font-size:13px;font-weight:600;color:#333">${today}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#888;margin-bottom:6px">Signature</div>
+        <div style="font-family:'Brush Script MT','Segoe Script','Comic Sans MS',cursive;font-size:32px;color:#1a1a1a;padding:8px 0;border-bottom:2px solid #333">Mark Speelmeyer</div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+(function(){
+  var canvas = document.getElementById('clientSigCanvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var drawing = false;
+  ctx.strokeStyle = '#1a1a1a';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  canvas.addEventListener('mousedown', function(e){ drawing=true; ctx.beginPath(); var r=canvas.getBoundingClientRect(); ctx.moveTo((e.clientX-r.left)*(canvas.width/r.width),(e.clientY-r.top)*(canvas.height/r.height)); });
+  canvas.addEventListener('mousemove', function(e){ if(!drawing) return; var r=canvas.getBoundingClientRect(); ctx.lineTo((e.clientX-r.left)*(canvas.width/r.width),(e.clientY-r.top)*(canvas.height/r.height)); ctx.stroke(); });
+  canvas.addEventListener('mouseup', function(){ drawing=false; });
+  canvas.addEventListener('mouseleave', function(){ drawing=false; });
+})();
+</script>
 
 <div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div><div>Confidential &mdash; prepared for ${l.co}</div></div>
 </body></html>`);

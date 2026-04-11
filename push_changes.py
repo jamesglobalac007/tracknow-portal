@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — blue headings for pricing sections."""
+"""Push — inline signing section for proposal."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Blue pricing headings + MTM wording verified\033[0m")
+print(f"\n\033[1m🚀 Pushing: Proposal signing section + blue headings\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,12 +35,19 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Proposal: blue pricing headings, AH trucks/cars/vans, remove payment box
+COMMIT_MSG = """Proposal: inline signing, blue headings, AH trucks/cars/vans, remove payment box
 
-- h3 headings (Hardware, Software, Extras) now blue #0098d4 matching h2
-- After-hours calculator restricted to trucks, cars, vans only
-- Removed blue monthly payment summary box from proposal
-- MTM wording confirmed: hardware upfront + subscription-only monthly"""
+Signing section:
+- Removed DocuSign placeholder
+- Client side: auto date, type name or draw signature with cursor
+- TrackNow side: Mark Speelmeyer pre-loaded with signature
+- Canvas drawing with mouse support
+- TYPE/DRAW toggle buttons (hidden on print)
+
+Also includes:
+- h3 pricing headings now blue matching h2
+- After-hours restricted to trucks, cars, vans only
+- Removed blue monthly payment summary box"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
