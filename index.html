@@ -2693,7 +2693,21 @@ function renderPipeline() {
             <span class="more-btn" style="color:#555;font-size:10px;font-weight:600;padding:2px 6px">▼ more</span>
           </div>
           <div id="cardExpand_${l.id}" style="display:none;margin-top:6px;border-top:1px solid #1a1a1a;padding-top:6px">
-            <div style="font-size:10px;color:#666;margin-bottom:4px">${l.name} · ${l.city}, ${l.st}</div>
+            <div onclick="event.stopPropagation();var ed=document.getElementById('cardEdit_'+${l.id});ed.style.display=ed.style.display==='none'?'':'none'" style="font-size:10px;color:#666;margin-bottom:4px;cursor:pointer" onmouseover="this.style.color='#0098d4'" onmouseout="this.style.color='#666'" title="Click to edit contact details">${l.name} · ${l.city}, ${l.st} <span style="font-size:8px;color:#555">✏</span></div>
+            <div id="cardEdit_${l.id}" style="display:none;background:#080808;border:1px solid #222;padding:8px;margin-bottom:6px">
+              <div style="font-size:8px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Edit Contact Details</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Contact Name</label><input id="le_name_${l.id}" value="${(l.name||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Company</label><input id="le_co_${l.id}" value="${(l.co||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Email</label><input id="le_email_${l.id}" value="${(l.email||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Phone</label><input id="le_phone_${l.id}" value="${(l.phone||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">City</label><input id="le_city_${l.id}" value="${(l.city||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">State</label><input id="le_st_${l.id}" value="${(l.st||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Industry</label><input id="le_ind_${l.id}" value="${(l.ind||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Website</label><input id="le_web_${l.id}" value="${(l.website||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
+              </div>
+              <button onclick="event.stopPropagation();saveLeadDetails(${l.id})" style="width:100%;padding:5px;background:#0098d4;border:none;color:#fff;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px">SAVE DETAILS</button>
+            </div>
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             ${l.stage!=='agreement'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+')" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.background=\'#111\'" onmouseout="this.style.borderColor=\'#332200\';this.style.background=\'#080808\'">EDIT PRODUCTS & PRICING</button>':''}
             ${l.stage==='proposal'?'<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.2);margin-bottom:4px"><span style="font-size:10px;color:#0088FF">📄</span><span style="font-size:10px;color:#0088FF;font-weight:600">Fleet Optimisation Report — Sent</span><span style="font-size:10px;color:#00CC66">✓</span></div>':''}
@@ -2924,6 +2938,30 @@ function saveLeadNotes() {
   closeLeadNotes();
   renderPipeline();
   showToast('Notes saved for ' + l.co);
+}
+
+function saveLeadDetails(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  var n = document.getElementById('le_name_'+leadId);
+  var co = document.getElementById('le_co_'+leadId);
+  var em = document.getElementById('le_email_'+leadId);
+  var ph = document.getElementById('le_phone_'+leadId);
+  var ci = document.getElementById('le_city_'+leadId);
+  var st = document.getElementById('le_st_'+leadId);
+  var ind = document.getElementById('le_ind_'+leadId);
+  var web = document.getElementById('le_web_'+leadId);
+  if (n) l.name = n.value.trim();
+  if (co) l.co = co.value.trim();
+  if (em) l.email = em.value.trim();
+  if (ph) l.phone = ph.value.trim();
+  if (ci) l.city = ci.value.trim();
+  if (st) l.st = st.value.trim();
+  if (ind) l.ind = ind.value.trim();
+  if (web) l.website = web.value.trim();
+  saveData();
+  renderPipeline();
+  showToast('Details updated for ' + l.co);
 }
 
 function addLeadTimestamp() {

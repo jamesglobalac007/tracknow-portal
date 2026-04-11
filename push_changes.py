@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — collapsible breakdowns + remove included in monthly callout."""
+"""Push — saveLeadDetails function + pipeline contact editing."""
 import subprocess, os, sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
@@ -8,7 +8,7 @@ if not os.path.isdir(os.path.join(REPO, ".git")):
     sys.exit(1)
 
 os.chdir(REPO)
-print(f"\n\033[1m🚀 Pushing: Collapsible breakdowns + remove monthly payment callout\033[0m")
+print(f"\n\033[1m🚀 Pushing: Pipeline contact editing — saveLeadDetails function\033[0m")
 print(f"  Repo: {REPO}\n")
 
 def run(cmd):
@@ -35,16 +35,13 @@ print(f"\n  📦 {len(files)} file(s) changed:")
 for f in files:
     status(f"  {f}")
 
-COMMIT_MSG = """Collapsible calculation breakdowns + remove monthly payment callout
+COMMIT_MSG = """Pipeline contact editing — saveLeadDetails function
 
-Fleet calculators:
-- Slippage, idle, after-hours breakdowns now collapsed by default
-- Click arrow to expand/collapse each breakdown section
-- Color-coded arrows matching each calculator section
-
-Proposal:
-- Removed Included in Monthly Payment callout for contract pricing
-- Payable Upfront callout remains for MTM"""
+- Clickable contact name on pipeline cards opens inline edit panel
+- Edit: name, company, email, phone, city, state, industry, website
+- SAVE DETAILS button persists changes to localStorage
+- Collapsible calculation breakdowns with toggle arrows
+- Removed Included in Monthly Payment callout for contract proposals"""
 
 ok, out = run("git commit -m " + repr(COMMIT_MSG))
 status("Committed", ok)
