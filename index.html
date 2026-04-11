@@ -2431,8 +2431,67 @@ function openDemoEmail(leadId) {
   showToast('Demo email opened for ' + l.co);
 }
 
+// ── EmailJS proposal notification (called from proposal popup via window.opener) ──
+var _proposalLeadCache = null;
+var _emailjsLoaded = false;
+
+function _sendProposalNotify(btn) {
+  var ld = _proposalLeadCache;
+  if (!ld) { alert('Error: no lead data. Please close and reopen the proposal.'); return; }
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span> Sending...';
+  var doc = btn.ownerDocument;
+  // add spinner keyframe
+  if (!doc.getElementById('_spinStyle')) {
+    var st = doc.createElement('style'); st.id = '_spinStyle';
+    st.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    doc.head.appendChild(st);
+  }
+
+  function doSend() {
+    var proposalNum = 'TN-' + String(ld.id).padStart(4, '0');
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+      to_email: 'sales@tracknow.com.au',
+      subject: 'PROCEED TO AGREEMENT — Proposal #' + proposalNum + ' — ' + ld.co,
+      from_name: ld.name || 'Client',
+      message_html: '<h2 style="color:#0098d4">Client Wants to Proceed</h2>' +
+        '<p><strong>' + (ld.name || '') + '</strong> from <strong>' + ld.co + '</strong> has clicked to proceed to formal agreement.</p>' +
+        '<p>Proposal: #' + proposalNum + '</p>' +
+        '<p>Email: ' + (ld.email || 'N/A') + '</p>' +
+        '<p>Phone: ' + (ld.phone || 'N/A') + '</p>' +
+        '<p style="color:#888;font-size:12px">This notification was sent automatically from the TrackNow proposal document.</p>'
+    }).then(function() {
+      var box = doc.getElementById('proposalNextSteps');
+      if (box) box.innerHTML = '<div style="padding:20px"><div style="font-size:48px;margin-bottom:12px">&#10003;</div><div style="font-size:18px;font-weight:800;color:#0098d4;margin-bottom:8px">Thank You!</div><p style="font-size:14px;color:#555;line-height:1.6">The TrackNow team has been notified and will be in touch shortly to prepare your formal agreement.</p><p style="font-size:12px;color:#888;margin-top:12px">sales@tracknow.com.au &middot; 1300 TRACK NOW</p></div>';
+    }).catch(function() {
+      btn.disabled = false;
+      btn.innerHTML = '&#10003; Yes, I Would Like to Proceed to Formal Agreement';
+      alert('Something went wrong. Please try again or call us on 1300 TRACK NOW.');
+    });
+  }
+
+  if (_emailjsLoaded && typeof emailjs !== 'undefined') {
+    doSend();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() {
+      _emailjsLoaded = true;
+      emailjs.init('OoTzGVR6EezbqlWDx');
+      doSend();
+    };
+    s.onerror = function() {
+      btn.disabled = false;
+      btn.innerHTML = '&#10003; Yes, I Would Like to Proceed to Formal Agreement';
+      alert('Could not load email service. Please call us on 1300 TRACK NOW.');
+    };
+    document.head.appendChild(s);
+  }
+}
+
 function openProposalDoc(leadId) {
   const l = LEADS.find(x => x.id === leadId);
+  _proposalLeadCache = l;
   if (!l) return;
   const totalUnits = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty || 0), 0) : (l.v || 10);
   const subPrice = l.subPrice || 29.95;
@@ -2587,32 +2646,9 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 <div id="proposalNextSteps" class="no-print" style="margin-top:30px;padding:28px;border:2px solid #0098d4;text-align:center;background:#f0f9ff">
   <div style="font-size:16px;font-weight:800;color:#0a1726;margin-bottom:8px">Next Steps</div>
   <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.6">If you would like to progress to a formal agreement, please let us know and we will prepare everything for you.</p>
-  <button id="proceedBtn" onclick="
-    var btn=this;
-    btn.disabled=true;
-    btn.innerHTML='<span style=\\'display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite\\'></span> Sending...';
-    var s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    s.onload=function(){
-      emailjs.init('OoTzGVR6EezbqlWDx');
-      emailjs.send('service_5y35h2g','template_gwga9jo',{
-        to_email:'sales@tracknow.com.au',
-        subject:'PROCEED TO AGREEMENT — Proposal #TN-${String(l.id).padStart(4,'0')} — ${l.co}',
-        from_name:'${(l.name||'Client').replace(/'/g,'\\\\\\'')}',
-        message_html:'<h2 style=\\'color:#0098d4\\'>Client Wants to Proceed</h2><p><strong>${(l.name||'').replace(/'/g,'\\\\\\'')} </strong> from <strong>${l.co.replace(/'/g,'\\\\\\'')} </strong> has clicked to proceed to formal agreement.</p><p>Proposal: #TN-${String(l.id).padStart(4,'0')}</p><p>Email: ${l.email||'N/A'}</p><p>Phone: ${l.phone||'N/A'}</p><p style=\\'color:#888;font-size:12px\\'>This notification was sent automatically from the TrackNow proposal document.</p>'
-      }).then(function(){
-        document.getElementById('proposalNextSteps').innerHTML='<div style=\\'padding:20px\\'><div style=\\'font-size:48px;margin-bottom:12px\\'>&#10003;</div><div style=\\'font-size:18px;font-weight:800;color:#0098d4;margin-bottom:8px\\'>Thank You!</div><p style=\\'font-size:14px;color:#555;line-height:1.6\\'>The TrackNow team has been notified and will be in touch shortly to prepare your formal agreement.</p><p style=\\'font-size:12px;color:#888;margin-top:12px\\'>sales@tracknow.com.au &middot; 1300 TRACK NOW</p></div>';
-      }).catch(function(){
-        btn.disabled=false;
-        btn.innerHTML='&#10003; Yes, I Would Like to Proceed to Formal Agreement';
-        alert('Something went wrong. Please try again or call us on 1300 TRACK NOW.');
-      });
-    };
-    document.head.appendChild(s);
-  " style="display:inline-block;padding:16px 48px;background:#0098d4;color:#fff;font-size:16px;font-weight:800;border:none;border-radius:6px;letter-spacing:.5px;cursor:pointer;font-family:inherit">&#10003; Yes, I Would Like to Proceed to Formal Agreement</button>
+  <button id="proceedBtn" onclick="window.opener._sendProposalNotify(this)" style="display:inline-block;padding:16px 48px;background:#0098d4;color:#fff;font-size:16px;font-weight:800;border:none;border-radius:6px;letter-spacing:.5px;cursor:pointer;font-family:inherit">&#10003; Yes, I Would Like to Proceed to Formal Agreement</button>
   <p style="font-size:11px;color:#888;margin-top:12px">One click — we will be notified immediately.</p>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- PRINT NEXT STEPS — hidden on screen, visible on print -->
 <div class="print-only" style="margin-top:30px;padding:24px;border:2px solid #333;page-break-inside:avoid;text-align:center">
