@@ -3365,23 +3365,27 @@ function _sendAgreementNotify(btn) {
   // Build signed agreement HTML using the existing email builder + banner on top
   var agreementBody = window.opener._buildAgreementEmailHTML(ld);
 
-  // Signature block for email
+  // Signature block for email — row-per-field table so lines always align
   var sigBlock = '<div style="border:2px solid #0098d4;padding:20px;margin:24px 0">' +
     '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Signatures</div>' +
-    '<table style="width:100%;border-collapse:collapse"><tr>' +
-      '<td style="width:50%;vertical-align:top;padding-right:20px">' +
-        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Client — ' + ld.co + '</div>' +
-        '<div style="font-size:13px;margin-bottom:4px"><strong>' + cn + '</strong>' + (ct ? ' — ' + ct : '') + '</div>' +
-        '<div style="font-family:\'Brush Script MT\',\'Segoe Script\',cursive;font-size:24px;border-bottom:2px solid #FFA028;padding:4px 0;height:40px;overflow:hidden">' + (hasDrawn ? sigDisplay : cs) + '</div>' +
-        '<div style="font-size:11px;color:#888;margin-top:4px">' + today + '</div>' +
-      '</td>' +
-      '<td style="width:50%;vertical-align:top;padding-left:20px">' +
-        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">TrackNow GPS Pty Ltd</div>' +
-        '<div style="font-size:13px;margin-bottom:4px"><strong>Mark Speelmeyer</strong> — Director</div>' +
-        '<div style="font-family:\'Brush Script MT\',\'Segoe Script\',cursive;font-size:24px;border-bottom:2px solid #FFA028;padding:4px 0;height:40px;overflow:hidden">Mark Speelmeyer</div>' +
-        '<div style="font-size:11px;color:#888;margin-top:4px">' + today + '</div>' +
-      '</td>' +
-    '</tr></table>' +
+    '<table style="width:100%;border-collapse:collapse;border-spacing:0">' +
+      '<tr>' +
+        '<td style="width:50%;vertical-align:top;padding:0 20px 4px 0"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Client — ' + ld.co + '</div></td>' +
+        '<td style="width:50%;vertical-align:top;padding:0 0 4px 20px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">TrackNow GPS Pty Ltd</div></td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td style="padding:0 20px 4px 0"><div style="font-size:13px"><strong>' + cn + '</strong>' + (ct ? ' — ' + ct : '') + '</div></td>' +
+        '<td style="padding:0 0 4px 20px"><div style="font-size:13px"><strong>Mark Speelmeyer</strong> — Director</div></td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td style="padding:0 20px 0 0"><div style="font-family:Brush Script MT,Segoe Script,cursive;font-size:24px;border-bottom:2px solid #FFA028;padding:4px 0">' + (hasDrawn ? sigDisplay : cs) + '</div></td>' +
+        '<td style="padding:0 0 0 20px"><div style="font-family:Brush Script MT,Segoe Script,cursive;font-size:24px;border-bottom:2px solid #FFA028;padding:4px 0">Mark Speelmeyer</div></td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td style="padding:4px 20px 0 0"><div style="font-size:11px;color:#888">' + today + '</div></td>' +
+        '<td style="padding:4px 0 0 20px"><div style="font-size:11px;color:#888">' + today + '</div></td>' +
+      '</tr>' +
+    '</table>' +
   '</div>';
 
   // Full signed agreement email HTML
@@ -11149,28 +11153,54 @@ function submitAgreementSign() {
   // Also strip callback button section
   cleanAgrHTML = cleanAgrHTML.replace(/<div style="text-align:center;margin:16px[\s\S]*?Request a Callback<\/a>\s*<\/div>/, '');
 
-  // Build dual signature block for the signed email
+  // Build dual signature block for the signed email — uses row-per-field table so lines always align
   var sigBlock = '<div style="border:3px solid #FFA028;margin:30px 0;overflow:hidden">' +
     '<div style="background:#FFA028;padding:14px 20px;text-align:center">' +
       '<div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Digital Signature</div>' +
     '</div>' +
     '<div style="padding:24px;background:#fff8ee">' +
-      '<table style="width:100%;border-collapse:collapse"><tr>' +
-        '<td style="width:50%;vertical-align:top;padding:16px;border:1px solid #ddd;background:#fff">' +
-          '<div style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Client' + (window._asCompany ? ' — ' + window._asCompany.toUpperCase() : '') + '</div>' +
-          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">' + cn + '</div></div>' +
-          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">' + (ct || '—') + '</div></div>' +
-          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028;height:40px;overflow:hidden">' + sigDisplay + '</div></div>' +
-          '<div><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div></div>' +
-        '</td>' +
-        '<td style="width:50%;vertical-align:top;padding:16px;border:1px solid #ddd;background:#fff">' +
-          '<div style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">TrackNow GPS Pty Ltd</div>' +
-          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">Mark Speelmeyer</div></div>' +
-          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">Director</div></div>' +
-          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028;height:40px;overflow:hidden;font-family:Brush Script MT,Segoe Script,cursive;font-size:24px;color:#1a1a1a">Mark Speelmeyer</div></div>' +
-          '<div><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div></div>' +
-        '</td>' +
-      '</tr></table>' +
+      '<table style="width:100%;border-collapse:collapse;border-spacing:0">' +
+        '<tr>' +
+          '<td style="width:50%;vertical-align:top;padding:0 12px 0 0;background:#fff;border:1px solid #ddd;font-size:12px">' +
+            '<div style="font-weight:700;color:#FFA028;padding:16px 16px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Client' + (window._asCompany ? ' — ' + window._asCompany.toUpperCase() : '') + '</div>' +
+          '</td>' +
+          '<td style="width:50%;vertical-align:top;padding:0 0 0 12px;background:#fff;border:1px solid #ddd;font-size:12px">' +
+            '<div style="font-weight:700;color:#FFA028;padding:16px 16px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">TrackNow GPS Pty Ltd</div>' +
+          '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;padding:0 16px 8px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">' + cn + '</div>' +
+          '</td>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;padding:0 16px 8px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">Mark Speelmeyer</div>' +
+          '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;padding:0 16px 8px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">' + (ct || '—') + '</div>' +
+          '</td>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;padding:0 16px 8px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">Director</div>' +
+          '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;padding:0 16px 8px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028">' + sigDisplay + '</div>' +
+          '</td>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;padding:0 16px 8px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028;font-family:Brush Script MT,Segoe Script,cursive;font-size:24px;color:#1a1a1a">Mark Speelmeyer</div>' +
+          '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd;padding:0 16px 16px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div>' +
+          '</td>' +
+          '<td style="background:#fff;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd;padding:0 16px 16px">' +
+            '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div>' +
+          '</td>' +
+        '</tr>' +
+      '</table>' +
     '</div></div>';
 
   // Full signed email body: banner + full agreement + signatures
