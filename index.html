@@ -9981,11 +9981,36 @@ function sendEmailFromPortal() {
   htmlBody += '<a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a>';
   htmlBody += '</div>';
 
-  // Insert full document content inline
+  // Insert document content inline — with size guard for EmailJS (~50KB limit)
   if (_epPending.docHTML) {
+    var _docToEmbed = _epPending.docHTML;
+    // Fleet reports are very large (30-80KB HTML). Compress for email delivery.
+    if (_epPending.type === 'fleet' && _docToEmbed.length > 30000) {
+      // Strip <style> blocks (won't render in most email clients anyway)
+      _docToEmbed = _docToEmbed.replace(/<style[\s\S]*?<\/style>/gi, '');
+      // Strip methodology/disclaimer sections (heavy text, not essential for email)
+      _docToEmbed = _docToEmbed.replace(/<h2[^>]*>Methodology[\s\S]*?(?=<h2|<div class="footer|<\/div>\s*$)/i, '');
+      _docToEmbed = _docToEmbed.replace(/<div[^>]*class="footer"[\s\S]*?<\/div>/i, '');
+      // If still too large, strip everything after ROI summary
+      if (_docToEmbed.length > 35000) {
+        var roiIdx = _docToEmbed.indexOf('ROI');
+        if (roiIdx > -1) {
+          // Find the end of the ROI section (next major section or closing divs)
+          var afterRoi = _docToEmbed.indexOf('</div></div></div>', roiIdx);
+          if (afterRoi > -1) {
+            _docToEmbed = _docToEmbed.substring(0, afterRoi + 18);
+            _docToEmbed += '<div style="padding:20px;text-align:center;background:#f6f8fb;margin-top:20px;font-size:13px;color:#555"><strong>Full report with detailed breakdown available on request.</strong><br>Contact us at <a href="mailto:sales@tracknow.com.au" style="color:#0098d4">sales@tracknow.com.au</a> or call 1300 TRACK NOW.</div>';
+          }
+        }
+      }
+      // Final safety — hard cap at 35KB to leave room for CTAs and wrapper
+      if (_docToEmbed.length > 35000) {
+        _docToEmbed = _docToEmbed.substring(0, 35000) + '</div><div style="padding:20px;text-align:center;background:#f6f8fb;margin-top:20px;font-size:13px;color:#555"><strong>Report truncated for email delivery.</strong> Contact us for the complete report.</div>';
+      }
+    }
     htmlBody += '<br><hr style="border:none;border-top:2px solid #0098d4;margin:24px 0">';
     htmlBody += '<div style="font-size:11px;color:#888;text-align:center;margin-bottom:16px;font-style:italic">Full document enclosed below</div>';
-    htmlBody += _epPending.docHTML;
+    htmlBody += _docToEmbed;
     htmlBody += '<hr style="border:none;border-top:2px solid #0098d4;margin:24px 0">';
   }
 
