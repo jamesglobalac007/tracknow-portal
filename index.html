@@ -9955,11 +9955,23 @@ function _showEmailPreview(opts) {
   // Footer / signature
   document.getElementById('ep_sigName').textContent = opts.sigName || 'TrackNow GPS Sales Team';
   document.getElementById('ep_sigTitle').textContent = opts.sigTitle || 'sales@tracknow.com.au';
+  // Reset send button to default state (may still be "Sending..." from a previous email)
+  var _sendBtn = document.getElementById('ep_sendBtn');
+  if (_sendBtn) {
+    _sendBtn.disabled = false;
+    _sendBtn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Email';
+  }
   document.getElementById('emailPreviewModal').style.display = 'flex';
 }
 
 function closeEmailPreview() {
   document.getElementById('emailPreviewModal').style.display = 'none';
+  // Reset send button on close too
+  var _sendBtn = document.getElementById('ep_sendBtn');
+  if (_sendBtn) {
+    _sendBtn.disabled = false;
+    _sendBtn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Email';
+  }
   _epPending = null;
 }
 
