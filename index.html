@@ -632,13 +632,13 @@ select option{background:#0a0a0a;color:#FFA028}
 
     <!-- Callback Queue -->
     <div id="callbackQueuePanel" style="display:none;margin-bottom:20px">
-      <div style="background:#1a0000;border:2px solid #dc2626;padding:20px">
+      <div style="background:#1a0f00;border:2px solid #FFA028;padding:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:12px;height:12px;background:#dc2626;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
-            <span style="font-size:14px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:1px">Callback Requests</span>
+            <div style="width:12px;height:12px;background:#FFA028;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
+            <span style="font-size:14px;font-weight:800;color:#FFA028;text-transform:uppercase;letter-spacing:1px">Callback Requests</span>
           </div>
-          <span id="callbackCount" style="background:#dc2626;color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
+          <span id="callbackCount" style="background:#FFA028;color:#000;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
         </div>
         <div id="callbackQueueList" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
@@ -9274,13 +9274,8 @@ function sendEmailFromPortal() {
     htmlBody += '<div style="border:2px solid #0a1726;padding:24px;margin:20px 0;text-align:center;background:#fafbfc">' +
       '<p style="font-size:16px;font-weight:800;color:#0a1726;margin:0 0 6px">Ready to Discuss Pricing &amp; Packages?</p>' +
       '<p style="font-size:12px;color:#5a6675;margin:0 0 16px;line-height:1.5">We\'ll tailor a package to your fleet size, budget, and operational needs — no obligation, no pressure.</p>' +
-      '<a href="' + _cbUrl + '" style="display:inline-block;padding:14px 36px;background:#dc2626;color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;letter-spacing:.5px;margin-bottom:12px">&#128222; Request a Callback</a>' +
-      '<p style="font-size:11px;color:#5a6675;margin:0 0 12px">Pick a time that suits you — we\'ll call you back within 30 minutes</p>' +
-      '<div style="display:inline-flex;gap:8px">' +
-      '<a href="tel:1300872256" style="display:inline-block;padding:10px 24px;background:#0098d4;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">&#9742; 1300 TRACK NOW</a>' +
-      '<a href="mailto:sales@tracknow.com.au" style="display:inline-block;padding:10px 24px;background:#0a1726;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">&#9993; Email Sales Team</a>' +
-      '</div>' +
-      '<p style="font-size:11px;color:#888;margin:12px 0 0">sales@tracknow.com.au &middot; www.tracknow.com.au</p>' +
+      '<a href="' + _cbUrl + '" style="display:inline-block;padding:14px 36px;background:#0098d4;color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;letter-spacing:.5px">&#128222; Request a Callback</a>' +
+      '<p style="font-size:11px;color:#5a6675;margin:10px 0 0">Pick a time that suits you — we\'ll call you back within 30 minutes</p>' +
       '</div>';
   }
   if (_epPending.type === 'proposal') {
@@ -9295,8 +9290,7 @@ function sendEmailFromPortal() {
       '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — YES, proceed to agreement') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px;margin-bottom:12px">' +
       '&#10003; Yes, Proceed to Agreement</a>' +
       '<p style="color:#555;font-size:13px;margin:12px 0 8px;font-weight:600">Have questions? Let\'s talk.</p>' +
-      '<a href="' + _cbUrlP + '" style="display:inline-block;padding:12px 32px;background:#dc2626;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
-      '<p style="color:#888;font-size:11px;margin:10px 0 0">Or call us directly: 1300 TRACK NOW</p>' +
+      '<a href="' + _cbUrlP + '" style="display:inline-block;padding:12px 32px;background:#0098d4;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
       '</div>';
   }
   if (_epPending.type === 'agreement') {
@@ -9311,8 +9305,7 @@ function sendEmailFromPortal() {
       '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — APPROVED') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px;margin-bottom:12px">' +
       '&#10003; Approve &amp; Sign Agreement</a>' +
       '<p style="color:#555;font-size:13px;margin:12px 0 8px;font-weight:600">Want to discuss before signing?</p>' +
-      '<a href="' + _cbUrlA + '" style="display:inline-block;padding:12px 32px;background:#dc2626;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
-      '<p style="color:#888;font-size:11px;margin:10px 0 0">Or call us directly: 1300 TRACK NOW</p>' +
+      '<a href="' + _cbUrlA + '" style="display:inline-block;padding:12px 32px;background:#0098d4;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
       '</div>';
   }
 
@@ -10207,14 +10200,14 @@ function renderCallbackQueue() {
     var deadlineText = isOverdue ? 'OVERDUE by ' + Math.abs(deadline) + ' min' : deadline + ' min remaining';
 
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid ' + (isOverdue ? '#dc2626' : '#333') + ';gap:16px';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid ' + (isOverdue ? '#FFA028' : '#333') + ';gap:16px';
 
     row.innerHTML =
       '<div style="flex:1">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-          (isUrgent ? '<span style="background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ASAP</span>' : '') +
-          '<span style="font-size:14px;font-weight:700;color:#fff">' + cb.name + '</span>' +
-          (cb.company ? '<span style="font-size:12px;color:#666">— ' + cb.company + '</span>' : '') +
+          (isUrgent ? '<span style="background:#FFA028;color:#000;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ASAP</span>' : '') +
+          '<a href="#" onclick="goToCallbackProspect(\'' + (cb.email || '').replace(/'/g, "\\'") + '\',\'' + (cb.name || '').replace(/'/g, "\\'") + '\',\'' + (cb.company || '').replace(/'/g, "\\'") + '\');return false;" style="font-size:14px;font-weight:700;color:#0098d4;text-decoration:none;cursor:pointer" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' + cb.name + '</a>' +
+          (cb.company ? '<a href="#" onclick="goToCallbackProspect(\'' + (cb.email || '').replace(/'/g, "\\'") + '\',\'' + (cb.name || '').replace(/'/g, "\\'") + '\',\'' + (cb.company || '').replace(/'/g, "\\'") + '\');return false;" style="font-size:12px;color:#666;text-decoration:none;cursor:pointer">— ' + cb.company + '</a>' : '') +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
           '<span>📞 <a href="tel:' + cb.phone + '" style="color:#0098d4;text-decoration:none;font-weight:600">' + cb.phone + '</a></span>' +
