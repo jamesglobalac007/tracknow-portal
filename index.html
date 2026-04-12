@@ -3007,8 +3007,8 @@ function openProposalDoc(leadId) {
       const q = li.qty || 0;
       const devPrice = li.hwPrice || 0;
       const instPrice = li.hwInstall || 0;
-      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td>' + q + '</td><td>' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
-      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td>' + q + '</td><td>' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
+      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
+      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
     });
   }
 
@@ -3016,16 +3016,16 @@ function openProposalDoc(leadId) {
   let swRows = '';
   if (l.lineItems) {
     swRows = l.lineItems.map(function(li) {
-      return '<tr><td style="font-weight:600">' + li.type + ' Subscription' + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>';
+      return '<tr><td style="font-weight:600">' + li.type + ' Subscription' + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td style="text-align:center">' + (li.qty||0) + '</td><td style="text-align:right">' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>';
     }).join('');
   } else {
-    swRows = '<tr><td style="font-weight:600">GPS Tracking Subscription</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>';
+    swRows = '<tr><td style="font-weight:600">GPS Tracking Subscription</td><td style="text-align:center">' + totalUnits + '</td><td style="text-align:right">' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>';
   }
 
   // Build extras rows
   let extrasRows = '';
   allExtras.forEach(function(ex) {
-    extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td>' + ex.qty + '</td><td>' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
+    extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td style="text-align:center">' + ex.qty + '</td><td style="text-align:right">' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
   });
 
   const win = window.open('', '_blank', 'width=900,height=1100');
@@ -3071,7 +3071,7 @@ function openProposalDoc(leadId) {
 
 ${hwTotal > 0 ? `<h3>Hardware &amp; Installation</h3>
 <table>
-  <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead>
+  <thead><tr><th style="width:45%">Item</th><th style="width:10%;text-align:center">Qty</th><th style="width:22%;text-align:right">Unit Price</th><th style="width:23%;text-align:right">Total</th></tr></thead>
   <tbody>
     ${hwRows}
     <tr class="subtotal"><td colspan="3">Hardware &amp; Installation Total</td><td style="text-align:right">${fmt(hwTotal)}</td></tr>
@@ -3081,7 +3081,7 @@ ${isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</
 
 <h3>Software Subscription</h3>
 <table>
-  <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Monthly</th></tr></thead>
+  <thead><tr><th style="width:45%">Item</th><th style="width:10%;text-align:center">Qty</th><th style="width:22%;text-align:right">Unit Price</th><th style="width:23%;text-align:right">Monthly</th></tr></thead>
   <tbody>
     ${swRows}
     <tr class="subtotal"><td colspan="3">Software Monthly Total</td><td style="text-align:right">${fmt(monthlySubOnly)}/mo</td></tr>
@@ -3090,7 +3090,7 @@ ${isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</
 
 ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 <table>
-  <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Cost</th></tr></thead>
+  <thead><tr><th style="width:45%">Item</th><th style="width:10%;text-align:center">Qty</th><th style="width:22%;text-align:right">Unit Price</th><th style="width:23%;text-align:right">Cost</th></tr></thead>
   <tbody>
     ${extrasRows}
     ${extrasMonthlyTotal > 0 ? '<tr class="subtotal"><td colspan="3">Monthly Extras</td><td style="text-align:right">' + fmt(extrasMonthlyTotal) + '/mo</td></tr>' : ''}
@@ -3112,11 +3112,15 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 
 
 <!-- NEXT STEPS — visible on screen -->
-<div id="proposalNextSteps" class="no-print" style="margin-top:30px;padding:28px;border:2px solid #0098d4;text-align:center;background:#f0f9ff">
-  <div style="font-size:16px;font-weight:800;color:#0a1726;margin-bottom:8px">Next Steps</div>
-  <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.6">If you would like to progress to a formal agreement, please let us know and we will prepare everything for you.</p>
-  <button id="proceedBtn" onclick="window.opener._sendProposalNotify(this)" style="display:inline-block;padding:16px 48px;background:#0098d4;color:#fff;font-size:16px;font-weight:800;border:none;border-radius:6px;letter-spacing:.5px;cursor:pointer;font-family:inherit">&#10003; Yes, I Would Like to Proceed to Formal Agreement</button>
-  <p style="font-size:11px;color:#888;margin-top:12px">One click — we will be notified immediately.</p>
+<div id="proposalNextSteps" class="no-print" style="margin-top:30px;text-align:center;overflow:hidden;border:3px solid #FFA028">
+  <div style="background:#FFA028;padding:14px 20px">
+    <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Next Steps</div>
+  </div>
+  <div style="padding:24px 28px;background:#fff8ee">
+    <p style="font-size:14px;color:#333;margin-bottom:20px;line-height:1.6">If you would like to progress to a formal agreement, please let us know and we will prepare everything for you.</p>
+    <button id="proceedBtn" onclick="window.opener._sendProposalNotify(this)" style="display:inline-block;padding:16px 48px;background:#FFA028;color:#fff;font-size:17px;font-weight:900;border:none;border-radius:6px;letter-spacing:.5px;cursor:pointer;font-family:inherit">&#10003; Yes, Proceed to Formal Agreement</button>
+    <p style="font-size:12px;color:#888;margin-top:14px">One click — we will be notified immediately.</p>
+  </div>
 </div>
 
 <!-- PRINT NEXT STEPS — hidden on screen, visible on print -->
@@ -3174,23 +3178,23 @@ function _buildProposalEmailHTML(l) {
       var q = li.qty || 0;
       var devPrice = li.hwPrice || 0;
       var instPrice = li.hwInstall || 0;
-      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td>' + q + '</td><td>' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
-      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td>' + q + '</td><td>' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
+      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
+      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
     });
   }
 
   var swRows = '';
   if (l.lineItems) {
     swRows = l.lineItems.map(function(li) {
-      return '<tr><td style="font-weight:600">' + li.type + ' Subscription' + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td>' + (li.qty||0) + '</td><td>' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>';
+      return '<tr><td style="font-weight:600">' + li.type + ' Subscription' + (li.asset ? ' <span style="color:#888">(' + li.asset + ')</span>' : '') + '</td><td style="text-align:center">' + (li.qty||0) + '</td><td style="text-align:right">' + fmt(li.sub||0) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt((li.qty||0)*(li.sub||0)) + '</td></tr>';
     }).join('');
   } else {
-    swRows = '<tr><td style="font-weight:600">GPS Tracking Subscription</td><td>' + totalUnits + '</td><td>' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>';
+    swRows = '<tr><td style="font-weight:600">GPS Tracking Subscription</td><td style="text-align:center">' + totalUnits + '</td><td style="text-align:right">' + fmt(subPrice) + '/mo</td><td style="text-align:right;font-weight:600">' + fmt(monthlySubOnly) + '</td></tr>';
   }
 
   var extrasRows = '';
   allExtras.forEach(function(ex) {
-    extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td>' + ex.qty + '</td><td>' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
+    extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td style="text-align:center">' + ex.qty + '</td><td style="text-align:right">' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
   });
 
   var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px">';
@@ -3212,7 +3216,7 @@ function _buildProposalEmailHTML(l) {
   if (hwTotal > 0) {
     html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Hardware &amp; Installation</h3>';
     html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
-    html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Total</th></tr></thead>';
+    html += '<thead><tr><th style="width:45%;text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="width:10%;text-align:center;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="width:22%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="width:23%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Total</th></tr></thead>';
     html += '<tbody>';
     html += hwRows;
     html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Hardware &amp; Installation Total</td><td style="text-align:right;padding:10px 12px">' + fmt(hwTotal) + '</td></tr>';
@@ -3224,7 +3228,7 @@ function _buildProposalEmailHTML(l) {
 
   html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Software Subscription</h3>';
   html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
-  html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Monthly</th></tr></thead>';
+  html += '<thead><tr><th style="width:45%;text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="width:10%;text-align:center;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="width:22%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="width:23%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Monthly</th></tr></thead>';
   html += '<tbody>';
   html += swRows;
   html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Software Monthly Total</td><td style="text-align:right;padding:10px 12px">' + fmt(monthlySubOnly) + '/mo</td></tr>';
@@ -3233,7 +3237,7 @@ function _buildProposalEmailHTML(l) {
   if (allExtras.length > 0) {
     html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Optional Extras</h3>';
     html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
-    html += '<thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Cost</th></tr></thead>';
+    html += '<thead><tr><th style="width:45%;text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="width:10%;text-align:center;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="width:22%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="width:23%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Cost</th></tr></thead>';
     html += '<tbody>';
     html += extrasRows;
     if (extrasMonthlyTotal > 0) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Fix callback name click (black screen), orange btn single-click, live detection."""
+"""Push — Qty column alignment, orange Next Steps box in proposal."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,17 +30,17 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("showPage('scraper', custNavBtn)", "Callback name navigates to scraper page (customers)"),
-    ("showPage('scraper', cb)", "Website leads navigate to scraper page"),
-    ("touch-action:manipulation", "Single-click callback button fix"),
-    ("cb_submitBtn", "Callback button ID for double-submit guard"),
-    ("addEventListener('storage'", "Live callback detection (cross-tab)"),
-    ("new Notification('Callback Requested'", "Browser notification for callbacks"),
-    ("setInterval(renderCallbackQueue, 15000)", "15s callback queue refresh"),
-    ("background:#FFA028;padding:14px 20px", "Orange pricing CTA header"),
-    ('contenteditable="true"', "Editable email preview body"),
-    ("editLeadModal", "Edit Lead modal (pipeline)"),
-    ("handleSalesFeeCSV", "CSV import for sales fees"),
+    ("width:45%", "Fixed column widths on proposal tables"),
+    ("width:10%;text-align:center", "Qty column centered with fixed width"),
+    ("width:22%;text-align:right", "Unit Price column right-aligned"),
+    ("width:23%;text-align:right", "Total column right-aligned"),
+    ('td style="text-align:center"', "Qty data cells centered"),
+    ("background:#FFA028;padding:14px 20px", "Orange Next Steps header"),
+    ("background:#fff8ee", "Warm background on Next Steps box"),
+    ("font-size:17px;font-weight:900", "Large orange proceed button"),
+    ("showPage('scraper', custNavBtn)", "Callback name nav fix"),
+    ("touch-action:manipulation", "Single-click callback fix"),
+    ("addEventListener('storage'", "Live callback detection"),
 ]
 
 all_ok = True
@@ -57,7 +57,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Fix callback name click navigation, orange btn single-click, live callback detection"')
+ok, out = run('git commit -m "Fix Qty column alignment in proposal/agreement tables, orange Next Steps CTA box"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
