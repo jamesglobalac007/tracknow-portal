@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Fix signing page: white inputs, stronger text, match portal View Agreement styling."""
+"""Push — Fix signing page: CSS !important overrides for table/th/td/tr dark backgrounds."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,16 +30,12 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("#agreementSignOverlay input", "CSS override for signing page inputs"),
-    ("background:#fff;color:#1a1a1a;border:1px solid #ccc", "White input styling"),
-    ("input[readonly]{background:#f5f5f5;color:#1a1a1a}", "Readonly input styling"),
-    ("Strengthen text colours", "Text colour strengthening comment"),
-    ("cs.color = '#555'", "Faint grey text made darker"),
-    ("cs.color = '#444'", "Medium grey text made darker"),
-    ("tag === 'TH'", "Table header styling fix"),
-    ("_playCashRegister", "Cash register sound function"),
-    ("fullSignedEmail", "Full signed agreement email"),
-    ("as_agreementBody", "Agreement body container"),
+    ("#agreementSignOverlay table{background:#ffffff !important", "Table white background override"),
+    ("#agreementSignOverlay th{background:#f8f8f8 !important", "TH light background override"),
+    ("#agreementSignOverlay td{background:#ffffff !important", "TD white background override"),
+    ("#agreementSignOverlay tr{background:#ffffff !important", "TR white background override"),
+    ("#agreementSignOverlay input,#agreementSignOverlay select", "Input white override"),
+    ("color:#1a1a1a !important", "Dark text override"),
 ]
 
 all_ok = True
@@ -56,7 +52,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Fix signing page: white inputs, stronger text colours, match portal agreement styling"')
+ok, out = run('git commit -m "Fix signing page: CSS !important overrides for all dark table/input backgrounds"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

@@ -186,12 +186,20 @@ tr:hover td a{color:#FFA028}
 input,select,textarea{background:#111;color:#FFA028;border:1px solid #222;padding:8px 10px;border-radius:0px;font-family:inherit;font-size:12px;transition:border-color .1s}
 input::placeholder,textarea::placeholder{color:#666}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#FFA028;color:#FFA028}
-/* Override dark theme for agreement signing landing page & proposal accept page */
-#agreementSignOverlay input,#agreementSignOverlay select,#agreementSignOverlay textarea{background:#fff;color:#1a1a1a;border:1px solid #ccc}
-#agreementSignOverlay input:focus,#agreementSignOverlay textarea:focus{border-color:#FFA028;color:#1a1a1a;outline:none}
+/* Override ALL dark theme for agreement signing & proposal accept landing pages */
+#agreementSignOverlay,#agreementSignOverlay *{box-sizing:border-box}
+#agreementSignOverlay{background:#ffffff !important;color:#1a1a1a !important}
+#agreementSignOverlay div,#agreementSignOverlay p,#agreementSignOverlay span,#agreementSignOverlay li,#agreementSignOverlay ol,#agreementSignOverlay ul,#agreementSignOverlay strong{color:inherit}
+#agreementSignOverlay table{background:#ffffff !important;border-collapse:collapse}
+#agreementSignOverlay th{background:#f8f8f8 !important;color:#555 !important;padding:8px 12px;text-align:left;font-size:11px;font-weight:600;border-bottom:1px solid #e8ebf1 !important}
+#agreementSignOverlay td{background:#ffffff !important;color:#1a1a1a !important;padding:8px 12px;border-bottom:1px solid #f0f0f0 !important;font-size:12px}
+#agreementSignOverlay tr{background:#ffffff !important}
+#agreementSignOverlay input,#agreementSignOverlay select,#agreementSignOverlay textarea{background:#fff !important;color:#1a1a1a !important;border:1px solid #ccc !important}
+#agreementSignOverlay input:focus,#agreementSignOverlay textarea:focus{border-color:#FFA028 !important;color:#1a1a1a !important;outline:none}
 #agreementSignOverlay input::placeholder,#agreementSignOverlay textarea::placeholder{color:#999}
-#agreementSignOverlay input[readonly]{background:#f5f5f5;color:#1a1a1a}
-#proposalAcceptOverlay input,#proposalAcceptOverlay select,#proposalAcceptOverlay textarea{background:#fff;color:#1a1a1a;border:1px solid #ccc}
+#agreementSignOverlay input[readonly]{background:#f5f5f5 !important;color:#1a1a1a !important}
+#agreementSignOverlay a{color:#0098d4}
+#proposalAcceptOverlay input,#proposalAcceptOverlay select,#proposalAcceptOverlay textarea{background:#fff !important;color:#1a1a1a !important;border:1px solid #ccc !important}
 
 /* ═══════════ LOGIN OVERLAY ═══════════ */
 .login-box{background:#000000;border:1px solid #222;border-radius:0px;padding:32px;width:100%;max-width:380px;box-shadow:none;margin-bottom:24px}
