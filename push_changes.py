@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Fix signing page black backgrounds + full agreement flow + cash register sound."""
+"""Push — Fix signing page: white inputs, stronger text, match portal View Agreement styling."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,20 +30,16 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("as_formWrap", "Signing page form wrapper"),
-    ("background:#ffffff", "White background on signing overlay"),
-    ("as_agreementBody", "Agreement body container"),
-    ("Force white backgrounds on all injected content", "White background override for injected HTML"),
-    ("el.style.backgroundColor", "Element-level background fix loop"),
-    ("tn_agr_html_", "Agreement HTML localStorage key"),
-    ("as_clientLabel", "Client label on signing page"),
-    ("as_tnDate", "TrackNow date field on signing page"),
-    ("fullSignedEmail", "Full signed email variable"),
-    ("cleanAgrHTML", "Cleaned agreement HTML for emails"),
-    ("sigBlock", "Dual signature block in emails"),
+    ("#agreementSignOverlay input", "CSS override for signing page inputs"),
+    ("background:#fff;color:#1a1a1a;border:1px solid #ccc", "White input styling"),
+    ("input[readonly]{background:#f5f5f5;color:#1a1a1a}", "Readonly input styling"),
+    ("Strengthen text colours", "Text colour strengthening comment"),
+    ("cs.color = '#555'", "Faint grey text made darker"),
+    ("cs.color = '#444'", "Medium grey text made darker"),
+    ("tag === 'TH'", "Table header styling fix"),
     ("_playCashRegister", "Cash register sound function"),
-    ("drawer slam", "Ka drawer slam component"),
-    ("double-bell effect", "Double ching bell effect"),
+    ("fullSignedEmail", "Full signed agreement email"),
+    ("as_agreementBody", "Agreement body container"),
 ]
 
 all_ok = True
@@ -60,7 +56,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Fix signing page black backgrounds + full agreement in signed emails + improved cash register sound"')
+ok, out = run('git commit -m "Fix signing page: white inputs, stronger text colours, match portal agreement styling"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

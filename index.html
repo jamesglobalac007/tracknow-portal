@@ -186,6 +186,12 @@ tr:hover td a{color:#FFA028}
 input,select,textarea{background:#111;color:#FFA028;border:1px solid #222;padding:8px 10px;border-radius:0px;font-family:inherit;font-size:12px;transition:border-color .1s}
 input::placeholder,textarea::placeholder{color:#666}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#FFA028;color:#FFA028}
+/* Override dark theme for agreement signing landing page & proposal accept page */
+#agreementSignOverlay input,#agreementSignOverlay select,#agreementSignOverlay textarea{background:#fff;color:#1a1a1a;border:1px solid #ccc}
+#agreementSignOverlay input:focus,#agreementSignOverlay textarea:focus{border-color:#FFA028;color:#1a1a1a;outline:none}
+#agreementSignOverlay input::placeholder,#agreementSignOverlay textarea::placeholder{color:#999}
+#agreementSignOverlay input[readonly]{background:#f5f5f5;color:#1a1a1a}
+#proposalAcceptOverlay input,#proposalAcceptOverlay select,#proposalAcceptOverlay textarea{background:#fff;color:#1a1a1a;border:1px solid #ccc}
 
 /* ═══════════ LOGIN OVERLAY ═══════════ */
 .login-box{background:#000000;border:1px solid #222;border-radius:0px;padding:32px;width:100%;max-width:380px;box-shadow:none;margin-bottom:24px}
@@ -10708,22 +10714,32 @@ function doLogout() {
   var bodyEl = document.getElementById('as_agreementBody');
   if (bodyEl && storedHTML) {
     bodyEl.innerHTML = storedHTML;
-    // Force white backgrounds on all injected content (portal body is black)
+    // Force white backgrounds and proper dark text on all injected content
+    // (the stored HTML is email-formatted with lighter colours — we need portal-strength colours)
     bodyEl.style.background = '#ffffff';
     bodyEl.style.color = '#1a1a1a';
     var allEls = bodyEl.querySelectorAll('*');
     for (var ei = 0; ei < allEls.length; ei++) {
       var el = allEls[ei];
-      var bg = el.style.backgroundColor || '';
-      // Override any black/dark backgrounds inherited from portal theme
+      var cs = el.style;
+      // Fix backgrounds — force white for any dark, black, or missing backgrounds
+      var bg = cs.backgroundColor || '';
       if (!bg || bg === 'transparent' || bg === '#000' || bg === '#000000' || bg === '#0a0a0a' || bg === '#050505' || bg === 'rgb(0, 0, 0)' || bg === 'rgb(10, 10, 10)') {
-        el.style.backgroundColor = '#ffffff';
+        cs.backgroundColor = '';
       }
-      // Fix text color if white/light (would be invisible on white bg)
-      var clr = el.style.color || '';
-      if (clr === '#fff' || clr === '#ffffff' || clr === '#FFFFFF' || clr === 'rgb(255, 255, 255)' || clr === '#CCC' || clr === '#ccc') {
-        el.style.color = '#1a1a1a';
-      }
+      // Strengthen text colours: email uses very light grays (#888, #999, #666) — make them darker
+      var clr = cs.color || '';
+      if (clr === '#999' || clr === '#999999' || clr === 'rgb(153, 153, 153)') { cs.color = '#555'; }
+      if (clr === '#888' || clr === '#888888' || clr === 'rgb(136, 136, 136)') { cs.color = '#555'; }
+      if (clr === '#666' || clr === '#666666' || clr === 'rgb(102, 102, 102)') { cs.color = '#444'; }
+      if (clr === '#fff' || clr === '#ffffff' || clr === '#FFFFFF' || clr === 'rgb(255, 255, 255)' || clr === '#CCC' || clr === '#ccc') { cs.color = '#1a1a1a'; }
+      // Make table headers and label text more visible
+      var tag = el.tagName;
+      if (tag === 'TH') { cs.color = '#555'; cs.backgroundColor = '#f8f8f8'; }
+      if (tag === 'TD' && clr === '#888') { cs.color = '#555'; }
+      // Ensure all borders use lighter colour (not dark portal borders)
+      var bb = cs.borderBottom || '';
+      if (bb && bb.indexOf('#222') > -1) cs.borderBottom = bb.replace('#222', '#f0f0f0');
     }
     // Remove the email's Digital Signature CTA section (client now sees the real one below)
     var allDivs = bodyEl.querySelectorAll('div');
