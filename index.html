@@ -3827,10 +3827,10 @@ function renderPipeline() {
 
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             ${l.stage!=='agreement'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+')" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.background=\'#111\'" onmouseout="this.style.borderColor=\'#332200\';this.style.background=\'#080808\'">EDIT PRODUCTS & PRICING</button>':''}
-            ${l.fleetSegments && l.fleetSegments.length?'<button onclick="event.stopPropagation();viewLeadFleetReport('+l.id+')" style="width:100%;padding:5px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.25);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.12)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.25)\';this.style.background=\'rgba(0,136,255,.06)\'">📄 VIEW FLEET REPORT</button>':''}
-            ${l.stage==='proposal'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button><button onclick="event.stopPropagation();emailProposal('+l.id+')" style="padding:5px 10px;background:#7c3aed;border:1px solid #7c3aed;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
-            ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button></div>':''}
-            ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍ VIEW AGREEMENT</button><button onclick="event.stopPropagation();emailAgreement('+l.id+')" style="padding:5px 10px;background:#db2777;border:1px solid #db2777;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
+            ${l.fleetSegments && l.fleetSegments.length?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();viewLeadFleetReport('+l.id+')" style="flex:1;padding:5px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.25);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.12)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.25)\';this.style.background=\'rgba(0,136,255,.06)\'">📄 VIEW FLEET REPORT</button><button onclick="event.stopPropagation();uploadDealFile('+l.id+',\'fleet_report\')" style="padding:5px 8px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.25);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#0088FF\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.25)\'" title="Upload fleet report file">'+(l.dealFiles&&l.dealFiles.fleet_report?'✅':'⬆')+'</button></div>':''}
+            ${l.stage==='proposal'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button><button onclick="event.stopPropagation();uploadDealFile('+l.id+',\'proposal\')" style="padding:5px 8px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#7c3aed\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\'" title="Upload proposal file">'+(l.dealFiles&&l.dealFiles.proposal?'✅':'⬆')+'</button><button onclick="event.stopPropagation();emailProposal('+l.id+')" style="padding:5px 10px;background:#7c3aed;border:1px solid #7c3aed;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
+            ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openProposalDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'rgba(124,58,237,.15)\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\';this.style.background=\'rgba(124,58,237,.08)\'">📋 VIEW PROPOSAL</button><button onclick="event.stopPropagation();uploadDealFile('+l.id+',\'proposal\')" style="padding:5px 8px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#7c3aed\'" onmouseout="this.style.borderColor=\'rgba(124,58,237,.3)\'" title="Upload proposal file">'+(l.dealFiles&&l.dealFiles.proposal?'✅':'⬆')+'</button></div>':''}
+            ${l.stage==='agreement'?'<div style="display:flex;gap:4px;margin-bottom:4px"><button onclick="event.stopPropagation();openAgreementDoc('+l.id+')" style="flex:1;padding:5px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#db2777\';this.style.background=\'rgba(219,39,119,.15)\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\';this.style.background=\'rgba(219,39,119,.08)\'">✍ VIEW AGREEMENT</button><button onclick="event.stopPropagation();uploadDealFile('+l.id+',\'agreement\')" style="padding:5px 8px;background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.3);color:#db2777;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#db2777\'" onmouseout="this.style.borderColor=\'rgba(219,39,119,.3)\'" title="Upload agreement file">'+(l.dealFiles&&l.dealFiles.agreement?'✅':'⬆')+'</button><button onclick="event.stopPropagation();emailAgreement('+l.id+')" style="padding:5px 10px;background:#db2777;border:1px solid #db2777;color:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px">✉ SEND</button></div>':''}
             ${renderFollowUpBar(l)}
             <div onclick="openLeadNotes(${l.id})" style="cursor:pointer;background:#080808;border:1px solid #1a1a1a;padding:4px 6px;margin-bottom:6px;transition:border-color .15s"
                  onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#1a1a1a'">
@@ -4303,6 +4303,8 @@ function moveLeadStage(leadId, direction) {
   lead.stage = newStage;
   lead.last = new Date().toLocaleDateString('en-AU', {day:'numeric',month:'short'});
   lead.lastTs = Date.now();
+  // Record stage-transition dates for deal file history
+  _recordStageDateStamp(lead, newStage);
   resetFollowUps(lead); // New stage = new follow-up sequence
   if (newStage === 'closed') {
     if (lead.upsellCustId) { onLeadClosedWon(lead.id); } else { autoPopulateCustomer(lead); }
@@ -4384,6 +4386,8 @@ function handleDrop(e, newStage) {
   lead.stage = newStage;
   lead.last = new Date().toLocaleDateString('en-AU');
   lead.lastTs = Date.now();
+  // Record stage-transition dates for deal file history
+  _recordStageDateStamp(lead, newStage);
   resetFollowUps(lead);
 
   // If moved to "Closed Won", auto-populate live customer and remove from pipeline
@@ -4410,6 +4414,79 @@ function handleDrop(e, newStage) {
   const oldLabel = (STAGES.find(s => s.id === oldStage) || {}).label || oldStage;
   const newLabel = (STAGES.find(s => s.id === newStage) || {}).label || newStage;
   showStageNotification(lead.co, oldLabel, newLabel);
+}
+
+// ── Stage date-stamp helper ─────────────────────────────────────────────────
+function _recordStageDateStamp(lead, newStage) {
+  const now = new Date().toISOString();
+  if (newStage === 'proposal')  { if (!lead.proposalSentDate)    lead.proposalSentDate = now; }
+  if (newStage === 'agreement') { if (!lead.agreementSentDate)   lead.agreementSentDate = now; }
+  if (newStage === 'closed')    { if (!lead.closedWonDate)       lead.closedWonDate = now; }
+}
+
+// ── Deal File Uploads ───────────────────────────────────────────────────────
+// Stores files as base64 data-URLs on the lead object so they persist in the store.
+function uploadDealFile(leadId, fileType) {
+  const lead = LEADS.find(l => l.id === leadId);
+  if (!lead) return;
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg';
+  input.onchange = function() {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('File too large — max 5 MB', 'warn'); return; }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      if (!lead.dealFiles) lead.dealFiles = {};
+      lead.dealFiles[fileType] = {
+        name: file.name,
+        type: file.type,
+        data: ev.target.result,
+        uploadedAt: new Date().toISOString()
+      };
+      saveData();
+      renderPipeline();
+      showToast(fileType.replace(/_/g,' ') + ' uploaded: ' + file.name, 'ok');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function viewDealFile(leadId, fileType) {
+  const lead = LEADS.find(l => l.id === leadId) || _findCustomerDealFile(leadId, fileType);
+  if (!lead) return;
+  const f = (lead.dealFiles || {})[fileType];
+  if (!f) { showToast('No file uploaded yet', 'warn'); return; }
+  const a = document.createElement('a');
+  a.href = f.data;
+  a.download = f.name;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// Helper to find deal file from customer record
+function _findCustomerDealFile(custId, fileType) {
+  const c = CUSTOMERS.find(x => x.id === custId);
+  if (!c || !c.dealFiles) return null;
+  return c;
+}
+
+function viewCustDealFile(custId, fileType) {
+  const c = CUSTOMERS.find(x => x.id === custId);
+  if (!c) return;
+  const f = (c.dealFiles || {})[fileType];
+  if (!f) { showToast('No file uploaded yet', 'warn'); return; }
+  const a = document.createElement('a');
+  a.href = f.data;
+  a.download = f.name;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 // ── Lost Deals (Not Going Ahead) → moves to Prospects as "not-interested" ──
@@ -7577,7 +7654,8 @@ function saveNewLead() {
     last: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     lastTs: Date.now(),
     star: false,
-    lineItems: [{type:deviceType, qty:v, sub:subRate, asset:'', hwType:hwType, hwPrice:HW_PRICES[hwType]||149, hwInstall:HW_INSTALL_DEFAULT[hwType]||0}]
+    lineItems: [{type:deviceType, qty:v, sub:subRate, asset:'', hwType:hwType, hwPrice:HW_PRICES[hwType]||149, hwInstall:HW_INSTALL_DEFAULT[hwType]||0}],
+    proposalSentDate: new Date().toISOString()
   };
   LEADS.push(newLead);
   saveData();
@@ -8131,6 +8209,28 @@ function renderCustomers() {
             '</div>' : '') + `
             <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">GPS PRODUCT BREAKDOWN & SIM PROVIDERS</div>
             ${devicesHtml}
+            ` + (function(){
+              const _df = c.dealFiles || {};
+              const _fmtDate = function(d){ if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return '—'; } };
+              const hasAnyDealData = c.proposalSentDate || c.agreementSentDate || c.closedWonDate || Object.keys(_df).length;
+              if (!hasAnyDealData) return '';
+              const fileRows = [
+                { label: 'Fleet Report', dateLabel: 'Uploaded', date: _df.fleet_report ? _df.fleet_report.uploadedAt : null, file: _df.fleet_report, key: 'fleet_report', color: '#0088FF' },
+                { label: 'Proposal Sent', dateLabel: 'Sent', date: c.proposalSentDate, file: _df.proposal, key: 'proposal', color: '#7c3aed' },
+                { label: 'Agreement Sent', dateLabel: 'Sent', date: c.agreementSentDate, file: _df.agreement, key: 'agreement', color: '#db2777' },
+                { label: 'Closed Won', dateLabel: 'Closed', date: c.closedWonDate, file: null, key: null, color: '#059669' }
+              ];
+              return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1a1a1a">' +
+                '<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">DEAL FILE HISTORY</div>' +
+                fileRows.map(function(r){
+                  return '<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #111">' +
+                    '<span style="font-size:11px;font-weight:600;color:' + r.color + ';min-width:120px">' + r.label + '</span>' +
+                    '<span style="font-size:10px;color:#666;min-width:100px">' + r.dateLabel + ': ' + _fmtDate(r.date) + '</span>' +
+                    (r.file ? '<button onclick="event.stopPropagation();viewCustDealFile(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:rgba(255,160,40,.08);border:1px solid rgba(255,160,40,.3);color:#FFA028;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\'" onmouseout="this.style.borderColor=\'rgba(255,160,40,.3)\'">📎 ' + r.file.name + '</button>' : (r.key ? '<span style="font-size:9px;color:#444;font-style:italic">No file</span>' : '')) +
+                  '</div>';
+                }).join('') +
+              '</div>';
+            })() + `
           </div>
         </td>
       </tr>`;
@@ -10765,11 +10865,25 @@ function autoPopulateCustomer(lead) {
   // Build description from line items
   const lineDesc = newDevices.map(d => d.qty + 'x ' + d.type + (d.asset && d.asset !== 'Vehicle' ? ' (' + d.asset + ')' : '') + ' @ $' + d.sub.toFixed(2)).join(', ');
 
+  // Build deal history object with dates and files
+  const dealHistory = {
+    proposalSentDate: lead.proposalSentDate || null,
+    agreementSentDate: lead.agreementSentDate || null,
+    closedWonDate: lead.closedWonDate || new Date().toISOString(),
+    dealFiles: lead.dealFiles || {}
+  };
+
   if (existing) {
     if (!existing.devices) existing.devices = [];
     newDevices.forEach(d => existing.devices.push(d));
     existing.trackers += totalQty;
     existing.notes = (existing.notes ? existing.notes + ' | ' : '') + 'Deal added ' + today + ': ' + lineDesc + (dealSim ? ' (SIM: ' + dealSim + ')' : '');
+    // Carry deal files and dates to customer record
+    existing.proposalSentDate = dealHistory.proposalSentDate || existing.proposalSentDate;
+    existing.agreementSentDate = dealHistory.agreementSentDate || existing.agreementSentDate;
+    existing.closedWonDate = dealHistory.closedWonDate || existing.closedWonDate;
+    if (!existing.dealFiles) existing.dealFiles = {};
+    Object.assign(existing.dealFiles, dealHistory.dealFiles);
     renderCustomers(); renderCustStats();
     showStageNotification(existing.co, 'Deal closed', '+' + totalQty + ' units added to existing account');
   } else {
@@ -10795,7 +10909,12 @@ function autoPopulateCustomer(lead) {
       outstanding: 0,
       status: 'active',
       notes: 'From pipeline — ' + lineDesc + ', ' + (dealTerm == 1 ? 'MTM' : dealTerm + 'mo') + (dealSim ? ', SIM: ' + dealSim : ''),
-      devices: newDevices
+      devices: newDevices,
+      // Deal history — dates and uploaded files from pipeline journey
+      proposalSentDate: dealHistory.proposalSentDate,
+      agreementSentDate: dealHistory.agreementSentDate,
+      closedWonDate: dealHistory.closedWonDate,
+      dealFiles: dealHistory.dealFiles
     };
     CUSTOMERS.push(newCust);
     saveData();
