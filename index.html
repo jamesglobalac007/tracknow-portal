@@ -9320,45 +9320,64 @@ function sendEmailFromPortal() {
     message_html: htmlBody
   };
 
-  function doSend() {
-    // Save pending data before closeEmailPreview nulls it
-    var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '' };
-    emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
-      .then(function() {
-        var typeLabel = _sent.type === 'fleet' ? 'Fleet Optimisation Report' : _sent.type === 'proposal' ? 'Proposal' : _sent.type === 'agreement' ? 'Agreement' : 'Email';
-        showToast(typeLabel + ' sent to ' + _sent.to + ' ✓');
-        closeEmailPreview();
+  // Safety timeout — if send hangs for 30s, re-enable button
+  var _sendTimeout = setTimeout(function() {
+    if (btn.disabled) {
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+      showToast('Email send timed out — please try again', 'warn');
+    }
+  }, 30000);
 
-        // Auto-download PDF if document content exists
-        if (_sent.docHTML) {
-          _loadHtml2Pdf(function() {
-            if (typeof html2pdf === 'undefined') return;
-            var container = document.createElement('div');
-            container.innerHTML = _sent.docHTML;
-            container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;color:#1a1a1a;font-family:Inter,sans-serif;padding:40px';
-            document.body.appendChild(container);
-            var filename = _sent.type === 'fleet' ? 'Fleet_Report' : _sent.type === 'proposal' ? 'Proposal' : 'Agreement';
-            filename += '_' + (_sent.subject || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
-            html2pdf().set({
-              margin: [10, 10, 10, 10],
-              filename: filename,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true },
-              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(container).save().then(function() {
-              document.body.removeChild(container);
-            }).catch(function() {
-              document.body.removeChild(container);
+  function doSend() {
+    try {
+      // Save pending data before closeEmailPreview nulls it
+      var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '' };
+      emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
+        .then(function() {
+          clearTimeout(_sendTimeout);
+          var typeLabel = _sent.type === 'fleet' ? 'Fleet Optimisation Report' : _sent.type === 'proposal' ? 'Proposal' : _sent.type === 'agreement' ? 'Agreement' : 'Email';
+          showToast(typeLabel + ' sent to ' + _sent.to + ' ✓');
+          closeEmailPreview();
+
+          // Auto-download PDF if document content exists
+          if (_sent.docHTML) {
+            _loadHtml2Pdf(function() {
+              if (typeof html2pdf === 'undefined') return;
+              var container = document.createElement('div');
+              container.innerHTML = _sent.docHTML;
+              container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;color:#1a1a1a;font-family:Inter,sans-serif;padding:40px';
+              document.body.appendChild(container);
+              var filename = _sent.type === 'fleet' ? 'Fleet_Report' : _sent.type === 'proposal' ? 'Proposal' : 'Agreement';
+              filename += '_' + (_sent.subject || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
+              html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+              }).from(container).save().then(function() {
+                document.body.removeChild(container);
+              }).catch(function() {
+                try { document.body.removeChild(container); } catch(e) {}
+              });
             });
-          });
-        }
-      })
-      .catch(function(err) {
-        console.error('EmailJS error:', err);
-        showToast('Email failed — ' + (err.text || err.message || 'unknown error'), 'warn');
-        btn.disabled = false;
-        btn.innerHTML = origHTML;
-      });
+          }
+        })
+        .catch(function(err) {
+          clearTimeout(_sendTimeout);
+          console.error('EmailJS error:', err);
+          showToast('Email failed — ' + (err.text || err.message || 'unknown error'), 'warn');
+          btn.disabled = false;
+          btn.innerHTML = origHTML;
+        });
+    } catch(e) {
+      clearTimeout(_sendTimeout);
+      console.error('Send error:', e);
+      showToast('Email failed — ' + (e.message || 'unexpected error'), 'warn');
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    }
   }
 
   if (_emailjsLoaded && typeof emailjs !== 'undefined') {
@@ -9372,6 +9391,7 @@ function sendEmailFromPortal() {
       doSend();
     };
     s.onerror = function() {
+      clearTimeout(_sendTimeout);
       showToast('Could not load email service. Please try again.', 'warn');
       btn.disabled = false;
       btn.innerHTML = origHTML;
