@@ -430,7 +430,7 @@ select option{background:#0a0a0a;color:#FFA028}
 
         <div id="cb_error" style="display:none;color:#dc2626;font-size:12px;text-align:center;margin-bottom:12px"></div>
 
-        <button onclick="submitCallbackRequest()" style="width:100%;padding:14px;background:#FFA028;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s;border-radius:6px" onmouseover="this.style.background='#e68e1e'" onmouseout="this.style.background='#FFA028'">
+        <button id="cb_submitBtn" onclick="submitCallbackRequest()" style="width:100%;padding:14px;background:#FFA028;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;border-radius:6px;-webkit-tap-highlight-color:transparent;touch-action:manipulation">
           REQUEST CALLBACK →
         </button>
 
@@ -10360,6 +10360,10 @@ function doLogout() {
 })();
 
 function submitCallbackRequest() {
+  // Guard against double-tap / double-submit
+  var submitBtn = document.getElementById('cb_submitBtn');
+  if (submitBtn && submitBtn.disabled) return;
+
   var name = (document.getElementById('cb_name').value || '').trim();
   var company = (document.getElementById('cb_company').value || '').trim();
   var phone = (document.getElementById('cb_phone').value || '').trim();
@@ -10372,8 +10376,7 @@ function submitCallbackRequest() {
   if (!phone) { errEl.textContent = 'Please enter your phone number'; errEl.style.display = 'block'; return; }
   errEl.style.display = 'none';
 
-  // Disable button
-  var submitBtn = document.querySelector('#callbackFormCard button');
+  // Disable button immediately
   if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = 'Submitting...'; submitBtn.style.opacity = '0.6'; }
 
   // Build time label
@@ -10493,34 +10496,38 @@ function renderCallbackQueue() {
 }
 
 function goToCallbackProspect(email, name, company) {
-  // Find matching prospect by email, then by company name
+  // Always go to prospects tab — that's where all contact info lives
   var match = null;
-  if (email) {
-    match = PROSPECTS.find(function(p) { return (p.email || '').toLowerCase() === email.toLowerCase(); });
+  var matchSource = 'prospect';
+
+  // Search PROSPECTS first (by email → company → name)
+  if (email) match = PROSPECTS.find(function(p) { return (p.email || '').toLowerCase() === email.toLowerCase(); });
+  if (!match && company) match = PROSPECTS.find(function(p) { return (p.co || '').toLowerCase() === company.toLowerCase(); });
+  if (!match && name) match = PROSPECTS.find(function(p) { return (p.name || '').toLowerCase() === name.toLowerCase(); });
+
+  // If not in prospects, check LEADS (they may have moved to pipeline)
+  if (!match) {
+    var leadMatch = null;
+    if (email) leadMatch = LEADS.find(function(l) { return (l.email || '').toLowerCase() === email.toLowerCase(); });
+    if (!leadMatch && company) leadMatch = LEADS.find(function(l) { return (l.co || '').toLowerCase() === company.toLowerCase(); });
+    if (!leadMatch && name) leadMatch = LEADS.find(function(l) { return (l.name || '').toLowerCase() === name.toLowerCase(); });
+    if (leadMatch) { match = leadMatch; matchSource = 'pipeline'; }
   }
-  if (!match && company) {
-    match = PROSPECTS.find(function(p) { return (p.co || '').toLowerCase() === company.toLowerCase(); });
+
+  // If not in prospects or leads, check CUSTOMERS
+  if (!match) {
+    var custMatch = null;
+    if (email) custMatch = CUSTOMERS.find(function(c) { return (c.email || '').toLowerCase() === email.toLowerCase(); });
+    if (!custMatch && company) custMatch = CUSTOMERS.find(function(c) { return (c.co || '').toLowerCase() === company.toLowerCase(); });
+    if (custMatch) { match = custMatch; matchSource = 'customer'; }
   }
-  if (!match && name) {
-    match = PROSPECTS.find(function(p) { return (p.name || '').toLowerCase() === name.toLowerCase(); });
-  }
-  // Also check LEADS
-  if (!match && email) {
-    match = LEADS.find(function(l) { return (l.email || '').toLowerCase() === email.toLowerCase(); });
-    if (match) {
-      // It's a lead in the pipeline — go to pipeline
-      showPage('pipeline');
-      showToast('Found in pipeline — ' + (match.co || match.name));
-      return;
-    }
-  }
-  // Navigate to prospects tab
+
+  // Navigate to the right tab
   showPage('customers');
-  showCustTab('prospects');
-  if (match) {
-    // Highlight the prospect row briefly
+  if (matchSource === 'customer') {
+    showCustTab('customers');
     setTimeout(function() {
-      var rows = document.querySelectorAll('#prospectsTable tr[data-id]');
+      var rows = document.querySelectorAll('#customersTable tr[data-id]');
       rows.forEach(function(row) {
         if (parseInt(row.getAttribute('data-id')) === match.id) {
           row.style.transition = 'background .3s';
@@ -10530,9 +10537,27 @@ function goToCallbackProspect(email, name, company) {
         }
       });
     }, 200);
-    showToast('Viewing prospect — ' + (match.co || match.name));
+    showToast('Viewing customer — ' + (match.co || match.name));
   } else {
-    showToast('Prospect not found in system — may need to add them', 'warn');
+    showCustTab('prospects');
+    if (match && matchSource === 'prospect') {
+      setTimeout(function() {
+        var rows = document.querySelectorAll('#prospectsTable tr[data-id]');
+        rows.forEach(function(row) {
+          if (parseInt(row.getAttribute('data-id')) === match.id) {
+            row.style.transition = 'background .3s';
+            row.style.background = 'rgba(255,160,40,.25)';
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(function() { row.style.background = ''; }, 3000);
+          }
+        });
+      }, 200);
+      showToast('Viewing prospect — ' + (match.co || match.name));
+    } else if (match && matchSource === 'pipeline') {
+      showToast('This contact is in the pipeline — showing prospects tab. Check pipeline for deal details.', 'warn');
+    } else {
+      showToast('Contact not found — may need to add them as a prospect', 'warn');
+    }
   }
 }
 

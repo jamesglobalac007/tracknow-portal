@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Orange callback button, live callback detection, editable email, orange CTA."""
+"""Push — Orange callback btn, single-click fix, live detection, callback name links to prospects."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -32,17 +32,20 @@ t = open(f, "r").read()
 checks = [
     ('contenteditable="true"', "Editable email preview body"),
     ("ep_editHint", "Edit hint banner on email preview"),
-    ("var editedBody = document.getElementById('ep_body').innerHTML", "Send uses edited body content"),
     ("background:#FFA028;padding:14px 20px", "Orange pricing CTA header"),
     ("REQUEST A CALLBACK", "Bold callback button text"),
     ("editLeadModal", "Edit Lead modal (pipeline)"),
     ("handleSalesFeeCSV", "CSV import for sales fees"),
     ("_sendTimeout", "Send timeout safety net"),
-    ("background:#FFA028;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s;border-radius:6px", "Orange callback landing page button"),
+    ("touch-action:manipulation", "Single-click callback button fix"),
+    ("cb_submitBtn", "Callback button ID for guard"),
     ("addEventListener('storage'", "Live callback detection (cross-tab)"),
     ("new Notification('Callback Requested'", "Browser notification for callbacks"),
     ("AudioContext", "Audio ping for new callbacks"),
     ("setInterval(renderCallbackQueue, 15000)", "15s callback queue refresh"),
+    ("matchSource === 'customer'", "Callback name links to customers tab"),
+    ("matchSource === 'pipeline'", "Pipeline contacts handled in prospects view"),
+    ("showCustTab('customers')", "Navigate to live customers tab when matched"),
 ]
 
 all_ok = True
@@ -59,7 +62,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Orange callback btn, live callback detection with notifications and audio ping, editable email, orange pricing CTA"')
+ok, out = run('git commit -m "Orange callback btn, single-click fix, live detection with notifications, callback name links to prospects/customers"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
