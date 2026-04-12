@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Fix signing page: CSS !important overrides for table/th/td/tr dark backgrounds."""
+"""Push — Add Supply Nation Registered logo + indigenous certification message."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -26,16 +26,21 @@ if not ok and "conflict" in out.lower():
     print(out)
     sys.exit(1)
 
+# Verify the logo file exists
+logo = os.path.join(REPO, "assets", "supply-nation-registered.avif")
+if os.path.exists(logo):
+    status("Supply Nation logo file present in assets/")
+else:
+    status("Supply Nation logo file missing!", False)
+    sys.exit(1)
+
 f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("#agreementSignOverlay table{background:#ffffff !important", "Table white background override"),
-    ("#agreementSignOverlay th{background:#f8f8f8 !important", "TH light background override"),
-    ("#agreementSignOverlay td{background:#ffffff !important", "TD white background override"),
-    ("#agreementSignOverlay tr{background:#ffffff !important", "TR white background override"),
-    ("#agreementSignOverlay input,#agreementSignOverlay select", "Input white override"),
-    ("color:#1a1a1a !important", "Dark text override"),
+    ("supply-nation-registered.avif", "Supply Nation logo referenced in HTML"),
+    ("Supply Nation Indigenous Business", "Indigenous business certification text"),
+    ("Certified", "Certified label in sidebar"),
 ]
 
 all_ok = True
@@ -49,10 +54,10 @@ if not all_ok:
     print("\n\033[91m\u2717 Some checks failed \u2014 aborting push.\033[0m")
     sys.exit(1)
 
-ok, _ = run("git add index.html push_changes.py")
+ok, _ = run("git add index.html assets/supply-nation-registered.avif push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Fix signing page: CSS !important overrides for all dark table/input backgrounds"')
+ok, out = run('git commit -m "Add Supply Nation Registered logo and indigenous certification badge to login + sidebar"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
