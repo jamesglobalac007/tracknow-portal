@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Editable email preview, orange pricing CTA box."""
+"""Push — Orange callback button, live callback detection, editable email, orange CTA."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -35,10 +35,14 @@ checks = [
     ("var editedBody = document.getElementById('ep_body').innerHTML", "Send uses edited body content"),
     ("background:#FFA028;padding:14px 20px", "Orange pricing CTA header"),
     ("REQUEST A CALLBACK", "Bold callback button text"),
-    ("font-size:17px;font-weight:900", "Large prominent CTA button"),
     ("editLeadModal", "Edit Lead modal (pipeline)"),
     ("handleSalesFeeCSV", "CSV import for sales fees"),
     ("_sendTimeout", "Send timeout safety net"),
+    ("background:#FFA028;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s;border-radius:6px", "Orange callback landing page button"),
+    ("addEventListener('storage'", "Live callback detection (cross-tab)"),
+    ("new Notification('Callback Requested'", "Browser notification for callbacks"),
+    ("AudioContext", "Audio ping for new callbacks"),
+    ("setInterval(renderCallbackQueue, 15000)", "15s callback queue refresh"),
 ]
 
 all_ok = True
@@ -55,7 +59,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Editable email preview, orange pricing CTA box in fleet emails"')
+ok, out = run('git commit -m "Orange callback btn, live callback detection with notifications and audio ping, editable email, orange pricing CTA"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

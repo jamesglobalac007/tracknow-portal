@@ -430,7 +430,7 @@ select option{background:#0a0a0a;color:#FFA028}
 
         <div id="cb_error" style="display:none;color:#dc2626;font-size:12px;text-align:center;margin-bottom:12px"></div>
 
-        <button onclick="submitCallbackRequest()" style="width:100%;padding:14px;background:#dc2626;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+        <button onclick="submitCallbackRequest()" style="width:100%;padding:14px;background:#FFA028;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s;border-radius:6px" onmouseover="this.style.background='#e68e1e'" onmouseout="this.style.background='#FFA028'">
           REQUEST CALLBACK →
         </button>
 
@@ -10558,8 +10558,74 @@ function dismissCallback(id) {
   renderCallbackQueue();
 }
 
-// Refresh callback queue every 60 seconds (countdown stays accurate)
-setInterval(renderCallbackQueue, 60000);
+// Refresh callback queue every 15 seconds (countdown stays accurate)
+setInterval(renderCallbackQueue, 15000);
+
+// ── Live callback detection — picks up new requests from other tabs instantly ──
+(function() {
+  // Request notification permission on first login
+  if (window.Notification && Notification.permission === 'default') {
+    // Ask once after a short delay so it doesn't feel aggressive
+    setTimeout(function() { Notification.requestPermission(); }, 5000);
+  }
+
+  // Listen for localStorage changes from other tabs (callback landing page)
+  window.addEventListener('storage', function(e) {
+    if (e.key !== 'tn_callback_requests') return;
+    var oldQueue = [];
+    var newQueue = [];
+    try { oldQueue = JSON.parse(e.oldValue || '[]'); } catch(x) {}
+    try { newQueue = JSON.parse(e.newValue || '[]'); } catch(x) {}
+
+    // Only alert if a NEW request was added
+    if (newQueue.length > oldQueue.length) {
+      var newest = newQueue[newQueue.length - 1];
+      var label = (newest.name || 'Someone') + (newest.company ? ' from ' + newest.company : '');
+
+      // Re-render the queue immediately
+      renderCallbackQueue();
+
+      // Toast inside the portal
+      showToast('New callback request from ' + label, 'warn');
+
+      // Browser notification (works even if tab is in background)
+      if (window.Notification && Notification.permission === 'granted') {
+        var n = new Notification('Callback Requested', {
+          body: label + (newest.time === 'ASAP' ? ' — ASAP!' : ' — ' + newest.time),
+          icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+          tag: 'callback-' + Date.now(),
+          requireInteraction: true
+        });
+        n.onclick = function() { window.focus(); n.close(); };
+      }
+
+      // Audio ping
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.value = 0.3;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+        setTimeout(function() {
+          var osc2 = ctx.createOscillator();
+          var gain2 = ctx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.frequency.value = 1100;
+          osc2.type = 'sine';
+          gain2.gain.value = 0.3;
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.2);
+        }, 180);
+      } catch(e) {}
+    }
+  });
+})();
 
 function submitLeadForm() {
   var name = (document.getElementById('lf_name').value || '').trim();
