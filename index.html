@@ -2700,12 +2700,13 @@ let PROSPECTS = (function() {
 })();
 let _nextProspectId = (function() { var mx = 0; PROSPECTS.forEach(function(p) { if (p.id > mx) mx = p.id; }); return mx + 1; })();
 /* Persist prospects to localStorage after any change */
-function _saveProspects() { try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} }
+function _saveProspects() { try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _syncPush(); }
 /* Persist LEADS + CUSTOMERS to localStorage */
 function saveData() {
   try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){}
   try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){}
-  _saveProspects();
+  try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){}
+  _syncPush();
 }
 
 // ── CUSTOMERS DATA ────────────────────────────────────────────────────────
@@ -2722,7 +2723,185 @@ let _custSortDir = 1; // 1 = ascending (oldest first), -1 = descending (newest f
 let _prospSortField = null;
 let _prospSortDir = 1;
 
+// ══════════════════════════════════════════════════════════════════
+// CLOUD SYNC ENGINE — Shared data between all portal users
+// ══════════════════════════════════════════════════════════════════
+var _syncVersion = 0;      // Current known server version
+var _lastEventId = 0;      // Last event ID processed
+var _syncBusy = false;     // Prevent concurrent syncs
+var _syncEnabled = true;   // Master switch
+var _syncInitDone = false; // First sync completed?
 
+// Push local data to server, receive merged result
+function _syncPush() {
+  if (_syncBusy || !_syncEnabled) return;
+  _syncBusy = true;
+  fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      leads: LEADS,
+      prospects: PROSPECTS,
+      customers: CUSTOMERS
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      _syncVersion = d.version;
+      // Merge server data into local arrays
+      if (d.leads) { LEADS = d.leads; try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){} }
+      if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
+      if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
+      // Refresh UI if dashboard is visible
+      _syncRefreshUI();
+      if (!_syncInitDone) { _syncInitDone = true; console.log('[Sync] Initial sync complete — v' + _syncVersion); }
+    }
+    _syncBusy = false;
+  })
+  .catch(function(err) { _syncBusy = false; console.warn('[Sync] Push failed:', err); });
+}
+
+// Poll server for data changes (lightweight — only downloads if version changed)
+function _syncPull() {
+  if (_syncBusy || !_syncEnabled) return;
+  fetch('/api/data?v=' + _syncVersion)
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok && d.changed) {
+      _syncVersion = d.version;
+      if (d.leads) { LEADS = d.leads; try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){} }
+      if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
+      if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
+      _syncRefreshUI();
+    }
+  })
+  .catch(function() {}); // Silent fail on poll
+}
+
+// Poll server for new events (proposal accepts, agreement signs, callbacks)
+function _pollEvents() {
+  if (!_syncEnabled) return;
+  fetch('/api/events?since=' + _lastEventId)
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok && d.events && d.events.length > 0) {
+      d.events.forEach(function(evt) {
+        _lastEventId = Math.max(_lastEventId, evt.id);
+        _handleServerEvent(evt);
+      });
+    }
+  })
+  .catch(function() {});
+}
+
+// Handle an incoming event from the server
+function _handleServerEvent(evt) {
+  if (evt.type === 'proposal_accept') {
+    // Store locally and trigger notification
+    var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+    // Dedup by proposal+email
+    var isDup = accepts.some(function(a) { return a.proposal === evt.data.proposal && a.email === evt.data.email; });
+    if (!isDup) {
+      accepts.push(evt.data);
+      localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+    }
+    // Trigger UI notification
+    try { renderProposalAccepts(); } catch(e) {}
+    var label = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
+    try { showToast('Proposal accepted! ' + label + ' wants to proceed to agreement', 'warn'); } catch(e) {}
+    if (window.Notification && Notification.permission === 'granted') {
+      var n = new Notification('Proposal Accepted!', {
+        body: label + ' wants to proceed to formal agreement' + (evt.data.proposal ? ' — #' + evt.data.proposal : ''),
+        icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+        tag: 'proposal-accept-' + Date.now(),
+        requireInteraction: true
+      });
+      n.onclick = function() { window.focus(); n.close(); };
+    }
+    try { _playCashRegister(); } catch(e) {}
+
+  } else if (evt.type === 'agreement_sign') {
+    var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
+    var isDup2 = signs.some(function(s) { return s.agreement === evt.data.agreement && s.email === evt.data.email; });
+    if (!isDup2) {
+      signs.push(evt.data);
+      localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
+    }
+    var label2 = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
+    try { showToast('Agreement signed! ' + label2 + ' has executed ' + (evt.data.agreement || 'the agreement'), 'warn'); } catch(e) {}
+    if (window.Notification && Notification.permission === 'granted') {
+      var n2 = new Notification('Agreement Signed & Executed!', {
+        body: label2 + ' has signed ' + (evt.data.agreement || 'the service agreement'),
+        icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+        tag: 'agreement-sign-' + Date.now(),
+        requireInteraction: true
+      });
+      n2.onclick = function() { window.focus(); n2.close(); };
+    }
+    try { _playCashRegister(); } catch(e) {}
+
+  } else if (evt.type === 'callback_request') {
+    var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
+    var isDup3 = queue.some(function(q) { return q.id === evt.data.id; });
+    if (!isDup3) {
+      queue.push(evt.data);
+      localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+    }
+    try { renderCallbackQueue(); } catch(e) {}
+    var label3 = (evt.data.name || 'Someone') + (evt.data.company ? ' from ' + evt.data.company : '');
+    try { showToast('New callback request from ' + label3, 'warn'); } catch(e) {}
+    if (window.Notification && Notification.permission === 'granted') {
+      var n3 = new Notification('Callback Requested', {
+        body: label3 + (evt.data.time === 'ASAP' ? ' — ASAP!' : ' — ' + (evt.data.timeLabel || evt.data.time)),
+        icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+        tag: 'callback-' + Date.now(),
+        requireInteraction: true
+      });
+      n3.onclick = function() { window.focus(); n3.close(); };
+    }
+    // Audio ping
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator(); var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880; osc.type = 'sine'; gain.gain.value = 0.3;
+      osc.start(); osc.stop(ctx.currentTime + 0.15);
+      setTimeout(function() {
+        var osc2 = ctx.createOscillator(); var gain2 = ctx.createGain();
+        osc2.connect(gain2); gain2.connect(ctx.destination);
+        osc2.frequency.value = 1100; osc2.type = 'sine'; gain2.gain.value = 0.3;
+        osc2.start(); osc2.stop(ctx.currentTime + 0.2);
+      }, 180);
+    } catch(e) {}
+  }
+}
+
+// Refresh whichever UI panel is currently visible
+function _syncRefreshUI() {
+  try {
+    // Check which tab/section is active and re-render
+    var pipelineEl = document.getElementById('pipelineView');
+    if (pipelineEl && pipelineEl.offsetParent !== null) { try { renderPipeline(); } catch(e){} }
+    var prospectsEl = document.getElementById('prospectsView');
+    if (prospectsEl && prospectsEl.offsetParent !== null) { try { renderProspects(); } catch(e){} }
+    var customersEl = document.getElementById('customersView');
+    if (customersEl && customersEl.offsetParent !== null) { try { renderCustomers(); } catch(e){} }
+    // Refresh dashboard widgets (callback queue, proposal accepts)
+    try { renderCallbackQueue(); } catch(e){}
+    try { renderProposalAccepts(); } catch(e){}
+  } catch(e) {}
+}
+
+// Start sync polling (5-second interval for data, 3-second for events)
+(function _initSync() {
+  // Initial push on page load (uploads local data, gets merged back)
+  setTimeout(function() { _syncPush(); }, 1500);
+  // Poll for data changes from other users
+  setInterval(function() { _syncPull(); }, 5000);
+  // Poll for events (proposal accepts, etc.) — faster interval
+  setInterval(function() { _pollEvents(); }, 3000);
+})();
 
 // ── Toast Notification ────────────────────────────────────────────────────
 function showToast(msg, type) {
@@ -3053,6 +3232,8 @@ function _sendProposalNotify(btn) {
     var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
     accepts.push(accept);
     localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+    // POST event to server so ALL portal users get notified (cross-device)
+    try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'proposal_accept',data:accept}) }).catch(function(){}); } catch(e2){}
   } catch(x) {}
 
   // Send EmailJS notification to sales team
@@ -10668,6 +10849,8 @@ function doLogout() {
   var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
   accepts.push(accept);
   localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+  // POST event to server so ALL portal users get notified (cross-device)
+  try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'proposal_accept',data:accept}) }).catch(function(){}); } catch(e){}
 
   // Also send EmailJS notification to sales team
   function loadAndSend() {
@@ -10818,6 +11001,8 @@ function submitAgreementSign() {
   var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
   signs.push(signData);
   localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
+  // POST event to server so ALL portal users get notified (cross-device)
+  try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'agreement_sign',data:signData}) }).catch(function(){}); } catch(e){}
 
   // Build signed banner
   var signedBanner = '<div style="border:3px solid #00CC66;margin-bottom:30px;overflow:hidden">' +
@@ -10989,6 +11174,8 @@ function submitCallbackRequest() {
   var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
   queue.push(cb);
   localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+  // POST event to server so ALL portal users get notified (cross-device)
+  try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'callback_request',data:cb}) }).catch(function(){}); } catch(e){}
 
   // Update confirmation text
   var confirmEl = document.getElementById('cb_confirmTime');

@@ -3,3 +3,4 @@ deploy-portal.html
 deploy-to-github.html
 deploy.html
 push-to-github.sh
+node_modules/
