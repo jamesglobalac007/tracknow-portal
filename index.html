@@ -2940,11 +2940,29 @@ function _sendProposalNotify(btn) {
 // ── EmailJS agreement notification (called from agreement popup via window.opener) ──
 var _agreementLeadCache = null;
 
+function _buildSignedBanner(agrNum, cn, ct, sigDisplay, today) {
+  return '<div style="border:3px solid #00CC66;margin-bottom:30px;overflow:hidden">' +
+    '<div style="background:#00CC66;padding:16px 24px;text-align:center">' +
+      '<div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;text-transform:uppercase">&#10003; Signed &amp; Executed</div>' +
+    '</div>' +
+    '<div style="padding:20px 24px;background:#f0fdf4">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<tr><td style="padding:6px 12px;color:#888;width:35%">Agreement</td><td style="padding:6px 12px;font-weight:700">' + agrNum + '</td></tr>' +
+        '<tr><td style="padding:6px 12px;color:#888">Signed By</td><td style="padding:6px 12px;font-weight:700">' + cn + '</td></tr>' +
+        (ct ? '<tr><td style="padding:6px 12px;color:#888">Position</td><td style="padding:6px 12px">' + ct + '</td></tr>' : '') +
+        '<tr><td style="padding:6px 12px;color:#888">Signature</td><td style="padding:6px 12px;font-style:italic">' + sigDisplay + '</td></tr>' +
+        '<tr><td style="padding:6px 12px;color:#888">Date Signed</td><td style="padding:6px 12px;font-weight:700">' + today + '</td></tr>' +
+      '</table>' +
+    '</div>' +
+  '</div>';
+}
+
 function _sendAgreementNotify(btn) {
   var ld = _agreementLeadCache;
   if (!ld) { alert('Error: no lead data. Please close and reopen the agreement.'); return; }
   var doc = btn.ownerDocument;
   var cn = doc.getElementById('sig_client_name').value.trim();
+  var ct = doc.getElementById('sig_client_title').value.trim();
   var cs = doc.getElementById('sig_client_sig').value.trim();
   var cv = doc.getElementById('agrSigCanvas');
   var hasDrawn = false;
@@ -2957,45 +2975,97 @@ function _sendAgreementNotify(btn) {
     alert('Please enter your full name and provide a signature (type or draw) to proceed.');
     return;
   }
-  var sigMethod = hasDrawn ? 'Drawn on screen' : 'Typed: ' + cs;
+  var sigDisplay = hasDrawn ? '<em>(drawn signature on file)</em>' : '<span style="font-family:\'Brush Script MT\',\'Segoe Script\',cursive;font-size:20px">' + cs + '</span>';
+  var sigMethod = hasDrawn ? 'Drawn on screen' : 'Typed';
   var agrNum = 'TN-AGR-' + String(ld.id).padStart(4, '0');
   var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
 
   btn.disabled = true;
   btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span> Sending...';
-  // add spinner keyframe
   if (!doc.getElementById('_spinStyle2')) {
     var st = doc.createElement('style'); st.id = '_spinStyle2';
     st.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
     doc.head.appendChild(st);
   }
 
+  // Build the signed banner
+  var signedBanner = _buildSignedBanner(agrNum, cn, ct, sigDisplay, today);
+
+  // Build signed agreement HTML using the existing email builder + banner on top
+  var agreementBody = window.opener._buildAgreementEmailHTML(ld);
+
+  // Signature block for email
+  var sigBlock = '<div style="border:2px solid #0098d4;padding:20px;margin:24px 0">' +
+    '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Signatures</div>' +
+    '<div style="display:flex;gap:40px">' +
+      '<div style="flex:1">' +
+        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Client — ' + ld.co + '</div>' +
+        '<div style="font-size:13px;margin-bottom:4px"><strong>' + cn + '</strong>' + (ct ? ' — ' + ct : '') + '</div>' +
+        '<div style="font-family:\'Brush Script MT\',\'Segoe Script\',cursive;font-size:24px;border-bottom:2px solid #FFA028;padding:4px 0;min-height:32px">' + (hasDrawn ? '<em style="font-size:13px;font-family:Inter,sans-serif;color:#888">(drawn signature on file)</em>' : cs) + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:4px">' + today + '</div>' +
+      '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">TrackNow GPS Pty Ltd</div>' +
+        '<div style="font-size:13px;margin-bottom:4px"><strong>Mark Speelmeyer</strong> — Director</div>' +
+        '<div style="font-family:\'Brush Script MT\',\'Segoe Script\',cursive;font-size:24px;border-bottom:2px solid #FFA028;padding:4px 0;min-height:32px">Mark Speelmeyer</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:4px">' + today + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Full signed agreement email HTML
+  var fullSignedHTML = '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+    signedBanner + agreementBody + sigBlock + '</div>';
+
   function doSend() {
+    // 1. Send to sales team (internal notification with full signed agreement)
     emailjs.send('service_5y35h2g', 'template_gwga9jo', {
       to_email: 'sales@tracknow.com.au',
-      subject: 'SIGNED: Service Agreement ' + agrNum + ' — ' + ld.co,
+      subject: 'SIGNED & EXECUTED: Service Agreement ' + agrNum + ' — ' + ld.co,
       from_name: cn,
-      message_html: '<h2 style="color:#0098d4">Agreement Signed</h2>' +
-        '<p><strong>' + cn + '</strong> from <strong>' + ld.co + '</strong> has signed the service agreement.</p>' +
-        '<p>Agreement: ' + agrNum + '</p>' +
-        '<p>Signature method: ' + sigMethod + '</p>' +
-        '<p>Title: ' + (doc.getElementById('sig_client_title').value.trim() || 'N/A') + '</p>' +
-        '<p>Date: ' + today + '</p>' +
-        '<p>Email: ' + (ld.email || 'N/A') + '</p>' +
-        '<p>Phone: ' + (ld.phone || 'N/A') + '</p>' +
-        '<p style="color:#888;font-size:12px">This notification was sent automatically from the TrackNow agreement document.</p>'
-    }).then(function() {
-      btn.style.display = 'none';
-      var msg = doc.getElementById('acceptedMsg');
-      if (msg) {
-        msg.style.display = 'block';
-        msg.innerHTML = '&#10003; Agreement Signed &mdash; ' + cn + ' &middot; ' + today;
-      }
-    }).catch(function() {
-      btn.disabled = false;
-      btn.innerHTML = '&#10003; SIGN & ACCEPT AGREEMENT';
-      alert('Something went wrong. Please try again or call us on 1300 TRACK NOW.');
-    });
+      message_html: fullSignedHTML
+    }).then(function(){}).catch(function(){});
+
+    // 2. Send to customer (their copy of the signed agreement)
+    if (ld.email) {
+      var customerName = (ld.name || cn || 'there').split(' ')[0];
+      var customerHTML = '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+        '<p style="font-size:14px;margin-bottom:20px">Hi ' + customerName + ',</p>' +
+        '<p style="font-size:14px;margin-bottom:20px">Thank you for signing your TrackNow GPS service agreement. Please find your executed copy below for your records.</p>' +
+        '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
+        signedBanner + agreementBody + sigBlock +
+        '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
+          '<p>Kind regards,</p>' +
+          '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
+          '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></p>' +
+        '</div>' +
+      '</div>';
+
+      emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+        to_email: ld.email,
+        subject: 'Your Signed Service Agreement — ' + agrNum + ' — TrackNow GPS',
+        from_name: 'TrackNow GPS',
+        message_html: customerHTML
+      }).then(function(){}).catch(function(){});
+    }
+
+    // 3. Update the popup — add signed banner at top and show confirmation
+    var bodyEl = doc.body;
+    if (bodyEl) {
+      // Insert signed banner at the very top of the document
+      var bannerDiv = doc.createElement('div');
+      bannerDiv.innerHTML = signedBanner;
+      bodyEl.insertBefore(bannerDiv, bodyEl.firstChild.nextSibling); // after the no-print button row
+    }
+    btn.style.display = 'none';
+    // Hide the "one click" note
+    var oneClickNote = btn.nextElementSibling;
+    if (oneClickNote && oneClickNote.tagName === 'P') oneClickNote.style.display = 'none';
+    var msg = doc.getElementById('acceptedMsg');
+    if (msg) {
+      msg.style.display = 'block';
+      msg.innerHTML = '&#10003; Agreement Signed &amp; Executed &mdash; ' + cn + ' &middot; ' + today;
+    }
   }
 
   if (_emailjsLoaded && typeof emailjs !== 'undefined') {

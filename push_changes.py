@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Agreement digital signature section orange theme."""
+"""Push — Signed agreement emails to sales + customer with full document."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,14 +30,16 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("border:3px solid #FFA028;margin:30px 0;overflow:hidden", "Orange border on signature section"),
-    ("background:#FFA028;padding:14px 20px;text-align:center", "Orange banner header"),
-    ("background:#fff8ee", "Warm background on signature area"),
-    ("color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px\">Client", "Orange client label"),
-    ("color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px\">TrackNow", "Orange TrackNow label"),
-    ("border-bottom:2px solid #FFA028;padding:4px 0;min-height:36px\">Mark Speelmeyer", "Orange signature line for TrackNow"),
-    ("border:1px solid #FFA028;background:#fff8ee;color:#FFA028", "Orange TYPE/DRAW buttons"),
-    ("background:#FFA028;color:#fff;font-size:17px;font-weight:900", "Orange Sign & Accept button"),
+    ("_buildSignedBanner", "Signed banner builder function"),
+    ("Signed &amp; Executed", "SIGNED & EXECUTED banner text"),
+    ("_buildAgreementEmailHTML(ld)", "Full agreement HTML in email"),
+    ("Your Signed Service Agreement", "Customer email subject line"),
+    ("Thank you for signing", "Customer email intro text"),
+    ("fullSignedHTML", "Full signed HTML variable for sales email"),
+    ("customerHTML", "Customer copy email HTML"),
+    ("SIGNED & EXECUTED: Service Agreement", "Sales email subject"),
+    ("Signatures</div>", "Signatures block in email"),
+    ("Agreement Signed &amp; Executed", "Updated popup confirmation message"),
 ]
 
 all_ok = True
@@ -54,7 +56,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Agreement digital signature section: orange theme matching proposal style"')
+ok, out = run('git commit -m "Signed agreement: full document emailed to sales + customer with executed banner"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
