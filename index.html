@@ -4293,6 +4293,11 @@ function moveLeadStage(leadId, direction) {
   const curIdx = STAGES.findIndex(s => s.id === lead.stage);
   const newIdx = curIdx + direction;
   if (newIdx < 0 || newIdx >= STAGES.length) return;
+  // Block backward moves from Agreement Sent (or later) to Proposal
+  if (direction < 0 && STAGES[curIdx].id === 'agreement' && STAGES[newIdx].id === 'proposal') {
+    showToast('Cannot move back to Proposal once Agreement has been sent', 'warn');
+    return;
+  }
   const oldStage = lead.stage;
   const newStage = STAGES[newIdx].id;
   lead.stage = newStage;
@@ -4366,6 +4371,14 @@ function handleDrop(e, newStage) {
 
   const lead = LEADS.find(l => l.id === leadId);
   if (!lead || lead.stage === newStage) return;
+
+  // Block dragging backward from Agreement Sent (or later) to Proposal
+  const fromIdx = STAGES.findIndex(s => s.id === lead.stage);
+  const toIdx = STAGES.findIndex(s => s.id === newStage);
+  if (fromIdx >= 1 && toIdx === 0) {
+    showToast('Cannot move back to Proposal once Agreement has been sent', 'warn');
+    return;
+  }
 
   const oldStage = lead.stage;
   lead.stage = newStage;
