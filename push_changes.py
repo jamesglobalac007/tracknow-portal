@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Proposal acceptance alerts (localStorage + landing page, no mailto)."""
+"""Push — Proposal acceptance dashboard queue + alerts."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -32,26 +32,23 @@ t = open(f, "r").read()
 checks = [
     ("proposal_accept=1", "Proposal accept URL param handler"),
     ("proposalAcceptOverlay", "Proposal acceptance landing page HTML"),
+    ("proposalAcceptPanel", "Dashboard proposal acceptance queue panel"),
+    ("renderProposalAccepts", "Proposal acceptance render function"),
+    ("actionProposalAccept", "Action/dismiss proposal acceptance buttons"),
     ("tn_proposal_accepts", "Proposal acceptance localStorage key"),
     ("_showProposalAccept", "Proposal accept flag variable"),
     ("_paUrl", "Proposal email uses portal URL instead of mailto"),
     ("Proposal Accepted!", "Browser notification for proposal acceptance"),
-    ("Three ascending tones", False),  # comment check below
+    ("Ready for Agreement", "Dashboard panel header text"),
+    ("Send Agreement", "Action button label"),
 ]
 
 all_ok = True
 for marker, label in checks:
-    if label is False:
-        # Check for the triple-tone audio ping
-        found = "o3.frequency.value = 1100" in t
-        status("Triple-tone audio ping for proposal alerts", found)
-        if not found:
-            all_ok = False
-    else:
-        found = marker in t
-        status(label, found)
-        if not found:
-            all_ok = False
+    found = marker in t
+    status(label, found)
+    if not found:
+        all_ok = False
 
 if not all_ok:
     print("\n\033[91m\u2717 Some markers missing \u2014 aborting push.\033[0m")
@@ -60,7 +57,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Proposal acceptance alerts: localStorage + landing page, no mailto"')
+ok, out = run('git commit -m "Add proposal acceptance dashboard queue with alerts and landing page"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

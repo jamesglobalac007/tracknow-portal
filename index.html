@@ -688,6 +688,20 @@ select option{background:#0a0a0a;color:#FFA028}
       </div>
     </div>
 
+    <!-- Proposal Acceptance Queue -->
+    <div id="proposalAcceptPanel" style="display:none;margin-bottom:20px">
+      <div style="background:#001a0d;border:2px solid #00CC66;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:12px;height:12px;background:#00CC66;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
+            <span style="font-size:14px;font-weight:800;color:#00CC66;text-transform:uppercase;letter-spacing:1px">Proposal Accepted — Ready for Agreement</span>
+          </div>
+          <span id="proposalAcceptCount" style="background:#00CC66;color:#000;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
+        </div>
+        <div id="proposalAcceptList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+
     <!-- Charts Row -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
       <div class="card" style="padding:24px">
@@ -4691,6 +4705,7 @@ function initAnalytics() {
 window.addEventListener('load', function () {
   try { initDashboard(); } catch(e) { console.warn('initDashboard:', e); }
   try { renderCallbackQueue(); } catch(e) { console.warn('renderCallbackQueue:', e); }
+  try { renderProposalAccepts(); } catch(e) { console.warn('renderProposalAccepts:', e); }
   try { initIndustryCards(); } catch(e) { console.warn('initIndustryCards:', e); }
   try { initOutreach(); } catch(e) { console.warn('initOutreach:', e); }
   try { renderPipeline(); } catch(e) { console.warn('renderPipeline:', e); }
@@ -10695,6 +10710,77 @@ function dismissCallback(id) {
 // Refresh callback queue every 15 seconds (countdown stays accurate)
 setInterval(renderCallbackQueue, 15000);
 
+// ── Proposal Acceptance Queue ─────────────────────────────────
+function renderProposalAccepts() {
+  var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+  var pending = accepts.filter(function(a) { return a.status !== 'actioned' && a.status !== 'dismissed'; });
+  var panel = document.getElementById('proposalAcceptPanel');
+  var list = document.getElementById('proposalAcceptList');
+  var countEl = document.getElementById('proposalAcceptCount');
+  if (!panel || !list) return;
+
+  if (pending.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  if (countEl) countEl.textContent = pending.length;
+
+  list.innerHTML = '';
+  pending.forEach(function(a) {
+    var elapsed = Math.floor((Date.now() - new Date(a.ts).getTime()) / 60000);
+    var timeAgo = elapsed < 1 ? 'Just now' : elapsed < 60 ? elapsed + ' min ago' : Math.floor(elapsed / 60) + ' hr ago';
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid #00CC66;gap:16px';
+
+    row.innerHTML =
+      '<div style="flex:1">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+          '<span style="background:#00CC66;color:#000;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ACCEPTED</span>' +
+          '<span style="font-size:14px;font-weight:700;color:#fff">' + (a.name || 'Unknown') + '</span>' +
+          (a.company ? '<span style="font-size:12px;color:#666">— ' + a.company + '</span>' : '') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
+          (a.proposal ? '<span style="color:#0098d4;font-weight:600">Proposal ' + a.proposal + '</span>' : '') +
+          (a.email ? '<span>✉ ' + a.email + '</span>' : '') +
+          (a.phone ? '<span>📞 <a href="tel:' + a.phone + '" style="color:#0098d4;text-decoration:none;font-weight:600">' + a.phone + '</a></span>' : '') +
+          '<span>🕐 ' + timeAgo + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:right;min-width:180px">' +
+        '<div style="display:flex;gap:6px;justify-content:flex-end">' +
+          '<button onclick="actionProposalAccept(' + a.id + ')" style="padding:6px 14px;background:#00CC66;color:#000;font-size:11px;font-weight:800;border:none;cursor:pointer;font-family:inherit">✓ Send Agreement</button>' +
+          '<button onclick="dismissProposalAccept(' + a.id + ')" style="padding:6px 14px;background:#333;color:#999;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Dismiss</button>' +
+        '</div>' +
+      '</div>';
+    list.appendChild(row);
+  });
+}
+
+function actionProposalAccept(id) {
+  var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+  var a = accepts.find(function(x) { return x.id === id; });
+  if (a) {
+    a.status = 'actioned';
+    a.actionedAt = new Date().toISOString();
+    localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+    showToast('Marked as actioned — prepare agreement for ' + (a.company || a.name) + ' ✓');
+  }
+  renderProposalAccepts();
+}
+
+function dismissProposalAccept(id) {
+  var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+  var a = accepts.find(function(x) { return x.id === id; });
+  if (a) {
+    a.status = 'dismissed';
+    localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+  }
+  renderProposalAccepts();
+}
+
+// Render on load and refresh every 15 seconds
+renderProposalAccepts();
+setInterval(renderProposalAccepts, 15000);
+
 // ── Live callback detection — picks up new requests from other tabs instantly ──
 (function() {
   // Request notification permission on first login
@@ -10771,6 +10857,9 @@ setInterval(renderCallbackQueue, 15000);
     if (newList.length > oldList.length) {
       var newest = newList[newList.length - 1];
       var label = (newest.name || 'A client') + (newest.company ? ' from ' + newest.company : '');
+
+      // Re-render the acceptance queue on dashboard immediately
+      renderProposalAccepts();
 
       // Toast inside the portal
       showToast('Proposal accepted! ' + label + ' wants to proceed to agreement', 'warn');
