@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Proposal email Next Steps matches preview, Qty alignment fix."""
+"""Push — Proposal acceptance alerts (localStorage + landing page, no mailto)."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,21 +30,28 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("width:45%", "Fixed column widths on tables"),
-    ("width:10%;text-align:center", "Qty column centered"),
-    ('td style="text-align:center"', "Qty data cells centered"),
-    ("One click — we will be notified immediately", "Proposal email matches preview text"),
-    ("Yes, Proceed to Formal Agreement", "Proposal email matches preview button"),
-    ("background:#FFA028;padding:14px 20px", "Orange Next Steps header in email"),
-    ("background:#fff8ee", "Warm background in email CTA"),
+    ("proposal_accept=1", "Proposal accept URL param handler"),
+    ("proposalAcceptOverlay", "Proposal acceptance landing page HTML"),
+    ("tn_proposal_accepts", "Proposal acceptance localStorage key"),
+    ("_showProposalAccept", "Proposal accept flag variable"),
+    ("_paUrl", "Proposal email uses portal URL instead of mailto"),
+    ("Proposal Accepted!", "Browser notification for proposal acceptance"),
+    ("Three ascending tones", False),  # comment check below
 ]
 
 all_ok = True
 for marker, label in checks:
-    found = marker in t
-    status(label, found)
-    if not found:
-        all_ok = False
+    if label is False:
+        # Check for the triple-tone audio ping
+        found = "o3.frequency.value = 1100" in t
+        status("Triple-tone audio ping for proposal alerts", found)
+        if not found:
+            all_ok = False
+    else:
+        found = marker in t
+        status(label, found)
+        if not found:
+            all_ok = False
 
 if not all_ok:
     print("\n\033[91m\u2717 Some markers missing \u2014 aborting push.\033[0m")
@@ -53,7 +60,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Proposal email Next Steps matches preview exactly, Qty column alignment fix"')
+ok, out = run('git commit -m "Proposal acceptance alerts: localStorage + landing page, no mailto"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
