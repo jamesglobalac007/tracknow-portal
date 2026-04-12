@@ -9067,22 +9067,24 @@ function sendEmailFromPortal() {
   };
 
   function doSend() {
+    // Save pending data before closeEmailPreview nulls it
+    var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '' };
     emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
       .then(function() {
-        var typeLabel = _epPending.type === 'fleet' ? 'Fleet Optimisation Report' : _epPending.type === 'proposal' ? 'Proposal' : _epPending.type === 'agreement' ? 'Agreement' : 'Email';
-        showToast(typeLabel + ' sent to ' + _epPending.to + ' ✓');
+        var typeLabel = _sent.type === 'fleet' ? 'Fleet Optimisation Report' : _sent.type === 'proposal' ? 'Proposal' : _sent.type === 'agreement' ? 'Agreement' : 'Email';
+        showToast(typeLabel + ' sent to ' + _sent.to + ' ✓');
         closeEmailPreview();
 
         // Auto-download PDF if document content exists
-        if (_epPending.docHTML) {
+        if (_sent.docHTML) {
           _loadHtml2Pdf(function() {
             if (typeof html2pdf === 'undefined') return;
             var container = document.createElement('div');
-            container.innerHTML = _epPending.docHTML;
+            container.innerHTML = _sent.docHTML;
             container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;color:#1a1a1a;font-family:Inter,sans-serif;padding:40px';
             document.body.appendChild(container);
-            var filename = _epPending.type === 'fleet' ? 'Fleet_Report' : _epPending.type === 'proposal' ? 'Proposal' : 'Agreement';
-            filename += '_' + (_epPending.subject || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
+            var filename = _sent.type === 'fleet' ? 'Fleet_Report' : _sent.type === 'proposal' ? 'Proposal' : 'Agreement';
+            filename += '_' + (_sent.subject || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
             html2pdf().set({
               margin: [10, 10, 10, 10],
               filename: filename,
