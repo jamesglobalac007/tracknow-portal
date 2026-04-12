@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Signed agreement emails to sales + customer with full document."""
+"""Push — Agreement email orange signature + signing page + cha-ching sound."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,16 +30,21 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("_buildSignedBanner", "Signed banner builder function"),
-    ("Signed &amp; Executed", "SIGNED & EXECUTED banner text"),
-    ("_buildAgreementEmailHTML(ld)", "Full agreement HTML in email"),
-    ("Your Signed Service Agreement", "Customer email subject line"),
-    ("Thank you for signing", "Customer email intro text"),
-    ("fullSignedHTML", "Full signed HTML variable for sales email"),
-    ("customerHTML", "Customer copy email HTML"),
-    ("SIGNED & EXECUTED: Service Agreement", "Sales email subject"),
-    ("Signatures</div>", "Signatures block in email"),
-    ("Agreement Signed &amp; Executed", "Updated popup confirmation message"),
+    ("agreement_sign=1", "Agreement sign URL param handler"),
+    ("_showAgreementSign", "Agreement sign flag variable"),
+    ("agreementSignOverlay", "Agreement signing landing page HTML"),
+    ("submitAgreementSign", "Agreement sign submit function"),
+    ("tn_agreement_signs", "Agreement signs localStorage key"),
+    ("Agreement Signed & Executed", "Portal notification for agreement signing"),
+    ("_agrSignUrl", "Agreement email uses portal signing URL"),
+    ("SIGN &amp; ACCEPT AGREEMENT</a>", "Orange sign button in email"),
+    ("Digital Signature</p>", "Orange Digital Signature header in email"),
+    ("asSigCanvas", "Drawing canvas on signing page"),
+    ("as_thanks", "Thank you screen after signing"),
+    ("Your Signed Service Agreement", "Customer email with signed copy"),
+    ("Cha-ching", "Cha-ching cash register sound"),
+    ("white noise burst", "Ka click sound component"),
+    ("bright ringing bell", "Ching ring sound component"),
 ]
 
 all_ok = True
@@ -56,7 +61,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Signed agreement: full document emailed to sales + customer with executed banner"')
+ok, out = run('git commit -m "Agreement email: orange signature + signing landing page + cha-ching sound alert"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

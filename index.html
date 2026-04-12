@@ -33,6 +33,17 @@
       window.history.replaceState({}, '', window.location.pathname);
       return;
     }
+    // Agreement signing from email CTA
+    if (p.get('agreement_sign') === '1') {
+      window._showAgreementSign = true;
+      window._asName = decodeURIComponent(p.get('name') || '');
+      window._asCompany = decodeURIComponent(p.get('company') || '');
+      window._asEmail = decodeURIComponent(p.get('email') || '');
+      window._asPhone = decodeURIComponent(p.get('phone') || '');
+      window._asAgreement = decodeURIComponent(p.get('agreement') || '');
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
     if (p.get('new_prospect') !== '1') return;
     var name = p.get('name') || '';
     var email = p.get('email') || '';
@@ -490,6 +501,88 @@ select option{background:#0a0a0a;color:#FFA028}
         </div>
         <a href="https://www.tracknow.com.au" style="color:#0098d4;font-size:13px;text-decoration:none;font-weight:600">Visit tracknow.com.au →</a>
       </div>
+      <div style="text-align:center;margin-top:24px">
+        <div style="font-size:10px;color:#444">Track Now Proprietary Limited · ABN 12 634 559 970</div>
+        <div style="font-size:10px;color:#444;margin-top:4px">www.tracknow.com.au</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ AGREEMENT SIGNING LANDING PAGE ═══════════ -->
+<div id="agreementSignOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#000;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="width:100%;max-width:520px">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:10px">
+          <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
+        </div>
+        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
+      </div>
+
+      <!-- Signing Form -->
+      <div id="as_form" style="border:3px solid #FFA028;overflow:hidden">
+        <div style="background:#FFA028;padding:14px 20px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Digital Signature</div>
+        </div>
+        <div style="padding:24px;background:#fff8ee">
+          <p id="as_greeting" style="font-size:14px;color:#333;margin-bottom:20px;line-height:1.6;text-align:center">Sign below to accept this agreement. All fields are required.</p>
+
+          <div style="background:#fff;border:1px solid #ddd;padding:16px;margin-bottom:16px">
+            <div style="margin-bottom:10px">
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Full Name</label>
+              <input type="text" id="as_name" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box" placeholder="Full legal name">
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Position / Title</label>
+              <input type="text" id="as_title" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box" placeholder="e.g. Director, Fleet Manager">
+            </div>
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</label>
+                <div style="display:flex;gap:4px">
+                  <button onclick="document.getElementById('asSigType').style.display='block';document.getElementById('asSigDraw').style.display='none'" style="padding:3px 10px;font-size:9px;border:1px solid #FFA028;background:#fff8ee;color:#FFA028;cursor:pointer;font-weight:600;font-family:inherit">TYPE</button>
+                  <button onclick="document.getElementById('asSigType').style.display='none';document.getElementById('asSigDraw').style.display='block'" style="padding:3px 10px;font-size:9px;border:1px solid #FFA028;background:#fff8ee;color:#FFA028;cursor:pointer;font-weight:600;font-family:inherit">DRAW</button>
+                </div>
+              </div>
+              <div id="asSigType" style="display:block">
+                <input type="text" id="as_sig" style="width:100%;padding:10px;border:1px solid #ccc;font-family:'Brush Script MT','Segoe Script',cursive;font-size:22px;color:#1a1a1a;box-sizing:border-box" placeholder="Type your full name to sign" oninput="document.getElementById('as_sigPreview').textContent=this.value">
+                <div id="as_sigPreview" style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1a1a1a;min-height:36px;margin-top:6px;border-bottom:2px solid #FFA028;padding:4px 0"></div>
+              </div>
+              <div id="asSigDraw" style="display:none">
+                <canvas id="asSigCanvas" width="340" height="100" style="border:1px solid #ccc;background:#fff;cursor:crosshair;width:100%;display:block;touch-action:none"
+                  onmousedown="this._d=true;var x=this.getContext('2d');x.strokeStyle='#1a1a1a';x.lineWidth=2;x.lineCap='round';x.beginPath();var r=this.getBoundingClientRect();x.moveTo((event.clientX-r.left)*(this.width/r.width),(event.clientY-r.top)*(this.height/r.height))"
+                  onmousemove="if(!this._d)return;var x=this.getContext('2d'),r=this.getBoundingClientRect();x.lineTo((event.clientX-r.left)*(this.width/r.width),(event.clientY-r.top)*(this.height/r.height));x.stroke()"
+                  onmouseup="this._d=false" onmouseleave="this._d=false"
+                  ontouchstart="event.preventDefault();this._d=true;var x=this.getContext('2d');x.strokeStyle='#1a1a1a';x.lineWidth=2;x.lineCap='round';x.beginPath();var r=this.getBoundingClientRect();var t=event.touches[0];x.moveTo((t.clientX-r.left)*(this.width/r.width),(t.clientY-r.top)*(this.height/r.height))"
+                  ontouchmove="event.preventDefault();if(!this._d)return;var x=this.getContext('2d'),r=this.getBoundingClientRect(),t=event.touches[0];x.lineTo((t.clientX-r.left)*(this.width/r.width),(t.clientY-r.top)*(this.height/r.height));x.stroke()"
+                  ontouchend="this._d=false"></canvas>
+                <button onclick="var c=document.getElementById('asSigCanvas');c.getContext('2d').clearRect(0,0,c.width,c.height)" style="margin-top:4px;padding:3px 10px;font-size:9px;border:1px solid #ccc;background:#f5f5f5;color:#666;cursor:pointer;font-family:inherit">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="as_error" style="display:none;color:#dc2626;font-size:12px;margin-bottom:12px;text-align:center"></div>
+
+          <button id="as_submitBtn" onclick="submitAgreementSign()" style="display:block;width:100%;padding:16px;background:#FFA028;color:#fff;font-size:17px;font-weight:900;text-align:center;border:none;cursor:pointer;letter-spacing:.5px;font-family:inherit;border-radius:6px;touch-action:manipulation">&#10003; SIGN &amp; ACCEPT AGREEMENT</button>
+          <p style="text-align:center;font-size:12px;color:#888;margin-top:14px">One click — we will be notified immediately.</p>
+        </div>
+      </div>
+
+      <!-- Thank You (hidden until signed) -->
+      <div id="as_thanks" style="display:none;background:#0a0a0a;border:1px solid #222;padding:40px;text-align:center">
+        <div style="font-size:40px;margin-bottom:16px">&#10003;</div>
+        <h2 style="font-size:20px;font-weight:800;color:#00CC66;margin-bottom:12px;font-family:'JetBrains Mono',monospace">Agreement Signed!</h2>
+        <p id="as_thankGreeting" style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:8px">Thank you — your signed agreement has been received.</p>
+        <p style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:24px">The TrackNow team has been notified and will be in touch shortly to <strong style="color:#FFA028">schedule your installation</strong>.</p>
+        <p style="font-size:13px;color:#CCC;margin-bottom:24px">A copy of your signed agreement has been sent to your email.</p>
+        <div style="padding:16px;background:#000;border:1px solid #222;margin-bottom:20px">
+          <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Want to speak with us now?</div>
+          <p style="font-size:13px;color:#999">Call us directly: <a href="tel:1300872256" style="color:#0098d4;text-decoration:none;font-weight:600">1300 TRACK NOW</a></p>
+        </div>
+        <a href="https://www.tracknow.com.au" style="color:#0098d4;font-size:13px;text-decoration:none;font-weight:600">Visit tracknow.com.au →</a>
+      </div>
+
       <div style="text-align:center;margin-top:24px">
         <div style="font-size:10px;color:#444">Track Now Proprietary Limited · ABN 12 634 559 970</div>
         <div style="font-size:10px;color:#444;margin-top:4px">www.tracknow.com.au</div>
@@ -9680,18 +9773,30 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'agreement') {
+    var _agrSignUrl = 'https://tracknow-portal.onrender.com/?agreement_sign=1' +
+      '&name=' + encodeURIComponent(_epPending.name) +
+      '&company=' + encodeURIComponent(_epPending.company) +
+      '&email=' + encodeURIComponent(_epPending.to) +
+      '&phone=' + encodeURIComponent(_epPending.phone || '') +
+      '&agreement=' + encodeURIComponent('TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0'));
     var _cbUrlA = 'https://tracknow-portal.onrender.com/?callback=1&source=agreement' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '');
-    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:24px;background:#f8f9fa;border-radius:6px">' +
-      '<p style="font-size:16px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Ready to sign?</p>' +
-      '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply <strong>APPROVED</strong> to this email to confirm, or call us to discuss any questions.</p>' +
-      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — APPROVED') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px;margin-bottom:12px">' +
-      '&#10003; Approve &amp; Sign Agreement</a>' +
-      '<p style="color:#555;font-size:13px;margin:12px 0 8px;font-weight:600">Want to discuss before signing?</p>' +
-      '<a href="' + _cbUrlA + '" style="display:inline-block;padding:12px 32px;background:#0098d4;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
+    htmlBody += '<br><div style="border:3px solid #FFA028;margin:24px 0;overflow:hidden">' +
+      '<div style="background:#FFA028;padding:14px 20px;text-align:center">' +
+        '<p style="font-size:18px;font-weight:900;color:#fff;margin:0;letter-spacing:.5px;text-transform:uppercase">Digital Signature</p>' +
+      '</div>' +
+      '<div style="padding:24px 28px;background:#fff8ee;text-align:center">' +
+        '<p style="font-size:14px;color:#333;margin:0 0 8px;line-height:1.6">Review the agreement above, then click below to sign digitally.</p>' +
+        '<p style="font-size:12px;color:#666;margin:0 0 24px">All fields are required — you will be asked to provide your full name and signature.</p>' +
+        '<a href="' + _agrSignUrl + '" style="display:inline-block;padding:16px 48px;background:#FFA028;color:#fff;font-size:17px;font-weight:900;text-decoration:none;letter-spacing:.5px;border-radius:6px">&#10003; SIGN &amp; ACCEPT AGREEMENT</a>' +
+        '<p style="font-size:12px;color:#888;margin:14px 0 0">One click — you will be guided through the signing process.</p>' +
+      '</div></div>' +
+      '<div style="text-align:center;margin:16px 0 24px">' +
+        '<p style="color:#555;font-size:13px;margin:0 0 8px;font-weight:600">Want to discuss before signing?</p>' +
+        '<a href="' + _cbUrlA + '" style="display:inline-block;padding:12px 32px;background:#FFA028;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:6px">&#128222; Request a Callback</a>' +
       '</div>';
   }
 
@@ -9863,7 +9968,8 @@ function emailAgreement(leadId) {
     docHTML: docHTML,
     name: l.name || '',
     company: l.co || '',
-    phone: l.phone || ''
+    phone: l.phone || '',
+    leadId: l.id
   });
 }
 
@@ -10531,6 +10637,137 @@ function doLogout() {
   }
 })();
 
+// ── Agreement Signing Landing Page System ────────────────────────
+(function() {
+  if (!window._showAgreementSign) return;
+  var loginOverlay = document.getElementById('loginOverlay');
+  var asOverlay = document.getElementById('agreementSignOverlay');
+  if (loginOverlay) loginOverlay.style.display = 'none';
+  if (asOverlay) asOverlay.style.display = 'block';
+
+  // Pre-fill name and personalised greeting
+  if (window._asName) document.getElementById('as_name').value = window._asName;
+  var greeting = document.getElementById('as_greeting');
+  if (greeting && window._asName) {
+    var firstName = window._asName.split(' ')[0];
+    greeting.innerHTML = 'Hi <strong style="color:#FFA028">' + firstName + '</strong>' + (window._asCompany ? ' from <strong style="color:#FFA028">' + window._asCompany + '</strong>' : '') + ' — sign below to accept your service agreement.';
+  }
+})();
+
+function submitAgreementSign() {
+  var submitBtn = document.getElementById('as_submitBtn');
+  if (submitBtn && submitBtn.disabled) return;
+
+  var cn = (document.getElementById('as_name').value || '').trim();
+  var ct = (document.getElementById('as_title').value || '').trim();
+  var cs = (document.getElementById('as_sig').value || '').trim();
+  var cv = document.getElementById('asSigCanvas');
+  var hasDrawn = false;
+  if (cv) {
+    var ctx = cv.getContext('2d');
+    var px = ctx.getImageData(0, 0, cv.width, cv.height).data;
+    for (var i = 3; i < px.length; i += 4) { if (px[i] > 0) { hasDrawn = true; break; } }
+  }
+
+  var errEl = document.getElementById('as_error');
+  if (!cn) { errEl.textContent = 'Please enter your full name.'; errEl.style.display = 'block'; return; }
+  if (!cs && !hasDrawn) { errEl.textContent = 'Please provide a signature (type or draw).'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = 'Processing...'; submitBtn.style.opacity = '0.6'; }
+
+  var sigDisplay = hasDrawn ? '<em>(drawn signature on file)</em>' : '<span style="font-family:Brush Script MT,Segoe Script,cursive;font-size:20px">' + cs + '</span>';
+  var agrNum = window._asAgreement || 'N/A';
+  var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
+
+  // Write to localStorage so portal gets alerted
+  var signData = {
+    id: Date.now(),
+    name: cn,
+    title: ct,
+    company: window._asCompany || '',
+    email: window._asEmail || '',
+    phone: window._asPhone || '',
+    agreement: agrNum,
+    sigMethod: hasDrawn ? 'drawn' : 'typed',
+    ts: new Date().toISOString()
+  };
+  var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
+  signs.push(signData);
+  localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
+
+  // Build signed banner
+  var signedBanner = '<div style="border:3px solid #00CC66;margin-bottom:30px;overflow:hidden">' +
+    '<div style="background:#00CC66;padding:16px 24px;text-align:center">' +
+      '<div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;text-transform:uppercase">&#10003; Signed &amp; Executed</div>' +
+    '</div>' +
+    '<div style="padding:20px 24px;background:#f0fdf4">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<tr><td style="padding:6px 12px;color:#888;width:35%">Agreement</td><td style="padding:6px 12px;font-weight:700">' + agrNum + '</td></tr>' +
+        '<tr><td style="padding:6px 12px;color:#888">Signed By</td><td style="padding:6px 12px;font-weight:700">' + cn + '</td></tr>' +
+        (ct ? '<tr><td style="padding:6px 12px;color:#888">Position</td><td style="padding:6px 12px">' + ct + '</td></tr>' : '') +
+        '<tr><td style="padding:6px 12px;color:#888">Signature</td><td style="padding:6px 12px;font-style:italic">' + sigDisplay + '</td></tr>' +
+        '<tr><td style="padding:6px 12px;color:#888">Date Signed</td><td style="padding:6px 12px;font-weight:700">' + today + '</td></tr>' +
+      '</table>' +
+    '</div></div>';
+
+  // Send EmailJS to sales + customer
+  function loadAndSend() {
+    // To sales
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+      to_email: 'sales@tracknow.com.au',
+      subject: 'SIGNED & EXECUTED: Service Agreement ' + agrNum + ' — ' + (window._asCompany || 'Unknown'),
+      from_name: cn,
+      message_html: '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+        signedBanner +
+        '<h3 style="color:#0098d4">Agreement Signed via Email Link</h3>' +
+        '<p><strong>' + cn + '</strong>' + (ct ? ' (' + ct + ')' : '') + ' from <strong>' + (window._asCompany || '') + '</strong> has signed the service agreement.</p>' +
+        '<p>Agreement: ' + agrNum + '</p>' +
+        '<p>Signature: ' + (hasDrawn ? 'Drawn on screen' : 'Typed') + '</p>' +
+        '<p>Email: ' + (window._asEmail || 'N/A') + '</p>' +
+        '<p>Phone: ' + (window._asPhone || 'N/A') + '</p>' +
+        '<p style="color:#888;font-size:12px">Signed via the agreement email link on ' + today + '</p></div>'
+    }).then(function(){}).catch(function(){});
+
+    // To customer
+    if (window._asEmail) {
+      var customerName = (window._asName || cn || 'there').split(' ')[0];
+      emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+        to_email: window._asEmail,
+        subject: 'Your Signed Service Agreement — ' + agrNum + ' — TrackNow GPS',
+        from_name: 'TrackNow GPS',
+        message_html: '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+          '<p style="font-size:14px;margin-bottom:20px">Hi ' + customerName + ',</p>' +
+          '<p style="font-size:14px;margin-bottom:20px">Thank you for signing your TrackNow GPS service agreement. Please find your executed confirmation below for your records.</p>' +
+          '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
+          signedBanner +
+          '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
+            '<p>Kind regards,</p>' +
+            '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
+            '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></p>' +
+          '</div></div>'
+      }).then(function(){}).catch(function(){});
+    }
+  }
+
+  if (typeof emailjs !== 'undefined') {
+    loadAndSend();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() { emailjs.init('OoTzGVR6EezbqlWDx'); loadAndSend(); };
+    document.head.appendChild(s);
+  }
+
+  // Show thank you
+  document.getElementById('as_form').style.display = 'none';
+  document.getElementById('as_thanks').style.display = 'block';
+  var thankGreeting = document.getElementById('as_thankGreeting');
+  if (thankGreeting && cn) {
+    thankGreeting.innerHTML = 'Thanks <strong style="color:#0098d4">' + cn.split(' ')[0] + '</strong>' + (window._asCompany ? ' from <strong style="color:#0098d4">' + window._asCompany + '</strong>' : '') + ' — your signed agreement has been received.';
+  }
+}
+
 // ── Callback Request System ─────────────────────────────────────
 (function() {
   if (!window._showCallbackForm) return;
@@ -10974,6 +11211,81 @@ setInterval(renderProposalAccepts, 15000);
             o3.start(); o3.stop(ctx.currentTime + 0.18);
           }, 150);
         }, 150);
+      } catch(e) {}
+    }
+  });
+
+  // Listen for agreement signing from other tabs (email signing page)
+  window.addEventListener('storage', function(e) {
+    if (e.key !== 'tn_agreement_signs') return;
+    var oldList = [];
+    var newList = [];
+    try { oldList = JSON.parse(e.oldValue || '[]'); } catch(x) {}
+    try { newList = JSON.parse(e.newValue || '[]'); } catch(x) {}
+
+    if (newList.length > oldList.length) {
+      var newest = newList[newList.length - 1];
+      var label = (newest.name || 'A client') + (newest.company ? ' from ' + newest.company : '');
+
+      // Toast
+      showToast('Agreement signed! ' + label + ' has executed ' + (newest.agreement || 'the agreement'), 'warn');
+
+      // Browser notification
+      if (window.Notification && Notification.permission === 'granted') {
+        var n = new Notification('Agreement Signed & Executed!', {
+          body: label + ' has signed ' + (newest.agreement || 'the service agreement'),
+          icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+          tag: 'agreement-sign-' + Date.now(),
+          requireInteraction: true
+        });
+        n.onclick = function() { window.focus(); n.close(); };
+      }
+
+      // Cha-ching! cash register sound
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var t = ctx.currentTime;
+
+        // "Ka" — short metallic click (white noise burst)
+        var bufSize = ctx.sampleRate * 0.04;
+        var noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        var data = noiseBuf.getChannelData(0);
+        for (var j = 0; j < bufSize; j++) data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / bufSize, 8);
+        var noise = ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+        var nGain = ctx.createGain();
+        nGain.gain.setValueAtTime(0.4, t);
+        nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        var hpf = ctx.createBiquadFilter();
+        hpf.type = 'highpass'; hpf.frequency.value = 4000;
+        noise.connect(hpf); hpf.connect(nGain); nGain.connect(ctx.destination);
+        noise.start(t); noise.stop(t + 0.05);
+
+        // "Ching!" — bright ringing bell (two harmonics)
+        setTimeout(function() {
+          var t2 = ctx.currentTime;
+          // Fundamental ring
+          var o1 = ctx.createOscillator(); var g1 = ctx.createGain();
+          o1.frequency.value = 3520; o1.type = 'sine';
+          g1.gain.setValueAtTime(0.35, t2);
+          g1.gain.exponentialRampToValueAtTime(0.001, t2 + 0.6);
+          o1.connect(g1); g1.connect(ctx.destination);
+          o1.start(t2); o1.stop(t2 + 0.6);
+          // Harmonic shimmer
+          var o2 = ctx.createOscillator(); var g2 = ctx.createGain();
+          o2.frequency.value = 5274; o2.type = 'sine';
+          g2.gain.setValueAtTime(0.2, t2);
+          g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.45);
+          o2.connect(g2); g2.connect(ctx.destination);
+          o2.start(t2); o2.stop(t2 + 0.45);
+          // Low body
+          var o3 = ctx.createOscillator(); var g3 = ctx.createGain();
+          o3.frequency.value = 1760; o3.type = 'sine';
+          g3.gain.setValueAtTime(0.15, t2);
+          g3.gain.exponentialRampToValueAtTime(0.001, t2 + 0.5);
+          o3.connect(g3); g3.connect(ctx.destination);
+          o3.start(t2); o3.stop(t2 + 0.5);
+        }, 80);
       } catch(e) {}
     }
   });
