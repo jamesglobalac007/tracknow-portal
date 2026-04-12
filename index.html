@@ -9832,6 +9832,20 @@ function submitLeadForm() {
   }
   errEl.style.display = 'none';
 
+  // Disable submit button to prevent duplicate submissions
+  var submitBtn = event && event.target ? event.target : null;
+  if (!submitBtn) {
+    var btns = document.querySelectorAll('#leadFormCard button');
+    if (btns.length) submitBtn = btns[btns.length - 1];
+  }
+  var origBtnText = '';
+  if (submitBtn) {
+    origBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Submitting...';
+    submitBtn.style.opacity = '0.6';
+  }
+
   // Save to lead queue (same as website capture)
   var lead = {
     name: name,
@@ -9850,7 +9864,6 @@ function submitLeadForm() {
   }
 
   // Send notification email via EmailJS
-  var _ejs_loaded = false;
   function sendNotify() {
     emailjs.send('service_5y35h2g', 'template_gwga9jo', {
       to_email: 'sales@tracknow.com.au',
@@ -9866,27 +9879,39 @@ function submitLeadForm() {
         '<p style="color:#888;font-size:12px;margin-top:16px">This lead was captured from the TrackNow social media landing page. Log into the portal to view in Customers tab.</p>'
     }).then(function() {
       console.log('Lead notification sent to sales@tracknow.com.au');
+      // Show thank you on success
+      document.getElementById('leadFormCard').style.display = 'none';
+      document.getElementById('leadFormThanks').style.display = 'block';
+      window.history.replaceState({}, '', window.location.pathname);
     }).catch(function(err) {
       console.warn('Lead notification failed:', err);
+      // Lead is still saved locally — show thank you anyway but log the error
+      document.getElementById('leadFormCard').style.display = 'none';
+      document.getElementById('leadFormThanks').style.display = 'block';
+      window.history.replaceState({}, '', window.location.pathname);
     });
   }
 
   // Load EmailJS on demand and send
-  if (typeof emailjs !== 'undefined') {
+  if (_emailjsLoaded && typeof emailjs !== 'undefined') {
     sendNotify();
   } else {
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    s.onload = function() { emailjs.init('OoTzGVR6EezbqlWDx'); sendNotify(); };
+    s.onload = function() {
+      _emailjsLoaded = true;
+      emailjs.init('OoTzGVR6EezbqlWDx');
+      sendNotify();
+    };
+    s.onerror = function() {
+      console.warn('Could not load EmailJS — lead saved locally only');
+      // Still show thank you — lead is in localStorage
+      document.getElementById('leadFormCard').style.display = 'none';
+      document.getElementById('leadFormThanks').style.display = 'block';
+      window.history.replaceState({}, '', window.location.pathname);
+    };
     document.head.appendChild(s);
   }
-
-  // Show thank you
-  document.getElementById('leadFormCard').style.display = 'none';
-  document.getElementById('leadFormThanks').style.display = 'block';
-
-  // Clean URL
-  window.history.replaceState({}, '', window.location.pathname);
 }
 
 function doLogin() {
