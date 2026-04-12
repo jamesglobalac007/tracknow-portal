@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Proposal accept: clickable name to pipeline, remove Send Agreement button."""
+"""Push — Agreement table Qty/price column alignment + proposal accept dashboard tweaks."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,24 +30,27 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
+    ("width:10%;text-align:center\">Qty", "Agreement popup Qty header centred"),
+    ("width:20%;text-align:right\">Hardware", "Agreement popup Hardware header right-aligned"),
+    ("width:20%;text-align:right\">Monthly Sub", "Agreement popup Monthly Sub header right-aligned"),
+    ("text-align:center;font-weight:600;border-bottom:1px solid #f0f0f0;width:10%\">Qty", "Agreement email Qty header centred"),
+    ("text-align:right;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%\">Hardware", "Agreement email Hardware header right-aligned"),
+    ("text-align:right;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%\">Monthly Sub", "Agreement email Monthly Sub header right-aligned"),
     ("goToProposalAcceptLead", "Clickable name navigates to pipeline"),
-    ("Send Agreement" not in t, "Send Agreement button removed"),
-    ("proposalAcceptPanel", "Dashboard proposal acceptance panel"),
-    ("renderProposalAccepts", "Proposal acceptance render function"),
-    ("Dismiss", "Dismiss button still present"),
 ]
 
 all_ok = True
-for item in checks:
-    if isinstance(item[0], bool):
-        status(item[1], item[0])
-        if not item[0]:
-            all_ok = False
-    else:
-        found = item[0] in t
-        status(item[1], found)
-        if not found:
-            all_ok = False
+for marker, label in checks:
+    found = marker in t
+    status(label, found)
+    if not found:
+        all_ok = False
+
+# Verify Send Agreement button is removed
+no_send_btn = "Send Agreement" not in t
+status("Send Agreement button removed", no_send_btn)
+if not no_send_btn:
+    all_ok = False
 
 if not all_ok:
     print("\n\033[91m\u2717 Some checks failed \u2014 aborting push.\033[0m")
@@ -56,7 +59,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Proposal accept: clickable name goes to pipeline, remove Send Agreement button"')
+ok, out = run('git commit -m "Agreement table column alignment + proposal accept dashboard clickable name"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
