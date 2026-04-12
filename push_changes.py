@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — All pending: first name, blue CTA, orange queue, logo fix, send timeout, CSV import, edit lead modal."""
+"""Push — All pending: CSV import, edit lead modal, editable email preview."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -45,6 +45,9 @@ checks = [
     ("editLeadModal", "Edit Lead modal (pipeline)"),
     ("openEditLead", "Open Edit Lead function"),
     ("saveEditLead", "Save Edit Lead function"),
+    ('contenteditable="true"', "Editable email preview body"),
+    ("ep_editHint", "Edit hint banner on email preview"),
+    ("var editedBody = document.getElementById('ep_body').innerHTML", "Send uses edited body content"),
 ]
 
 all_ok = True
@@ -61,7 +64,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "First name emails, blue CTA, orange queue, logo fix, send timeout, CSV sales fee import, edit lead modal"')
+ok, out = run('git commit -m "CSV sales fee import, edit lead modal, editable email preview"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

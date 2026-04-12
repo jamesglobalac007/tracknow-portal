@@ -9480,15 +9480,9 @@ function sendEmailFromPortal() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:16px;height:16px;border-width:2px"></span> Sending...';
 
-  // Build full HTML body with signature
-  var bodyLines = _epPending.body.split('\n');
-  var htmlBody = '';
-  for (var i = 0; i < bodyLines.length; i++) {
-    var line = bodyLines[i];
-    if (line.trim() === '\u2014' || line.trim() === '—') { break; } // stop at signature dash
-    if (line.trim() === '') { htmlBody += '<br>'; }
-    else { htmlBody += '<p style="margin:0 0 4px">' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>'; }
-  }
+  // Build full HTML body from the editable preview (user may have changed it)
+  var editedBody = document.getElementById('ep_body').innerHTML;
+  var htmlBody = '<div style="font-size:13px;line-height:1.7;color:#333">' + editedBody + '</div>';
   // Add styled signature block
   htmlBody += '<br><div style="border-top:1px solid #ddd;padding-top:12px;margin-top:12px;font-size:12px;color:#555;line-height:1.6">';
   htmlBody += '<strong style="color:#0a1726">TrackNow GPS Sales Team</strong><br>';
@@ -11023,7 +11017,11 @@ function doLogin() {
           <div id="ep_attach" style="font-size:11px;color:#FFA028;font-weight:500;display:flex;align-items:center;gap:4px">📎 <span id="ep_attachName"></span></div>
         </div>
       </div>
-      <div style="background:#fafafa;padding:24px 28px;color:#333;font-size:13px;line-height:1.7;font-family:Arial,sans-serif" id="ep_body">
+      <div style="background:#fffbe6;padding:4px 28px 2px;border-bottom:1px dashed #e6c44c;display:flex;align-items:center;gap:6px" id="ep_editHint">
+        <span style="font-size:10px;color:#b8960c">✏</span>
+        <span style="font-size:10px;color:#b8960c;font-style:italic">You can edit the message below before sending</span>
+      </div>
+      <div contenteditable="true" style="background:#fafafa;padding:24px 28px;color:#333;font-size:13px;line-height:1.7;font-family:Arial,sans-serif;outline:none;min-height:80px;cursor:text" id="ep_body">
       </div>
       <div style="background:#f0f4f8;border-top:2px solid #0098d4;padding:16px 28px" id="ep_footer">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
