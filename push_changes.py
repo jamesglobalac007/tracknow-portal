@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Qty column alignment, orange Next Steps box in proposal."""
+"""Push — Proposal email Next Steps matches preview, Qty alignment fix."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,17 +30,13 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("width:45%", "Fixed column widths on proposal tables"),
-    ("width:10%;text-align:center", "Qty column centered with fixed width"),
-    ("width:22%;text-align:right", "Unit Price column right-aligned"),
-    ("width:23%;text-align:right", "Total column right-aligned"),
+    ("width:45%", "Fixed column widths on tables"),
+    ("width:10%;text-align:center", "Qty column centered"),
     ('td style="text-align:center"', "Qty data cells centered"),
-    ("background:#FFA028;padding:14px 20px", "Orange Next Steps header"),
-    ("background:#fff8ee", "Warm background on Next Steps box"),
-    ("font-size:17px;font-weight:900", "Large orange proceed button"),
-    ("showPage('scraper', custNavBtn)", "Callback name nav fix"),
-    ("touch-action:manipulation", "Single-click callback fix"),
-    ("addEventListener('storage'", "Live callback detection"),
+    ("One click — we will be notified immediately", "Proposal email matches preview text"),
+    ("Yes, Proceed to Formal Agreement", "Proposal email matches preview button"),
+    ("background:#FFA028;padding:14px 20px", "Orange Next Steps header in email"),
+    ("background:#fff8ee", "Warm background in email CTA"),
 ]
 
 all_ok = True
@@ -57,7 +53,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Fix Qty column alignment in proposal/agreement tables, orange Next Steps CTA box"')
+ok, out = run('git commit -m "Proposal email Next Steps matches preview exactly, Qty column alignment fix"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

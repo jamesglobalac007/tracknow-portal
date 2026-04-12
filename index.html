@@ -9534,14 +9534,16 @@ function sendEmailFromPortal() {
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '');
-    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:24px;background:#f8f9fa;border-radius:6px">' +
-      '<p style="font-size:16px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Would you like to proceed?</p>' +
-      '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply <strong>YES</strong> to this email and we will prepare your formal agreement.</p>' +
-      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — YES, proceed to agreement') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px;margin-bottom:12px">' +
-      '&#10003; Yes, Proceed to Agreement</a>' +
-      '<p style="color:#555;font-size:13px;margin:12px 0 8px;font-weight:600">Have questions? Let\'s talk.</p>' +
-      '<a href="' + _cbUrlP + '" style="display:inline-block;padding:12px 32px;background:#0098d4;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
-      '</div>';
+    htmlBody += '<br><div style="border:3px solid #FFA028;margin:24px 0;text-align:center;overflow:hidden">' +
+      '<div style="background:#FFA028;padding:14px 20px">' +
+      '<p style="font-size:18px;font-weight:900;color:#fff;margin:0;letter-spacing:.5px;text-transform:uppercase">Next Steps</p>' +
+      '</div>' +
+      '<div style="padding:24px 28px;background:#fff8ee">' +
+      '<p style="font-size:14px;color:#333;margin:0 0 20px;line-height:1.6">If you would like to progress to a formal agreement, please let us know and we will prepare everything for you.</p>' +
+      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — YES, proceed to agreement') + '" style="display:inline-block;padding:16px 48px;background:#FFA028;color:#fff;font-size:17px;font-weight:900;text-decoration:none;letter-spacing:.5px;border-radius:6px">' +
+      '&#10003; Yes, Proceed to Formal Agreement</a>' +
+      '<p style="font-size:12px;color:#888;margin:14px 0 0">One click — we will be notified immediately.</p>' +
+      '</div></div>';
   }
   if (_epPending.type === 'agreement') {
     var _cbUrlA = 'https://tracknow-portal.onrender.com/?callback=1&source=agreement' +
