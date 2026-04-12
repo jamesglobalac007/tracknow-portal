@@ -11153,7 +11153,7 @@ function submitAgreementSign() {
         '<td style="width:50%;vertical-align:top;padding:16px;border:1px solid #ddd;background:#fff">' +
           '<div style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Client' + (window._asCompany ? ' — ' + window._asCompany.toUpperCase() : '') + '</div>' +
           '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">' + cn + '</div></div>' +
-          (ct ? '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">' + ct + '</div></div>' : '') +
+          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">' + (ct || '—') + '</div></div>' +
           '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028;min-height:30px">' + sigDisplay + '</div></div>' +
           '<div><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div></div>' +
         '</td>' +
