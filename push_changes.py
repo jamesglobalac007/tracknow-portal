@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — All pending: CSV import, edit lead modal, editable email preview."""
+"""Push — Editable email preview, orange pricing CTA box."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,24 +30,15 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    (".split(' ')[0]", "First name only in emails"),
-    ("background:#FFA028;border-radius:50%;animation:pulse", "Orange callback queue"),
-    ("background:#0098d4;color:#ffffff;font-size:15px;font-weight:800", "Blue callback button in emails"),
-    ("goToCallbackProspect", "Clickable prospect name in queue"),
-    ('data-id="${p.id}"', "Prospect row data-id for highlight"),
-    ("_sendTimeout", "Send timeout safety net (30s)"),
-    ("clearTimeout(_sendTimeout)", "Timeout cleared on resolve/reject"),
-    ("background:#fff;padding:12px 24px;border-radius:8px", "White pill behind logo"),
-    ("handleSalesFeeCSV", "CSV import for sales fees"),
-    ("sfCsvDropZone", "CSV drag-and-drop zone"),
-    ("importSalesFeeCSV", "Bulk CSV import function"),
-    ("downloadSalesFeeTemplate", "CSV template download"),
-    ("editLeadModal", "Edit Lead modal (pipeline)"),
-    ("openEditLead", "Open Edit Lead function"),
-    ("saveEditLead", "Save Edit Lead function"),
     ('contenteditable="true"', "Editable email preview body"),
     ("ep_editHint", "Edit hint banner on email preview"),
     ("var editedBody = document.getElementById('ep_body').innerHTML", "Send uses edited body content"),
+    ("background:#FFA028;padding:14px 20px", "Orange pricing CTA header"),
+    ("REQUEST A CALLBACK", "Bold callback button text"),
+    ("font-size:17px;font-weight:900", "Large prominent CTA button"),
+    ("editLeadModal", "Edit Lead modal (pipeline)"),
+    ("handleSalesFeeCSV", "CSV import for sales fees"),
+    ("_sendTimeout", "Send timeout safety net"),
 ]
 
 all_ok = True
@@ -64,7 +55,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "CSV sales fee import, edit lead modal, editable email preview"')
+ok, out = run('git commit -m "Editable email preview, orange pricing CTA box in fleet emails"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
