@@ -11,6 +11,17 @@
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
+    // Callback request from email CTA
+    if (p.get('callback') === '1') {
+      window._showCallbackForm = true;
+      window._cbName = decodeURIComponent(p.get('name') || '');
+      window._cbCompany = decodeURIComponent(p.get('company') || '');
+      window._cbEmail = decodeURIComponent(p.get('email') || '');
+      window._cbPhone = decodeURIComponent(p.get('phone') || '');
+      window._cbSource = p.get('source') || 'email';
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
     if (p.get('new_prospect') !== '1') return;
     var name = p.get('name') || '';
     var email = p.get('email') || '';
@@ -359,6 +370,90 @@ select option{background:#0a0a0a;color:#FFA028}
   </div>
 </div>
 
+<!-- ═══════════ CALLBACK REQUEST OVERLAY ═══════════ -->
+<div id="callbackFormOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#000;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="width:100%;max-width:480px">
+      <div style="text-align:center;margin-bottom:32px">
+        <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;margin-bottom:10px">
+        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
+      </div>
+
+      <div id="callbackFormCard" style="background:#0a0a0a;border:1px solid #222;padding:32px">
+        <h1 style="font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:8px;font-family:'JetBrains Mono',monospace">Request a Callback</h1>
+        <p id="cb_greeting" style="font-size:13px;color:#999;text-align:center;margin-bottom:28px;line-height:1.6">Pick a time that works for you and we'll call you back — no waiting on hold.</p>
+
+        <!-- Hidden fields for pre-filled data -->
+        <input type="hidden" id="cb_name">
+        <input type="hidden" id="cb_company">
+
+        <!-- Phone — shown with pre-fill, editable if they want to change it -->
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">We'll call you on</label>
+          <input type="tel" id="cb_phone" placeholder="0400 000 000" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:16px;font-family:inherit;background:#000;color:#0098d4;font-weight:700;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='#0098d4'" onblur="this.style.borderColor='#222'">
+        </div>
+
+        <!-- Time picker — the main action -->
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">When should we call?</label>
+          <select id="cb_time" style="width:100%;padding:14px 16px;border:2px solid #0098d4;border-radius:0;font-size:16px;font-family:inherit;background:#000;color:#fff;font-weight:700;outline:none">
+            <option value="asap">🔴  ASAP — Call me now</option>
+            <option value="09:00">9:00 AM</option>
+            <option value="09:30">9:30 AM</option>
+            <option value="10:00">10:00 AM</option>
+            <option value="10:30">10:30 AM</option>
+            <option value="11:00">11:00 AM</option>
+            <option value="11:30">11:30 AM</option>
+            <option value="12:00">12:00 PM</option>
+            <option value="12:30">12:30 PM</option>
+            <option value="13:00">1:00 PM</option>
+            <option value="13:30">1:30 PM</option>
+            <option value="14:00">2:00 PM</option>
+            <option value="14:30">2:30 PM</option>
+            <option value="15:00">3:00 PM</option>
+            <option value="15:30">3:30 PM</option>
+            <option value="16:00">4:00 PM</option>
+            <option value="16:30">4:30 PM</option>
+            <option value="17:00">5:00 PM</option>
+          </select>
+          <input type="date" id="cb_date" style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none;margin-top:8px">
+        </div>
+
+        <div style="margin-bottom:24px">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Message (optional)</label>
+          <textarea id="cb_message" rows="2" placeholder="Anything you'd like us to know..." style="width:100%;padding:12px 16px;border:1px solid #222;border-radius:0;font-size:14px;font-family:inherit;background:#000;color:#fff;outline:none;resize:vertical;transition:border-color .15s" onfocus="this.style.borderColor='#0098d4'" onblur="this.style.borderColor='#222'"></textarea>
+        </div>
+
+        <div id="cb_error" style="display:none;color:#dc2626;font-size:12px;text-align:center;margin-bottom:12px"></div>
+
+        <button onclick="submitCallbackRequest()" style="width:100%;padding:14px;background:#dc2626;color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:background .15s" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+          REQUEST CALLBACK →
+        </button>
+
+        <p style="font-size:10px;color:#555;text-align:center;margin-top:16px;line-height:1.5">We aim to call you back within 30 minutes during business hours (Mon–Fri, 8am–5pm AEST).</p>
+      </div>
+
+      <!-- Thank You -->
+      <div id="callbackThanks" style="display:none;background:#0a0a0a;border:1px solid #222;padding:40px;text-align:center">
+        <div style="font-size:40px;margin-bottom:16px">📞</div>
+        <h2 style="font-size:20px;font-weight:800;color:#00CC66;margin-bottom:12px;font-family:'JetBrains Mono',monospace">Callback Requested!</h2>
+        <p style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:8px">Thanks — we've received your request.</p>
+        <p style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:24px">A TrackNow specialist will call you <strong style="color:#FFA028" id="cb_confirmTime">shortly</strong>.</p>
+        <div style="padding:16px;background:#000;border:1px solid #222;margin-bottom:20px">
+          <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Need us sooner?</div>
+          <p style="font-size:13px;color:#999">Call us directly: <a href="tel:1300872256" style="color:#0098d4;text-decoration:none;font-weight:600">1300 TRACK NOW</a></p>
+        </div>
+        <a href="https://www.tracknow.com.au" style="color:#0098d4;font-size:13px;text-decoration:none;font-weight:600">Visit tracknow.com.au →</a>
+      </div>
+
+      <div style="text-align:center;margin-top:24px">
+        <div style="font-size:10px;color:#444">Track Now Proprietary Limited · ABN 12 634 559 970</div>
+        <div style="font-size:10px;color:#444;margin-top:4px">www.tracknow.com.au</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ LOGIN OVERLAY ═══════════ -->
 <div id="loginOverlay">
   <div class="login-box">
@@ -535,6 +630,20 @@ select option{background:#0a0a0a;color:#FFA028}
       </div>
     </div>
 
+    <!-- Callback Queue -->
+    <div id="callbackQueuePanel" style="display:none;margin-bottom:20px">
+      <div style="background:#1a0000;border:2px solid #dc2626;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:12px;height:12px;background:#dc2626;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
+            <span style="font-size:14px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:1px">Callback Requests</span>
+          </div>
+          <span id="callbackCount" style="background:#dc2626;color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
+        </div>
+        <div id="callbackQueueList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+
     <!-- Charts Row -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
       <div class="card" style="padding:24px">
@@ -606,8 +715,12 @@ select option{background:#0a0a0a;color:#FFA028}
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Import CSV
       </button>
-      <button id="btnNewProspect" class="btn btn-secondary btn-sm" onclick="openProspectModal()">+ New Prospect</button>
-      <button id="btnAddCustomer" class="btn btn-primary btn-sm" onclick="openCustomerModal()">+ Add Customer</button>
+      <button id="btnNewProspect" class="btn btn-sm" onclick="openProspectModal()" style="background:#FFA028;color:#000;font-weight:700;border:none">+ New Prospect</button>
+      <button id="btnAddCustomer" class="btn btn-primary btn-sm" onclick="openCustomerModal()" style="display:none">+ Add Customer</button>
+      <button id="btnImportSalesFee" class="btn btn-sm" onclick="openSalesFeeModal()" style="display:none;background:#00CC66;color:#000;font-weight:700;border:none">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Import Sales Fee
+      </button>
     </div>
   </div>
 
@@ -795,6 +908,56 @@ select option{background:#0a0a0a;color:#FFA028}
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeCustomerModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveCustomer()">Add Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── IMPORT SALES FEE MODAL ─────────────────────────── -->
+<div class="modal-overlay" id="salesFeeModal" style="display:none" onclick="if(event.target===this)closeSalesFeeModal()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><h3 class="modal-title">Import Sales Fee</h3>
+      <button class="modal-close" onclick="closeSalesFeeModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="grid-column:span 2">
+          <label class="form-label">Customer *</label>
+          <select id="sf_customer" class="form-input" style="color:#FFA028">
+            <option value="">— Select Customer —</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Fee Type</label>
+          <select id="sf_type" class="form-input">
+            <option value="hardware">Hardware Sale</option>
+            <option value="installation">Installation Fee</option>
+            <option value="setup">Setup Fee</option>
+            <option value="addon">Add-on / Upgrade</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Amount ($) *</label>
+          <input id="sf_amount" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div>
+          <label class="form-label">Date</label>
+          <input id="sf_date" class="form-input" type="date">
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="sf_status" class="form-input">
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px"><label class="form-label">Description / Notes</label>
+        <textarea id="sf_notes" class="form-input" rows="2" placeholder="e.g. 8x OBD2 trackers @ $299 each"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSalesFeeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSalesFee()" style="background:#00CC66;border-color:#00CC66">Import Fee</button>
     </div>
   </div>
 </div>
@@ -4411,6 +4574,7 @@ function initAnalytics() {
 
 window.addEventListener('load', function () {
   try { initDashboard(); } catch(e) { console.warn('initDashboard:', e); }
+  try { renderCallbackQueue(); } catch(e) { console.warn('renderCallbackQueue:', e); }
   try { initIndustryCards(); } catch(e) { console.warn('initIndustryCards:', e); }
   try { initOutreach(); } catch(e) { console.warn('initOutreach:', e); }
   try { renderPipeline(); } catch(e) { console.warn('renderPipeline:', e); }
@@ -6891,6 +7055,8 @@ function showCustTab(tab) {
   if (csvBtn) csvBtn.style.display = tab === 'prospects' ? 'inline-flex' : 'none';
   if (prospBtn) prospBtn.style.display = tab === 'prospects' ? '' : 'none';
   if (custBtn) custBtn.style.display = tab === 'customers' ? '' : 'none';
+  var sfBtn = document.getElementById('btnImportSalesFee');
+  if (sfBtn) sfBtn.style.display = tab === 'customers' ? 'inline-flex' : 'none';
   if (tab === 'prospects') renderProspects();
   else renderCustomers();
   renderCustStats();
@@ -7792,6 +7958,56 @@ function saveCustomer() {
   closeCustomerModal();
   renderCustomers();
   renderCustStats();
+}
+
+// ── Import Sales Fee ────────────────────────────────────────────
+function openSalesFeeModal() {
+  var sel = document.getElementById('sf_customer');
+  sel.innerHTML = '<option value="">— Select Customer —</option>';
+  CUSTOMERS.filter(function(c) { return c.status === 'active' || c.status === 'renewal-due' || c.status === 'payment-overdue'; })
+    .sort(function(a,b) { return (a.co||'').localeCompare(b.co||''); })
+    .forEach(function(c) {
+      sel.innerHTML += '<option value="' + c.id + '">' + (c.co || 'Customer #' + c.id) + '</option>';
+    });
+  document.getElementById('sf_date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('sf_amount').value = '';
+  document.getElementById('sf_type').value = 'hardware';
+  document.getElementById('sf_status').value = 'paid';
+  document.getElementById('sf_notes').value = '';
+  document.getElementById('salesFeeModal').style.display = 'flex';
+}
+function closeSalesFeeModal() { document.getElementById('salesFeeModal').style.display = 'none'; }
+function saveSalesFee() {
+  var custId = parseInt(document.getElementById('sf_customer').value);
+  var amount = parseFloat(document.getElementById('sf_amount').value);
+  if (!custId) { alert('Please select a customer'); return; }
+  if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
+  var cust = CUSTOMERS.find(function(c) { return c.id === custId; });
+  if (!cust) { alert('Customer not found'); return; }
+  var feeType = document.getElementById('sf_type').value;
+  var feeStatus = document.getElementById('sf_status').value;
+  var feeDate = document.getElementById('sf_date').value;
+  var feeNotes = document.getElementById('sf_notes').value.trim();
+  // Initialise sales_fees array if needed
+  if (!cust.sales_fees) cust.sales_fees = [];
+  cust.sales_fees.push({
+    id: Date.now(),
+    type: feeType,
+    amount: amount,
+    date: feeDate,
+    status: feeStatus,
+    notes: feeNotes
+  });
+  // If pending/overdue, add to outstanding
+  if (feeStatus === 'pending' || feeStatus === 'overdue') {
+    cust.outstanding = (cust.outstanding || 0) + amount;
+  }
+  saveData();
+  closeSalesFeeModal();
+  renderCustomers();
+  renderCustStats();
+  var typeLabels = { hardware:'Hardware Sale', installation:'Installation Fee', setup:'Setup Fee', addon:'Add-on / Upgrade', other:'Fee' };
+  showToast((typeLabels[feeType] || 'Sales Fee') + ' — $' + amount.toFixed(2) + ' imported for ' + cust.co + ' ✓');
 }
 
 // ── Delete ───────────────────────────────────────────────────────
@@ -8975,8 +9191,8 @@ function _markSig() {
 }
 
 function _showEmailPreview(opts) {
-  // opts: { to, subject, body, attachment, sigName, sigTitle, type, docHTML }
-  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '', docHTML: opts.docHTML || '' };
+  // opts: { to, subject, body, attachment, sigName, sigTitle, type, docHTML, name, company, phone }
+  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '', docHTML: opts.docHTML || '', name: opts.name || '', company: opts.company || '', phone: opts.phone || '' };
   document.getElementById('ep_title').textContent = '📧 ' + (opts.type === 'fleet' ? 'Fleet Optimisation Report' : opts.type === 'proposal' ? 'Proposal' : opts.type === 'agreement' ? 'Service Agreement' : 'Email') + ' — Preview';
   document.getElementById('ep_to').textContent = opts.to;
   document.getElementById('ep_subject').textContent = opts.subject;
@@ -9020,9 +9236,17 @@ function sendEmailFromPortal() {
   var htmlBody = '';
   for (var i = 0; i < bodyLines.length; i++) {
     var line = bodyLines[i];
+    if (line.trim() === '\u2014' || line.trim() === '—') { break; } // stop at signature dash
     if (line.trim() === '') { htmlBody += '<br>'; }
     else { htmlBody += '<p style="margin:0 0 4px">' + line.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>'; }
   }
+  // Add styled signature block
+  htmlBody += '<br><div style="border-top:1px solid #ddd;padding-top:12px;margin-top:12px;font-size:12px;color:#555;line-height:1.6">';
+  htmlBody += '<strong style="color:#0a1726">TrackNow GPS Sales Team</strong><br>';
+  htmlBody += '1300 TRACK NOW<br>';
+  htmlBody += '<a href="mailto:sales@tracknow.com.au" style="color:#0098d4;text-decoration:none">sales@tracknow.com.au</a><br>';
+  htmlBody += '<a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a>';
+  htmlBody += '</div>';
 
   // Insert full document content inline
   if (_epPending.docHTML) {
@@ -9034,28 +9258,61 @@ function sendEmailFromPortal() {
 
   // Add reply CTA for all types
   if (_epPending.type === 'fleet') {
-    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
-      '<p style="font-size:14px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Ready to discuss your fleet savings?</p>' +
-      '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply to this email or call us — we\'d love to walk you through the numbers.</p>' +
-      '<a href="tel:1300872256" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:14px;font-weight:bold;padding:12px 32px;text-decoration:none;border-radius:6px">📞 Call 1300 TRACK NOW</a>' +
+    // Demo Video CTA
+    htmlBody += '<br><div style="border:3px solid #0098d4;padding:24px;margin:24px 0;text-align:center;background:#f6f8fb">' +
+      '<p style="font-size:16px;font-weight:800;color:#0a1726;margin:0 0 6px">See TrackNow in Action</p>' +
+      '<p style="font-size:12px;color:#5a6675;margin:0 0 14px;line-height:1.5">Watch our demo video to see how TrackNow can transform your fleet management, reduce costs, and give you full visibility of every vehicle.</p>' +
+      '<a href="https://www.tracknow.com.au/demo" style="display:inline-block;padding:12px 36px;background:#0098d4;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.5px">&#9654; Watch Demo Video</a>' +
+      '<p style="font-size:10px;color:#999;margin:10px 0 0">tracknow.com.au/demo</p>' +
+      '</div>';
+    // Pricing & Packages CTA with Request Callback
+    var _cbUrl = 'https://tracknow-portal.onrender.com/?callback=1&source=fleet_report' +
+      '&name=' + encodeURIComponent(_epPending.name) +
+      '&company=' + encodeURIComponent(_epPending.company) +
+      '&email=' + encodeURIComponent(_epPending.to) +
+      '&phone=' + encodeURIComponent(_epPending.phone || '');
+    htmlBody += '<div style="border:2px solid #0a1726;padding:24px;margin:20px 0;text-align:center;background:#fafbfc">' +
+      '<p style="font-size:16px;font-weight:800;color:#0a1726;margin:0 0 6px">Ready to Discuss Pricing &amp; Packages?</p>' +
+      '<p style="font-size:12px;color:#5a6675;margin:0 0 16px;line-height:1.5">We\'ll tailor a package to your fleet size, budget, and operational needs — no obligation, no pressure.</p>' +
+      '<a href="' + _cbUrl + '" style="display:inline-block;padding:14px 36px;background:#dc2626;color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;letter-spacing:.5px;margin-bottom:12px">&#128222; Request a Callback</a>' +
+      '<p style="font-size:11px;color:#5a6675;margin:0 0 12px">Pick a time that suits you — we\'ll call you back within 30 minutes</p>' +
+      '<div style="display:inline-flex;gap:8px">' +
+      '<a href="tel:1300872256" style="display:inline-block;padding:10px 24px;background:#0098d4;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">&#9742; 1300 TRACK NOW</a>' +
+      '<a href="mailto:sales@tracknow.com.au" style="display:inline-block;padding:10px 24px;background:#0a1726;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">&#9993; Email Sales Team</a>' +
+      '</div>' +
+      '<p style="font-size:11px;color:#888;margin:12px 0 0">sales@tracknow.com.au &middot; www.tracknow.com.au</p>' +
       '</div>';
   }
   if (_epPending.type === 'proposal') {
-    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
-      '<p style="font-size:14px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Would you like to proceed?</p>' +
+    var _cbUrlP = 'https://tracknow-portal.onrender.com/?callback=1&source=proposal' +
+      '&name=' + encodeURIComponent(_epPending.name) +
+      '&company=' + encodeURIComponent(_epPending.company) +
+      '&email=' + encodeURIComponent(_epPending.to) +
+      '&phone=' + encodeURIComponent(_epPending.phone || '');
+    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:24px;background:#f8f9fa;border-radius:6px">' +
+      '<p style="font-size:16px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Would you like to proceed?</p>' +
       '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply <strong>YES</strong> to this email and we will prepare your formal agreement.</p>' +
-      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — YES, proceed to agreement') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
-      '✓ Yes, Proceed to Agreement</a>' +
-      '<p style="color:#888;font-size:12px;margin:8px 0 0">Or call us on 1300 TRACK NOW</p>' +
+      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — YES, proceed to agreement') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px;margin-bottom:12px">' +
+      '&#10003; Yes, Proceed to Agreement</a>' +
+      '<p style="color:#555;font-size:13px;margin:12px 0 8px;font-weight:600">Have questions? Let\'s talk.</p>' +
+      '<a href="' + _cbUrlP + '" style="display:inline-block;padding:12px 32px;background:#dc2626;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
+      '<p style="color:#888;font-size:11px;margin:10px 0 0">Or call us directly: 1300 TRACK NOW</p>' +
       '</div>';
   }
   if (_epPending.type === 'agreement') {
-    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:20px;background:#f8f9fa;border-radius:6px">' +
-      '<p style="font-size:14px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Ready to sign?</p>' +
+    var _cbUrlA = 'https://tracknow-portal.onrender.com/?callback=1&source=agreement' +
+      '&name=' + encodeURIComponent(_epPending.name) +
+      '&company=' + encodeURIComponent(_epPending.company) +
+      '&email=' + encodeURIComponent(_epPending.to) +
+      '&phone=' + encodeURIComponent(_epPending.phone || '');
+    htmlBody += '<br><div style="text-align:center;margin:24px 0;padding:24px;background:#f8f9fa;border-radius:6px">' +
+      '<p style="font-size:16px;font-weight:bold;color:#1a1a1a;margin:0 0 8px">Ready to sign?</p>' +
       '<p style="font-size:13px;color:#555;margin:0 0 16px">Simply reply <strong>APPROVED</strong> to this email to confirm, or call us to discuss any questions.</p>' +
-      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — APPROVED') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px">' +
-      '✓ Approve &amp; Sign Agreement</a>' +
-      '<p style="color:#888;font-size:12px;margin:8px 0 0">Or call us on 1300 TRACK NOW</p>' +
+      '<a href="mailto:sales@tracknow.com.au?subject=' + encodeURIComponent('RE: ' + _epPending.subject + ' — APPROVED') + '" style="display:inline-block;background:#0098d4;color:#ffffff;font-size:16px;font-weight:bold;padding:14px 40px;text-decoration:none;border-radius:6px;margin-bottom:12px">' +
+      '&#10003; Approve &amp; Sign Agreement</a>' +
+      '<p style="color:#555;font-size:13px;margin:12px 0 8px;font-weight:600">Want to discuss before signing?</p>' +
+      '<a href="' + _cbUrlA + '" style="display:inline-block;padding:12px 32px;background:#dc2626;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">&#128222; Request a Callback</a>' +
+      '<p style="color:#888;font-size:11px;margin:10px 0 0">Or call us directly: 1300 TRACK NOW</p>' +
       '</div>';
   }
 
@@ -9147,7 +9404,10 @@ function emailFleetOverview(prospectId) {
     sigName: 'TrackNow GPS Sales Team',
     sigTitle: 'Fleet Tracking Solutions',
     type: 'fleet',
-    docHTML: docHTML
+    docHTML: docHTML,
+    name: p.name || '',
+    company: p.co || '',
+    phone: p.phone || ''
   });
 }
 
@@ -9172,7 +9432,10 @@ function emailProposal(leadId) {
     sigName: 'TrackNow GPS Sales Team',
     sigTitle: 'Fleet Tracking Solutions',
     type: 'proposal',
-    docHTML: docHTML
+    docHTML: docHTML,
+    name: l.name || '',
+    company: l.co || '',
+    phone: l.phone || ''
   });
 }
 
@@ -9197,7 +9460,10 @@ function emailAgreement(leadId) {
     sigName: 'Mark Speelmeyer',
     sigTitle: 'Director — TrackNow GPS',
     type: 'agreement',
-    docHTML: docHTML
+    docHTML: docHTML,
+    name: l.name || '',
+    company: l.co || '',
+    phone: l.phone || ''
   });
 }
 
@@ -9810,6 +10076,187 @@ function doLogout() {
   if (loginOverlay) loginOverlay.style.display = 'none';
   if (leadForm) leadForm.style.display = 'block';
 })();
+
+// ── Callback Request System ─────────────────────────────────────
+(function() {
+  if (!window._showCallbackForm) return;
+  var loginOverlay = document.getElementById('loginOverlay');
+  var cbForm = document.getElementById('callbackFormOverlay');
+  if (loginOverlay) loginOverlay.style.display = 'none';
+  if (cbForm) {
+    cbForm.style.display = 'block';
+    // Pre-fill from URL params
+    if (window._cbName) document.getElementById('cb_name').value = window._cbName;
+    if (window._cbCompany) document.getElementById('cb_company').value = window._cbCompany;
+    if (window._cbPhone) document.getElementById('cb_phone').value = window._cbPhone;
+    // Set date to today
+    document.getElementById('cb_date').value = new Date().toISOString().split('T')[0];
+    // Personalised greeting
+    var greeting = document.getElementById('cb_greeting');
+    if (greeting && window._cbName) {
+      var firstName = window._cbName.split(' ')[0];
+      greeting.innerHTML = 'Hi <strong style="color:#0098d4">' + firstName + '</strong>' + (window._cbCompany ? ' from <strong style="color:#0098d4">' + window._cbCompany + '</strong>' : '') + ' — pick a time and we\'ll call you right back.';
+    }
+  }
+})();
+
+function submitCallbackRequest() {
+  var name = (document.getElementById('cb_name').value || '').trim();
+  var company = (document.getElementById('cb_company').value || '').trim();
+  var phone = (document.getElementById('cb_phone').value || '').trim();
+  var cbDate = document.getElementById('cb_date').value;
+  var cbTime = document.getElementById('cb_time').value;
+  var message = (document.getElementById('cb_message').value || '').trim();
+  var errEl = document.getElementById('cb_error');
+
+  if (!name) { errEl.textContent = 'Please enter your name'; errEl.style.display = 'block'; return; }
+  if (!phone) { errEl.textContent = 'Please enter your phone number'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  // Disable button
+  var submitBtn = document.querySelector('#callbackFormCard button');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = 'Submitting...'; submitBtn.style.opacity = '0.6'; }
+
+  // Build time label
+  var timeLabel = cbTime === 'asap' ? 'ASAP' : cbTime;
+  var dateLabel = cbDate ? new Date(cbDate + 'T00:00').toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'}) : 'Today';
+  var fullTimeLabel = cbTime === 'asap' ? 'ASAP — Call now' : dateLabel + ' at ' + timeLabel;
+
+  // Save to localStorage queue
+  var cb = {
+    id: Date.now(),
+    name: name,
+    company: company,
+    phone: phone,
+    email: window._cbEmail || '',
+    date: cbDate,
+    time: cbTime,
+    timeLabel: fullTimeLabel,
+    message: message,
+    source: window._cbSource || 'email',
+    ts: new Date().toISOString(),
+    status: 'pending'
+  };
+  var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
+  queue.push(cb);
+  localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+
+  // Update confirmation text
+  var confirmEl = document.getElementById('cb_confirmTime');
+  if (confirmEl) confirmEl.textContent = cbTime === 'asap' ? 'as soon as possible' : 'on ' + fullTimeLabel;
+
+  // Send EmailJS notification
+  function sendNotify() {
+    var urgency = cbTime === 'asap' ? '🔴 URGENT — CALL NOW' : '📞 Callback Request';
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+      to_email: 'sales@tracknow.com.au',
+      subject: urgency + ' — ' + name + (company ? ' (' + company + ')' : ''),
+      from_name: 'TrackNow Portal',
+      message_html: '<div style="font-family:sans-serif;max-width:600px">' +
+        '<div style="background:#dc2626;color:#fff;padding:16px 20px;font-size:18px;font-weight:800;text-align:center">' + urgency + '</div>' +
+        '<div style="padding:20px;background:#fff;border:1px solid #ddd">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
+        '<tr><td style="padding:8px;font-weight:700;color:#333;width:120px">Name</td><td style="padding:8px;color:#111">' + name + '</td></tr>' +
+        (company ? '<tr><td style="padding:8px;font-weight:700;color:#333">Company</td><td style="padding:8px;color:#111">' + company + '</td></tr>' : '') +
+        '<tr><td style="padding:8px;font-weight:700;color:#333">Phone</td><td style="padding:8px"><a href="tel:' + phone + '" style="color:#0098d4;font-weight:700;font-size:16px">' + phone + '</a></td></tr>' +
+        '<tr><td style="padding:8px;font-weight:700;color:#333">Preferred Time</td><td style="padding:8px;color:#dc2626;font-weight:700">' + fullTimeLabel + '</td></tr>' +
+        (message ? '<tr><td style="padding:8px;font-weight:700;color:#333">Message</td><td style="padding:8px;color:#111">' + message + '</td></tr>' : '') +
+        '<tr><td style="padding:8px;font-weight:700;color:#333">Source</td><td style="padding:8px;color:#888">' + (window._cbSource || 'email') + '</td></tr>' +
+        '</table></div>' +
+        '<div style="background:#fef2f2;padding:12px 20px;text-align:center;font-size:13px;color:#dc2626;font-weight:700">⏱ Deadline: Call back within 30 minutes</div>' +
+        '</div>'
+    }).then(function() { console.log('Callback notification sent'); })
+      .catch(function(err) { console.warn('Callback notification failed:', err); });
+  }
+
+  if (typeof emailjs !== 'undefined' && _emailjsLoaded) { sendNotify(); }
+  else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() { _emailjsLoaded = true; emailjs.init('OoTzGVR6EezbqlWDx'); sendNotify(); };
+    s.onerror = function() { console.warn('EmailJS load failed — callback saved locally'); };
+    document.head.appendChild(s);
+  }
+
+  // Show thank you
+  document.getElementById('callbackFormCard').style.display = 'none';
+  document.getElementById('callbackThanks').style.display = 'block';
+}
+
+// ── Callback Queue — Dashboard Rendering ─────────────────────────
+function renderCallbackQueue() {
+  var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
+  // Only show pending ones
+  var pending = queue.filter(function(cb) { return cb.status === 'pending'; });
+  var panel = document.getElementById('callbackQueuePanel');
+  var list = document.getElementById('callbackQueueList');
+  var countEl = document.getElementById('callbackCount');
+  if (!panel || !list) return;
+
+  if (pending.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  if (countEl) countEl.textContent = pending.length;
+
+  list.innerHTML = '';
+  pending.forEach(function(cb) {
+    var elapsed = Math.floor((Date.now() - new Date(cb.ts).getTime()) / 60000);
+    var deadline = 30 - elapsed;
+    var isOverdue = deadline <= 0;
+    var isUrgent = cb.time === 'asap';
+    var deadlineColor = isOverdue ? '#dc2626' : deadline <= 10 ? '#FFA028' : '#00CC66';
+    var deadlineText = isOverdue ? 'OVERDUE by ' + Math.abs(deadline) + ' min' : deadline + ' min remaining';
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid ' + (isOverdue ? '#dc2626' : '#333') + ';gap:16px';
+
+    row.innerHTML =
+      '<div style="flex:1">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+          (isUrgent ? '<span style="background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ASAP</span>' : '') +
+          '<span style="font-size:14px;font-weight:700;color:#fff">' + cb.name + '</span>' +
+          (cb.company ? '<span style="font-size:12px;color:#666">— ' + cb.company + '</span>' : '') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
+          '<span>📞 <a href="tel:' + cb.phone + '" style="color:#0098d4;text-decoration:none;font-weight:600">' + cb.phone + '</a></span>' +
+          '<span>🕐 ' + cb.timeLabel + '</span>' +
+          (cb.message ? '<span>💬 ' + cb.message.substring(0, 50) + (cb.message.length > 50 ? '...' : '') + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:right;min-width:140px">' +
+        '<div style="font-size:11px;font-weight:800;color:' + deadlineColor + ';margin-bottom:6px">⏱ ' + deadlineText + '</div>' +
+        '<div style="display:flex;gap:6px;justify-content:flex-end">' +
+          '<button onclick="completeCallback(' + cb.id + ')" style="padding:6px 14px;background:#00CC66;color:#000;font-size:11px;font-weight:800;border:none;cursor:pointer;font-family:inherit">✓ Called</button>' +
+          '<button onclick="dismissCallback(' + cb.id + ')" style="padding:6px 14px;background:#333;color:#999;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Dismiss</button>' +
+        '</div>' +
+      '</div>';
+    list.appendChild(row);
+  });
+}
+
+function completeCallback(id) {
+  var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
+  var cb = queue.find(function(c) { return c.id === id; });
+  if (cb) {
+    cb.status = 'completed';
+    cb.completedAt = new Date().toISOString();
+    localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+    showToast('Callback to ' + cb.name + ' marked as completed ✓');
+  }
+  renderCallbackQueue();
+}
+
+function dismissCallback(id) {
+  var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
+  var cb = queue.find(function(c) { return c.id === id; });
+  if (cb) {
+    cb.status = 'dismissed';
+    localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+  }
+  renderCallbackQueue();
+}
+
+// Refresh callback queue every 60 seconds (countdown stays accurate)
+setInterval(renderCallbackQueue, 60000);
 
 function submitLeadForm() {
   var name = (document.getElementById('lf_name').value || '').trim();
