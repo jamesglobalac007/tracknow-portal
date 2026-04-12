@@ -132,6 +132,126 @@ app.get('/api/events', (req, res) => {
   });
 });
 
+// ─── Agreement HTML Storage ─────────────────────────────────────────────────
+// Stores agreement HTML on the server so customers can view it from any device
+// when they click the signing link in their email.
+
+const agreementStore = {};  // { 'TN-AGR-0001': '<html>...' }
+
+// POST /api/agreement — Portal stores agreement HTML when sending agreement email
+app.post('/api/agreement', (req, res) => {
+  try {
+    const { key, html } = req.body;
+    if (!key || !html) {
+      return res.status(400).json({ ok: false, error: 'Missing key or html' });
+    }
+    agreementStore[key] = html;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/agreement error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// GET /api/agreement — Signing page fetches agreement HTML by key
+app.get('/api/agreement', (req, res) => {
+  const key = req.query.key || '';
+  const html = agreementStore[key] || '';
+  res.json({ ok: true, html: html });
+});
+
+// ─── Status Sync (callback/proposal dismiss) ───────────────────────────────
+// When a user marks a callback as "Called" or dismisses a proposal accept,
+// broadcast that status change to all connected portals via the event system.
+
+app.post('/api/status', (req, res) => {
+  try {
+    const { itemType, id, status, completedAt } = req.body;
+    if (!itemType || !id || !status) {
+      return res.status(400).json({ ok: false, error: 'Missing itemType, id, or status' });
+    }
+
+    const evt = {
+      id: eventIdCounter++,
+      type: 'status_update',
+      data: { itemType, id, status, completedAt: completedAt || null },
+      ts: Date.now()
+    };
+    events.push(evt);
+
+    // Cleanup old events
+    const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+    while (events.length > 0 && (events[0].ts < cutoff || events.length > 500)) {
+      events.shift();
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/status error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ─── Agreement HTML Storage ─────────────────────────────────────────────────
+// Stores agreement HTML on the server so customers can view it from any device
+// when they click the signing link in their email.
+
+const agreementStore = {};  // { 'TN-AGR-0001': '<html>...' }
+
+// POST /api/agreement — Portal stores agreement HTML when sending agreement email
+app.post('/api/agreement', (req, res) => {
+  try {
+    const { key, html } = req.body;
+    if (!key || !html) {
+      return res.status(400).json({ ok: false, error: 'Missing key or html' });
+    }
+    agreementStore[key] = html;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/agreement error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// GET /api/agreement — Signing page fetches agreement HTML by key
+app.get('/api/agreement', (req, res) => {
+  const key = req.query.key || '';
+  const html = agreementStore[key] || '';
+  res.json({ ok: true, html: html });
+});
+
+// ─── Status Sync (callback/proposal dismiss) ───────────────────────────────
+// When a user marks a callback as "Called" or dismisses a proposal accept,
+// broadcast that status change to all connected portals via the event system.
+
+app.post('/api/status', (req, res) => {
+  try {
+    const { itemType, id, status, completedAt } = req.body;
+    if (!itemType || !id || !status) {
+      return res.status(400).json({ ok: false, error: 'Missing itemType, id, or status' });
+    }
+
+    const evt = {
+      id: eventIdCounter++,
+      type: 'status_update',
+      data: { itemType, id, status, completedAt: completedAt || null },
+      ts: Date.now()
+    };
+    events.push(evt);
+
+    // Cleanup old events
+    const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+    while (events.length > 0 && (events[0].ts < cutoff || events.length > 500)) {
+      events.shift();
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/status error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
 // ─── Catch-all: serve index.html for any non-API route ───────────────────────
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api/')) {

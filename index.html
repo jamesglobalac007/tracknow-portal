@@ -2874,6 +2874,28 @@ function _handleServerEvent(evt) {
         osc2.start(); osc2.stop(ctx.currentTime + 0.2);
       }, 180);
     } catch(e) {}
+
+  } else if (evt.type === 'status_update') {
+    // Another user dismissed/completed a callback or proposal accept — update local state
+    var d = evt.data;
+    if (d.itemType === 'callback') {
+      var cbQueue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
+      var cbItem = cbQueue.find(function(c) { return c.id === d.id; });
+      if (cbItem) {
+        cbItem.status = d.status;
+        if (d.completedAt) cbItem.completedAt = d.completedAt;
+        localStorage.setItem('tn_callback_requests', JSON.stringify(cbQueue));
+        try { renderCallbackQueue(); } catch(e) {}
+      }
+    } else if (d.itemType === 'proposal_accept') {
+      var paList = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+      var paItem = paList.find(function(a) { return a.id === d.id; });
+      if (paItem) {
+        paItem.status = d.status;
+        localStorage.setItem('tn_proposal_accepts', JSON.stringify(paList));
+        try { renderProposalAccepts(); } catch(e) {}
+      }
+    }
   }
 }
 
@@ -4421,6 +4443,7 @@ async function testAPIKeys() {
 }
 function doSearch() {
   const btn = document.getElementById('searchBtn');
+  if (!btn) return;
   btn.innerHTML = '<span class="spinner"></span> Searching...';
   btn.disabled = true;
   setTimeout(() => {
@@ -4685,7 +4708,9 @@ function initIndustryCards() {
     'Manufacturing': '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 20h20M6 20V10l4 3V8l4 3V6l4 3v11"/></svg>',
     'Mining & Resources': '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
   };
-  document.getElementById('industryCards').innerHTML = INDUSTRIES.map(i => `
+  var _icEl = document.getElementById('industryCards');
+  if (!_icEl) return;
+  _icEl.innerHTML = INDUSTRIES.map(i => `
     <div class="card" style="cursor:pointer;padding:20px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div style="width:40px;height:40px;border-radius:0;background:${i.color}10;color:${i.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">${icons[i.name] || ''}</div>
@@ -9974,7 +9999,7 @@ function sendEmailFromPortal() {
       '<p style="font-size:10px;color:#999;margin:10px 0 0">tracknow.com.au/demo</p>' +
       '</div>';
     // Pricing & Packages CTA with Request Callback
-    var _cbUrl = 'https://tracknow-portal.onrender.com/?callback=1&source=fleet_report' +
+    var _cbUrl = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=fleet_report' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -9990,7 +10015,7 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'proposal') {
-    var _paUrl = 'https://tracknow-portal.onrender.com/?proposal_accept=1' +
+    var _paUrl = 'https://tracknow-portal-sync.onrender.com/?proposal_accept=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -10008,16 +10033,17 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'agreement') {
-    // Store agreement HTML so signing page can display the full contract
+    // Store agreement HTML on SERVER so signing page can display it from any device
     var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0');
     try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
-    var _agrSignUrl = 'https://tracknow-portal.onrender.com/?agreement_sign=1' +
+    try { fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) }).catch(function(){}); } catch(x2) {}
+    var _agrSignUrl = 'https://tracknow-portal-sync.onrender.com/?agreement_sign=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '') +
       '&agreement=' + encodeURIComponent('TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0'));
-    var _cbUrlA = 'https://tracknow-portal.onrender.com/?callback=1&source=agreement' +
+    var _cbUrlA = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=agreement' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -10906,13 +10932,15 @@ function doLogout() {
   if (dateEl) dateEl.value = today;
   if (tnDateEl) tnDateEl.value = today;
 
-  // Load full agreement HTML from localStorage (stored when email was sent)
+  // Load full agreement HTML — try localStorage first, then fetch from server
   var agrKey = window._asAgreement || '';
   var storedHTML = '';
   try { storedHTML = localStorage.getItem('tn_agr_html_' + agrKey) || ''; } catch(x) {}
   var bodyEl = document.getElementById('as_agreementBody');
-  if (bodyEl && storedHTML) {
-    bodyEl.innerHTML = storedHTML;
+
+  function _applyAgreementHTML(html) {
+    if (!bodyEl || !html) return;
+    bodyEl.innerHTML = html;
     // Force white backgrounds and proper dark text on all injected content
     // (the stored HTML is email-formatted with lighter colours — we need portal-strength colours)
     bodyEl.style.background = '#ffffff';
@@ -10957,6 +10985,23 @@ function doLogout() {
         break;
       }
     }
+  }
+
+  // If we have HTML locally, apply it; otherwise fetch from server
+  if (storedHTML) {
+    _applyAgreementHTML(storedHTML);
+  } else if (agrKey) {
+    // Customer is on a different device — fetch agreement HTML from server
+    fetch('/api/agreement?key=' + encodeURIComponent(agrKey))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok && d.html) {
+          _applyAgreementHTML(d.html);
+          // Cache locally for future use
+          try { localStorage.setItem('tn_agr_html_' + agrKey, d.html); } catch(x) {}
+        }
+      })
+      .catch(function() {});
   }
 })();
 
@@ -11345,6 +11390,8 @@ function completeCallback(id) {
     cb.completedAt = new Date().toISOString();
     localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
     showToast('Callback to ' + cb.name + ' marked as completed ✓');
+    // Sync status to server so other users see it too
+    try { fetch('/api/status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({itemType:'callback', id:id, status:'completed', completedAt:cb.completedAt}) }).catch(function(){}); } catch(e){}
   }
   renderCallbackQueue();
 }
@@ -11355,6 +11402,8 @@ function dismissCallback(id) {
   if (cb) {
     cb.status = 'dismissed';
     localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+    // Sync status to server so other users see it too
+    try { fetch('/api/status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({itemType:'callback', id:id, status:'dismissed'}) }).catch(function(){}); } catch(e){}
   }
   renderCallbackQueue();
 }
@@ -11431,6 +11480,8 @@ function dismissProposalAccept(id) {
   if (a) {
     a.status = 'dismissed';
     localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+    // Sync status to server so other users see it too
+    try { fetch('/api/status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({itemType:'proposal_accept', id:id, status:'dismissed'}) }).catch(function(){}); } catch(e){}
   }
   renderProposalAccepts();
 }
