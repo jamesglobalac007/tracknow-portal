@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Agreement table Qty/price column alignment + proposal accept dashboard tweaks."""
+"""Push — Agreement digital signature section orange theme."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,13 +30,14 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("width:10%;text-align:center\">Qty", "Agreement popup Qty header centred"),
-    ("width:20%;text-align:right\">Hardware", "Agreement popup Hardware header right-aligned"),
-    ("width:20%;text-align:right\">Monthly Sub", "Agreement popup Monthly Sub header right-aligned"),
-    ("text-align:center;font-weight:600;border-bottom:1px solid #f0f0f0;width:10%\">Qty", "Agreement email Qty header centred"),
-    ("text-align:right;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%\">Hardware", "Agreement email Hardware header right-aligned"),
-    ("text-align:right;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%\">Monthly Sub", "Agreement email Monthly Sub header right-aligned"),
-    ("goToProposalAcceptLead", "Clickable name navigates to pipeline"),
+    ("border:3px solid #FFA028;margin:30px 0;overflow:hidden", "Orange border on signature section"),
+    ("background:#FFA028;padding:14px 20px;text-align:center", "Orange banner header"),
+    ("background:#fff8ee", "Warm background on signature area"),
+    ("color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px\">Client", "Orange client label"),
+    ("color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px\">TrackNow", "Orange TrackNow label"),
+    ("border-bottom:2px solid #FFA028;padding:4px 0;min-height:36px\">Mark Speelmeyer", "Orange signature line for TrackNow"),
+    ("border:1px solid #FFA028;background:#fff8ee;color:#FFA028", "Orange TYPE/DRAW buttons"),
+    ("background:#FFA028;color:#fff;font-size:17px;font-weight:900", "Orange Sign & Accept button"),
 ]
 
 all_ok = True
@@ -46,12 +47,6 @@ for marker, label in checks:
     if not found:
         all_ok = False
 
-# Verify Send Agreement button is removed
-no_send_btn = "Send Agreement" not in t
-status("Send Agreement button removed", no_send_btn)
-if not no_send_btn:
-    all_ok = False
-
 if not all_ok:
     print("\n\033[91m\u2717 Some checks failed \u2014 aborting push.\033[0m")
     sys.exit(1)
@@ -59,7 +54,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Agreement table column alignment + proposal accept dashboard clickable name"')
+ok, out = run('git commit -m "Agreement digital signature section: orange theme matching proposal style"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
