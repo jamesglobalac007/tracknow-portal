@@ -37,7 +37,7 @@ checks = {
     "Orange boxes (no green)": "#FFA028",
     "Supply Nation removed": "supply-nation" not in t.lower(),
     "Email sig row-per-field table": "row-per-field table so lines always align",
-    "Signing page flex columns": "display:flex;flex-direction:column",
+    "Signing page table rows": "Row 4: Signature",
 }
 
 for label, needle in checks.items():
@@ -52,7 +52,7 @@ for label, needle in checks.items():
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Fix email signature block alignment — row-per-field table structure for bulletproof email rendering"')
+ok, out = run('git commit -m "Fix signature alignment — table-row-per-field on both signing page and emails"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
