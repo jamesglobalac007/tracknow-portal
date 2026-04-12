@@ -9387,7 +9387,7 @@ function emailFleetOverview(prospectId) {
   var p = PROSPECTS.find(function(x){return x.id===prospectId;});
   if (!p) return;
   if (!p.email) { showToast('No email address for ' + p.co + ' — add one in the prospect details first','warn'); return; }
-  var name = p.name || 'there';
+  var name = (p.name || 'there').split(' ')[0];
   var subject = 'Fleet Optimisation Report — ' + p.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for taking the time to speak with us about your fleet.\n\n' +
@@ -9415,7 +9415,7 @@ function emailProposal(leadId) {
   var l = LEADS.find(function(x){return x.id===leadId;});
   if (!l) return;
   if (!l.email) { showToast('No email address for ' + l.co + ' — add one in the deal first','warn'); return; }
-  var name = l.name || 'there';
+  var name = (l.name || 'there').split(' ')[0];
   var totalUnits = l.lineItems ? l.lineItems.reduce(function(s,li){return s+(li.qty||0);},0) : (l.v||0);
   var subject = 'TrackNow GPS Proposal — ' + l.co;
   var body = 'Hi ' + name + ',\n\n' +
@@ -9443,7 +9443,7 @@ function emailAgreement(leadId) {
   var l = LEADS.find(function(x){return x.id===leadId;});
   if (!l) return;
   if (!l.email) { showToast('No email address for ' + l.co + ' — add one in the deal first','warn'); return; }
-  var name = l.name || 'there';
+  var name = (l.name || 'there').split(' ')[0];
   var subject = 'TrackNow GPS Service Agreement — ' + l.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for choosing TrackNow GPS.\n\n' +
