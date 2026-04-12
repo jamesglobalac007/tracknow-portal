@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Full agreement signing flow + improved cash register sound."""
+"""Push — Fix signing page black backgrounds + full agreement flow + cash register sound."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,29 +30,20 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ("agreement_sign=1", "Agreement sign URL param handler"),
-    ("_showAgreementSign", "Agreement sign flag variable"),
-    ("agreementSignOverlay", "Agreement signing landing page HTML"),
-    ("submitAgreementSign", "Agreement sign submit function"),
-    ("tn_agreement_signs", "Agreement signs localStorage key"),
-    ("Agreement Signed & Executed", "Portal notification for agreement signing"),
-    ("_agrSignUrl", "Agreement email uses portal signing URL"),
-    ("SIGN &amp; ACCEPT AGREEMENT</a>", "Orange sign button in email"),
-    ("Digital Signature</p>", "Orange Digital Signature header in email"),
-    ("asSigCanvas", "Drawing canvas on signing page"),
-    ("as_thanks", "Thank you screen after signing"),
-    ("Your Signed Service Agreement", "Customer email with signed copy"),
-    ("_playCashRegister", "Cash register sound function"),
-    ("drawer slam", "Ka drawer slam sound component"),
-    ("bell ring", "Ching bell ring sound component"),
-    ("double-bell effect", "Double ching for classic register sound"),
-    ("tn_agr_html_", "Agreement HTML stored in localStorage"),
-    ("as_agreementBody", "Agreement body container on signing page"),
+    ("as_formWrap", "Signing page form wrapper"),
+    ("background:#ffffff", "White background on signing overlay"),
+    ("as_agreementBody", "Agreement body container"),
+    ("Force white backgrounds on all injected content", "White background override for injected HTML"),
+    ("el.style.backgroundColor", "Element-level background fix loop"),
+    ("tn_agr_html_", "Agreement HTML localStorage key"),
     ("as_clientLabel", "Client label on signing page"),
-    ("fullSignedEmail", "Full signed agreement email variable"),
+    ("as_tnDate", "TrackNow date field on signing page"),
+    ("fullSignedEmail", "Full signed email variable"),
     ("cleanAgrHTML", "Cleaned agreement HTML for emails"),
     ("sigBlock", "Dual signature block in emails"),
-    ("Mark Speelmeyer</div></div>", "Mark Speelmeyer signature in email sig block"),
+    ("_playCashRegister", "Cash register sound function"),
+    ("drawer slam", "Ka drawer slam component"),
+    ("double-bell effect", "Double ching bell effect"),
 ]
 
 all_ok = True
@@ -69,7 +60,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Agreement signing: full contract on landing page + signed emails with SIGNED & EXECUTED + improved cash register sound"')
+ok, out = run('git commit -m "Fix signing page black backgrounds + full agreement in signed emails + improved cash register sound"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

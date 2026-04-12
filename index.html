@@ -510,10 +510,10 @@ select option{background:#0a0a0a;color:#FFA028}
 </div>
 
 <!-- ═══════════ AGREEMENT SIGNING LANDING PAGE ═══════════ -->
-<div id="agreementSignOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto">
-  <div id="as_formWrap" style="max-width:900px;margin:0 auto;padding:40px 60px;font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;color:#1a1a1a">
+<div id="agreementSignOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#ffffff;overflow-y:auto">
+  <div id="as_formWrap" style="max-width:900px;margin:0 auto;padding:40px 60px;font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;color:#1a1a1a;background:#ffffff">
     <!-- Full agreement content gets injected here -->
-    <div id="as_agreementBody"></div>
+    <div id="as_agreementBody" style="background:#ffffff;color:#1a1a1a"></div>
 
     <!-- Digital Signature Section (same as preview) -->
     <div id="as_form" style="border:3px solid #FFA028;margin:30px 0;overflow:hidden">
@@ -10708,6 +10708,23 @@ function doLogout() {
   var bodyEl = document.getElementById('as_agreementBody');
   if (bodyEl && storedHTML) {
     bodyEl.innerHTML = storedHTML;
+    // Force white backgrounds on all injected content (portal body is black)
+    bodyEl.style.background = '#ffffff';
+    bodyEl.style.color = '#1a1a1a';
+    var allEls = bodyEl.querySelectorAll('*');
+    for (var ei = 0; ei < allEls.length; ei++) {
+      var el = allEls[ei];
+      var bg = el.style.backgroundColor || '';
+      // Override any black/dark backgrounds inherited from portal theme
+      if (!bg || bg === 'transparent' || bg === '#000' || bg === '#000000' || bg === '#0a0a0a' || bg === '#050505' || bg === 'rgb(0, 0, 0)' || bg === 'rgb(10, 10, 10)') {
+        el.style.backgroundColor = '#ffffff';
+      }
+      // Fix text color if white/light (would be invisible on white bg)
+      var clr = el.style.color || '';
+      if (clr === '#fff' || clr === '#ffffff' || clr === '#FFFFFF' || clr === 'rgb(255, 255, 255)' || clr === '#CCC' || clr === '#ccc') {
+        el.style.color = '#1a1a1a';
+      }
+    }
     // Remove the email's Digital Signature CTA section (client now sees the real one below)
     var allDivs = bodyEl.querySelectorAll('div');
     for (var i = 0; i < allDivs.length; i++) {
