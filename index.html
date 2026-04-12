@@ -837,13 +837,13 @@ select option{background:#0a0a0a;color:#FFA028}
 
     <!-- Proposal Acceptance Queue -->
     <div id="proposalAcceptPanel" style="display:none;margin-bottom:20px">
-      <div style="background:#001a0d;border:2px solid #00CC66;padding:20px">
+      <div style="background:#1a0f00;border:2px solid #FFA028;padding:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:12px;height:12px;background:#00CC66;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
-            <span style="font-size:14px;font-weight:800;color:#00CC66;text-transform:uppercase;letter-spacing:1px">Proposal Accepted — Ready for Agreement</span>
+            <div style="width:12px;height:12px;background:#FFA028;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
+            <span style="font-size:14px;font-weight:800;color:#FFA028;text-transform:uppercase;letter-spacing:1px">Proposal Accepted — Ready for Agreement</span>
           </div>
-          <span id="proposalAcceptCount" style="background:#00CC66;color:#000;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
+          <span id="proposalAcceptCount" style="background:#FFA028;color:#000;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
         </div>
         <div id="proposalAcceptList" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
@@ -851,13 +851,13 @@ select option{background:#0a0a0a;color:#FFA028}
 
     <!-- Agreement Signed Queue -->
     <div id="agreementSignPanel" style="display:none;margin-bottom:20px">
-      <div style="background:#0d001a;border:2px solid #db2777;padding:20px">
+      <div style="background:#1a0f00;border:2px solid #FFA028;padding:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:12px;height:12px;background:#db2777;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
-            <span style="font-size:14px;font-weight:800;color:#db2777;text-transform:uppercase;letter-spacing:1px">Agreement Signed &amp; Executed</span>
+            <div style="width:12px;height:12px;background:#FFA028;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
+            <span style="font-size:14px;font-weight:800;color:#FFA028;text-transform:uppercase;letter-spacing:1px">Agreement Signed &amp; Executed</span>
           </div>
-          <span id="agreementSignCount" style="background:#db2777;color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
+          <span id="agreementSignCount" style="background:#FFA028;color:#000;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
         </div>
         <div id="agreementSignList" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
@@ -11505,17 +11505,17 @@ function renderProposalAccepts() {
     var timeAgo = elapsed < 1 ? 'Just now' : elapsed < 60 ? elapsed + ' min ago' : Math.floor(elapsed / 60) + ' hr ago';
 
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid #00CC66;gap:16px';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid #FFA028;gap:16px';
 
     row.innerHTML =
       '<div style="flex:1">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-          '<span style="background:#00CC66;color:#000;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ACCEPTED</span>' +
+          '<span style="background:#FFA028;color:#000;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ACCEPTED</span>' +
           '<a href="#" onclick="goToProposalAcceptLead(\'' + (a.company || '').replace(/'/g, "\\'") + '\',\'' + (a.name || '').replace(/'/g, "\\'") + '\',\'' + (a.email || '').replace(/'/g, "\\'") + '\');return false;" style="font-size:14px;font-weight:700;color:#0098d4;text-decoration:none;cursor:pointer" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' + (a.name || 'Unknown') + '</a>' +
           (a.company ? '<a href="#" onclick="goToProposalAcceptLead(\'' + (a.company || '').replace(/'/g, "\\'") + '\',\'' + (a.name || '').replace(/'/g, "\\'") + '\',\'' + (a.email || '').replace(/'/g, "\\'") + '\');return false;" style="font-size:12px;color:#666;text-decoration:none;cursor:pointer">— ' + a.company + '</a>' : '') +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
-          (a.proposal ? '<span style="color:#0098d4;font-weight:600">Proposal ' + a.proposal + '</span>' : '') +
+          (a.proposal ? '<span style="color:#FFA028;font-weight:600">Proposal ' + a.proposal + '</span>' : '') +
           (a.email ? '<span>✉ ' + a.email + '</span>' : '') +
           (a.phone ? '<span>📞 <a href="tel:' + a.phone + '" style="color:#0098d4;text-decoration:none;font-weight:600">' + a.phone + '</a></span>' : '') +
           '<span>🕐 ' + timeAgo + '</span>' +
@@ -11584,17 +11584,17 @@ function renderAgreementSigns() {
     var timeAgo = elapsed < 1 ? 'Just now' : elapsed < 60 ? elapsed + ' min ago' : Math.floor(elapsed / 60) + ' hr ago';
 
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid #db2777;gap:16px';
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid #FFA028;gap:16px';
 
     row.innerHTML =
       '<div style="flex:1">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-          '<span style="background:#db2777;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">SIGNED</span>' +
+          '<span style="background:#FFA028;color:#000;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">SIGNED</span>' +
           '<span style="font-size:14px;font-weight:700;color:#0098d4">' + (s.name || 'Unknown') + '</span>' +
           (s.company ? '<span style="font-size:12px;color:#666">— ' + s.company + '</span>' : '') +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
-          (s.agreement ? '<span style="color:#db2777;font-weight:600">' + s.agreement + '</span>' : '') +
+          (s.agreement ? '<span style="color:#FFA028;font-weight:600">' + s.agreement + '</span>' : '') +
           (s.email ? '<span>✉ ' + s.email + '</span>' : '') +
           (s.phone ? '<span>📞 <a href="tel:' + s.phone + '" style="color:#0098d4;text-decoration:none;font-weight:600">' + s.phone + '</a></span>' : '') +
           '<span>' + (s.sigMethod === 'drawn' ? '✍ Drawn' : '⌨ Typed') + '</span>' +
