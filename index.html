@@ -722,8 +722,8 @@ select option{background:#0a0a0a;color:#FFA028}
       <button id="btnNewProspect" class="btn btn-sm" onclick="openProspectModal()" style="background:#FFA028;color:#000;font-weight:700;border:none">+ New Prospect</button>
       <button id="btnAddCustomer" class="btn btn-primary btn-sm" onclick="openCustomerModal()" style="display:none">+ Add Customer</button>
       <button id="btnImportSalesFee" class="btn btn-sm" onclick="openSalesFeeModal()" style="display:none;background:#00CC66;color:#000;font-weight:700;border:none">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        Import Sales Fee
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import CSV
       </button>
     </div>
   </div>
@@ -916,52 +916,53 @@ select option{background:#0a0a0a;color:#FFA028}
   </div>
 </div>
 
-<!-- ── IMPORT SALES FEE MODAL ─────────────────────────── -->
+<!-- ── IMPORT CSV SALES FEE MODAL ──────────────────────── -->
 <div class="modal-overlay" id="salesFeeModal" style="display:none" onclick="if(event.target===this)closeSalesFeeModal()">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header"><h3 class="modal-title">Import Sales Fee</h3>
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header"><h3 class="modal-title">Import Sales Fees — CSV</h3>
       <button class="modal-close" onclick="closeSalesFeeModal()">&#10005;</button></div>
     <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div style="grid-column:span 2">
-          <label class="form-label">Customer *</label>
-          <select id="sf_customer" class="form-input" style="color:#FFA028">
-            <option value="">— Select Customer —</option>
-          </select>
+      <!-- Step 1: Upload -->
+      <div id="csvUploadStep">
+        <p style="margin:0 0 8px;color:#999;font-size:13px">Upload a CSV file with columns: <b>Customer, Type, Amount, Date, Status, Notes</b></p>
+        <div id="sfCsvDropZone" style="border:2px dashed #333;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('sfCsvFileInput').click()">
+          <svg width="36" height="36" fill="none" stroke="#00CC66" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="color:#ccc;font-size:14px">Drag &amp; drop CSV here or <span style="color:#00CC66;text-decoration:underline">browse</span></div>
+          <div style="color:#666;font-size:12px;margin-top:4px">Accepted: .csv files</div>
         </div>
-        <div>
-          <label class="form-label">Fee Type</label>
-          <select id="sf_type" class="form-input">
-            <option value="hardware">Hardware Sale</option>
-            <option value="installation">Installation Fee</option>
-            <option value="setup">Setup Fee</option>
-            <option value="addon">Add-on / Upgrade</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">Amount ($) *</label>
-          <input id="sf_amount" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
-        </div>
-        <div>
-          <label class="form-label">Date</label>
-          <input id="sf_date" class="form-input" type="date">
-        </div>
-        <div>
-          <label class="form-label">Status</label>
-          <select id="sf_status" class="form-input">
-            <option value="paid">Paid</option>
-            <option value="pending">Pending</option>
-            <option value="overdue">Overdue</option>
-          </select>
+        <input type="file" id="sfCsvFileInput" accept=".csv" style="display:none" onchange="handleSalesFeeCSV(this)">
+        <div style="margin-top:12px">
+          <button class="btn btn-sm" onclick="downloadSalesFeeTemplate()" style="background:transparent;color:#00CC66;border:1px solid #00CC66;font-size:12px">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Template
+          </button>
         </div>
       </div>
-      <div style="margin-top:12px"><label class="form-label">Description / Notes</label>
-        <textarea id="sf_notes" class="form-input" rows="2" placeholder="e.g. 8x OBD2 trackers @ $299 each"></textarea></div>
+      <!-- Step 2: Preview -->
+      <div id="csvPreviewStep" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="color:#ccc;font-size:13px" id="csvFileName"></span>
+          <button class="btn btn-sm" onclick="resetCSVUpload()" style="background:transparent;color:#999;border:1px solid #444;font-size:11px">Change File</button>
+        </div>
+        <div id="csvPreviewErrors" style="display:none;background:#3a1c1c;border:1px solid #ff4444;border-radius:6px;padding:10px 14px;margin-bottom:10px;color:#ff8888;font-size:12px"></div>
+        <div style="max-height:320px;overflow:auto;border:1px solid #333;border-radius:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px" id="csvPreviewTable">
+            <thead><tr id="csvPreviewHead" style="background:#1a1a2e;position:sticky;top:0"></tr></thead>
+            <tbody id="csvPreviewBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#999;font-size:12px" id="sfCsvRowCount"></span>
+          <span style="color:#999;font-size:12px" id="sfCsvMatchCount"></span>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeSalesFeeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSalesFee()" style="background:#00CC66;border-color:#00CC66">Import Fee</button>
+      <button class="btn btn-primary" id="sfCsvImportBtn" onclick="importSalesFeeCSV()" style="background:#00CC66;border-color:#00CC66;display:none">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Import All
+      </button>
     </div>
   </div>
 </div>
@@ -7964,54 +7965,236 @@ function saveCustomer() {
   renderCustStats();
 }
 
-// ── Import Sales Fee ────────────────────────────────────────────
+// ── Import Sales Fee CSV ────────────────────────────────────────
+var _sfCsvRows = [];
+var _sfCsvErrors = [];
+
 function openSalesFeeModal() {
-  var sel = document.getElementById('sf_customer');
-  sel.innerHTML = '<option value="">— Select Customer —</option>';
-  CUSTOMERS.filter(function(c) { return c.status === 'active' || c.status === 'renewal-due' || c.status === 'payment-overdue'; })
-    .sort(function(a,b) { return (a.co||'').localeCompare(b.co||''); })
-    .forEach(function(c) {
-      sel.innerHTML += '<option value="' + c.id + '">' + (c.co || 'Customer #' + c.id) + '</option>';
-    });
-  document.getElementById('sf_date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('sf_amount').value = '';
-  document.getElementById('sf_type').value = 'hardware';
-  document.getElementById('sf_status').value = 'paid';
-  document.getElementById('sf_notes').value = '';
+  resetCSVUpload();
   document.getElementById('salesFeeModal').style.display = 'flex';
 }
-function closeSalesFeeModal() { document.getElementById('salesFeeModal').style.display = 'none'; }
-function saveSalesFee() {
-  var custId = parseInt(document.getElementById('sf_customer').value);
-  var amount = parseFloat(document.getElementById('sf_amount').value);
-  if (!custId) { alert('Please select a customer'); return; }
-  if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
-  var cust = CUSTOMERS.find(function(c) { return c.id === custId; });
-  if (!cust) { alert('Customer not found'); return; }
-  var feeType = document.getElementById('sf_type').value;
-  var feeStatus = document.getElementById('sf_status').value;
-  var feeDate = document.getElementById('sf_date').value;
-  var feeNotes = document.getElementById('sf_notes').value.trim();
-  // Initialise sales_fees array if needed
-  if (!cust.sales_fees) cust.sales_fees = [];
-  cust.sales_fees.push({
-    id: Date.now(),
-    type: feeType,
-    amount: amount,
-    date: feeDate,
-    status: feeStatus,
-    notes: feeNotes
+function closeSalesFeeModal() {
+  document.getElementById('salesFeeModal').style.display = 'none';
+  _sfCsvRows = [];
+  _sfCsvErrors = [];
+}
+
+function resetCSVUpload() {
+  _sfCsvRows = [];
+  _sfCsvErrors = [];
+  document.getElementById('csvUploadStep').style.display = 'block';
+  document.getElementById('csvPreviewStep').style.display = 'none';
+  document.getElementById('sfCsvImportBtn').style.display = 'none';
+  document.getElementById('sfCsvFileInput').value = '';
+}
+
+function downloadSalesFeeTemplate() {
+  var header = 'Customer,Type,Amount,Date,Status,Notes';
+  var example = 'Hunter Valley Freight,hardware,2392.00,2026-04-12,paid,8x OBD2 trackers @ $299 each';
+  var blob = new Blob([header + '\n' + example + '\n'], { type: 'text/csv' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sales_fee_template.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// Drag & drop
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    var dz = document.getElementById('sfCsvDropZone');
+    if (!dz) return;
+    ['dragenter','dragover'].forEach(function(evt) {
+      dz.addEventListener(evt, function(e) { e.preventDefault(); dz.style.borderColor = '#00CC66'; });
+    });
+    ['dragleave','drop'].forEach(function(evt) {
+      dz.addEventListener(evt, function(e) { e.preventDefault(); dz.style.borderColor = '#333'; });
+    });
+    dz.addEventListener('drop', function(e) {
+      var f = e.dataTransfer.files[0];
+      if (f && f.name.toLowerCase().endsWith('.csv')) {
+        document.getElementById('sfCsvFileInput').files = e.dataTransfer.files;
+        handleSalesFeeCSV(document.getElementById('sfCsvFileInput'));
+      } else {
+        showToast('Please drop a .csv file', 'warn');
+      }
+    });
   });
-  // If pending/overdue, add to outstanding
-  if (feeStatus === 'pending' || feeStatus === 'overdue') {
-    cust.outstanding = (cust.outstanding || 0) + amount;
+})();
+
+function _parseCSVLine(line) {
+  var result = []; var current = ''; var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { current += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { current += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { result.push(current.trim()); current = ''; }
+      else { current += ch; }
+    }
   }
+  result.push(current.trim());
+  return result;
+}
+
+function handleSalesFeeCSV(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+    if (lines.length < 2) { showToast('CSV must have a header row + at least 1 data row', 'warn'); return; }
+
+    // Parse header
+    var header = _parseCSVLine(lines[0]).map(function(h) { return h.toLowerCase().replace(/[^a-z]/g, ''); });
+    var colMap = {};
+    var expectedCols = ['customer','type','amount','date','status','notes'];
+    expectedCols.forEach(function(col) {
+      for (var i = 0; i < header.length; i++) {
+        if (header[i].indexOf(col) > -1) { colMap[col] = i; break; }
+      }
+    });
+
+    if (colMap.customer === undefined || colMap.amount === undefined) {
+      showToast('CSV must have at least "Customer" and "Amount" columns', 'warn');
+      return;
+    }
+
+    _sfCsvRows = [];
+    _sfCsvErrors = [];
+    var validTypes = ['hardware','installation','setup','addon','other'];
+    var validStatuses = ['paid','pending','overdue'];
+
+    for (var r = 1; r < lines.length; r++) {
+      var cols = _parseCSVLine(lines[r]);
+      var custName = (cols[colMap.customer] || '').trim();
+      var amountStr = (cols[colMap.amount] || '').replace(/[^0-9.\-]/g, '');
+      var amount = parseFloat(amountStr);
+      var feeType = colMap.type !== undefined ? (cols[colMap.type] || '').trim().toLowerCase() : 'other';
+      var feeDate = colMap.date !== undefined ? (cols[colMap.date] || '').trim() : new Date().toISOString().split('T')[0];
+      var feeStatus = colMap.status !== undefined ? (cols[colMap.status] || '').trim().toLowerCase() : 'paid';
+      var feeNotes = colMap.notes !== undefined ? (cols[colMap.notes] || '').trim() : '';
+
+      // Normalise type
+      if (validTypes.indexOf(feeType) === -1) feeType = 'other';
+      if (validStatuses.indexOf(feeStatus) === -1) feeStatus = 'paid';
+
+      // Match customer
+      var cust = null;
+      var custLower = custName.toLowerCase();
+      CUSTOMERS.forEach(function(c) {
+        if ((c.co || '').toLowerCase() === custLower) cust = c;
+      });
+      if (!cust) {
+        // Partial match
+        CUSTOMERS.forEach(function(c) {
+          if (!cust && (c.co || '').toLowerCase().indexOf(custLower) > -1) cust = c;
+        });
+      }
+
+      var row = { line: r + 1, custName: custName, custMatch: cust, type: feeType, amount: amount, date: feeDate, status: feeStatus, notes: feeNotes, error: null };
+
+      if (!custName) { row.error = 'Missing customer name'; }
+      else if (!cust) { row.error = 'Customer "' + custName + '" not found'; }
+      else if (isNaN(amount) || amount <= 0) { row.error = 'Invalid amount'; }
+
+      if (row.error) _sfCsvErrors.push(row);
+      _sfCsvRows.push(row);
+    }
+
+    renderSFCsvPreview(file.name);
+  };
+  reader.readAsText(file);
+}
+
+function renderSFCsvPreview(fileName) {
+  document.getElementById('csvUploadStep').style.display = 'none';
+  document.getElementById('csvPreviewStep').style.display = 'block';
+  document.getElementById('csvFileName').textContent = fileName;
+
+  // Errors
+  var errDiv = document.getElementById('csvPreviewErrors');
+  if (_sfCsvErrors.length) {
+    errDiv.style.display = 'block';
+    errDiv.innerHTML = '<b>' + _sfCsvErrors.length + ' issue' + (_sfCsvErrors.length > 1 ? 's' : '') + ':</b><br>' +
+      _sfCsvErrors.map(function(e) { return 'Row ' + e.line + ': ' + e.error; }).join('<br>');
+  } else {
+    errDiv.style.display = 'none';
+  }
+
+  // Header
+  var head = document.getElementById('csvPreviewHead');
+  head.innerHTML = '<th style="padding:8px 10px;color:#FFA028;text-align:left;border-bottom:1px solid #333">Customer</th>' +
+    '<th style="padding:8px 10px;color:#FFA028;text-align:left;border-bottom:1px solid #333">Type</th>' +
+    '<th style="padding:8px 10px;color:#FFA028;text-align:right;border-bottom:1px solid #333">Amount</th>' +
+    '<th style="padding:8px 10px;color:#FFA028;text-align:left;border-bottom:1px solid #333">Date</th>' +
+    '<th style="padding:8px 10px;color:#FFA028;text-align:left;border-bottom:1px solid #333">Status</th>' +
+    '<th style="padding:8px 10px;color:#FFA028;text-align:left;border-bottom:1px solid #333">Notes</th>';
+
+  var typeLabels = { hardware:'Hardware', installation:'Installation', setup:'Setup', addon:'Add-on', other:'Other' };
+  var statusColors = { paid:'#00CC66', pending:'#FFA028', overdue:'#ff4444' };
+
+  var body = document.getElementById('csvPreviewBody');
+  body.innerHTML = '';
+  _sfCsvRows.forEach(function(row) {
+    var hasErr = !!row.error;
+    var bgCol = hasErr ? '#2a1515' : 'transparent';
+    var tr = '<tr style="background:' + bgCol + '">' +
+      '<td style="padding:6px 10px;border-bottom:1px solid #222;color:' + (row.custMatch ? '#ccc' : '#ff6666') + '">' +
+        (row.custMatch ? row.custMatch.co : row.custName + ' <span style="color:#ff4444;font-size:10px">NOT FOUND</span>') + '</td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid #222;color:#999">' + (typeLabels[row.type] || row.type) + '</td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid #222;color:#ccc;text-align:right">' + (isNaN(row.amount) ? '<span style="color:#ff4444">—</span>' : '$' + row.amount.toFixed(2)) + '</td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid #222;color:#999">' + row.date + '</td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid #222"><span style="color:' + (statusColors[row.status] || '#999') + ';font-weight:600;text-transform:capitalize">' + row.status + '</span></td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid #222;color:#777;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (row.notes || '—') + '</td>' +
+    '</tr>';
+    body.innerHTML += tr;
+  });
+
+  var validCount = _sfCsvRows.filter(function(r) { return !r.error; }).length;
+  document.getElementById('sfCsvRowCount').textContent = _sfCsvRows.length + ' row' + (_sfCsvRows.length !== 1 ? 's' : '') + ' found';
+  document.getElementById('sfCsvMatchCount').textContent = validCount + ' matched, ' + _sfCsvErrors.length + ' skipped';
+
+  var btn = document.getElementById('sfCsvImportBtn');
+  if (validCount > 0) {
+    btn.style.display = 'inline-flex';
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Import ' + validCount + ' Fee' + (validCount !== 1 ? 's' : '');
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function importSalesFeeCSV() {
+  var imported = 0;
+  var typeLabels = { hardware:'Hardware Sale', installation:'Installation Fee', setup:'Setup Fee', addon:'Add-on / Upgrade', other:'Fee' };
+
+  _sfCsvRows.forEach(function(row) {
+    if (row.error || !row.custMatch) return;
+    var cust = row.custMatch;
+    if (!cust.sales_fees) cust.sales_fees = [];
+    cust.sales_fees.push({
+      id: Date.now() + imported,
+      type: row.type,
+      amount: row.amount,
+      date: row.date,
+      status: row.status,
+      notes: row.notes
+    });
+    if (row.status === 'pending' || row.status === 'overdue') {
+      cust.outstanding = (cust.outstanding || 0) + row.amount;
+    }
+    imported++;
+  });
+
   saveData();
   closeSalesFeeModal();
   renderCustomers();
   renderCustStats();
-  var typeLabels = { hardware:'Hardware Sale', installation:'Installation Fee', setup:'Setup Fee', addon:'Add-on / Upgrade', other:'Fee' };
-  showToast((typeLabels[feeType] || 'Sales Fee') + ' — $' + amount.toFixed(2) + ' imported for ' + cust.co + ' ✓');
+  showToast(imported + ' sales fee' + (imported !== 1 ? 's' : '') + ' imported from CSV');
 }
 
 // ── Delete ───────────────────────────────────────────────────────

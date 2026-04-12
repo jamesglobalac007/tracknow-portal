@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — All pending: first name, blue CTA, orange queue, logo fix, send timeout safety."""
+"""Push — All pending: first name, blue CTA, orange queue, logo fix, send timeout, CSV import."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -38,15 +38,27 @@ checks = [
     ("_sendTimeout", "Send timeout safety net (30s)"),
     ("clearTimeout(_sendTimeout)", "Timeout cleared on resolve/reject"),
     ("background:#fff;padding:12px 24px;border-radius:8px", "White pill behind logo"),
+    ("handleSalesFeeCSV", "CSV import for sales fees"),
+    ("sfCsvDropZone", "CSV drag-and-drop zone"),
+    ("importSalesFeeCSV", "Bulk CSV import function"),
+    ("downloadSalesFeeTemplate", "CSV template download"),
 ]
 
+all_ok = True
 for marker, label in checks:
-    status(label, marker in t)
+    found = marker in t
+    status(label, found)
+    if not found:
+        all_ok = False
+
+if not all_ok:
+    print("\n\033[91m\u2717 Some markers missing — aborting push.\033[0m")
+    sys.exit(1)
 
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "First name emails, blue CTA, orange queue, logo fix, send timeout safety net"')
+ok, out = run('git commit -m "First name emails, blue CTA, orange queue, logo fix, send timeout, CSV sales fee import"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
