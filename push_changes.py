@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Orange callback btn, single-click fix, live detection, callback name links to prospects."""
+"""Push — Fix callback name click (black screen), orange btn single-click, live detection."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -30,22 +30,17 @@ f = os.path.join(REPO, "index.html")
 t = open(f, "r").read()
 
 checks = [
-    ('contenteditable="true"', "Editable email preview body"),
-    ("ep_editHint", "Edit hint banner on email preview"),
-    ("background:#FFA028;padding:14px 20px", "Orange pricing CTA header"),
-    ("REQUEST A CALLBACK", "Bold callback button text"),
-    ("editLeadModal", "Edit Lead modal (pipeline)"),
-    ("handleSalesFeeCSV", "CSV import for sales fees"),
-    ("_sendTimeout", "Send timeout safety net"),
+    ("showPage('scraper', custNavBtn)", "Callback name navigates to scraper page (customers)"),
+    ("showPage('scraper', cb)", "Website leads navigate to scraper page"),
     ("touch-action:manipulation", "Single-click callback button fix"),
-    ("cb_submitBtn", "Callback button ID for guard"),
+    ("cb_submitBtn", "Callback button ID for double-submit guard"),
     ("addEventListener('storage'", "Live callback detection (cross-tab)"),
     ("new Notification('Callback Requested'", "Browser notification for callbacks"),
-    ("AudioContext", "Audio ping for new callbacks"),
     ("setInterval(renderCallbackQueue, 15000)", "15s callback queue refresh"),
-    ("matchSource === 'customer'", "Callback name links to customers tab"),
-    ("matchSource === 'pipeline'", "Pipeline contacts handled in prospects view"),
-    ("showCustTab('customers')", "Navigate to live customers tab when matched"),
+    ("background:#FFA028;padding:14px 20px", "Orange pricing CTA header"),
+    ('contenteditable="true"', "Editable email preview body"),
+    ("editLeadModal", "Edit Lead modal (pipeline)"),
+    ("handleSalesFeeCSV", "CSV import for sales fees"),
 ]
 
 all_ok = True
@@ -62,7 +57,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Orange callback btn, single-click fix, live detection with notifications, callback name links to prospects/customers"')
+ok, out = run('git commit -m "Fix callback name click navigation, orange btn single-click, live callback detection"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:

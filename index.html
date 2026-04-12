@@ -10257,7 +10257,7 @@ function _importQueuedWebLeads() {
       renderProspects();
       renderCustStats();
       showStageNotification(imported + ' new lead' + (imported > 1 ? 's' : ''), 'Website leads imported', imported + ' prospect' + (imported > 1 ? 's' : '') + ' added from website forms.');
-      if (typeof showPage === 'function') showPage('customers');
+      if (typeof showPage === 'function') { var cb = document.querySelectorAll('.nav-btn')[2]; showPage('scraper', cb); }
       if (typeof showCustTab === 'function') showCustTab('prospects');
     }
   } catch(_){}
@@ -10522,8 +10522,10 @@ function goToCallbackProspect(email, name, company) {
     if (custMatch) { match = custMatch; matchSource = 'customer'; }
   }
 
-  // Navigate to the right tab
-  showPage('customers');
+  // Navigate to Customers page (page-scraper) and activate nav button
+  var custNavBtn = document.querySelectorAll('.nav-btn')[2]; // Customers is 3rd nav button
+  showPage('scraper', custNavBtn);
+
   if (matchSource === 'customer') {
     showCustTab('customers');
     setTimeout(function() {
