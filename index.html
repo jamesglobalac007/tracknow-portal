@@ -849,6 +849,20 @@ select option{background:#0a0a0a;color:#FFA028}
       </div>
     </div>
 
+    <!-- Agreement Signed Queue -->
+    <div id="agreementSignPanel" style="display:none;margin-bottom:20px">
+      <div style="background:#0d001a;border:2px solid #db2777;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:12px;height:12px;background:#db2777;border-radius:50%;animation:pulse 1s ease-in-out infinite"></div>
+            <span style="font-size:14px;font-weight:800;color:#db2777;text-transform:uppercase;letter-spacing:1px">Agreement Signed &amp; Executed</span>
+          </div>
+          <span id="agreementSignCount" style="background:#db2777;color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px">0</span>
+        </div>
+        <div id="agreementSignList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+
     <!-- Charts Row -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
       <div class="card" style="padding:24px">
@@ -2828,6 +2842,8 @@ function _handleServerEvent(evt) {
       signs.push(evt.data);
       localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
     }
+    // Render dashboard notification box
+    try { renderAgreementSigns(); } catch(e) {}
     var label2 = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
     try { showToast('Agreement signed! ' + label2 + ' has executed ' + (evt.data.agreement || 'the agreement'), 'warn'); } catch(e) {}
     if (window.Notification && Notification.permission === 'granted') {
@@ -2909,14 +2925,17 @@ function _syncRefreshUI() {
     if (prospectsEl && prospectsEl.offsetParent !== null) { try { renderProspects(); } catch(e){} }
     var customersEl = document.getElementById('customersView');
     if (customersEl && customersEl.offsetParent !== null) { try { renderCustomers(); } catch(e){} }
-    // Refresh dashboard widgets (callback queue, proposal accepts)
+    // Refresh dashboard widgets (callback queue, proposal accepts, agreement signs)
     try { renderCallbackQueue(); } catch(e){}
     try { renderProposalAccepts(); } catch(e){}
+    try { renderAgreementSigns(); } catch(e){}
   } catch(e) {}
 }
 
 // Start sync polling (5-second interval for data, 3-second for events)
+// Do NOT run sync on customer-facing landing pages (signing, callback, proposal accept)
 (function _initSync() {
+  if (window._showAgreementSign || window._showProposalAccept || window._showCallbackForm || window._showLeadForm) return;
   // Initial push on page load (uploads local data, gets merged back)
   setTimeout(function() { _syncPush(); }, 1500);
   // Poll for data changes from other users
@@ -5132,6 +5151,7 @@ window.addEventListener('load', function () {
   try { initDashboard(); } catch(e) { console.warn('initDashboard:', e); }
   try { renderCallbackQueue(); } catch(e) { console.warn('renderCallbackQueue:', e); }
   try { renderProposalAccepts(); } catch(e) { console.warn('renderProposalAccepts:', e); }
+  try { renderAgreementSigns(); } catch(e) { console.warn('renderAgreementSigns:', e); }
   try { initIndustryCards(); } catch(e) { console.warn('initIndustryCards:', e); }
   try { initOutreach(); } catch(e) { console.warn('initOutreach:', e); }
   try { renderPipeline(); } catch(e) { console.warn('renderPipeline:', e); }
@@ -11078,11 +11098,19 @@ function submitAgreementSign() {
 
   if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = 'Processing...'; submitBtn.style.opacity = '0.6'; }
 
-  var sigDisplay = hasDrawn ? '<em>(drawn signature on file)</em>' : '<span style="font-family:Brush Script MT,Segoe Script,cursive;font-size:20px">' + cs + '</span>';
+  // Capture actual signature: drawn → canvas-to-image, typed → cursive text
+  var sigDisplay = '';
+  if (hasDrawn && cv) {
+    var sigDataUrl = cv.toDataURL('image/png');
+    sigDisplay = '<img src="' + sigDataUrl + '" alt="Signature" style="max-height:60px;max-width:250px;display:block" />';
+  } else {
+    sigDisplay = '<span style="font-family:Brush Script MT,Segoe Script,cursive;font-size:20px">' + cs + '</span>';
+  }
   var agrNum = window._asAgreement || 'N/A';
   var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
 
-  // Write to localStorage so portal gets alerted
+  // POST event to server — portal picks it up via polling (single notification, no duplicates)
+  // Do NOT also write to localStorage here — that would cause a duplicate alert via the storage listener
   var signData = {
     id: Date.now(),
     name: cn,
@@ -11094,10 +11122,6 @@ function submitAgreementSign() {
     sigMethod: hasDrawn ? 'drawn' : 'typed',
     ts: new Date().toISOString()
   };
-  var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
-  signs.push(signData);
-  localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
-  // POST event to server so ALL portal users get notified (cross-device)
   try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'agreement_sign',data:signData}) }).catch(function(){}); } catch(e){}
 
   // Build signed banner
@@ -11540,6 +11564,63 @@ function dismissProposalAccept(id) {
 // Render on load and refresh every 15 seconds
 renderProposalAccepts();
 setInterval(renderProposalAccepts, 15000);
+
+// ── Agreement Signs Dashboard Panel ──
+function renderAgreementSigns() {
+  var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
+  var pending = signs.filter(function(s) { return s.status !== 'dismissed'; });
+  var panel = document.getElementById('agreementSignPanel');
+  var list = document.getElementById('agreementSignList');
+  var countEl = document.getElementById('agreementSignCount');
+  if (!panel || !list) return;
+
+  if (pending.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  if (countEl) countEl.textContent = pending.length;
+
+  list.innerHTML = '';
+  pending.forEach(function(s) {
+    var elapsed = Math.floor((Date.now() - new Date(s.ts).getTime()) / 60000);
+    var timeAgo = elapsed < 1 ? 'Just now' : elapsed < 60 ? elapsed + ' min ago' : Math.floor(elapsed / 60) + ' hr ago';
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#000;border:1px solid #db2777;gap:16px';
+
+    row.innerHTML =
+      '<div style="flex:1">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+          '<span style="background:#db2777;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">SIGNED</span>' +
+          '<span style="font-size:14px;font-weight:700;color:#0098d4">' + (s.name || 'Unknown') + '</span>' +
+          (s.company ? '<span style="font-size:12px;color:#666">— ' + s.company + '</span>' : '') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
+          (s.agreement ? '<span style="color:#db2777;font-weight:600">' + s.agreement + '</span>' : '') +
+          (s.email ? '<span>✉ ' + s.email + '</span>' : '') +
+          (s.phone ? '<span>📞 <a href="tel:' + s.phone + '" style="color:#0098d4;text-decoration:none;font-weight:600">' + s.phone + '</a></span>' : '') +
+          '<span>' + (s.sigMethod === 'drawn' ? '✍ Drawn' : '⌨ Typed') + '</span>' +
+          '<span>🕐 ' + timeAgo + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:right;min-width:80px">' +
+        '<button onclick="dismissAgreementSign(' + s.id + ')" style="padding:6px 14px;background:#333;color:#999;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Dismiss</button>' +
+      '</div>';
+    list.appendChild(row);
+  });
+}
+
+function dismissAgreementSign(id) {
+  var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
+  var s = signs.find(function(x) { return x.id === id; });
+  if (s) {
+    s.status = 'dismissed';
+    localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
+    try { fetch('/api/status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({itemType:'agreement_sign', id:id, status:'dismissed'}) }).catch(function(){}); } catch(e){}
+  }
+  renderAgreementSigns();
+}
+
+renderAgreementSigns();
+setInterval(renderAgreementSigns, 15000);
 
 // ── Cash register "ka-ching" sound effect ──
 function _playCashRegister() {
