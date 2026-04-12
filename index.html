@@ -10735,8 +10735,8 @@ function renderProposalAccepts() {
       '<div style="flex:1">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
           '<span style="background:#00CC66;color:#000;font-size:9px;font-weight:800;padding:2px 6px;text-transform:uppercase;letter-spacing:.5px">ACCEPTED</span>' +
-          '<span style="font-size:14px;font-weight:700;color:#fff">' + (a.name || 'Unknown') + '</span>' +
-          (a.company ? '<span style="font-size:12px;color:#666">— ' + a.company + '</span>' : '') +
+          '<a href="#" onclick="goToProposalAcceptLead(\'' + (a.company || '').replace(/'/g, "\\'") + '\',\'' + (a.name || '').replace(/'/g, "\\'") + '\',\'' + (a.email || '').replace(/'/g, "\\'") + '\');return false;" style="font-size:14px;font-weight:700;color:#0098d4;text-decoration:none;cursor:pointer" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' + (a.name || 'Unknown') + '</a>' +
+          (a.company ? '<a href="#" onclick="goToProposalAcceptLead(\'' + (a.company || '').replace(/'/g, "\\'") + '\',\'' + (a.name || '').replace(/'/g, "\\'") + '\',\'' + (a.email || '').replace(/'/g, "\\'") + '\');return false;" style="font-size:12px;color:#666;text-decoration:none;cursor:pointer">— ' + a.company + '</a>' : '') +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#999">' +
           (a.proposal ? '<span style="color:#0098d4;font-weight:600">Proposal ' + a.proposal + '</span>' : '') +
@@ -10745,26 +10745,32 @@ function renderProposalAccepts() {
           '<span>🕐 ' + timeAgo + '</span>' +
         '</div>' +
       '</div>' +
-      '<div style="text-align:right;min-width:180px">' +
-        '<div style="display:flex;gap:6px;justify-content:flex-end">' +
-          '<button onclick="actionProposalAccept(' + a.id + ')" style="padding:6px 14px;background:#00CC66;color:#000;font-size:11px;font-weight:800;border:none;cursor:pointer;font-family:inherit">✓ Send Agreement</button>' +
-          '<button onclick="dismissProposalAccept(' + a.id + ')" style="padding:6px 14px;background:#333;color:#999;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Dismiss</button>' +
-        '</div>' +
+      '<div style="text-align:right;min-width:80px">' +
+        '<button onclick="dismissProposalAccept(' + a.id + ')" style="padding:6px 14px;background:#333;color:#999;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Dismiss</button>' +
       '</div>';
     list.appendChild(row);
   });
 }
 
-function actionProposalAccept(id) {
-  var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
-  var a = accepts.find(function(x) { return x.id === id; });
-  if (a) {
-    a.status = 'actioned';
-    a.actionedAt = new Date().toISOString();
-    localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
-    showToast('Marked as actioned — prepare agreement for ' + (a.company || a.name) + ' ✓');
-  }
-  renderProposalAccepts();
+function goToProposalAcceptLead(company, name, email) {
+  // Navigate to pipeline tab
+  var pipeNavBtn = document.querySelectorAll('.nav-btn')[1];
+  showPage('pipeline', pipeNavBtn);
+
+  // Try to find the lead by company or name and highlight it
+  setTimeout(function() {
+    var match = LEADS.find(function(l) {
+      if (company && l.co && l.co.toLowerCase() === company.toLowerCase()) return true;
+      if (email && l.email && l.email.toLowerCase() === email.toLowerCase()) return true;
+      if (name && l.name && l.name.toLowerCase() === name.toLowerCase()) return true;
+      return false;
+    });
+    if (match) {
+      showToast('Showing ' + match.co + ' in pipeline — drag to Agreement stage when ready');
+    } else {
+      showToast('Lead not found in pipeline — may need to check name/company', 'warn');
+    }
+  }, 300);
 }
 
 function dismissProposalAccept(id) {
