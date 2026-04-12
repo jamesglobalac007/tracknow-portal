@@ -871,6 +871,43 @@ select option{background:#0a0a0a;color:#FFA028}
   </div>
 </div>
 
+<!-- ── EDIT LEAD MODAL (Pipeline) ─────────────────────── -->
+<div class="modal-overlay" id="editLeadModal" style="display:none" onclick="if(event.target===this)closeEditLead()">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header"><h3 class="modal-title">Edit Lead — Contact Details</h3>
+      <button class="modal-close" onclick="closeEditLead()">&#10005;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="el_id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">Company *</label><input id="el_co" class="form-input"></div>
+        <div><label class="form-label">Contact Name</label><input id="el_name" class="form-input"></div>
+        <div><label class="form-label">Phone</label><input id="el_phone" class="form-input"></div>
+        <div><label class="form-label">Email</label><input id="el_email" class="form-input"></div>
+        <div><label class="form-label">City</label><input id="el_city" class="form-input"></div>
+        <div><label class="form-label">State</label>
+          <select id="el_st" class="form-input">
+            <option value="NSW">NSW</option><option value="VIC">VIC</option>
+            <option value="QLD">QLD</option><option value="SA">SA</option>
+            <option value="WA">WA</option><option value="TAS">TAS</option>
+            <option value="NT">NT</option><option value="ACT">ACT</option>
+          </select></div>
+        <div><label class="form-label">Industry</label>
+          <select id="el_ind" class="form-input">
+            <option value="Transport">Transport</option><option value="Civil">Civil</option>
+            <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option><option value="Other">Other</option>
+          </select></div>
+        <div><label class="form-label">Website</label><input id="el_web" class="form-input" placeholder="www.example.com.au"></div>
+      </div>
+      <div style="margin-top:12px"><label class="form-label">Notes</label>
+        <textarea id="el_notes" class="form-input" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEditLead()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditLead()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── ADD CUSTOMER MODAL ─────────────────────────────── -->
 <div class="modal-overlay" id="customerModal" style="display:none" onclick="if(event.target===this)closeCustomerModal()">
   <div class="modal" style="max-width:580px">
@@ -3268,7 +3305,7 @@ function renderPipeline() {
           ondragend="handleDragEnd(event)"
           style="padding:8px 10px;margin-bottom:6px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:11px;font-weight:600;color:#FFA028;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%">${l.star?'<span style="color:#f59e0b;margin-right:3px">★</span>':''}${l.co}</div>
+            <div onclick="event.stopPropagation();openEditLead(${l.id})" style="font-size:11px;font-weight:600;color:#FFA028;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%;cursor:pointer;text-decoration:underline;text-decoration-color:#333;text-underline-offset:2px" onmouseover="this.style.textDecorationColor='#FFA028'" onmouseout="this.style.textDecorationColor='#333'" title="Click to edit contact details">${l.star?'<span style="color:#f59e0b;margin-right:3px">★</span>':''}${l.co} <span style="font-size:8px;color:#555">✏</span></div>
             ${hasProducts ? '<span style="font-size:10px;font-weight:700;color:#FFA028;white-space:nowrap">'+l.v+'u</span>' : ''}
           </div>
           <div onclick="event.stopPropagation();toggleCardExpand(${l.id})" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;cursor:pointer;padding:4px 0" onmouseover="this.querySelector('.more-btn').style.color='#FFA028'" onmouseout="this.querySelector('.more-btn').style.color='#555'">
@@ -3276,23 +3313,10 @@ function renderPipeline() {
             <span class="more-btn" style="color:#555;font-size:10px;font-weight:600;padding:2px 6px">▼ more</span>
           </div>
           <div id="cardExpand_${l.id}" style="display:none;margin-top:6px;border-top:1px solid #1a1a1a;padding-top:6px">
-            <div onclick="event.stopPropagation();var ed=document.getElementById('cardEdit_'+${l.id});ed.style.display=ed.style.display==='none'?'':'none'" style="font-size:10px;color:#0098d4;margin-bottom:2px;cursor:pointer;text-decoration:underline;text-decoration-color:#222;text-underline-offset:2px" onmouseover="this.style.textDecorationColor='#0098d4'" onmouseout="this.style.textDecorationColor='#222'" title="Click to edit contact details">✏ ${l.name} · ${l.city}, ${l.st}</div>
+            <div onclick="event.stopPropagation();openEditLead(${l.id})" style="font-size:10px;color:#0098d4;margin-bottom:2px;cursor:pointer;text-decoration:underline;text-decoration-color:#222;text-underline-offset:2px" onmouseover="this.style.textDecorationColor='#0098d4'" onmouseout="this.style.textDecorationColor='#222'" title="Click to edit contact details">✏ ${l.name} · ${l.city}, ${l.st}</div>
             ${l.email?'<div style="font-size:9px;color:#666;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✉ '+l.email+'</div>':''}
             ${l.phone?'<div style="font-size:9px;color:#666;margin-bottom:4px">📞 '+l.phone+'</div>':''}
-            <div id="cardEdit_${l.id}" style="display:none;background:#080808;border:1px solid #222;padding:8px;margin-bottom:6px">
-              <div style="font-size:8px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Edit Contact Details</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Contact Name</label><input id="le_name_${l.id}" value="${(l.name||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Company</label><input id="le_co_${l.id}" value="${(l.co||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Email</label><input id="le_email_${l.id}" value="${(l.email||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Phone</label><input id="le_phone_${l.id}" value="${(l.phone||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">City</label><input id="le_city_${l.id}" value="${(l.city||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">State</label><input id="le_st_${l.id}" value="${(l.st||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Industry</label><input id="le_ind_${l.id}" value="${(l.ind||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-                <div><label style="font-size:8px;color:#555;display:block;margin-bottom:2px">Website</label><input id="le_web_${l.id}" value="${(l.website||'').replace(/"/g,'&quot;')}" style="width:100%;padding:4px 6px;background:#111;border:1px solid #333;color:#CCC;font-size:10px;font-family:inherit;box-sizing:border-box"></div>
-              </div>
-              <button onclick="event.stopPropagation();saveLeadDetails(${l.id})" style="width:100%;padding:5px;background:#0098d4;border:none;color:#fff;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px">SAVE DETAILS</button>
-            </div>
+
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#FFA028">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             ${l.stage!=='agreement'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+')" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#FFA028;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.background=\'#111\'" onmouseout="this.style.borderColor=\'#332200\';this.style.background=\'#080808\'">EDIT PRODUCTS & PRICING</button>':''}
             ${l.fleetSegments && l.fleetSegments.length?'<button onclick="event.stopPropagation();viewLeadFleetReport('+l.id+')" style="width:100%;padding:5px;background:rgba(0,136,255,.06);border:1px solid rgba(0,136,255,.25);color:#0088FF;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor=\'#0088FF\';this.style.background=\'rgba(0,136,255,.12)\'" onmouseout="this.style.borderColor=\'rgba(0,136,255,.25)\';this.style.background=\'rgba(0,136,255,.06)\'">📄 VIEW FLEET REPORT</button>':''}
@@ -3327,7 +3351,7 @@ function renderPipeline() {
       <tbody>${fl.map(l => { const s = STAGES.find(x => x.id === l.stage); const sg = getScoreGrade(scoreLeadRank(l)); const hp = l._productsSet; const mrr = hp && l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0) : 0; const prodSummary = hp && l.lineItems ? l.lineItems.map(li => (li.qty||0)+'x '+li.type).join(', ') : ''; return `<tr style="cursor:pointer" onclick="openDealProducts(${l.id})">
         <td><div style="display:flex;align-items:center;gap:8px">
           ${l.star ? '<svg width="12" height="12" fill="#f59e0b" stroke="#f59e0b" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : ''}
-          <div><div style="font-weight:600;color:#FFA028">${l.co}</div><div style="font-size:11px;color:#666">${l.name} · ${l.city}, ${l.st}</div></div></div></td>
+          <div><div onclick="event.stopPropagation();openEditLead(${l.id})" style="font-weight:600;color:#FFA028;cursor:pointer;text-decoration:underline;text-decoration-color:#333;text-underline-offset:2px" onmouseover="this.style.textDecorationColor='#FFA028'" onmouseout="this.style.textDecorationColor='#333'" title="Click to edit contact details">${l.co} <span style="font-size:9px;color:#555">✏</span></div><div style="font-size:11px;color:#666">${l.name} · ${l.city}, ${l.st}</div></div></div></td>
         <td><span style="font-size:11px;font-weight:800;color:${sg.color};background:${sg.bg};padding:3px 7px;border-radius:5px">${sg.grade}</span></td>
         <td style="font-size:11px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${hp?'color:#CCC':'color:#444;font-style:italic'}">${hp ? prodSummary : 'Not set'}</td>
         <td><span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span></td>
@@ -3671,6 +3695,44 @@ function saveLeadDetails(leadId) {
   saveData();
   renderPipeline();
   showToast('Details updated for ' + l.co);
+}
+
+// ── Edit Lead Modal (Pipeline) ─────────────────────────────────
+function openEditLead(id) {
+  var l = LEADS.find(function(x) { return x.id === id; });
+  if (!l) return;
+  document.getElementById('el_id').value = id;
+  document.getElementById('el_co').value = l.co || '';
+  document.getElementById('el_name').value = l.name || '';
+  document.getElementById('el_phone').value = l.phone || '';
+  document.getElementById('el_email').value = l.email || '';
+  document.getElementById('el_city').value = l.city || '';
+  document.getElementById('el_st').value = l.st || 'NSW';
+  document.getElementById('el_ind').value = l.ind || 'Transport';
+  document.getElementById('el_web').value = l.website || '';
+  document.getElementById('el_notes').value = l.notes || '';
+  document.getElementById('editLeadModal').style.display = 'flex';
+}
+function closeEditLead() {
+  document.getElementById('editLeadModal').style.display = 'none';
+}
+function saveEditLead() {
+  var id = parseInt(document.getElementById('el_id').value);
+  var l = LEADS.find(function(x) { return x.id === id; });
+  if (!l) return;
+  l.co = document.getElementById('el_co').value.trim();
+  l.name = document.getElementById('el_name').value.trim();
+  l.phone = document.getElementById('el_phone').value.trim();
+  l.email = document.getElementById('el_email').value.trim();
+  l.city = document.getElementById('el_city').value.trim();
+  l.st = document.getElementById('el_st').value;
+  l.ind = document.getElementById('el_ind').value;
+  l.website = document.getElementById('el_web').value.trim();
+  l.notes = document.getElementById('el_notes').value.trim();
+  saveData();
+  closeEditLead();
+  renderPipeline();
+  showToast('Lead details updated — ' + l.co);
 }
 
 function addLeadTimestamp() {

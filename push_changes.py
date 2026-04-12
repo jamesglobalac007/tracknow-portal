@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — All pending: first name, blue CTA, orange queue, logo fix, send timeout, CSV import."""
+"""Push — All pending: first name, blue CTA, orange queue, logo fix, send timeout, CSV import, edit lead modal."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -42,6 +42,9 @@ checks = [
     ("sfCsvDropZone", "CSV drag-and-drop zone"),
     ("importSalesFeeCSV", "Bulk CSV import function"),
     ("downloadSalesFeeTemplate", "CSV template download"),
+    ("editLeadModal", "Edit Lead modal (pipeline)"),
+    ("openEditLead", "Open Edit Lead function"),
+    ("saveEditLead", "Save Edit Lead function"),
 ]
 
 all_ok = True
@@ -52,13 +55,13 @@ for marker, label in checks:
         all_ok = False
 
 if not all_ok:
-    print("\n\033[91m\u2717 Some markers missing — aborting push.\033[0m")
+    print("\n\033[91m\u2717 Some markers missing \u2014 aborting push.\033[0m")
     sys.exit(1)
 
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "First name emails, blue CTA, orange queue, logo fix, send timeout, CSV sales fee import"')
+ok, out = run('git commit -m "First name emails, blue CTA, orange queue, logo fix, send timeout, CSV sales fee import, edit lead modal"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
