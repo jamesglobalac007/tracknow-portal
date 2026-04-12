@@ -32,9 +32,10 @@ function mergeById(existing, incoming) {
 app.post('/api/data', (req, res) => {
   try {
     const { leads, prospects, customers } = req.body;
-    if (leads && Array.isArray(leads)) store.leads = mergeById(store.leads, leads);
-    if (prospects && Array.isArray(prospects)) store.prospects = mergeById(store.prospects, prospects);
-    if (customers && Array.isArray(customers)) store.customers = mergeById(store.customers, customers);
+    // Replace arrays outright so removals (e.g. "Not Going Ahead") are respected
+    if (leads && Array.isArray(leads)) store.leads = leads;
+    if (prospects && Array.isArray(prospects)) store.prospects = prospects;
+    if (customers && Array.isArray(customers)) store.customers = customers;
     store.version++;
     store.lastUpdate = Date.now();
     res.json({ ok: true, version: store.version, leads: store.leads, prospects: store.prospects, customers: store.customers });
