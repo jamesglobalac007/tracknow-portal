@@ -510,25 +510,23 @@ select option{background:#0a0a0a;color:#FFA028}
 </div>
 
 <!-- ═══════════ AGREEMENT SIGNING LANDING PAGE ═══════════ -->
-<div id="agreementSignOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#000;overflow-y:auto">
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
-    <div style="width:100%;max-width:520px">
-      <div style="text-align:center;margin-bottom:32px">
-        <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:10px">
-          <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
-        </div>
-        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
+<div id="agreementSignOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto">
+  <div id="as_formWrap" style="max-width:900px;margin:0 auto;padding:40px 60px;font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;color:#1a1a1a">
+    <!-- Full agreement content gets injected here -->
+    <div id="as_agreementBody"></div>
+
+    <!-- Digital Signature Section (same as preview) -->
+    <div id="as_form" style="border:3px solid #FFA028;margin:30px 0;overflow:hidden">
+      <div style="background:#FFA028;padding:14px 20px;text-align:center">
+        <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Digital Signature</div>
       </div>
+      <div style="padding:24px;background:#fff8ee">
+        <p id="as_greeting" style="font-size:11px;color:#666;margin-bottom:20px;text-align:center">Sign below to accept this agreement. All fields are required.</p>
 
-      <!-- Signing Form -->
-      <div id="as_form" style="border:3px solid #FFA028;overflow:hidden">
-        <div style="background:#FFA028;padding:14px 20px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Digital Signature</div>
-        </div>
-        <div style="padding:24px;background:#fff8ee">
-          <p id="as_greeting" style="font-size:14px;color:#333;margin-bottom:20px;line-height:1.6;text-align:center">Sign below to accept this agreement. All fields are required.</p>
-
-          <div style="background:#fff;border:1px solid #ddd;padding:16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">
+          <!-- Client signature (left) -->
+          <div style="background:#fff;border:1px solid #ddd;padding:16px">
+            <div id="as_clientLabel" style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Client</div>
             <div style="margin-bottom:10px">
               <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Full Name</label>
               <input type="text" id="as_name" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box" placeholder="Full legal name">
@@ -560,17 +558,53 @@ select option{background:#0a0a0a;color:#FFA028}
                 <button onclick="var c=document.getElementById('asSigCanvas');c.getContext('2d').clearRect(0,0,c.width,c.height)" style="margin-top:4px;padding:3px 10px;font-size:9px;border:1px solid #ccc;background:#f5f5f5;color:#666;cursor:pointer;font-family:inherit">Clear</button>
               </div>
             </div>
+            <div>
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Date</label>
+              <input type="text" id="as_date" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box;background:#f5f5f5" readonly>
+            </div>
           </div>
 
-          <div id="as_error" style="display:none;color:#dc2626;font-size:12px;margin-bottom:12px;text-align:center"></div>
-
-          <button id="as_submitBtn" onclick="submitAgreementSign()" style="display:block;width:100%;padding:16px;background:#FFA028;color:#fff;font-size:17px;font-weight:900;text-align:center;border:none;cursor:pointer;letter-spacing:.5px;font-family:inherit;border-radius:6px;touch-action:manipulation">&#10003; SIGN &amp; ACCEPT AGREEMENT</button>
-          <p style="text-align:center;font-size:12px;color:#888;margin-top:14px">One click — we will be notified immediately.</p>
+          <!-- TrackNow signature (right — pre-filled like preview) -->
+          <div style="background:#fff;border:1px solid #ddd;padding:16px">
+            <div style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">TrackNow GPS Pty Ltd</div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Full Name</label>
+              <input type="text" value="Mark Speelmeyer" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box;background:#f5f5f5" readonly>
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Position / Title</label>
+              <input type="text" value="Director" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box;background:#f5f5f5" readonly>
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Signature</label>
+              <div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1a1a1a;border-bottom:2px solid #FFA028;padding:4px 0;min-height:36px">Mark Speelmeyer</div>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Date</label>
+              <input type="text" id="as_tnDate" style="width:100%;padding:8px 10px;border:1px solid #ccc;font-size:13px;font-family:inherit;box-sizing:border-box;background:#f5f5f5" readonly>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Thank You (hidden until signed) -->
-      <div id="as_thanks" style="display:none;background:#0a0a0a;border:1px solid #222;padding:40px;text-align:center">
+        <div id="as_error" style="display:none;color:#dc2626;font-size:12px;margin:12px 0;text-align:center"></div>
+
+        <button id="as_submitBtn" onclick="submitAgreementSign()" style="display:block;width:100%;padding:16px;background:#FFA028;color:#fff;font-size:17px;font-weight:900;text-align:center;border:none;cursor:pointer;margin-top:24px;letter-spacing:.5px;font-family:inherit;border-radius:6px;touch-action:manipulation">&#10003; SIGN &amp; ACCEPT AGREEMENT</button>
+        <p style="text-align:center;font-size:12px;color:#888;margin-top:14px">One click — we will be notified immediately.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">
+      <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
+    </div>
+  </div>
+
+  <!-- Thank You (replaces everything after signing) -->
+  <div id="as_thanks" style="display:none;min-height:100vh;background:#000;padding:20px">
+    <div style="max-width:480px;margin:0 auto;padding-top:15vh;text-align:center">
+      <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:24px">
+        <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
+      </div>
+      <div style="background:#0a0a0a;border:1px solid #222;padding:40px;text-align:center">
         <div style="font-size:40px;margin-bottom:16px">&#10003;</div>
         <h2 style="font-size:20px;font-weight:800;color:#00CC66;margin-bottom:12px;font-family:'JetBrains Mono',monospace">Agreement Signed!</h2>
         <p id="as_thankGreeting" style="font-size:14px;color:#CCC;line-height:1.7;margin-bottom:8px">Thank you — your signed agreement has been received.</p>
@@ -582,10 +616,8 @@ select option{background:#0a0a0a;color:#FFA028}
         </div>
         <a href="https://www.tracknow.com.au" style="color:#0098d4;font-size:13px;text-decoration:none;font-weight:600">Visit tracknow.com.au →</a>
       </div>
-
       <div style="text-align:center;margin-top:24px">
         <div style="font-size:10px;color:#444">Track Now Proprietary Limited · ABN 12 634 559 970</div>
-        <div style="font-size:10px;color:#444;margin-top:4px">www.tracknow.com.au</div>
       </div>
     </div>
   </div>
@@ -9773,6 +9805,9 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'agreement') {
+    // Store agreement HTML so signing page can display the full contract
+    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0');
+    try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
     var _agrSignUrl = 'https://tracknow-portal.onrender.com/?agreement_sign=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
@@ -10652,6 +10687,45 @@ function doLogout() {
     var firstName = window._asName.split(' ')[0];
     greeting.innerHTML = 'Hi <strong style="color:#FFA028">' + firstName + '</strong>' + (window._asCompany ? ' from <strong style="color:#FFA028">' + window._asCompany + '</strong>' : '') + ' — sign below to accept your service agreement.';
   }
+
+  // Set client label
+  var clientLabel = document.getElementById('as_clientLabel');
+  if (clientLabel && window._asCompany) {
+    clientLabel.textContent = 'CLIENT — ' + window._asCompany.toUpperCase();
+  }
+
+  // Set dates to today
+  var today = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'long', year:'numeric'});
+  var dateEl = document.getElementById('as_date');
+  var tnDateEl = document.getElementById('as_tnDate');
+  if (dateEl) dateEl.value = today;
+  if (tnDateEl) tnDateEl.value = today;
+
+  // Load full agreement HTML from localStorage (stored when email was sent)
+  var agrKey = window._asAgreement || '';
+  var storedHTML = '';
+  try { storedHTML = localStorage.getItem('tn_agr_html_' + agrKey) || ''; } catch(x) {}
+  var bodyEl = document.getElementById('as_agreementBody');
+  if (bodyEl && storedHTML) {
+    bodyEl.innerHTML = storedHTML;
+    // Remove the email's Digital Signature CTA section (client now sees the real one below)
+    var allDivs = bodyEl.querySelectorAll('div');
+    for (var i = 0; i < allDivs.length; i++) {
+      var txt = allDivs[i].textContent || '';
+      if (txt.indexOf('SIGN') > -1 && txt.indexOf('ACCEPT AGREEMENT') > -1 && allDivs[i].querySelector('a')) {
+        allDivs[i].remove(); break;
+      }
+    }
+    // Also remove any "Want to discuss before signing?" callback section
+    var allPs = bodyEl.querySelectorAll('p');
+    for (var j = 0; j < allPs.length; j++) {
+      if ((allPs[j].textContent || '').indexOf('Want to discuss before signing') > -1) {
+        var parent = allPs[j].parentElement;
+        if (parent && parent.querySelector('a')) parent.remove();
+        break;
+      }
+    }
+  }
 })();
 
 function submitAgreementSign() {
@@ -10711,41 +10785,73 @@ function submitAgreementSign() {
       '</table>' +
     '</div></div>';
 
+  // Get the full agreement HTML from localStorage
+  var storedAgrHTML = '';
+  try { storedAgrHTML = localStorage.getItem('tn_agr_html_' + agrNum) || ''; } catch(x) {}
+  // Strip the email's CTA signing button section from stored HTML
+  var cleanAgrHTML = storedAgrHTML.replace(/<br><div style="border:3px solid #FFA028[\s\S]*?SIGN[\s\S]*?ACCEPT AGREEMENT[\s\S]*?<\/div><\/div>[\s\S]*?(?=<div style="margin-top|$)/, '');
+  // Also strip callback button section
+  cleanAgrHTML = cleanAgrHTML.replace(/<div style="text-align:center;margin:16px[\s\S]*?Request a Callback<\/a>\s*<\/div>/, '');
+
+  // Build dual signature block for the signed email
+  var sigBlock = '<div style="border:3px solid #FFA028;margin:30px 0;overflow:hidden">' +
+    '<div style="background:#FFA028;padding:14px 20px;text-align:center">' +
+      '<div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Digital Signature</div>' +
+    '</div>' +
+    '<div style="padding:24px;background:#fff8ee">' +
+      '<table style="width:100%;border-collapse:collapse"><tr>' +
+        '<td style="width:50%;vertical-align:top;padding:16px;border:1px solid #ddd;background:#fff">' +
+          '<div style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Client' + (window._asCompany ? ' — ' + window._asCompany.toUpperCase() : '') + '</div>' +
+          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">' + cn + '</div></div>' +
+          (ct ? '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">' + ct + '</div></div>' : '') +
+          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028;min-height:30px">' + sigDisplay + '</div></div>' +
+          '<div><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div></div>' +
+        '</td>' +
+        '<td style="width:50%;vertical-align:top;padding:16px;border:1px solid #ddd;background:#fff">' +
+          '<div style="font-weight:700;color:#FFA028;margin-bottom:12px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">TrackNow GPS Pty Ltd</div>' +
+          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Full Name</span><div style="padding:6px 0;font-size:13px;font-weight:600">Mark Speelmeyer</div></div>' +
+          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Position / Title</span><div style="padding:6px 0;font-size:13px">Director</div></div>' +
+          '<div style="margin-bottom:8px"><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Signature</span><div style="padding:8px 0;border-bottom:2px solid #FFA028;min-height:30px;font-family:Brush Script MT,Segoe Script,cursive;font-size:24px;color:#1a1a1a">Mark Speelmeyer</div></div>' +
+          '<div><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">Date</span><div style="padding:6px 0;font-size:13px">' + today + '</div></div>' +
+        '</td>' +
+      '</tr></table>' +
+    '</div></div>';
+
+  // Full signed email body: banner + full agreement + signatures
+  var fullSignedEmail = '<div style="font-family:Inter,sans-serif;max-width:900px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+    signedBanner + cleanAgrHTML + sigBlock +
+    '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;font-size:10px;color:#888;text-align:center">' +
+      'Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a>' +
+    '</div></div>';
+
   // Send EmailJS to sales + customer
   function loadAndSend() {
-    // To sales
+    // To sales — full signed agreement
     emailjs.send('service_5y35h2g', 'template_gwga9jo', {
       to_email: 'sales@tracknow.com.au',
       subject: 'SIGNED & EXECUTED: Service Agreement ' + agrNum + ' — ' + (window._asCompany || 'Unknown'),
       from_name: cn,
-      message_html: '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
-        signedBanner +
-        '<h3 style="color:#0098d4">Agreement Signed via Email Link</h3>' +
-        '<p><strong>' + cn + '</strong>' + (ct ? ' (' + ct + ')' : '') + ' from <strong>' + (window._asCompany || '') + '</strong> has signed the service agreement.</p>' +
-        '<p>Agreement: ' + agrNum + '</p>' +
-        '<p>Signature: ' + (hasDrawn ? 'Drawn on screen' : 'Typed') + '</p>' +
-        '<p>Email: ' + (window._asEmail || 'N/A') + '</p>' +
-        '<p>Phone: ' + (window._asPhone || 'N/A') + '</p>' +
-        '<p style="color:#888;font-size:12px">Signed via the agreement email link on ' + today + '</p></div>'
+      message_html: fullSignedEmail
     }).then(function(){}).catch(function(){});
 
-    // To customer
+    // To customer — full signed agreement with intro
     if (window._asEmail) {
       var customerName = (window._asName || cn || 'there').split(' ')[0];
+      var customerEmail = '<div style="font-family:Inter,sans-serif;max-width:900px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+        '<p style="font-size:14px;margin-bottom:10px">Hi ' + customerName + ',</p>' +
+        '<p style="font-size:14px;margin-bottom:10px">Thank you for signing your TrackNow GPS service agreement. Please find your fully executed agreement below for your records.</p>' +
+        '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
+        signedBanner + cleanAgrHTML + sigBlock +
+        '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
+          '<p>Kind regards,</p>' +
+          '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
+          '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></p>' +
+        '</div></div>';
       emailjs.send('service_5y35h2g', 'template_gwga9jo', {
         to_email: window._asEmail,
         subject: 'Your Signed Service Agreement — ' + agrNum + ' — TrackNow GPS',
         from_name: 'TrackNow GPS',
-        message_html: '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
-          '<p style="font-size:14px;margin-bottom:20px">Hi ' + customerName + ',</p>' +
-          '<p style="font-size:14px;margin-bottom:20px">Thank you for signing your TrackNow GPS service agreement. Please find your executed confirmation below for your records.</p>' +
-          '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
-          signedBanner +
-          '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
-            '<p>Kind regards,</p>' +
-            '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
-            '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></p>' +
-          '</div></div>'
+        message_html: customerEmail
       }).then(function(){}).catch(function(){});
     }
   }
@@ -11097,6 +11203,98 @@ function dismissProposalAccept(id) {
 renderProposalAccepts();
 setInterval(renderProposalAccepts, 15000);
 
+// ── Cash register "ka-ching" sound effect ──
+function _playCashRegister() {
+  var ctx = new (window.AudioContext || window.webkitAudioContext)();
+  var t = ctx.currentTime;
+
+  // Part 1: "KA" — drawer slam / mechanical click
+  // Low metallic thump
+  var thump = ctx.createOscillator();
+  var thumpG = ctx.createGain();
+  thump.type = 'square';
+  thump.frequency.setValueAtTime(120, t);
+  thump.frequency.exponentialRampToValueAtTime(60, t + 0.06);
+  thumpG.gain.setValueAtTime(0.5, t);
+  thumpG.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  thump.connect(thumpG); thumpG.connect(ctx.destination);
+  thump.start(t); thump.stop(t + 0.1);
+
+  // Metallic rattle noise
+  var rBuf = ctx.createBuffer(1, ctx.sampleRate * 0.06, ctx.sampleRate);
+  var rD = rBuf.getChannelData(0);
+  for (var i = 0; i < rD.length; i++) rD[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rD.length, 4);
+  var rattle = ctx.createBufferSource(); rattle.buffer = rBuf;
+  var rGain = ctx.createGain();
+  rGain.gain.setValueAtTime(0.3, t);
+  rGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+  var bp1 = ctx.createBiquadFilter(); bp1.type = 'bandpass'; bp1.frequency.value = 2500; bp1.Q.value = 2;
+  rattle.connect(bp1); bp1.connect(rGain); rGain.connect(ctx.destination);
+  rattle.start(t); rattle.stop(t + 0.07);
+
+  // Part 2: "CHING!" — bell ring (delayed 100ms)
+  var delay = 0.1;
+  // Primary bell tone — A7 (3520Hz)
+  var bell1 = ctx.createOscillator(); var bG1 = ctx.createGain();
+  bell1.type = 'sine'; bell1.frequency.value = 3520;
+  bG1.gain.setValueAtTime(0.45, t + delay);
+  bG1.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.8);
+  bell1.connect(bG1); bG1.connect(ctx.destination);
+  bell1.start(t + delay); bell1.stop(t + delay + 0.8);
+
+  // Second harmonic — E8 (5274Hz) for shimmer
+  var bell2 = ctx.createOscillator(); var bG2 = ctx.createGain();
+  bell2.type = 'sine'; bell2.frequency.value = 5274;
+  bG2.gain.setValueAtTime(0.25, t + delay);
+  bG2.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.5);
+  bell2.connect(bG2); bG2.connect(ctx.destination);
+  bell2.start(t + delay); bell2.stop(t + delay + 0.5);
+
+  // Third — undertone A6 (1760Hz) for warmth
+  var bell3 = ctx.createOscillator(); var bG3 = ctx.createGain();
+  bell3.type = 'sine'; bell3.frequency.value = 1760;
+  bG3.gain.setValueAtTime(0.15, t + delay);
+  bG3.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.6);
+  bell3.connect(bG3); bG3.connect(ctx.destination);
+  bell3.start(t + delay); bell3.stop(t + delay + 0.6);
+
+  // Inharmonic metallic overtone for realism — 4186Hz
+  var bell4 = ctx.createOscillator(); var bG4 = ctx.createGain();
+  bell4.type = 'triangle'; bell4.frequency.value = 4186;
+  bG4.gain.setValueAtTime(0.12, t + delay);
+  bG4.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.35);
+  bell4.connect(bG4); bG4.connect(ctx.destination);
+  bell4.start(t + delay); bell4.stop(t + delay + 0.35);
+
+  // Impact transient — white noise burst with the bell
+  var iBuf = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+  var iD = iBuf.getChannelData(0);
+  for (var k = 0; k < iD.length; k++) iD[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / iD.length, 6);
+  var impact = ctx.createBufferSource(); impact.buffer = iBuf;
+  var iGain = ctx.createGain();
+  iGain.gain.setValueAtTime(0.2, t + delay);
+  iGain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.03);
+  var hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 6000;
+  impact.connect(hpf); hpf.connect(iGain); iGain.connect(ctx.destination);
+  impact.start(t + delay); impact.stop(t + delay + 0.04);
+
+  // Second "ching" hit for double-bell effect (classic register sound)
+  var delay2 = 0.28;
+  var bell5 = ctx.createOscillator(); var bG5 = ctx.createGain();
+  bell5.type = 'sine'; bell5.frequency.value = 4186;
+  bG5.gain.setValueAtTime(0.35, t + delay2);
+  bG5.gain.exponentialRampToValueAtTime(0.001, t + delay2 + 0.7);
+  bell5.connect(bG5); bG5.connect(ctx.destination);
+  bell5.start(t + delay2); bell5.stop(t + delay2 + 0.7);
+
+  var bell6 = ctx.createOscillator(); var bG6 = ctx.createGain();
+  bell6.type = 'sine'; bell6.frequency.value = 6272;
+  bG6.gain.setValueAtTime(0.18, t + delay2);
+  bG6.gain.exponentialRampToValueAtTime(0.001, t + delay2 + 0.4);
+  bell6.connect(bG6); bG6.connect(ctx.destination);
+  bell6.start(t + delay2); bell6.stop(t + delay2 + 0.4);
+}
+
 // ── Live callback detection — picks up new requests from other tabs instantly ──
 (function() {
   // Request notification permission on first login
@@ -11192,38 +11390,7 @@ setInterval(renderProposalAccepts, 15000);
       }
 
       // Cha-ching! cash register sound for proposal acceptance
-      try {
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        var t = ctx.currentTime;
-        // "Ka" — metallic click
-        var bufSize = ctx.sampleRate * 0.04;
-        var noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-        var nd = noiseBuf.getChannelData(0);
-        for (var j = 0; j < bufSize; j++) nd[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / bufSize, 8);
-        var noise = ctx.createBufferSource(); noise.buffer = noiseBuf;
-        var nGain = ctx.createGain();
-        nGain.gain.setValueAtTime(0.4, t);
-        nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-        var hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 4000;
-        noise.connect(hpf); hpf.connect(nGain); nGain.connect(ctx.destination);
-        noise.start(t); noise.stop(t + 0.05);
-        // "Ching!" — bright ring
-        setTimeout(function() {
-          var t2 = ctx.currentTime;
-          var o1 = ctx.createOscillator(); var g1 = ctx.createGain();
-          o1.frequency.value = 3520; o1.type = 'sine';
-          g1.gain.setValueAtTime(0.35, t2); g1.gain.exponentialRampToValueAtTime(0.001, t2 + 0.6);
-          o1.connect(g1); g1.connect(ctx.destination); o1.start(t2); o1.stop(t2 + 0.6);
-          var o2 = ctx.createOscillator(); var g2 = ctx.createGain();
-          o2.frequency.value = 5274; o2.type = 'sine';
-          g2.gain.setValueAtTime(0.2, t2); g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.45);
-          o2.connect(g2); g2.connect(ctx.destination); o2.start(t2); o2.stop(t2 + 0.45);
-          var o3 = ctx.createOscillator(); var g3 = ctx.createGain();
-          o3.frequency.value = 1760; o3.type = 'sine';
-          g3.gain.setValueAtTime(0.15, t2); g3.gain.exponentialRampToValueAtTime(0.001, t2 + 0.5);
-          o3.connect(g3); g3.connect(ctx.destination); o3.start(t2); o3.stop(t2 + 0.5);
-        }, 80);
-      } catch(e) {}
+      try { _playCashRegister(); } catch(e) {}
     }
   });
 
@@ -11254,51 +11421,7 @@ setInterval(renderProposalAccepts, 15000);
       }
 
       // Cha-ching! cash register sound
-      try {
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        var t = ctx.currentTime;
-
-        // "Ka" — short metallic click (white noise burst)
-        var bufSize = ctx.sampleRate * 0.04;
-        var noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-        var data = noiseBuf.getChannelData(0);
-        for (var j = 0; j < bufSize; j++) data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / bufSize, 8);
-        var noise = ctx.createBufferSource();
-        noise.buffer = noiseBuf;
-        var nGain = ctx.createGain();
-        nGain.gain.setValueAtTime(0.4, t);
-        nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-        var hpf = ctx.createBiquadFilter();
-        hpf.type = 'highpass'; hpf.frequency.value = 4000;
-        noise.connect(hpf); hpf.connect(nGain); nGain.connect(ctx.destination);
-        noise.start(t); noise.stop(t + 0.05);
-
-        // "Ching!" — bright ringing bell (two harmonics)
-        setTimeout(function() {
-          var t2 = ctx.currentTime;
-          // Fundamental ring
-          var o1 = ctx.createOscillator(); var g1 = ctx.createGain();
-          o1.frequency.value = 3520; o1.type = 'sine';
-          g1.gain.setValueAtTime(0.35, t2);
-          g1.gain.exponentialRampToValueAtTime(0.001, t2 + 0.6);
-          o1.connect(g1); g1.connect(ctx.destination);
-          o1.start(t2); o1.stop(t2 + 0.6);
-          // Harmonic shimmer
-          var o2 = ctx.createOscillator(); var g2 = ctx.createGain();
-          o2.frequency.value = 5274; o2.type = 'sine';
-          g2.gain.setValueAtTime(0.2, t2);
-          g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.45);
-          o2.connect(g2); g2.connect(ctx.destination);
-          o2.start(t2); o2.stop(t2 + 0.45);
-          // Low body
-          var o3 = ctx.createOscillator(); var g3 = ctx.createGain();
-          o3.frequency.value = 1760; o3.type = 'sine';
-          g3.gain.setValueAtTime(0.15, t2);
-          g3.gain.exponentialRampToValueAtTime(0.001, t2 + 0.5);
-          o3.connect(g3); g3.connect(ctx.destination);
-          o3.start(t2); o3.stop(t2 + 0.5);
-        }, 80);
-      } catch(e) {}
+      try { _playCashRegister(); } catch(e) {}
     }
   });
 })();

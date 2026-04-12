@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push — Agreement email orange signature + signing page + cha-ching sound."""
+"""Push — Full agreement signing flow + improved cash register sound."""
 import subprocess, os, sys
 
 REPO = os.path.expanduser("~/mds/tracknow-portal")
@@ -42,9 +42,17 @@ checks = [
     ("asSigCanvas", "Drawing canvas on signing page"),
     ("as_thanks", "Thank you screen after signing"),
     ("Your Signed Service Agreement", "Customer email with signed copy"),
-    ("Cha-ching", "Cha-ching cash register sound"),
-    ("white noise burst", "Ka click sound component"),
-    ("bright ringing bell", "Ching ring sound component"),
+    ("_playCashRegister", "Cash register sound function"),
+    ("drawer slam", "Ka drawer slam sound component"),
+    ("bell ring", "Ching bell ring sound component"),
+    ("double-bell effect", "Double ching for classic register sound"),
+    ("tn_agr_html_", "Agreement HTML stored in localStorage"),
+    ("as_agreementBody", "Agreement body container on signing page"),
+    ("as_clientLabel", "Client label on signing page"),
+    ("fullSignedEmail", "Full signed agreement email variable"),
+    ("cleanAgrHTML", "Cleaned agreement HTML for emails"),
+    ("sigBlock", "Dual signature block in emails"),
+    ("Mark Speelmeyer</div></div>", "Mark Speelmeyer signature in email sig block"),
 ]
 
 all_ok = True
@@ -61,7 +69,7 @@ if not all_ok:
 ok, _ = run("git add index.html push_changes.py")
 status("Staged files", ok)
 
-ok, out = run('git commit -m "Agreement email: orange signature + signing landing page + cha-ching sound alert"')
+ok, out = run('git commit -m "Agreement signing: full contract on landing page + signed emails with SIGNED & EXECUTED + improved cash register sound"')
 if ok:
     status("Committed")
 elif "nothing to commit" in out:
