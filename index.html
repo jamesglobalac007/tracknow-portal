@@ -7236,7 +7236,7 @@ function renderProspects() {
     const sm = SOURCE_META[p.source] || {label:p.source,color:'#666',bg:'#111'};
     const escapedNotes = (p.notes||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
     const notesCount = p.notes ? p.notes.split('\n').filter(n=>n.trim()).length || 1 : 0;
-    return `<tr style="border-bottom:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
+    return `<tr data-id="${p.id}" style="border-bottom:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
       <td style="padding:12px 14px">
         <div onclick="openEditProspect(${p.id})" style="font-weight:600;color:#FFA028;font-size:13px;cursor:pointer;text-decoration:underline;text-decoration-color:#333;text-underline-offset:3px" onmouseover="this.style.textDecorationColor='#FFA028'" onmouseout="this.style.textDecorationColor='#333'" title="Click to edit prospect details">${p.co} <span style="font-size:9px;color:#555">✏</span></div>
       </td>
@@ -10224,6 +10224,50 @@ function renderCallbackQueue() {
       '</div>';
     list.appendChild(row);
   });
+}
+
+function goToCallbackProspect(email, name, company) {
+  // Find matching prospect by email, then by company name
+  var match = null;
+  if (email) {
+    match = PROSPECTS.find(function(p) { return (p.email || '').toLowerCase() === email.toLowerCase(); });
+  }
+  if (!match && company) {
+    match = PROSPECTS.find(function(p) { return (p.co || '').toLowerCase() === company.toLowerCase(); });
+  }
+  if (!match && name) {
+    match = PROSPECTS.find(function(p) { return (p.name || '').toLowerCase() === name.toLowerCase(); });
+  }
+  // Also check LEADS
+  if (!match && email) {
+    match = LEADS.find(function(l) { return (l.email || '').toLowerCase() === email.toLowerCase(); });
+    if (match) {
+      // It's a lead in the pipeline — go to pipeline
+      showPage('pipeline');
+      showToast('Found in pipeline — ' + (match.co || match.name));
+      return;
+    }
+  }
+  // Navigate to prospects tab
+  showPage('customers');
+  showCustTab('prospects');
+  if (match) {
+    // Highlight the prospect row briefly
+    setTimeout(function() {
+      var rows = document.querySelectorAll('#prospectsTable tr[data-id]');
+      rows.forEach(function(row) {
+        if (parseInt(row.getAttribute('data-id')) === match.id) {
+          row.style.transition = 'background .3s';
+          row.style.background = 'rgba(255,160,40,.25)';
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(function() { row.style.background = ''; }, 3000);
+        }
+      });
+    }, 200);
+    showToast('Viewing prospect — ' + (match.co || match.name));
+  } else {
+    showToast('Prospect not found in system — may need to add them', 'warn');
+  }
 }
 
 function completeCallback(id) {
