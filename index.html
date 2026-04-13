@@ -2820,6 +2820,18 @@ function _handleServerEvent(evt) {
       accepts.push(evt.data);
       localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
     }
+    // Record proposalAcceptedDate on the matching lead
+    try {
+      var _acceptLead = LEADS.find(function(l) {
+        if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+        if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+        return false;
+      });
+      if (_acceptLead) {
+        _acceptLead.proposalAcceptedDate = evt.data.ts || new Date().toISOString();
+        saveData(); renderPipeline();
+      }
+    } catch(e2) {}
     // Trigger UI notification
     try { renderProposalAccepts(); } catch(e) {}
     var label = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
@@ -2842,6 +2854,34 @@ function _handleServerEvent(evt) {
       signs.push(evt.data);
       localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
     }
+    // Record agreementSignedDate on the matching lead and fetch the signed HTML
+    try {
+      var _signedLead = LEADS.find(function(l) {
+        if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+        if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+        return false;
+      });
+      if (_signedLead) {
+        _signedLead.agreementSignedDate = evt.data.ts || new Date().toISOString();
+        saveData(); renderPipeline();
+        // Fetch the fully signed agreement HTML from the server to save in dealFiles
+        var _agrKey2 = evt.data.agreement || '';
+        fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKey2))
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.ok && d.html && _signedLead) {
+              if (!_signedLead.dealFiles) _signedLead.dealFiles = {};
+              _signedLead.dealFiles['agreement_signed'] = {
+                name: 'Agreement_Executed_' + (_signedLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+                type: 'text/html',
+                data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
+                uploadedAt: evt.data.ts || new Date().toISOString()
+              };
+              saveData(); renderPipeline();
+            }
+          }).catch(function(){});
+      }
+    } catch(e3) {}
     // Render dashboard notification box
     try { renderAgreementSigns(); } catch(e) {}
     var label2 = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
@@ -4553,7 +4593,9 @@ function refreshCustDealData(custId) {
   if (!lead) { showToast('No matching pipeline deal found for ' + c.co, 'warn'); return; }
   // Sync dates
   if (lead.proposalSentDate && !c.proposalSentDate) c.proposalSentDate = lead.proposalSentDate;
+  if (lead.proposalAcceptedDate && !c.proposalAcceptedDate) c.proposalAcceptedDate = lead.proposalAcceptedDate;
   if (lead.agreementSentDate && !c.agreementSentDate) c.agreementSentDate = lead.agreementSentDate;
+  if (lead.agreementSignedDate && !c.agreementSignedDate) c.agreementSignedDate = lead.agreementSignedDate;
   if (lead.closedWonDate && !c.closedWonDate) c.closedWonDate = lead.closedWonDate;
   // Sync deal files
   if (lead.dealFiles && Object.keys(lead.dealFiles).length) {
@@ -8294,9 +8336,11 @@ function renderCustomers() {
               const _fmtDate = function(d){ if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return '—'; } };
               const _hasLead = !!_findLeadForCustomer(c);
               const fileRows = [
-                { label: 'Fleet Report', dateLabel: 'Uploaded', date: _df.fleet_report ? _df.fleet_report.uploadedAt : null, file: _df.fleet_report, key: 'fleet_report', color: '#0088FF', canView: _hasLead },
+                { label: 'Fleet Report', dateLabel: 'Sent', date: _df.fleet_report ? _df.fleet_report.uploadedAt : null, file: _df.fleet_report, key: 'fleet_report', color: '#0088FF', canView: _hasLead },
                 { label: 'Proposal', dateLabel: 'Sent', date: c.proposalSentDate, file: _df.proposal, key: 'proposal', color: '#7c3aed', canView: _hasLead },
+                { label: 'Proposal Accepted', dateLabel: 'Accepted', date: c.proposalAcceptedDate, file: null, key: null, color: '#22c55e', canView: false },
                 { label: 'Agreement', dateLabel: 'Sent', date: c.agreementSentDate, file: _df.agreement, key: 'agreement', color: '#db2777', canView: _hasLead },
+                { label: 'Agreement Signed', dateLabel: 'Signed', date: c.agreementSignedDate, file: _df.agreement_signed, key: 'agreement_signed', color: '#00CC66', canView: false },
                 { label: 'Closed Won', dateLabel: 'Closed', date: c.closedWonDate, file: null, key: null, color: '#059669', canView: false }
               ];
               return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1a1a1a">' +
@@ -10983,7 +11027,9 @@ function autoPopulateCustomer(lead) {
   // Build deal history object with dates and files
   const dealHistory = {
     proposalSentDate: lead.proposalSentDate || null,
+    proposalAcceptedDate: lead.proposalAcceptedDate || null,
     agreementSentDate: lead.agreementSentDate || null,
+    agreementSignedDate: lead.agreementSignedDate || null,
     closedWonDate: lead.closedWonDate || new Date().toISOString(),
     dealFiles: lead.dealFiles || {}
   };
@@ -10995,7 +11041,9 @@ function autoPopulateCustomer(lead) {
     existing.notes = (existing.notes ? existing.notes + ' | ' : '') + 'Deal added ' + today + ': ' + lineDesc + (dealSim ? ' (SIM: ' + dealSim + ')' : '');
     // Carry deal files, dates, and source data to customer record
     existing.proposalSentDate = dealHistory.proposalSentDate || existing.proposalSentDate;
+    existing.proposalAcceptedDate = dealHistory.proposalAcceptedDate || existing.proposalAcceptedDate;
     existing.agreementSentDate = dealHistory.agreementSentDate || existing.agreementSentDate;
+    existing.agreementSignedDate = dealHistory.agreementSignedDate || existing.agreementSignedDate;
     existing.closedWonDate = dealHistory.closedWonDate || existing.closedWonDate;
     if (!existing.dealFiles) existing.dealFiles = {};
     Object.assign(existing.dealFiles, dealHistory.dealFiles);
@@ -11030,7 +11078,9 @@ function autoPopulateCustomer(lead) {
       devices: newDevices,
       // Deal history — dates and uploaded files from pipeline journey
       proposalSentDate: dealHistory.proposalSentDate,
+      proposalAcceptedDate: dealHistory.proposalAcceptedDate,
       agreementSentDate: dealHistory.agreementSentDate,
+      agreementSignedDate: dealHistory.agreementSignedDate,
       closedWonDate: dealHistory.closedWonDate,
       dealFiles: dealHistory.dealFiles,
       // Source data for document regeneration
@@ -11398,6 +11448,9 @@ function submitAgreementSign() {
   };
   try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'agreement_sign',data:signData}) }).catch(function(){}); } catch(e){}
 
+  // Also store the signed agreement HTML on the server so portal can save it as the executed version
+  // (will be posted after fullSignedEmail is built, see below)
+
   // Build signed banner
   var signedBanner = '<div style="border:3px solid #00CC66;margin-bottom:30px;overflow:hidden">' +
     '<div style="background:#00CC66;padding:16px 24px;text-align:center">' +
@@ -11477,6 +11530,9 @@ function submitAgreementSign() {
     '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;font-size:10px;color:#888;text-align:center">' +
       'Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a>' +
     '</div></div>';
+
+  // Save the signed/executed agreement HTML on the server so portal can store it in dealFiles
+  try { fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) }).catch(function(){}); } catch(x) {}
 
   // Send EmailJS to sales + customer
   function loadAndSend() {

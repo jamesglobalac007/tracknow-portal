@@ -77,6 +77,7 @@ app.get('/api/events', (req, res) => {
 
 // ─── Agreement HTML Storage ─────────────────────────────────────────────────
 const agreementStore = {};
+const agreementSignedStore = {};
 
 app.post('/api/agreement', (req, res) => {
   try {
@@ -93,6 +94,30 @@ app.post('/api/agreement', (req, res) => {
 app.get('/api/agreement', (req, res) => {
   const key = req.query.key || '';
   res.json({ ok: true, html: agreementStore[key] || '' });
+});
+
+// Store the fully signed/executed agreement HTML (posted from the signing page)
+app.post('/api/agreement-signed', (req, res) => {
+  try {
+    const { key, html, company, email } = req.body;
+    if (!key || !html) return res.status(400).json({ ok: false, error: 'Missing key or html' });
+    agreementSignedStore[key] = { html, company: company || '', email: email || '', ts: Date.now() };
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/agreement-signed error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// Portal can fetch the signed version to store in dealFiles
+app.get('/api/agreement-signed', (req, res) => {
+  const key = req.query.key || '';
+  const entry = agreementSignedStore[key];
+  if (entry) {
+    res.json({ ok: true, html: entry.html, company: entry.company, email: entry.email, ts: entry.ts });
+  } else {
+    res.json({ ok: false, html: '' });
+  }
 });
 
 // ─── Status Sync (callback/proposal dismiss) ───────────────────────────────
