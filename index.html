@@ -4496,36 +4496,52 @@ function viewCustDealFile(custId, fileType) {
   document.body.removeChild(a);
 }
 
-// Upload a file directly to a customer's deal files (for existing customers)
-function uploadCustDealFile(custId, fileType) {
-  const c = CUSTOMERS.find(x => x.id === custId);
+// Find matching lead for a customer (by leadId or company name)
+function _findLeadForCustomer(c) {
+  if (c.leadId) {
+    var byId = LEADS.find(function(l){ return l.id === c.leadId; });
+    if (byId) return byId;
+  }
+  var normName = (c.co || '').trim().toLowerCase();
+  return LEADS.find(function(l){ return (l.co || '').trim().toLowerCase() === normName; });
+}
+
+// View a document for a customer — opens the matching lead's document viewer
+function viewCustDoc(custId, docType) {
+  var c = CUSTOMERS.find(function(x){ return x.id === custId; });
   if (!c) return;
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.html';
-  input.onchange = function() {
-    const file = input.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showToast('File too large — max 5 MB', 'warn'); return; }
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      if (!c.dealFiles) c.dealFiles = {};
-      c.dealFiles[fileType] = {
-        name: file.name,
-        type: file.type,
-        data: ev.target.result,
-        uploadedAt: new Date().toISOString()
-      };
-      // Auto-set dates if not already set
-      if (fileType === 'proposal' && !c.proposalSentDate) c.proposalSentDate = new Date().toISOString();
-      if (fileType === 'agreement' && !c.agreementSentDate) c.agreementSentDate = new Date().toISOString();
-      saveData();
-      renderCustomers();
-      showToast(fileType.replace(/_/g,' ') + ' uploaded for ' + c.co, 'ok');
-    };
-    reader.readAsDataURL(file);
-  };
-  input.click();
+  var lead = _findLeadForCustomer(c);
+  if (lead) {
+    if (docType === 'fleet_report') viewLeadFleetReport(lead.id);
+    else if (docType === 'proposal') openProposalDoc(lead.id);
+    else if (docType === 'agreement') openAgreementDoc(lead.id);
+    return;
+  }
+  showToast('Could not find matching pipeline deal for ' + c.co, 'warn');
+}
+
+// Refresh/sync customer deal data from matching pipeline lead
+function refreshCustDealData(custId) {
+  var c = CUSTOMERS.find(function(x){ return x.id === custId; });
+  if (!c) return;
+  var lead = _findLeadForCustomer(c);
+  if (!lead) { showToast('No matching pipeline deal found for ' + c.co, 'warn'); return; }
+  // Sync dates
+  if (lead.proposalSentDate && !c.proposalSentDate) c.proposalSentDate = lead.proposalSentDate;
+  if (lead.agreementSentDate && !c.agreementSentDate) c.agreementSentDate = lead.agreementSentDate;
+  if (lead.closedWonDate && !c.closedWonDate) c.closedWonDate = lead.closedWonDate;
+  // Sync deal files
+  if (lead.dealFiles && Object.keys(lead.dealFiles).length) {
+    if (!c.dealFiles) c.dealFiles = {};
+    Object.assign(c.dealFiles, lead.dealFiles);
+  }
+  // Sync source data for document regeneration
+  c.leadId = lead.id;
+  if (lead.fleetSegments && lead.fleetSegments.length) c.fleetSegments = lead.fleetSegments;
+  if (lead.lineItems && lead.lineItems.length) c.lineItems = lead.lineItems;
+  saveData();
+  renderCustomers();
+  showToast('Deal data synced from pipeline for ' + c.co, 'ok');
 }
 
 // ── Lost Deals (Not Going Ahead) → moves to Prospects as "not-interested" ──
@@ -8251,27 +8267,31 @@ function renderCustomers() {
             ` + (function(){
               const _df = c.dealFiles || {};
               const _fmtDate = function(d){ if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return '—'; } };
+              const _hasLead = !!_findLeadForCustomer(c);
               const fileRows = [
-                { label: 'Fleet Report', dateLabel: 'Uploaded', date: _df.fleet_report ? _df.fleet_report.uploadedAt : null, file: _df.fleet_report, key: 'fleet_report', color: '#0088FF' },
-                { label: 'Proposal Sent', dateLabel: 'Sent', date: c.proposalSentDate, file: _df.proposal, key: 'proposal', color: '#7c3aed' },
-                { label: 'Agreement Sent', dateLabel: 'Sent', date: c.agreementSentDate, file: _df.agreement, key: 'agreement', color: '#db2777' },
-                { label: 'Closed Won', dateLabel: 'Closed', date: c.closedWonDate, file: null, key: null, color: '#059669' }
+                { label: 'Fleet Report', dateLabel: 'Uploaded', date: _df.fleet_report ? _df.fleet_report.uploadedAt : null, file: _df.fleet_report, key: 'fleet_report', color: '#0088FF', canView: _hasLead },
+                { label: 'Proposal', dateLabel: 'Sent', date: c.proposalSentDate, file: _df.proposal, key: 'proposal', color: '#7c3aed', canView: _hasLead },
+                { label: 'Agreement', dateLabel: 'Sent', date: c.agreementSentDate, file: _df.agreement, key: 'agreement', color: '#db2777', canView: _hasLead },
+                { label: 'Closed Won', dateLabel: 'Closed', date: c.closedWonDate, file: null, key: null, color: '#059669', canView: false }
               ];
               return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1a1a1a">' +
-                '<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">DEAL FILE HISTORY</div>' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+                  '<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px">DEAL FILE HISTORY</div>' +
+                  '<button onclick="event.stopPropagation();refreshCustDealData(' + c.id + ')" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid #333;color:#888;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">&#x21bb; Refresh</button>' +
+                '</div>' +
                 fileRows.map(function(r){
                   var fileBtn = '';
                   if (r.file) {
                     fileBtn = '<button onclick="event.stopPropagation();viewCustDealFile(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:rgba(255,160,40,.08);border:1px solid rgba(255,160,40,.3);color:#FFA028;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\'" onmouseout="this.style.borderColor=\'rgba(255,160,40,.3)\'">📎 ' + r.file.name + '</button>';
                   }
-                  var uploadBtn = '';
-                  if (r.key) {
-                    uploadBtn = '<button onclick="event.stopPropagation();uploadCustDealFile(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:rgba(255,255,255,.05);border:1px solid #333;color:#888;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">' + (r.file ? '🔄 Replace' : '⬆ Upload') + '</button>';
+                  var viewBtn = '';
+                  if (r.key && r.canView) {
+                    viewBtn = '<button onclick="event.stopPropagation();viewCustDoc(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:rgba(255,160,40,.05);border:1px solid #333;color:#999;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#999\'">📄 View</button>';
                   }
                   return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #111">' +
-                    '<span style="font-size:11px;font-weight:600;color:' + r.color + ';min-width:120px">' + r.label + '</span>' +
+                    '<span style="font-size:11px;font-weight:600;color:' + r.color + ';min-width:110px">' + r.label + '</span>' +
                     '<span style="font-size:10px;color:#666;min-width:100px">' + r.dateLabel + ': ' + _fmtDate(r.date) + '</span>' +
-                    fileBtn + uploadBtn +
+                    fileBtn + viewBtn +
                   '</div>';
                 }).join('') +
               '</div>';
@@ -10944,12 +10964,15 @@ function autoPopulateCustomer(lead) {
     newDevices.forEach(d => existing.devices.push(d));
     existing.trackers += totalQty;
     existing.notes = (existing.notes ? existing.notes + ' | ' : '') + 'Deal added ' + today + ': ' + lineDesc + (dealSim ? ' (SIM: ' + dealSim + ')' : '');
-    // Carry deal files and dates to customer record
+    // Carry deal files, dates, and source data to customer record
     existing.proposalSentDate = dealHistory.proposalSentDate || existing.proposalSentDate;
     existing.agreementSentDate = dealHistory.agreementSentDate || existing.agreementSentDate;
     existing.closedWonDate = dealHistory.closedWonDate || existing.closedWonDate;
     if (!existing.dealFiles) existing.dealFiles = {};
     Object.assign(existing.dealFiles, dealHistory.dealFiles);
+    existing.leadId = lead.id;
+    if (lead.fleetSegments && lead.fleetSegments.length) existing.fleetSegments = lead.fleetSegments;
+    if (lead.lineItems && lead.lineItems.length) existing.lineItems = lead.lineItems;
     renderCustomers(); renderCustStats();
     showStageNotification(existing.co, 'Deal closed', '+' + totalQty + ' units added to existing account');
   } else {
@@ -10980,7 +11003,11 @@ function autoPopulateCustomer(lead) {
       proposalSentDate: dealHistory.proposalSentDate,
       agreementSentDate: dealHistory.agreementSentDate,
       closedWonDate: dealHistory.closedWonDate,
-      dealFiles: dealHistory.dealFiles
+      dealFiles: dealHistory.dealFiles,
+      // Source data for document regeneration
+      leadId: lead.id,
+      fleetSegments: lead.fleetSegments || [],
+      lineItems: lead.lineItems || []
     };
     CUSTOMERS.push(newCust);
     saveData();
