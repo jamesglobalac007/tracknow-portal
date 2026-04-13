@@ -10286,13 +10286,34 @@ function sendEmailFromPortal() {
   function doSend() {
     try {
       // Save pending data before closeEmailPreview nulls it
-      var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '' };
+      var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '', leadId: _epPending.leadId };
       emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
         .then(function() {
           clearTimeout(_sendTimeout);
           var typeLabel = _sent.type === 'fleet' ? 'Fleet Optimisation Report' : _sent.type === 'proposal' ? 'Proposal' : _sent.type === 'agreement' ? 'Agreement' : 'Email';
           showToast(typeLabel + ' sent to ' + _sent.to + ' ✓');
           closeEmailPreview();
+
+          // ── Auto-save document to lead's dealFiles when email sent ──
+          if (_sent.leadId) {
+            var _autoLead = LEADS.find(function(x){ return x.id === _sent.leadId; });
+            if (_autoLead && _sent.docHTML) {
+              if (!_autoLead.dealFiles) _autoLead.dealFiles = {};
+              var _fk = _sent.type === 'fleet' ? 'fleet_report' : _sent.type;
+              _autoLead.dealFiles[_fk] = {
+                name: (_sent.type === 'fleet' ? 'Fleet_Report' : _sent.type === 'proposal' ? 'Proposal' : 'Agreement') + '_' + (_autoLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+                type: 'text/html',
+                data: 'data:text/html;charset=utf-8,' + encodeURIComponent(_sent.docHTML),
+                uploadedAt: new Date().toISOString()
+              };
+              // Record stage date if not yet set
+              if (_sent.type === 'proposal' && !_autoLead.proposalSentDate) _autoLead.proposalSentDate = new Date().toISOString();
+              if (_sent.type === 'agreement' && !_autoLead.agreementSentDate) _autoLead.agreementSentDate = new Date().toISOString();
+              if (_sent.type === 'fleet' && !_autoLead.fleetReportDate) _autoLead.fleetReportDate = new Date().toISOString();
+              saveData();
+              renderPipeline();
+            }
+          }
 
           // Auto-download PDF if document content exists
           if (_sent.docHTML) {
