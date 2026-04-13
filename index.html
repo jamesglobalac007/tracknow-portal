@@ -3943,7 +3943,11 @@ function renderPipeline() {
               ${si>0?'<button onclick="event.stopPropagation();moveLeadStage('+l.id+',-1)" style="flex:1;padding:3px;background:#111;border:1px solid #333;color:#888;font-size:9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">◀ Back</button>':''}
               ${si<STAGES.length-1?'<button onclick="event.stopPropagation();moveLeadStage('+l.id+',1)" style="flex:1;padding:3px;background:#111;border:1px solid #333;color:#888;font-size:9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#00CC66\';this.style.color=\'#00CC66\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">Next ▶</button>':''}
             </div>
-            <button onclick="event.stopPropagation();markDealLost(${l.id})" style="width:100%;padding:4px;background:#111;border:1px solid #333;color:#dc2626;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#dc2626';this.style.background='rgba(220,38,38,.08)'" onmouseout="this.style.borderColor='#333';this.style.background='#111'">✕ NOT GOING AHEAD</button>
+            <select onchange="event.stopPropagation();if(this.value){archiveDeal(${l.id},this.value);this.value='';}" style="width:100%;padding:4px;background:#111;border:1px solid #333;color:#666;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .15s;letter-spacing:.3px;appearance:auto">
+              <option value="">Archive ▾</option>
+              <option value="not-ready">Not Ready</option>
+              <option value="not-interested">Not Interested</option>
+            </select>
           </div>
         </div>`;}).join('')}
         </div>
@@ -4790,6 +4794,43 @@ function markDealLost(leadId) {
   renderProspects();
   renderCustStats();
   showStageNotification(lead.co, stageLabel, 'Not Going Ahead');
+}
+
+// ── Archive Deal — moves to Prospects with chosen status (not-ready / not-interested) ──
+function archiveDeal(leadId, reason) {
+  const idx = LEADS.findIndex(l => l.id === leadId);
+  if (idx === -1) return;
+  const lead = LEADS[idx];
+  const stageLabel = (STAGES.find(s => s.id === lead.stage) || {}).label || lead.stage;
+  const reasonLabel = reason === 'not-ready' ? 'Not Ready' : 'Not Interested';
+  const newProspect = {
+    id: Date.now(),
+    co: lead.co,
+    name: lead.name || '',
+    phone: lead.phone || '',
+    email: lead.email || '',
+    ind: lead.ind || '',
+    source: 'referral',
+    fleet: lead.v || 0,
+    trackers: lead.v || 0,
+    added: new Date().toLocaleDateString('en-AU'),
+    status: reason,
+    notes: 'Archived from pipeline (' + reasonLabel + ') — was at "' + stageLabel + '" stage. ' + (lead.notes || ''),
+    // Carry over deal data so it can be restored
+    lineItems: lead.lineItems || [],
+    fleetSegments: lead.fleetSegments || null,
+    dealFiles: lead.dealFiles || {},
+    fleetReportDate: lead.fleetReportDate || null,
+    subPrice: lead.subPrice || 29.95,
+    _productsSet: lead._productsSet || false
+  };
+  PROSPECTS.push(newProspect);
+  LEADS.splice(idx, 1);
+  saveData();
+  renderPipeline();
+  renderProspects();
+  renderCustStats();
+  showStageNotification(lead.co, stageLabel, reasonLabel);
 }
 
 // Brief on-screen notification when a card is moved
