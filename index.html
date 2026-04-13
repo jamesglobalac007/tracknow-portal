@@ -3185,84 +3185,129 @@ function setView(v) {
   renderPipeline();
 }
 
-// ── Follow-Up Sequences per Stage ────────────────────────────────────
-const FOLLOW_UPS = {
-  'fleet-report': [
-    {type:'email', day:0, subject:'Your Fleet Report & Demo — {company}', body:'Hi {name},\n\nAs discussed, please find attached your Fleet Report for {company}. This outlines the hidden costs within your fleet — including fuel slippage, unauthorised use, idle time, and maintenance inefficiencies — and shows how TrackNow GPS tracking can recover significant savings annually.\n\nWe have also included a short demo video so you can see exactly how the platform works for fleets like yours.\n\nHappy to jump on a quick call to walk through it.\n\nKind regards,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent through your Fleet Optimisation Report plus demo for {company}. Some eye-opening numbers on fleet savings in there. Happy to chat anytime. — TrackNow GPS'},
-    {type:'email', day:3, subject:'Following up — Fleet Optimisation Report for {company}', body:'Hi {name},\n\nJust checking in — did you get a chance to look over the Fleet Optimisation Report and demo video? Happy to answer any questions or jump on a 5-min call.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, quick follow-up on the Fleet Optimisation Report we sent. Any questions? Happy to chat. — TrackNow GPS'}
-  ],
-  'proposal': [
-    {type:'email', day:0, subject:'Your TrackNow GPS Proposal — {company}', body:'Hi {name},\n\nPlease find attached your TrackNow GPS proposal for {company}. This includes your custom hardware and software pricing, fleet savings summary, and contract terms based on the fleet details we discussed.\n\nHappy to make any adjustments — just let me know.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow proposal with pricing based on your fleet. Let me know if you have any questions! — TrackNow GPS'},
-    {type:'email', day:3, subject:'Following up — Proposal for {company}', body:'Hi {name},\n\nJust checking in on the proposal we sent. Happy to make any adjustments or jump on a call to discuss.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, just following up on the proposal. Any questions? Happy to chat anytime. — TrackNow GPS'}
-  ],
-  'agreement': [
-    {type:'email', day:0, subject:'Your TrackNow GPS Agreement — Ready to Sign — {company}', body:'Hi {name},\n\nGreat news! Based on the proposal you have reviewed, we have prepared your TrackNow GPS service agreement for {company}.\n\nPlease review and sign digitally using the link below — it only takes a minute.\n\n[Agreement Link]\n\nOnce signed, we will get your fleet set up and tracking within days.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:1, body:'Hi {name}, just sent your TrackNow agreement for digital signing. Only takes a minute — let me know if you have any questions! — TrackNow GPS'},
-    {type:'email', day:3, subject:'Quick reminder — Agreement for {company}', body:'Hi {name},\n\nJust a quick reminder that your TrackNow GPS agreement is ready for signing. The digital link is still active.\n\nHappy to jump on a call if you would like to go through anything.\n\nCheers,\nTrackNow GPS Team'},
-    {type:'sms', day:5, body:'Hi {name}, friendly reminder — your TrackNow agreement is ready to sign. Happy to chat if needed. — TrackNow GPS'}
-  ]
-};
-
-function getFollowUps(lead) {
-  if (!lead._followUps) {
-    const seq = FOLLOW_UPS[lead.stage] || [];
-    lead._followUps = seq.map((f, i) => ({...f, id: i, sent: false, sentDate: null}));
-  }
-  return lead._followUps;
-}
+// ── Follow-Up System ─────────────────────────────────────────────────
+// Simple, clean follow-ups: Email + SMS buttons per stage.
+// Each click opens email preview or records SMS, and logs the date.
 
 function resetFollowUps(lead) {
-  lead._followUps = null;
-  getFollowUps(lead);
+  // No-op — follow-ups are now stored as lead.followUpLog (persistent array)
 }
 
-function sendFollowUp(leadId, fuIdx, type) {
-  const l = LEADS.find(x => x.id === leadId);
+function _getFollowUpConfig(stage) {
+  if (stage === 'proposal') return {
+    docLabel: 'Proposal',
+    emailSubject: 'Following up — Proposal for {company}',
+    emailBody: 'Hi {name},\n\nJust a quick one to see if you had a chance to review the proposal we sent through.\n\nWe would love to progress to the next phase and help {company} on your GPS fleet tracking journey.\n\nHappy to chat anytime.\n\nKind regards,',
+    smsBody: 'Hi {name}, quick follow-up on the proposal we sent for {company}. Would love to keep the ball rolling — happy to chat anytime. Thanks, TrackNow Team'
+  };
+  if (stage === 'agreement') return {
+    docLabel: 'Agreement',
+    emailSubject: 'Following up — Agreement for {company}',
+    emailBody: 'Hi {name},\n\nJust checking in to see if you had a chance to review and sign the service agreement we sent through for {company}.\n\nWe are ready to get your fleet set up and tracking as soon as the agreement is signed — happy to jump on a call if you have any questions.\n\nKind regards,',
+    smsBody: 'Hi {name}, quick follow-up on the agreement we sent for {company}. Ready to get you set up as soon as it is signed. Happy to chat anytime. Thanks, TrackNow Team'
+  };
+  return null;
+}
+
+function sendFollowUpEmail(leadId) {
+  var l = LEADS.find(function(x){ return x.id === leadId; });
   if (!l) return;
-  const fus = getFollowUps(l);
-  const fu = fus[fuIdx];
-  if (!fu) return;
+  var cfg = _getFollowUpConfig(l.stage);
+  if (!cfg) { showToast('No follow-up template for this stage', 'warn'); return; }
+  if (!l.email) { showToast('No email address for ' + l.co, 'warn'); return; }
+  var firstName = (l.name || 'there').split(' ')[0];
+  var subject = cfg.emailSubject.replace(/\{name\}/g, firstName).replace(/\{company\}/g, l.co);
+  var body = cfg.emailBody.replace(/\{name\}/g, firstName).replace(/\{company\}/g, l.co);
+  var docHTML = '<div style="font-family:Inter,Helvetica,Arial,sans-serif;max-width:640px;margin:0 auto;padding:40px;color:#1a1a1a;line-height:1.6">' +
+    body.replace(/\n/g, '<br>') +
+    '<br><br>—<br><strong>TrackNow GPS Sales Team</strong><br>1300 TRACK NOW<br>sales@tracknow.com.au<br>www.tracknow.com.au</div>';
+  _showEmailPreview({
+    to: l.email,
+    subject: subject,
+    body: body + _tnSig(),
+    type: 'followup',
+    docHTML: docHTML,
+    name: l.name || '',
+    company: l.co || '',
+    phone: l.phone || '',
+    leadId: l.id,
+    _followUpStage: l.stage
+  });
+}
 
-  const fillTemplate = (str) => str.replace(/\{name\}/g, l.name.split(' ')[0]).replace(/\{company\}/g, l.co);
-
-  if (type === 'email') {
-    const subject = encodeURIComponent(fillTemplate(fu.subject || ''));
-    const body = encodeURIComponent(fillTemplate(fu.body));
-    const email = l.email || '';
-    window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
-  } else if (type === 'sms') {
-    const body = fillTemplate(fu.body);
-    const phone = l.phone || '';
-    window.open('sms:' + phone + '&body=' + encodeURIComponent(body), '_blank');
+function sendFollowUpSMS(leadId) {
+  var l = LEADS.find(function(x){ return x.id === leadId; });
+  if (!l) return;
+  var cfg = _getFollowUpConfig(l.stage);
+  if (!cfg) { showToast('No follow-up template for this stage', 'warn'); return; }
+  var firstName = (l.name || 'there').split(' ')[0];
+  var smsBody = cfg.smsBody.replace(/\{name\}/g, firstName).replace(/\{company\}/g, l.co);
+  var phone = l.phone || '';
+  if (phone) {
+    window.open('sms:' + phone + '&body=' + encodeURIComponent(smsBody), '_blank');
+  } else {
+    showToast('No phone number for ' + l.co + ' — add one in the deal first', 'warn');
+    return;
   }
+  // Log the SMS follow-up
+  if (!l.followUpLog) l.followUpLog = [];
+  l.followUpLog.push({ type: 'sms', stage: l.stage, date: new Date().toISOString() });
+  saveData(); renderPipeline();
+  showToast('SMS follow-up sent for ' + l.co);
+}
 
-  fu.sent = true;
-  fu.sentDate = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'short'});
-  renderPipeline();
-  showToast((type === 'email' ? 'Email' : 'SMS') + ' follow-up sent for ' + l.co);
+function _recordFollowUpEmail(leadId, stage) {
+  // Called from emailjs success callback to log email follow-ups
+  var l = LEADS.find(function(x){ return x.id === leadId; });
+  if (!l) return;
+  if (!l.followUpLog) l.followUpLog = [];
+  l.followUpLog.push({ type: 'email', stage: stage || l.stage, date: new Date().toISOString() });
+  saveData(); renderPipeline();
 }
 
 function renderFollowUpBar(l) {
-  const fus = getFollowUps(l);
-  if (!fus.length) return '';
-  const sent = fus.filter(f => f.sent).length;
-  const total = fus.length;
-  let html = '<div style="margin-top:6px;margin-bottom:6px">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:8px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Follow-Ups</span><span style="font-size:8px;color:#555">' + sent + '/' + total + '</span></div>';
-  fus.forEach((fu, i) => {
-    const icon = fu.type === 'email' ? '✉' : '💬';
-    const label = fu.type === 'email' ? 'Email' : 'SMS';
-    const dayLabel = fu.day === 0 ? 'Day 0' : 'Day +' + fu.day;
-    if (fu.sent) {
-      html += '<div style="display:flex;align-items:center;gap:4px;padding:2px 0"><span style="font-size:9px">' + icon + '</span><span style="font-size:9px;color:#059669;font-weight:600">' + label + ' sent ' + fu.sentDate + '</span></div>';
-    } else {
-      html += '<div style="display:flex;align-items:center;gap:4px;padding:2px 0"><span style="font-size:9px">' + icon + '</span><button onclick="event.stopPropagation();sendFollowUp(' + l.id + ',' + i + ',\'' + fu.type + '\')" style="background:none;border:1px solid #333;color:#CCC;font-size:9px;padding:2px 6px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#CCC\'">' + label + ' · ' + dayLabel + '</button></div>';
-    }
-  });
+  if (l.stage !== 'proposal' && l.stage !== 'agreement') return '';
+  var cfg = _getFollowUpConfig(l.stage);
+  if (!cfg) return '';
+
+  // Determine when the doc was first sent
+  var sentDate = l.stage === 'proposal' ? l.proposalSentDate : l.agreementSentDate;
+  var _fd = function(d) { if (!d) return null; try { return new Date(d).toLocaleDateString('en-AU', {day:'2-digit', month:'short', year:'numeric'}); } catch(e) { return null; } };
+  var sentStr = _fd(sentDate);
+
+  // Get follow-up history for this stage
+  var logs = (l.followUpLog || []).filter(function(f) { return f.stage === l.stage; });
+
+  var html = '<div style="margin-top:8px;margin-bottom:6px;border:1px solid #1a1a1a;background:#080808;padding:8px">';
+
+  // Header: when the doc was sent
+  if (sentStr) {
+    html += '<div style="font-size:9px;color:#888;margin-bottom:6px">' + cfg.docLabel + ' sent <span style="color:#FFA028;font-weight:600">' + sentStr + '</span></div>';
+  }
+
+  // Heading
+  html += '<div style="font-size:8px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Follow Up</div>';
+
+  // Email + SMS buttons side by side
+  html += '<div style="display:flex;gap:4px;margin-bottom:6px">' +
+    '<button onclick="event.stopPropagation();sendFollowUpEmail(' + l.id + ')" style="flex:1;padding:5px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.3);color:#0098d4;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px" onmouseover="this.style.borderColor=\'#0098d4\';this.style.background=\'rgba(0,152,212,.12)\'" onmouseout="this.style.borderColor=\'rgba(0,152,212,.3)\';this.style.background=\'rgba(0,152,212,.06)\'">✉ Email</button>' +
+    '<button onclick="event.stopPropagation();sendFollowUpSMS(' + l.id + ')" style="flex:1;padding:5px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.3);color:#10b981;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px" onmouseover="this.style.borderColor=\'#10b981\';this.style.background=\'rgba(16,185,129,.12)\'" onmouseout="this.style.borderColor=\'rgba(16,185,129,.3)\';this.style.background=\'rgba(16,185,129,.06)\'">💬 SMS</button>' +
+  '</div>';
+
+  // Follow-up history — date log
+  if (logs.length > 0) {
+    logs.forEach(function(f, i) {
+      var icon = f.type === 'email' ? '✉' : '💬';
+      var typeLabel = f.type === 'email' ? 'Email' : 'SMS';
+      var dateStr = _fd(f.date) || '—';
+      html += '<div style="display:flex;align-items:center;gap:5px;padding:2px 0' + (i < logs.length - 1 ? ';border-bottom:1px solid #111' : '') + '">' +
+        '<span style="font-size:9px">' + icon + '</span>' +
+        '<span style="font-size:9px;color:#059669;font-weight:600">' + typeLabel + '</span>' +
+        '<span style="font-size:9px;color:#666">' + dateStr + '</span>' +
+      '</div>';
+    });
+  }
+
   html += '</div>';
   return html;
 }
@@ -10277,8 +10322,8 @@ function _markSig() {
 
 function _showEmailPreview(opts) {
   // opts: { to, subject, body, attachment, sigName, sigTitle, type, docHTML, name, company, phone }
-  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '', docHTML: opts.docHTML || '', name: opts.name || '', company: opts.company || '', phone: opts.phone || '', leadId: opts.leadId || 0 };
-  document.getElementById('ep_title').textContent = '📧 ' + (opts.type === 'fleet' ? 'Fleet Optimisation Report' : opts.type === 'proposal' ? 'Proposal' : opts.type === 'agreement' ? 'Service Agreement' : 'Email') + ' — Preview';
+  _epPending = { to: opts.to, subject: opts.subject, body: opts.body, type: opts.type || '', docHTML: opts.docHTML || '', name: opts.name || '', company: opts.company || '', phone: opts.phone || '', leadId: opts.leadId || 0, _followUpStage: opts._followUpStage || '' };
+  document.getElementById('ep_title').textContent = '📧 ' + (opts.type === 'fleet' ? 'Fleet Optimisation Report' : opts.type === 'proposal' ? 'Proposal' : opts.type === 'agreement' ? 'Service Agreement' : opts.type === 'followup' ? 'Follow-Up' : 'Email') + ' — Preview';
   document.getElementById('ep_to').textContent = opts.to;
   document.getElementById('ep_subject').textContent = opts.subject;
   // Attachment
@@ -10480,11 +10525,11 @@ function sendEmailFromPortal() {
   function doSend() {
     try {
       // Save pending data before closeEmailPreview nulls it
-      var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '', leadId: _epPending.leadId };
+      var _sent = { type: _epPending.type, to: _epPending.to, subject: _epPending.subject, docHTML: _epPending.docHTML || '', leadId: _epPending.leadId, _followUpStage: _epPending._followUpStage || '' };
       emailjs.send('service_5y35h2g', 'template_gwga9jo', templateParams)
         .then(function() {
           clearTimeout(_sendTimeout);
-          var typeLabel = _sent.type === 'fleet' ? 'Fleet Optimisation Report' : _sent.type === 'proposal' ? 'Proposal' : _sent.type === 'agreement' ? 'Agreement' : 'Email';
+          var typeLabel = _sent.type === 'fleet' ? 'Fleet Optimisation Report' : _sent.type === 'proposal' ? 'Proposal' : _sent.type === 'agreement' ? 'Agreement' : _sent.type === 'followup' ? 'Follow-up' : 'Email';
           showToast(typeLabel + ' sent to ' + _sent.to + ' ✓');
           closeEmailPreview();
 
@@ -10507,6 +10552,11 @@ function sendEmailFromPortal() {
               saveData();
               renderPipeline();
             }
+          }
+
+          // ── Record follow-up email in log when sent ──
+          if (_sent.type === 'followup' && _sent.leadId && _sent._followUpStage) {
+            try { _recordFollowUpEmail(_sent.leadId, _sent._followUpStage); } catch(e) {}
           }
 
           // Auto-download PDF if document content exists
@@ -11086,7 +11136,8 @@ function autoPopulateCustomer(lead) {
     agreementSentDate: lead.agreementSentDate || null,
     agreementSignedDate: lead.agreementSignedDate || null,
     closedWonDate: lead.closedWonDate || new Date().toISOString(),
-    dealFiles: lead.dealFiles || {}
+    dealFiles: lead.dealFiles || {},
+    followUpLog: lead.followUpLog || []
   };
 
   if (existing) {
@@ -11103,6 +11154,7 @@ function autoPopulateCustomer(lead) {
     if (!existing.dealFiles) existing.dealFiles = {};
     Object.assign(existing.dealFiles, dealHistory.dealFiles);
     existing.leadId = lead.id;
+    if (dealHistory.followUpLog && dealHistory.followUpLog.length) existing.followUpLog = (existing.followUpLog || []).concat(dealHistory.followUpLog);
     if (lead.fleetSegments && lead.fleetSegments.length) existing.fleetSegments = lead.fleetSegments;
     if (lead.lineItems && lead.lineItems.length) existing.lineItems = lead.lineItems;
     renderCustomers(); renderCustStats();
@@ -11138,6 +11190,7 @@ function autoPopulateCustomer(lead) {
       agreementSignedDate: dealHistory.agreementSignedDate,
       closedWonDate: dealHistory.closedWonDate,
       dealFiles: dealHistory.dealFiles,
+      followUpLog: dealHistory.followUpLog,
       // Source data for document regeneration
       leadId: lead.id,
       fleetSegments: lead.fleetSegments || [],
