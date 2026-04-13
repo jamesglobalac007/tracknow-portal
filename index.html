@@ -4352,6 +4352,7 @@ function moveLeadStage(leadId, direction) {
   _recordStageDateStamp(lead, newStage);
   resetFollowUps(lead); // New stage = new follow-up sequence
   if (newStage === 'closed') {
+    try { _playCashRegister(); } catch(e) {}
     if (lead.upsellCustId) { onLeadClosedWon(lead.id); } else { autoPopulateCustomer(lead); }
     // Remove lead from pipeline — it's now a live customer
     const _rmIdx = LEADS.findIndex(l => l.id === leadId);
@@ -4447,6 +4448,7 @@ function handleDrop(e, newStage) {
 
   // If moved to "Closed Won", auto-populate live customer and remove from pipeline
   if (newStage === 'closed') {
+    try { _playCashRegister(); } catch(e) {}
     if (lead.upsellCustId) {
       onLeadClosedWon(lead.id);
     } else {
@@ -4475,8 +4477,16 @@ function handleDrop(e, newStage) {
 function _recordStageDateStamp(lead, newStage) {
   const now = new Date().toISOString();
   if (newStage === 'proposal')  { if (!lead.proposalSentDate)    lead.proposalSentDate = now; }
-  if (newStage === 'agreement') { if (!lead.agreementSentDate)   lead.agreementSentDate = now; }
-  if (newStage === 'closed')    { if (!lead.closedWonDate)       lead.closedWonDate = now; }
+  if (newStage === 'agreement') {
+    if (!lead.agreementSentDate)   lead.agreementSentDate = now;
+    // Moving to Agreement phase implies proposal was accepted
+    if (!lead.proposalAcceptedDate) lead.proposalAcceptedDate = now;
+  }
+  if (newStage === 'closed') {
+    if (!lead.closedWonDate)       lead.closedWonDate = now;
+    // Moving to Closed Won implies agreement was signed
+    if (!lead.agreementSignedDate) lead.agreementSignedDate = now;
+  }
 }
 
 // ── Deal File Uploads ───────────────────────────────────────────────────────
