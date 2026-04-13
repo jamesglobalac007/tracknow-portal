@@ -3978,6 +3978,11 @@ function renderPipeline() {
 }
 
 var _pipeArchiveOpen = false;
+var _prospArchiveOpen = false;
+function _toggleProspArchive() {
+  _prospArchiveOpen = !_prospArchiveOpen;
+  renderProspects();
+}
 function _togglePipeArchive() {
   _pipeArchiveOpen = !_pipeArchiveOpen;
   _renderPipelineArchive();
@@ -8240,7 +8245,9 @@ function renderProspects() {
   const selectStyle = 'font-size:12px;padding:3px 6px;border:1px solid #222;border-radius:0;background:#111;color:#FFA028;font-family:inherit;outline:none;cursor:pointer';
   const inputStyle = 'font-size:13px;padding:3px 6px;border:1px solid #222;border-radius:0;background:#111;color:#FFA028;font-family:inherit;outline:none;width:50px;text-align:center';
 
-  const statusOptions = Object.entries(PROSPECT_STATUS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+  const activeStatuses = ['new','callback','qualified','warm'];
+  let statusOptions = activeStatuses.map(k => { const v = PROSPECT_STATUS[k]; return v ? '<option value="'+k+'">'+v.label+'</option>' : ''; }).join('');
+  statusOptions += '<optgroup label="── Archive ──"><option value="not-ready">Not Ready</option><option value="not-interested">Not Interested</option></optgroup>';
 
   function buildRow(p, i) {
     const sm = SOURCE_META[p.source] || {label:p.source,color:'#666',bg:'#111'};
@@ -8326,29 +8333,34 @@ function renderProspects() {
     </table></div>`;
   }
 
-  // ── Parked section (Not Ready / Not Interested) ──
+  // ── Archive section (Not Ready / Not Interested) — collapsible, minimized by default ──
   if (parkedEl) {
     if (!parked.length) {
       parkedEl.innerHTML = '';
     } else {
-      parkedEl.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div style="font-size:14px;font-weight:700;color:#666">Not Ready / Not Interested</div>
-        <span style="font-size:10px;font-weight:700;color:#666;background:#111;padding:3px 8px;border:1px solid #222">${parked.length}</span>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden;border-left:3px solid #333">
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#080808;border-bottom:1px solid #1a1a1a">
-          <th style="${thStyle}">Company</th>
-          <th style="${thStyle}">Contact</th>
-          <th style="${thStyle}">Industry</th>
-          <th style="${thStyle}">Source</th>
-          <th style="${thStyle}">Status</th>
-          <th style="${thStyle}">Added</th>
-          <th style="${thStyle}">Actions</th>
-        </tr></thead>
-        <tbody>${parked.map((p, i) => buildRow(p, i)).join('')}</tbody>
-      </table></div>`;
+      const arrow = _prospArchiveOpen ? '▼' : '▶';
+      parkedEl.innerHTML =
+        '<div onclick="_toggleProspArchive()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;background:#080808;border:1px solid #1a1a1a;transition:background .15s" onmouseover="this.style.background=\'#111\'" onmouseout="this.style.background=\'#080808\'">' +
+          '<span style="font-size:12px;color:#FFA028">' + arrow + '</span>' +
+          '<span style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px">Archive</span>' +
+          '<span style="font-size:10px;font-weight:700;color:#666;background:#111;padding:2px 6px;border:1px solid #222">' + parked.length + '</span>' +
+        '</div>';
+      if (_prospArchiveOpen) {
+        parkedEl.innerHTML += `
+        <div class="card" style="padding:0;overflow:hidden;border-left:3px solid #333;border-top:none">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#080808;border-bottom:1px solid #1a1a1a">
+            <th style="${thStyle}">Company</th>
+            <th style="${thStyle}">Contact</th>
+            <th style="${thStyle}">Industry</th>
+            <th style="${thStyle}">Source</th>
+            <th style="${thStyle}">Status</th>
+            <th style="${thStyle}">Added</th>
+            <th style="${thStyle}">Actions</th>
+          </tr></thead>
+          <tbody>${parked.map((p, i) => buildRow(p, i)).join('')}</tbody>
+        </table></div>`;
+      }
     }
   }
 }
