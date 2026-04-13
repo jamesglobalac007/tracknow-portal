@@ -2819,33 +2819,36 @@ function _handleServerEvent(evt) {
     if (!isDup) {
       accepts.push(evt.data);
       localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
-    }
-    // Record proposalAcceptedDate on the matching lead
-    try {
-      var _acceptLead = LEADS.find(function(l) {
-        if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
-        if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
-        return false;
-      });
-      if (_acceptLead) {
-        _acceptLead.proposalAcceptedDate = evt.data.ts || new Date().toISOString();
-        saveData(); renderPipeline();
+      // Record proposalAcceptedDate on the matching lead
+      try {
+        var _acceptLead = LEADS.find(function(l) {
+          if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+          if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+          return false;
+        });
+        if (_acceptLead) {
+          _acceptLead.proposalAcceptedDate = evt.data.ts || new Date().toISOString();
+          saveData(); renderPipeline();
+        }
+      } catch(e2) {}
+      // Trigger UI notification — only on NEW events, not replays
+      try { renderProposalAccepts(); } catch(e) {}
+      var label = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
+      try { showToast('Proposal accepted! ' + label + ' wants to proceed to agreement', 'warn'); } catch(e) {}
+      if (window.Notification && Notification.permission === 'granted') {
+        var n = new Notification('Proposal Accepted!', {
+          body: label + ' wants to proceed to formal agreement' + (evt.data.proposal ? ' — #' + evt.data.proposal : ''),
+          icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+          tag: 'proposal-accept-' + Date.now(),
+          requireInteraction: true
+        });
+        n.onclick = function() { window.focus(); n.close(); };
       }
-    } catch(e2) {}
-    // Trigger UI notification
-    try { renderProposalAccepts(); } catch(e) {}
-    var label = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
-    try { showToast('Proposal accepted! ' + label + ' wants to proceed to agreement', 'warn'); } catch(e) {}
-    if (window.Notification && Notification.permission === 'granted') {
-      var n = new Notification('Proposal Accepted!', {
-        body: label + ' wants to proceed to formal agreement' + (evt.data.proposal ? ' — #' + evt.data.proposal : ''),
-        icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
-        tag: 'proposal-accept-' + Date.now(),
-        requireInteraction: true
-      });
-      n.onclick = function() { window.focus(); n.close(); };
+      try { _playCashRegister(); } catch(e) {}
+    } else {
+      // Duplicate — still refresh dashboard panel but no sound/toast
+      try { renderProposalAccepts(); } catch(e) {}
     }
-    try { _playCashRegister(); } catch(e) {}
 
   } else if (evt.type === 'agreement_sign') {
     var signs = JSON.parse(localStorage.getItem('tn_agreement_signs') || '[]');
@@ -2853,49 +2856,52 @@ function _handleServerEvent(evt) {
     if (!isDup2) {
       signs.push(evt.data);
       localStorage.setItem('tn_agreement_signs', JSON.stringify(signs));
-    }
-    // Record agreementSignedDate on the matching lead and fetch the signed HTML
-    try {
-      var _signedLead = LEADS.find(function(l) {
-        if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
-        if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
-        return false;
-      });
-      if (_signedLead) {
-        _signedLead.agreementSignedDate = evt.data.ts || new Date().toISOString();
-        saveData(); renderPipeline();
-        // Fetch the fully signed agreement HTML from the server to save in dealFiles
-        var _agrKey2 = evt.data.agreement || '';
-        fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKey2))
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            if (d.ok && d.html && _signedLead) {
-              if (!_signedLead.dealFiles) _signedLead.dealFiles = {};
-              _signedLead.dealFiles['agreement_signed'] = {
-                name: 'Agreement_Executed_' + (_signedLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
-                type: 'text/html',
-                data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
-                uploadedAt: evt.data.ts || new Date().toISOString()
-              };
-              saveData(); renderPipeline();
-            }
-          }).catch(function(){});
+      // Record agreementSignedDate on the matching lead and fetch the signed HTML
+      try {
+        var _signedLead = LEADS.find(function(l) {
+          if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+          if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+          return false;
+        });
+        if (_signedLead) {
+          _signedLead.agreementSignedDate = evt.data.ts || new Date().toISOString();
+          saveData(); renderPipeline();
+          // Fetch the fully signed agreement HTML from the server to save in dealFiles
+          var _agrKey2 = evt.data.agreement || '';
+          fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKey2))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              if (d.ok && d.html && _signedLead) {
+                if (!_signedLead.dealFiles) _signedLead.dealFiles = {};
+                _signedLead.dealFiles['agreement_signed'] = {
+                  name: 'Agreement_Executed_' + (_signedLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+                  type: 'text/html',
+                  data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
+                  uploadedAt: evt.data.ts || new Date().toISOString()
+                };
+                saveData(); renderPipeline();
+              }
+            }).catch(function(){});
+        }
+      } catch(e3) {}
+      // Sound + toast + notification — only on NEW events, not replays
+      try { renderAgreementSigns(); } catch(e) {}
+      var label2 = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
+      try { showToast('Agreement signed! ' + label2 + ' has executed ' + (evt.data.agreement || 'the agreement'), 'warn'); } catch(e) {}
+      if (window.Notification && Notification.permission === 'granted') {
+        var n2 = new Notification('Agreement Signed & Executed!', {
+          body: label2 + ' has signed ' + (evt.data.agreement || 'the service agreement'),
+          icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+          tag: 'agreement-sign-' + Date.now(),
+          requireInteraction: true
+        });
+        n2.onclick = function() { window.focus(); n2.close(); };
       }
-    } catch(e3) {}
-    // Render dashboard notification box
-    try { renderAgreementSigns(); } catch(e) {}
-    var label2 = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
-    try { showToast('Agreement signed! ' + label2 + ' has executed ' + (evt.data.agreement || 'the agreement'), 'warn'); } catch(e) {}
-    if (window.Notification && Notification.permission === 'granted') {
-      var n2 = new Notification('Agreement Signed & Executed!', {
-        body: label2 + ' has signed ' + (evt.data.agreement || 'the service agreement'),
-        icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
-        tag: 'agreement-sign-' + Date.now(),
-        requireInteraction: true
-      });
-      n2.onclick = function() { window.focus(); n2.close(); };
+      try { _playCashRegister(); } catch(e) {}
+    } else {
+      // Duplicate — still refresh dashboard panel but no sound/toast
+      try { renderAgreementSigns(); } catch(e) {}
     }
-    try { _playCashRegister(); } catch(e) {}
 
   } else if (evt.type === 'callback_request') {
     var queue = JSON.parse(localStorage.getItem('tn_callback_requests') || '[]');
@@ -2903,33 +2909,35 @@ function _handleServerEvent(evt) {
     if (!isDup3) {
       queue.push(evt.data);
       localStorage.setItem('tn_callback_requests', JSON.stringify(queue));
+      // Sound + toast + notification — only on NEW events, not replays
+      var label3 = (evt.data.name || 'Someone') + (evt.data.company ? ' from ' + evt.data.company : '');
+      try { showToast('New callback request from ' + label3, 'warn'); } catch(e) {}
+      if (window.Notification && Notification.permission === 'granted') {
+        var n3 = new Notification('Callback Requested', {
+          body: label3 + (evt.data.time === 'ASAP' ? ' — ASAP!' : ' — ' + (evt.data.timeLabel || evt.data.time)),
+          icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
+          tag: 'callback-' + Date.now(),
+          requireInteraction: true
+        });
+        n3.onclick = function() { window.focus(); n3.close(); };
+      }
+      // Audio ping
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = ctx.createOscillator(); var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880; osc.type = 'sine'; gain.gain.value = 0.3;
+        osc.start(); osc.stop(ctx.currentTime + 0.15);
+        setTimeout(function() {
+          var osc2 = ctx.createOscillator(); var gain2 = ctx.createGain();
+          osc2.connect(gain2); gain2.connect(ctx.destination);
+          osc2.frequency.value = 1100; osc2.type = 'sine'; gain2.gain.value = 0.3;
+          osc2.start(); osc2.stop(ctx.currentTime + 0.2);
+        }, 180);
+      } catch(e) {}
     }
+    // Always refresh the queue panel (shows existing items)
     try { renderCallbackQueue(); } catch(e) {}
-    var label3 = (evt.data.name || 'Someone') + (evt.data.company ? ' from ' + evt.data.company : '');
-    try { showToast('New callback request from ' + label3, 'warn'); } catch(e) {}
-    if (window.Notification && Notification.permission === 'granted') {
-      var n3 = new Notification('Callback Requested', {
-        body: label3 + (evt.data.time === 'ASAP' ? ' — ASAP!' : ' — ' + (evt.data.timeLabel || evt.data.time)),
-        icon: 'https://www.tracknow.com.au/tracknow-logo.avif',
-        tag: 'callback-' + Date.now(),
-        requireInteraction: true
-      });
-      n3.onclick = function() { window.focus(); n3.close(); };
-    }
-    // Audio ping
-    try {
-      var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      var osc = ctx.createOscillator(); var gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = 880; osc.type = 'sine'; gain.gain.value = 0.3;
-      osc.start(); osc.stop(ctx.currentTime + 0.15);
-      setTimeout(function() {
-        var osc2 = ctx.createOscillator(); var gain2 = ctx.createGain();
-        osc2.connect(gain2); gain2.connect(ctx.destination);
-        osc2.frequency.value = 1100; osc2.type = 'sine'; gain2.gain.value = 0.3;
-        osc2.start(); osc2.stop(ctx.currentTime + 0.2);
-      }, 180);
-    } catch(e) {}
 
   } else if (evt.type === 'status_update') {
     // Another user dismissed/completed a callback or proposal accept — update local state
