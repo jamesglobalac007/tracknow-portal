@@ -916,6 +916,7 @@ select option{background:#0a0a0a;color:#FFA028}
     </div>
     <div id="boardView"></div>
     <div id="tableView" style="display:none"></div>
+    <div id="pipelineArchive" style="margin-top:16px"></div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
@@ -3968,6 +3969,81 @@ function renderPipeline() {
         <td><button onclick="event.stopPropagation();openDealProducts(${l.id})" style="background:none;border:1px solid #333;color:#FFA028;font-size:9px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap" onmouseover="this.style.borderColor='#FFA028'" onmouseout="this.style.borderColor='#333'">Edit</button></td>
       </tr>`; }).join('')}</tbody></table></div>`;
   }
+  // ── Pipeline Archive (Not Ready / Not Interested) ──
+  _renderPipelineArchive();
+}
+
+var _pipeArchiveOpen = false;
+function _togglePipeArchive() {
+  _pipeArchiveOpen = !_pipeArchiveOpen;
+  _renderPipelineArchive();
+}
+
+function _restoreArchivedDeal(prospectId) {
+  var p = PROSPECTS.find(function(x){ return x.id === prospectId; });
+  if (!p) return;
+  // Move back to pipeline as a proposal-stage lead
+  var units = p.trackers || p.fleet || 0;
+  var sub = p.subPrice || 29.95;
+  var annualVal = Math.round(units * sub * 12);
+  LEADS.push({
+    id: Date.now(), co: p.co, name: p.name || '', email: p.email || '',
+    phone: p.phone || '', ind: p.ind || '', v: units,
+    city: '', st: '', stage: 'proposal', val: annualVal, notes: p.notes || '',
+    star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
+    trackers: units, subPrice: sub, term: 24, sim: '',
+    lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:199, hwInstall:0}],
+    _productsSet: !!(p.lineItems && p.lineItems.length),
+    fleetSegments: p.fleetSegments || null,
+    dealFiles: p.dealFiles || {},
+    fleetReportDate: p.fleetReportDate || null
+  });
+  var idx = PROSPECTS.findIndex(function(x){ return x.id === prospectId; });
+  if (idx > -1) PROSPECTS.splice(idx, 1);
+  saveData();
+  renderPipeline(); renderProspects(); renderCustStats();
+  showToast(p.co + ' restored to Pipeline');
+}
+
+function _renderPipelineArchive() {
+  var el = document.getElementById('pipelineArchive');
+  if (!el) return;
+  var archived = PROSPECTS.filter(function(p) { return p.status === 'not-ready' || p.status === 'not-interested'; });
+  if (!archived.length) { el.innerHTML = ''; return; }
+
+  var arrow = _pipeArchiveOpen ? '▼' : '▶';
+  var html = '<div style="border:1px solid #1a1a1a;background:#080808">' +
+    '<div onclick="_togglePipeArchive()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s" onmouseover="this.style.background=\'#111\'" onmouseout="this.style.background=\'#080808\'">' +
+      '<span style="font-size:11px;color:#666">' + arrow + '</span>' +
+      '<span style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px">Archive</span>' +
+      '<span style="font-size:10px;font-weight:700;color:#555;background:#111;padding:2px 8px;border:1px solid #222">' + archived.length + '</span>' +
+    '</div>';
+
+  if (_pipeArchiveOpen) {
+    html += '<div style="border-top:1px solid #1a1a1a;padding:8px">';
+    archived.forEach(function(p) {
+      var statusLabel = p.status === 'not-ready' ? 'Not Ready' : 'Not Interested';
+      var statusColor = p.status === 'not-ready' ? '#d97706' : '#666';
+      var notePreview = p.notes ? p.notes.split('\n')[0].substring(0, 60) : '';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:4px;background:#0a0a0a;border:1px solid #111">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<span style="font-size:12px;font-weight:600;color:#999">' + p.co + '</span>' +
+            '<span style="font-size:9px;font-weight:600;color:' + statusColor + ';background:rgba(255,255,255,.04);padding:2px 6px;border:1px solid ' + statusColor + '">' + statusLabel + '</span>' +
+          '</div>' +
+          (p.name ? '<div style="font-size:10px;color:#555;margin-top:2px">' + p.name + (p.email ? ' · ' + p.email : '') + '</div>' : '') +
+          (notePreview ? '<div style="font-size:9px;color:#444;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + notePreview + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:4px;margin-left:10px;flex-shrink:0">' +
+          '<button onclick="event.stopPropagation();_restoreArchivedDeal(' + p.id + ')" style="font-size:9px;padding:4px 8px;background:rgba(0,152,212,.06);border:1px solid rgba(0,152,212,.3);color:#0098d4;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#0098d4\'" onmouseout="this.style.borderColor=\'rgba(0,152,212,.3)\'">↩ Restore</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function openAgreementDoc(leadId) {
@@ -7883,7 +7959,7 @@ const PORTAL_USERS = [
   {email:'mark', pass:'tracknow2026', name:'Mark Speelmeyer', role:'client'}
 ];
 
-// Auto-fill remembered credentials on load
+// Auto-fill remembered credentials on load — and auto-login if valid
 (function() {
   try {
     const saved = localStorage.getItem('tn_creds');
@@ -7895,6 +7971,14 @@ const PORTAL_USERS = [
       if (emailEl) emailEl.value = c.email || '';
       if (passEl)  passEl.value  = c.pass  || '';
       if (remEl)   remEl.checked = true;
+      // Auto-login: if credentials are remembered, skip the login screen on refresh
+      if (c.email && c.pass && typeof PORTAL_USERS !== 'undefined') {
+        const user = PORTAL_USERS.find(u => u.email === c.email.toLowerCase() && u.pass === c.pass);
+        if (user) {
+          const ov = document.getElementById('loginOverlay');
+          if (ov) { ov.style.display = 'none'; }
+        }
+      }
     }
   } catch(e) {}
 })();
