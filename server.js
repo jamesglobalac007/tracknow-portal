@@ -1,7 +1,22 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// ─── MDS Shield — Disclaimer Sign-off Storage ───────────────────────────────
+const SIGNOFF_DIR = path.join(__dirname, 'disclaimer-signoffs');
+const SIGNOFF_INDEX = path.join(SIGNOFF_DIR, '_index.json');
+try { fs.mkdirSync(SIGNOFF_DIR, { recursive: true }); } catch (e) {}
+let disclaimerSignoffs = [];
+try {
+  if (fs.existsSync(SIGNOFF_INDEX)) {
+    disclaimerSignoffs = JSON.parse(fs.readFileSync(SIGNOFF_INDEX, 'utf8'));
+  }
+} catch (e) { disclaimerSignoffs = []; }
+function persistSignoffIndex() {
+  try { fs.writeFileSync(SIGNOFF_INDEX, JSON.stringify(disclaimerSignoffs, null, 2)); } catch (e) {}
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname), { index: 'index.html' }));
@@ -134,6 +149,52 @@ app.post('/api/status', (req, res) => {
     console.error('POST /api/status error:', err);
     res.status(500).json({ ok: false, error: 'Server error' });
   }
+});
+
+// ─── MDS Shield — Disclaimer Endpoints ──────────────────────────────────────
+app.post('/api/disclaimer-accept', (req, res) => {
+  try {
+    const { user, displayName, clientCompany, acceptedAt } = req.body || {};
+    if (!user) return res.status(400).json({ ok: false, error: 'user required' });
+    const ts = acceptedAt || new Date().toISOString();
+    const record = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      username: user,
+      displayName: displayName || user,
+      clientCompany: clientCompany || 'TrackNow Pty Ltd',
+      acceptedAt: ts,
+      ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress || '',
+      userAgent: req.headers['user-agent'] || ''
+    };
+    disclaimerSignoffs.push(record);
+    persistSignoffIndex();
+    const safe = String(user).replace(/[^a-z0-9._-]/gi, '_');
+    const fname = path.join(SIGNOFF_DIR, `${safe}_${ts.replace(/[:.]/g, '-')}.txt`);
+    const body =
+      `MDS Shield — Disclaimer Sign-off\n` +
+      `================================\n` +
+      `Name:        ${record.displayName}\n` +
+      `Username:    ${record.username}\n` +
+      `Company:     ${record.clientCompany}\n` +
+      `Accepted At: ${record.acceptedAt}\n` +
+      `IP:          ${record.ip}\n` +
+      `User Agent:  ${record.userAgent}\n`;
+    try { fs.writeFileSync(fname, body); } catch (e) {}
+    res.json({ ok: true, record });
+  } catch (err) {
+    console.error('disclaimer-accept error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+app.get('/api/disclaimer-status', (req, res) => {
+  const user = req.query.user;
+  if (!user) return res.json({ ok: true, accepted: false });
+  res.json({ ok: true, accepted: disclaimerSignoffs.some(r => r.username === user) });
+});
+
+app.get('/api/disclaimer-signoffs', (req, res) => {
+  res.json({ ok: true, signoffs: disclaimerSignoffs });
 });
 
 // ─── Catch-all ──────────────────────────────────────────────────────────────

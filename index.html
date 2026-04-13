@@ -689,12 +689,12 @@ select option{background:#0a0a0a;color:#0098d4}
         MDS Diversified does not claim ownership of any client data, prospect data, customer records, or business information entered into this portal by TrackNow or its authorised users. All business data remains the property of TrackNow Pty Ltd.
       </div>
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #222">
-        <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">3. Data Privacy &amp; Security</div>
-        MDS Diversified takes reasonable measures to protect the data stored within this portal. However, as a browser-based application with local data storage, MDS Diversified does not guarantee against data loss, corruption, or unauthorised access. Users are responsible for maintaining secure access credentials and operating in a secure environment.
+        <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">3. Data Privacy, Security &amp; Cyber Responsibility</div>
+        <strong style="color:#FFA028">MDS Diversified does not manage, monitor, store, host, or have any ongoing access to TrackNow's data.</strong> All data entered into this portal is uploaded, controlled, and managed solely by TrackNow Pty Ltd and its authorised users. <strong style="color:#FFA028">MDS Diversified does not provide cyber security services of any kind</strong> — including but not limited to penetration testing, threat monitoring, intrusion detection, encryption-at-rest management, backup management, incident response, or compliance auditing. TrackNow is solely responsible for: (a) obtaining its own independent cyber security advice and protections; (b) maintaining secure credentials, devices, and networks; (c) backing up its own data; and (d) complying with the Privacy Act 1988 (Cth), the Notifiable Data Breaches scheme, and any other applicable data protection laws.
       </div>
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #222">
-        <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">4. No Financial or Legal Advice</div>
-        The calculators, ROI estimates, commission tools, and revenue projections in this portal are for illustrative purposes only and do not constitute financial, legal, or professional advice. Users should consult qualified professionals before making business decisions based on portal outputs.
+        <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">4. No Advice of Any Kind</div>
+        MDS Diversified is a technology design firm — <strong style="color:#FFA028">not a financial services provider, law firm, tax/accounting firm, cyber security firm, or any other licensed professional adviser</strong>. MDS holds no AFSL, ACL, or any professional licence. Nothing in this portal — including ROI calculators, commission tools, revenue projections, sales pipeline outputs, or marketing recommendations — constitutes financial, investment, legal, tax, accounting, structuring, cyber security, or any other regulated professional advice. TrackNow is solely responsible for obtaining its own independent professional advice before relying on any portal content or making any decision based on its outputs. MDS expressly disclaims all liability for any decisions made on the basis of platform content.
       </div>
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #222">
         <div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">5. Limitation of Liability</div>
@@ -11488,12 +11488,27 @@ function showDisclaimer(user) {
 function acceptDisclaimer() {
   const user = window._pendingDisclaimerUser;
   if (!user) return;
+  const acceptedAt = new Date().toISOString();
   try {
     localStorage.setItem('tn_disclaimer_accepted_' + user.email, JSON.stringify({
       accepted: true,
       name: user.name,
-      at: new Date().toISOString()
+      at: acceptedAt
     }));
+  } catch(e) {}
+
+  // Persist server-side (best effort)
+  try {
+    fetch('/api/disclaimer-accept', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        user: user.email,
+        displayName: user.name,
+        clientCompany: 'TrackNow Pty Ltd',
+        acceptedAt: acceptedAt
+      })
+    }).catch(()=>{});
   } catch(e) {}
 
   const dov = document.getElementById('disclaimerOverlay');
