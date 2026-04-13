@@ -11144,7 +11144,10 @@ function autoPopulateCustomer(lead) {
       lineItems: lead.lineItems || []
     };
     CUSTOMERS.push(newCust);
-    saveData();
+    // NOTE: Do NOT call saveData() here — the caller (moveLeadStage / handleDrop)
+    // still needs to splice the lead from LEADS first, then saveData() once.
+    // Calling saveData() here triggers _syncPush which sets _syncBusy=true,
+    // blocking the caller's saveData() from syncing the splice to the server.
     renderCustomers(); renderCustStats();
     showStageNotification(lead.co, 'Deal closed', 'New customer: ' + totalQty + ' units — ' + lineDesc);
   }
