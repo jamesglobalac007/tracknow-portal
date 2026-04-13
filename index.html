@@ -4351,6 +4351,16 @@ function moveLeadStage(leadId, direction) {
   resetFollowUps(lead); // New stage = new follow-up sequence
   if (newStage === 'closed') {
     if (lead.upsellCustId) { onLeadClosedWon(lead.id); } else { autoPopulateCustomer(lead); }
+    // Remove lead from pipeline — it's now a live customer
+    const _rmIdx = LEADS.findIndex(l => l.id === leadId);
+    if (_rmIdx !== -1) LEADS.splice(_rmIdx, 1);
+    saveData();
+    renderPipeline();
+    renderCustomers();
+    renderCustStats();
+    const oldLabel2 = (STAGES.find(s => s.id === oldStage) || {}).label || oldStage;
+    showStageNotification(lead.co, oldLabel2, 'Closed Won');
+    return;
   }
   saveData();
   renderPipeline();
