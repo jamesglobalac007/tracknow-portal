@@ -8053,6 +8053,16 @@ const PROSPECT_STATUS = {
 
 let _custTab = 'prospects';
 
+function _updateCustTabCounts() {
+  var pBtn = document.getElementById('custTabBtn-prospects');
+  var cBtn = document.getElementById('custTabBtn-customers');
+  var activeProspects = PROSPECTS.filter(function(p){ return p.status !== 'not-ready' && p.status !== 'not-interested'; }).length;
+  var archivedProspects = PROSPECTS.filter(function(p){ return p.status === 'not-ready' || p.status === 'not-interested'; }).length;
+  var totalProspects = PROSPECTS.length;
+  var totalCustomers = CUSTOMERS.length;
+  if (pBtn) pBtn.innerHTML = 'PROSPECTS \u00A0<span style="opacity:.7;font-size:11px">(' + totalProspects + ')</span>';
+  if (cBtn) cBtn.innerHTML = 'LIVE CUSTOMERS \u00A0<span style="opacity:.7;font-size:11px">(' + totalCustomers + ')</span>';
+}
 function showCustTab(tab) {
   _custTab = tab;
   ['prospects','customers'].forEach(t => {
@@ -8063,6 +8073,7 @@ function showCustTab(tab) {
       btn.style.color = t === tab ? '#000' : '#666';
     }
   });
+  _updateCustTabCounts();
   // Toggle header buttons based on active tab
   const csvBtn = document.getElementById('btnImportCsv');
   const prospBtn = document.getElementById('btnNewProspect');
@@ -8363,6 +8374,7 @@ function renderProspects() {
       }
     }
   }
+  _updateCustTabCounts();
 }
 
 function custExpiryDate(c) {
@@ -8589,6 +8601,7 @@ function renderCustomers() {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+  _updateCustTabCounts();
 }
 
 // ── Customer status dropdown ─────────────────────────────────────
