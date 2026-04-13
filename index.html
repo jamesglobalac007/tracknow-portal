@@ -8371,41 +8371,44 @@ function renderCustomers() {
             ${devicesHtml}
             ` + (function(){
               const _df = c.dealFiles || {};
-              const _fmtDate = function(d){ if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return '—'; } };
+              const _fd = function(d){ if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return '—'; } };
               const _hasLead = !!_findLeadForCustomer(c);
-              const fileRows = [
-                { label: 'Fleet Report', dateLabel: 'Sent', date: _df.fleet_report ? _df.fleet_report.uploadedAt : null, file: _df.fleet_report, key: 'fleet_report', color: '#0088FF', canView: _hasLead },
-                { label: 'Proposal', dateLabel: 'Sent', date: c.proposalSentDate, file: _df.proposal, key: 'proposal', color: '#7c3aed', canView: _hasLead },
-                { label: 'Proposal Accepted', dateLabel: 'Accepted', date: c.proposalAcceptedDate, file: null, key: null, color: '#22c55e', canView: false },
-                { label: 'Agreement', dateLabel: 'Sent', date: c.agreementSentDate, file: _df.agreement, key: 'agreement', color: '#db2777', canView: _hasLead },
-                { label: 'Agreement Signed', dateLabel: 'Signed', date: c.agreementSignedDate, file: _df.agreement_signed, key: 'agreement_signed', color: '#00CC66', canView: false },
-                { label: 'Closed Won', dateLabel: 'Closed', date: c.closedWonDate, file: null, key: null, color: '#059669', canView: false }
+              // 3 document rows + Closed Won
+              const docs = [
+                { label: 'Fleet Report', sentDate: _df.fleet_report ? _df.fleet_report.uploadedAt : null, acceptDate: null, file: _df.fleet_report, key: 'fleet_report', canView: _hasLead },
+                { label: 'Proposal', sentDate: c.proposalSentDate, acceptDate: c.proposalAcceptedDate, file: _df.proposal, key: 'proposal', canView: _hasLead, acceptLabel: 'Accepted' },
+                { label: 'Agreement', sentDate: c.agreementSentDate, acceptDate: c.agreementSignedDate, file: _df.agreement_signed || _df.agreement, key: _df.agreement_signed ? 'agreement_signed' : 'agreement', canView: _hasLead, acceptLabel: 'Signed' }
               ];
-              return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1a1a1a">' +
-                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+              var html = '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1a1a1a">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
                   '<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px">DEAL FILE HISTORY</div>' +
                   '<button onclick="event.stopPropagation();refreshCustDealData(' + c.id + ')" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid #333;color:#888;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">&#x21bb; Refresh</button>' +
-                '</div>' +
-                fileRows.map(function(r){
-                  var fileBtn = '';
-                  if (r.file) {
-                    fileBtn = '<button onclick="event.stopPropagation();viewCustDealFile(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:rgba(255,160,40,.08);border:1px solid rgba(255,160,40,.3);color:#FFA028;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\'" onmouseout="this.style.borderColor=\'rgba(255,160,40,.3)\'">📎 ' + r.file.name + '</button>';
-                  }
-                  var actionBtn = '';
-                  if (r.key) {
-                    if (r.canView && !r.file) {
-                      actionBtn = '<button onclick="event.stopPropagation();viewCustDoc(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:rgba(255,160,40,.05);border:1px solid #333;color:#999;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#999\'">📄 View</button>';
-                    } else if (!r.file) {
-                      actionBtn = '<button onclick="event.stopPropagation();uploadCustDealFile(' + c.id + ',\'' + r.key + '\')" style="font-size:9px;padding:3px 8px;background:transparent;border:1px solid #222;color:#555;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#222\';this.style.color=\'#555\'">📎 Attach</button>';
-                    }
-                  }
-                  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #111">' +
-                    '<span style="font-size:11px;font-weight:600;color:' + r.color + ';min-width:110px">' + r.label + '</span>' +
-                    '<span style="font-size:10px;color:#666;min-width:100px">' + r.dateLabel + ': ' + _fmtDate(r.date) + '</span>' +
-                    fileBtn + actionBtn +
-                  '</div>';
-                }).join('') +
+                '</div>';
+              docs.forEach(function(d) {
+                var sentStr = d.sentDate ? _fd(d.sentDate) : '—';
+                var acceptStr = d.acceptDate && d.acceptLabel ? '<span style="color:#00CC66;font-weight:600">' + d.acceptLabel + ' ' + _fd(d.acceptDate) + '</span>' : '';
+                var fileBtn = '';
+                if (d.file) {
+                  fileBtn = '<button onclick="event.stopPropagation();viewCustDealFile(' + c.id + ',\'' + d.key + '\')" style="font-size:9px;padding:2px 6px;background:rgba(255,160,40,.08);border:1px solid rgba(255,160,40,.25);color:#FFA028;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'#FFA028\'" onmouseout="this.style.borderColor=\'rgba(255,160,40,.25)\'">View</button>';
+                } else if (d.canView) {
+                  fileBtn = '<button onclick="event.stopPropagation();viewCustDoc(' + c.id + ',\'' + d.key + '\')" style="font-size:9px;padding:2px 6px;background:transparent;border:1px solid #333;color:#888;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">View</button>';
+                } else if (d.key) {
+                  fileBtn = '<button onclick="event.stopPropagation();uploadCustDealFile(' + c.id + ',\'' + d.key + '\')" style="font-size:9px;padding:2px 6px;background:transparent;border:1px solid #222;color:#555;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'#FFA028\';this.style.color=\'#FFA028\'" onmouseout="this.style.borderColor=\'#222\';this.style.color=\'#555\'">Attach</button>';
+                }
+                html += '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #111">' +
+                  '<span style="font-size:11px;font-weight:600;color:#FFA028;min-width:90px">' + d.label + '</span>' +
+                  '<span style="font-size:10px;color:#666;min-width:75px">Sent: ' + sentStr + '</span>' +
+                  (acceptStr ? '<span style="font-size:10px;min-width:85px">' + acceptStr + '</span>' : '') +
+                  '<span style="margin-left:auto">' + fileBtn + '</span>' +
+                '</div>';
+              });
+              // Closed Won row — green
+              html += '<div style="display:flex;align-items:center;gap:10px;padding:5px 0">' +
+                '<span style="font-size:11px;font-weight:600;color:#00CC66;min-width:90px">Closed Won</span>' +
+                '<span style="font-size:10px;color:#00CC66;font-weight:600">' + _fd(c.closedWonDate) + '</span>' +
               '</div>';
+              html += '</div>';
+              return html;
             })() + `
           </div>
         </td>
