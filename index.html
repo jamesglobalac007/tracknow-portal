@@ -10046,6 +10046,24 @@ function generateFleetReport() {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
 
+  // Auto-save fleet report to dealFiles on generation — fleet reports are sent
+  // from the Prospects tab (no leadId), so the emailjs callback can't save them.
+  // This is the only save path for fleet reports on pipeline leads.
+  if (_dealProductsLeadId) {
+    var _frLead = LEADS.find(function(x){ return x.id === _dealProductsLeadId; });
+    if (_frLead) {
+      if (!_frLead.dealFiles) _frLead.dealFiles = {};
+      var _frEmailHTML = _buildFleetEmailHTML(_frLead);
+      _frLead.dealFiles['fleet_report'] = {
+        name: 'Fleet_Report_' + (_frLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+        type: 'text/html',
+        data: 'data:text/html;charset=utf-8,' + encodeURIComponent(_frEmailHTML),
+        uploadedAt: new Date().toISOString()
+      };
+      if (!_frLead.fleetReportDate) _frLead.fleetReportDate = new Date().toISOString();
+      saveData(); renderPipeline();
+    }
+  }
   showToast('Fleet Optimisation Report generated for ' + l.co);
 }
 
