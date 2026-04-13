@@ -9099,7 +9099,9 @@ function moveProspectToPipeline(id) {
     trackers: units, subPrice: sub, term: 24, sim: '',
     lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:199, hwInstall:0}],
     _productsSet: !!(p.lineItems && p.lineItems.length),
-    fleetSegments: p.fleetSegments || null
+    fleetSegments: p.fleetSegments || null,
+    dealFiles: p.dealFiles || {},
+    fleetReportDate: p.fleetReportDate || null
   });
   const i = PROSPECTS.findIndex(x => x.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
@@ -10046,22 +10048,23 @@ function generateFleetReport() {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
 
-  // Auto-save fleet report to dealFiles on generation — fleet reports are sent
-  // from the Prospects tab (no leadId), so the emailjs callback can't save them.
-  // This is the only save path for fleet reports on pipeline leads.
+  // Auto-save fleet report to dealFiles on generation.
+  // Works for both prospects and pipeline leads — uses _getDealEntity() which
+  // checks _dealProductsSource to find the right entity.
   if (_dealProductsLeadId) {
-    var _frLead = LEADS.find(function(x){ return x.id === _dealProductsLeadId; });
-    if (_frLead) {
-      if (!_frLead.dealFiles) _frLead.dealFiles = {};
-      var _frEmailHTML = _buildFleetEmailHTML(_frLead);
-      _frLead.dealFiles['fleet_report'] = {
-        name: 'Fleet_Report_' + (_frLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+    var _frEntity = _getDealEntity();
+    if (_frEntity) {
+      if (!_frEntity.dealFiles) _frEntity.dealFiles = {};
+      var _frEmailHTML = _buildFleetEmailHTML(_frEntity);
+      _frEntity.dealFiles['fleet_report'] = {
+        name: 'Fleet_Report_' + (_frEntity.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
         type: 'text/html',
         data: 'data:text/html;charset=utf-8,' + encodeURIComponent(_frEmailHTML),
         uploadedAt: new Date().toISOString()
       };
-      if (!_frLead.fleetReportDate) _frLead.fleetReportDate = new Date().toISOString();
-      saveData(); renderPipeline();
+      if (!_frEntity.fleetReportDate) _frEntity.fleetReportDate = new Date().toISOString();
+      if (_dealProductsSource === 'prospect') { _saveProspects(); renderProspects(); }
+      else { saveData(); renderPipeline(); }
     }
   }
   showToast('Fleet Optimisation Report generated for ' + l.co);
