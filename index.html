@@ -8806,11 +8806,21 @@ function parseCsvText(text) {
   };
 
   _csvColMap = {};
+  // Pass 1: exact matches only (prevents "contact" stealing "co" via substring)
   _csvHeaders.forEach((h, i) => {
     const hLow = h.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
     for (const [field, aliases] of Object.entries(FIELD_MAP)) {
-      if (aliases.some(a => hLow === a || hLow.includes(a))) {
-        if (!_csvColMap[field]) _csvColMap[field] = i;
+      if (!_csvColMap[field] && aliases.some(a => hLow === a)) {
+        _csvColMap[field] = i;
+      }
+    }
+  });
+  // Pass 2: substring matches for remaining unmapped fields (only aliases 4+ chars)
+  _csvHeaders.forEach((h, i) => {
+    const hLow = h.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    for (const [field, aliases] of Object.entries(FIELD_MAP)) {
+      if (!_csvColMap[field] && aliases.some(a => a.length >= 4 && hLow.includes(a))) {
+        _csvColMap[field] = i;
       }
     }
   });
@@ -8860,16 +8870,19 @@ function importCsvProspects() {
     'database':'database','db':'database','list':'database','csv':'database',
     'walk-in':'walk-in','walkin':'walk-in','walk in':'walk-in'};
 
-  let imported = 0;
+  let imported = 0, dupCount = 0, emptyCount = 0;
   const today = new Date().toISOString().slice(0, 10);
 
   _csvParsedRows.forEach(row => {
-    const co = getVal(row, 'co');
-    if (!co) return; // skip rows with no company
+    // Use company if available, fall back to contact name so partial CSVs still import
+    let co = getVal(row, 'co');
+    if (!co) co = getVal(row, 'name');
+    if (!co) { emptyCount++; return; }
 
-    // Check for duplicate (same company name)
+    // Check for duplicate across PROSPECTS and LEADS (pipeline)
     const normCo = co.toLowerCase().trim();
-    if (PROSPECTS.some(p => (p.co || '').toLowerCase().trim() === normCo)) return;
+    if (PROSPECTS.some(p => (p.co || '').toLowerCase().trim() === normCo) ||
+        LEADS.some(l => (l.co || '').toLowerCase().trim() === normCo)) { dupCount++; return; }
 
     const rawSource = getVal(row, 'source').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
     const source = SOURCE_MAP[rawSource] || 'database';
@@ -8893,13 +8906,16 @@ function importCsvProspects() {
   });
 
   closeCsvImportModal();
+  _saveProspects();
   renderProspects();
   renderCustStats();
 
-  // Show result
-  const skipped = _csvParsedRows.length - imported;
+  // Show result with breakdown
   let msg = imported + ' prospect' + (imported !== 1 ? 's' : '') + ' imported successfully';
-  if (skipped > 0) msg += ' (' + skipped + ' skipped — duplicates or missing company)';
+  const parts = [];
+  if (dupCount > 0) parts.push(dupCount + ' duplicate' + (dupCount !== 1 ? 's' : ''));
+  if (emptyCount > 0) parts.push(emptyCount + ' missing company');
+  if (parts.length) msg += '\n(' + parts.join(', ') + ' skipped)';
   alert(msg);
 }
 
