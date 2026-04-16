@@ -802,9 +802,10 @@ select option{background:#0a0a0a;color:#0098d4}
 <div class="main">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:8px"></div>
-    <div class="search-wrap">
+    <div class="search-wrap" style="position:relative;">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input type="text" id="globalSearch" class="search-input" placeholder="Search prospects + customers (name, company, phone, email, notes)" oninput="applyGlobalSearch()">
+      <input type="text" id="globalSearch" class="search-input" placeholder="Search prospects + customers — from any page" oninput="applyGlobalSearch()" onfocus="applyGlobalSearch()" onblur="setTimeout(hideGlobalSearchResults,150)" autocomplete="off">
+      <div id="globalSearchResults" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;width:420px;max-height:420px;overflow-y:auto;background:#0a0a0a;border:1px solid #222;box-shadow:0 12px 40px rgba(0,0,0,.6);z-index:9999;"></div>
     </div>
 
   </div>
@@ -8213,10 +8214,92 @@ function toggleProspSort(field) {
   renderProspects();
 }
 
-// Global search — filters both Prospects and Customers tables as the user types
+// Global search — works from ANY page.
+// - Shows a results dropdown under the search bar with matching prospects + customers
+// - Also filters the Customers-tab tables when the user is already there
 function applyGlobalSearch() {
-  try { renderProspects(); } catch(e) { console.warn('renderProspects:', e); }
-  try { renderCustomers(); } catch(e) { console.warn('renderCustomers:', e); }
+  const input = document.getElementById('globalSearch');
+  const box = document.getElementById('globalSearchResults');
+  const q = ((input || {}).value || '').trim().toLowerCase();
+
+  // Re-render tables (handles the Customers tab filter when on that page)
+  try { renderProspects(); } catch(e) {}
+  try { renderCustomers(); } catch(e) {}
+
+  if (!box) return;
+  if (!q) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const match = (v) => String(v||'').toLowerCase().includes(q);
+  const hitsP = (PROSPECTS || []).filter(p =>
+    [p.co, p.name, p.phone, p.email, p.ind, p.source, p.notes].some(match)
+  ).slice(0, 20);
+  const hitsC = (CUSTOMERS || []).filter(c =>
+    [c.co, c.name, c.phone, c.email, c.sector, c.notes, c.contactName, c.contactEmail, c.contactPhone].some(match)
+  ).slice(0, 20);
+
+  const row = (label, sub, color, onClick) =>
+    `<div onmousedown="${onClick}" style="padding:10px 12px;border-bottom:1px solid #1a1a1a;cursor:pointer;" onmouseover="this.style.background='#111'" onmouseout="this.style.background=''">
+      <div style="font-size:13px;font-weight:600;color:${color};">${label}</div>
+      ${sub ? '<div style="font-size:11px;color:#777;margin-top:2px;">' + sub + '</div>' : ''}
+    </div>`;
+
+  let html = '';
+  if (hitsC.length) {
+    html += '<div style="padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;background:#0d0d0d;border-bottom:1px solid #1a1a1a;">Customers · ' + hitsC.length + '</div>';
+    html += hitsC.map(c => row(
+      c.co,
+      [c.contactName || c.name, c.contactEmail || c.email, c.contactPhone || c.phone, c.sector].filter(Boolean).join(' · '),
+      '#00CC66',
+      `openGlobalSearchHit('customer',${c.id})`
+    )).join('');
+  }
+  if (hitsP.length) {
+    html += '<div style="padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;background:#0d0d0d;border-bottom:1px solid #1a1a1a;">Prospects · ' + hitsP.length + '</div>';
+    html += hitsP.map(p => row(
+      p.co,
+      [p.name, p.email, p.phone, p.ind].filter(Boolean).join(' · '),
+      '#0098d4',
+      `openGlobalSearchHit('prospect',${p.id})`
+    )).join('');
+  }
+  if (!html) {
+    html = '<div style="padding:16px;text-align:center;color:#666;font-size:12px;">No matches for "' + q.replace(/"/g,'&quot;') + '"</div>';
+  }
+  box.innerHTML = html;
+  box.style.display = 'block';
+}
+
+function hideGlobalSearchResults() {
+  const box = document.getElementById('globalSearchResults');
+  if (box) box.style.display = 'none';
+}
+
+function openGlobalSearchHit(kind, id) {
+  hideGlobalSearchResults();
+  // Navigate to the Customers page (the "scraper" page contains both tables)
+  try {
+    const navBtn = document.querySelector('.nav-btn[onclick*="showPage(\'scraper\'"]');
+    if (navBtn) showPage('scraper', navBtn); else showPage('scraper');
+  } catch(e){ try { showPage('scraper'); } catch(e2){} }
+  // Give the page a beat to show, then either open the edit modal (prospects) or
+  // scroll-and-flash the matching customer row.
+  setTimeout(() => {
+    if (kind === 'prospect') {
+      try { if (typeof openEditProspect === 'function') openEditProspect(id); } catch(e){}
+    } else if (kind === 'customer') {
+      const row = document.querySelector('#customersTable tr[data-cust-id="'+id+'"]');
+      if (row) {
+        row.scrollIntoView({behavior:'smooth', block:'center'});
+        const prev = row.style.background;
+        row.style.transition = 'background .3s';
+        row.style.background = 'rgba(0,152,212,.25)';
+        setTimeout(() => { row.style.background = prev; }, 1600);
+      }
+    }
+    // Also clear the search box so the tables unfilter
+    const input = document.getElementById('globalSearch');
+    if (input) { input.value = ''; try { renderProspects(); renderCustomers(); } catch(e){} }
+  }, 150);
 }
 
 function renderProspects() {
@@ -8502,7 +8585,7 @@ function renderCustomers() {
           '<input type="text" list="simProviders" value="' + (c.sim||devs[0].sim||'') + '" onchange="updateCustomerSim('+c.id+',this.value)" style="font-size:11px;color:#0098d4;background:#111;border:1px solid #222;padding:4px 8px;width:140px;font-family:inherit" placeholder="Type or select...">' +
         '</div>'
       : '<div style="font-size:11px;color:#666;font-style:italic">No device breakdown added yet</div>';
-      return `<tr style="border-bottom:1px solid #222;background:${rowBg}">
+      return `<tr data-cust-id="${c.id}" style="border-bottom:1px solid #222;background:${rowBg}">
         <td style="padding:12px 14px">
           <div onclick="toggleCustDevices(${c.id})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
             <svg id="custChevron_${c.id}" width="10" height="10" fill="none" stroke="#666" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
