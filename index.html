@@ -804,7 +804,7 @@ select option{background:#0a0a0a;color:#0098d4}
     <div style="display:flex;align-items:center;gap:8px"></div>
     <div class="search-wrap">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input type="text" class="search-input" placeholder="Search leads, companies, contacts...">
+      <input type="text" id="globalSearch" class="search-input" placeholder="Search prospects + customers (name, company, phone, email, notes)" oninput="applyGlobalSearch()">
     </div>
 
   </div>
@@ -8213,6 +8213,12 @@ function toggleProspSort(field) {
   renderProspects();
 }
 
+// Global search — filters both Prospects and Customers tables as the user types
+function applyGlobalSearch() {
+  try { renderProspects(); } catch(e) { console.warn('renderProspects:', e); }
+  try { renderCustomers(); } catch(e) { console.warn('renderCustomers:', e); }
+}
+
 function renderProspects() {
   _saveProspects();
   const el = document.getElementById('prospectsTable');
@@ -8221,11 +8227,15 @@ function renderProspects() {
   const srcF = (document.getElementById('pFilter-source') || {}).value || '';
   const indF = (document.getElementById('pFilter-ind') || {}).value || '';
   const stF  = (document.getElementById('pFilter-status') || {}).value || '';
+  const q    = ((document.getElementById('globalSearch') || {}).value || '').trim().toLowerCase();
+  const matchQ = (p) => !q || [p.co, p.name, p.phone, p.email, p.ind, p.source, p.notes]
+    .some(v => String(v||'').toLowerCase().includes(q));
 
   let allFiltered = PROSPECTS.filter(p =>
     (!srcF || p.source === srcF) &&
     (!indF || p.ind === indF) &&
-    (!stF  || p.status === stF)
+    (!stF  || p.status === stF) &&
+    matchQ(p)
   );
 
   // Split into active prospects vs parked (not-ready / not-interested)
@@ -8424,9 +8434,14 @@ function renderCustomers() {
   if (!el) return;
   const secF = (document.getElementById('cFilter-sector') || {}).value || '';
   const stF  = (document.getElementById('cFilter-status') || {}).value || '';
+  const q    = ((document.getElementById('globalSearch') || {}).value || '').trim().toLowerCase();
+  const matchQ = (c) => !q || [c.co, c.name, c.phone, c.email, c.sector, c.notes, c.contactName, c.contactEmail, c.contactPhone]
+    .some(v => String(v||'').toLowerCase().includes(q));
+
   let list = CUSTOMERS.filter(c =>
     (!secF || c.sector === secF) &&
-    (!stF  || c.status === stF)
+    (!stF  || c.status === stF) &&
+    matchQ(c)
   );
 
   // Apply sorting
