@@ -4600,6 +4600,8 @@ function handleDrop(e, newStage) {
     renderPipeline();
     renderCustomers();
     renderCustStats();
+    // Prompt to send the Certificate of Compliance to the new customer.
+    try { showCertOfComplianceToast(lead); } catch(e) {}
     return;
   }
 
@@ -4840,6 +4842,68 @@ function archiveDeal(leadId, reason) {
 }
 
 // Brief on-screen notification when a card is moved
+// ── Certificate of Compliance ──────────────────────────────────────────────
+// Lives at /documents/certificate-of-compliance-2026.pdf on the Render server.
+// Offered automatically on Closed Won, and accessible any time via the helper
+// below. Uses mailto so it works regardless of SMTP setup.
+const CERT_OF_COMPLIANCE_PATH = '/documents/certificate-of-compliance-2026.pdf';
+const CERT_OF_COMPLIANCE_FILENAME = 'TrackNow-Certificate-of-Compliance-2026.pdf';
+function getCertOfComplianceUrl() {
+  try { return window.location.origin + CERT_OF_COMPLIANCE_PATH; } catch(e) { return CERT_OF_COMPLIANCE_PATH; }
+}
+function emailCertOfCompliance(lead) {
+  if (!lead) return;
+  const to = lead.email || '';
+  if (!to) { try { showToast('No email on file for ' + (lead.co || 'this lead') + ' — add one first', 'warn'); } catch(e) {} return; }
+  const url = getCertOfComplianceUrl();
+  const subject = 'TrackNow — Certificate of Compliance 2026';
+  const body =
+    'Hi ' + (lead.contact || lead.co || 'there') + ',\n\n' +
+    'Welcome aboard — really appreciate you choosing TrackNow.\n\n' +
+    'Attached below is a link to TrackNow\'s 2026 Certificate of Compliance. ' +
+    'Please keep a copy on file for your records:\n\n' +
+    url + '\n\n' +
+    'Let me know if you have any questions at all.\n\n' +
+    'Regards,\nTrackNow Team\nsales@tracknow.com.au';
+  const href = 'mailto:' + encodeURIComponent(to).replace(/%40/g,'@')
+             + '?subject=' + encodeURIComponent(subject)
+             + '&body=' + encodeURIComponent(body);
+  const a = document.createElement('a');
+  a.href = href; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => a.remove(), 0);
+}
+window.emailCertOfCompliance = emailCertOfCompliance;
+
+// Toast fired immediately after a lead is moved to Closed Won. Gives the
+// user a one-click action to send the Certificate of Compliance to the
+// new customer. Also offers a plain download link for their own records.
+function showCertOfComplianceToast(lead) {
+  if (!lead) return;
+  const existing = document.getElementById('certOfComplianceToast');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'certOfComplianceToast';
+  div.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0a0a0a;border:1px solid #059669;border-left:4px solid #059669;padding:14px 20px;z-index:9999;font-family:inherit;font-size:12px;color:#eee;max-width:460px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 12px 32px rgba(0,0,0,0.6);';
+  const emailAttr = lead.email ? '' : ' disabled title="No email on file — add one first"';
+  const emailStyle = lead.email
+    ? 'background:#059669;color:#fff;border:0;padding:6px 12px;font-size:11px;font-weight:700;border-radius:3px;cursor:pointer;letter-spacing:0.3px;'
+    : 'background:#333;color:#888;border:0;padding:6px 12px;font-size:11px;font-weight:700;border-radius:3px;cursor:not-allowed;letter-spacing:0.3px;';
+  const safeCo = String(lead.co || 'the customer').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  div.innerHTML =
+    '<span style="color:#059669;font-size:14px;">🎉</span>' +
+    '<div style="flex:1;min-width:180px;">' +
+      '<div style="font-weight:700;color:#059669;margin-bottom:2px;">Closed Won — ' + safeCo + '</div>' +
+      '<div style="color:#ccc;font-size:11px;">Send the Certificate of Compliance to the new customer?</div>' +
+    '</div>' +
+    '<button onclick="emailCertOfCompliance(window._certOfComplianceLead); this.closest(\'#certOfComplianceToast\').remove();" style="' + emailStyle + '"' + emailAttr + '>✉ Email Cert</button>' +
+    '<a href="' + CERT_OF_COMPLIANCE_PATH + '" download="' + CERT_OF_COMPLIANCE_FILENAME + '" style="background:transparent;border:1px solid #444;color:#ccc;padding:5px 10px;font-size:11px;font-weight:600;border-radius:3px;text-decoration:none;letter-spacing:0.3px;">⤓ Download</a>' +
+    '<button onclick="this.closest(\'#certOfComplianceToast\').remove();" title="Dismiss" style="background:transparent;border:0;color:#888;font-size:16px;cursor:pointer;line-height:1;padding:0 4px;">✕</button>';
+  window._certOfComplianceLead = lead;
+  document.body.appendChild(div);
+}
+window.showCertOfComplianceToast = showCertOfComplianceToast;
+
 function showStageNotification(company, from, to) {
   const existing = document.getElementById('stageNotif');
   if (existing) existing.remove();
