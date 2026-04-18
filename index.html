@@ -6969,9 +6969,9 @@ function _contentIsApproved(c) { return c && c.approval && c.approval.status ===
 function _contentApprovalBadge(c) {
     if (_contentIsApproved(c)) {
         const when = c.approval.approvedAt || '';
-        return '<span title="Approved by ' + c.approval.approvedBy + ' (' + (c.approval.approverRole || 'Director') + ') on ' + when + '" style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:2px 6px;background:#0a3a1a;color:#00cc66;border:1px solid #00cc6644;border-radius:3px;">✓ Approved</span>';
+        return '<span title="Approved by ' + c.approval.approvedBy + ' (' + (c.approval.approverRole || 'Director') + ') on ' + when + '" style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:2px 6px;background:#0a3a1a;color:#00cc66;border:1px solid #00cc6644;border-radius:3px;">Approved</span>';
     }
-    return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:2px 6px;background:#3a2a0a;color:#f59e0b;border:1px solid #f59e0b44;border-radius:3px;">⏳ Pending Sign-off</span>';
+    return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:2px 6px;background:#3a2a0a;color:#f59e0b;border:1px solid #f59e0b44;border-radius:3px;">Pending Sign-off</span>';
 }
 function approveContentItem(id) {
     const c = CONTENT_LIBRARY.find(x => x.id === id);
@@ -7003,7 +7003,7 @@ function approveContentItem(id) {
         const openPid = document.getElementById('platformFolderOverlay').getAttribute('data-pid');
         if (openPid) { document.getElementById('platformFolderOverlay').remove(); openPlatformFolder(openPid); }
     }
-    try { showToast && showToast('✓ ' + c.name + ' approved by ' + CONTENT_APPROVER.name); } catch(e) {}
+    try { showToast && showToast(c.name + ' approved by ' + CONTENT_APPROVER.name); } catch(e) {}
 }
 function revokeContentApproval(id) {
     const c = CONTENT_LIBRARY.find(x => x.id === id);
@@ -7176,11 +7176,11 @@ function openPlatformFolder(pid) {
       '</tr></thead><tbody>';
 
     if (approved.length) {
-      rows += '<tr><td colspan="5" style="padding:6px 12px;font-size:10px;color:#00cc66;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;background:#0a3a1a22;">✓ Approved — ready to share (' + approved.length + ')</td></tr>';
+      rows += '<tr><td colspan="5" style="padding:6px 12px;font-size:10px;color:#00cc66;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;background:#0a3a1a22;">Approved — ready to share (' + approved.length + ')</td></tr>';
       approved.forEach(c => rows += buildRow(c, true));
     }
     if (pending.length) {
-      rows += '<tr><td colspan="5" style="padding:6px 12px;font-size:10px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;background:#3a2a0a22;">⏳ Awaiting ' + CONTENT_APPROVER.name + ' sign-off (' + pending.length + ') — cannot share until signed off</td></tr>';
+      rows += '<tr><td colspan="5" style="padding:6px 12px;font-size:10px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;background:#3a2a0a22;">Awaiting ' + CONTENT_APPROVER.name + ' sign-off (' + pending.length + ') — cannot share until signed off</td></tr>';
       pending.forEach(c => rows += buildRow(c, false));
     }
     rows += '</tbody></table>';
@@ -7229,8 +7229,8 @@ function renderContentLibrary() {
     const approved = CONTENT_LIBRARY.filter(_contentIsApproved).length;
     const pending = CONTENT_LIBRARY.length - approved;
     sumEl.innerHTML =
-      '<span style="font-size:10px;font-weight:700;color:#00cc66;background:#0a3a1a;border:1px solid #00cc6644;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">✓ ' + approved + ' Approved</span>' +
-      (pending ? '<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#3a2a0a;border:1px solid #f59e0b44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">⏳ ' + pending + ' Pending ' + CONTENT_APPROVER.name + '</span>' : '');
+      '<span style="font-size:10px;font-weight:700;color:#00cc66;background:#0a3a1a;border:1px solid #00cc6644;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + approved + ' Approved</span>' +
+      (pending ? '<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#3a2a0a;border:1px solid #f59e0b44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + pending + ' Pending ' + CONTENT_APPROVER.name + '</span>' : '');
   })();
 
   // Update content-type folder counts
