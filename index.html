@@ -1535,7 +1535,7 @@ select option{background:#0a0a0a;color:#0098d4}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
           <div>
             <div class="section-title">Content Library</div>
-            <div class="section-sub">Upload raw content — auto-formatted for each platform's requirements. All new content must be signed off by the TrackNow Director (Mark Spielmeyer) before it can be shared on social.</div>
+            <div class="section-sub">Upload raw content — auto-formatted for each platform's requirements. All new content must be signed off by the TrackNow Director (Mark Speelmeyer) before it can be shared on social.</div>
             <div id="clApprovalSummary" style="margin-top:8px;display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;"></div>
           </div>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('clFileInput').click()" style="display:flex;align-items:center;gap:6px">
@@ -6964,7 +6964,7 @@ const CONTENT_LIBRARY = [];
 // Every piece of content must be signed off by the TrackNow director
 // before it can be shared / posted to social platforms. This is the
 // authorisation gate — nothing goes public without it.
-const CONTENT_APPROVER = { name: 'Mark Spielmeyer', role: 'Director, TrackNow' };
+const CONTENT_APPROVER = { name: 'Mark Speelmeyer', role: 'Director, TrackNow' };
 function _contentIsApproved(c) { return c && c.approval && c.approval.status === 'approved'; }
 function _contentApprovalBadge(c) {
     if (_contentIsApproved(c)) {
@@ -7082,7 +7082,7 @@ function handleContentUpload(files) {
       uploaded: new Date().toLocaleDateString('en-AU'),
       file: f,
       // All new content enters the library as pending — cannot be shared
-      // until signed off by the TrackNow director (Mark Spielmeyer).
+      // until signed off by the TrackNow director (Mark Speelmeyer).
       approval: { status: 'pending' }
     });
   }
