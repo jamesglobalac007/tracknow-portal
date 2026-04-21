@@ -163,15 +163,40 @@ function _seedUsers() {
 
 let USERS = [];
 function loadUsers() {
+  let loadedFromDisk = false;
   try {
     if (fs.existsSync(USERS_FILE)) {
       USERS = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-      return;
+      loadedFromDisk = true;
     }
   } catch (e) { console.error('[tracknow] loadUsers error:', e.message); }
-  USERS = _seedUsers();
-  saveUsers();
-  console.log(`[tracknow] Seeded ${USERS.length} users from defaults. All have mustChangePassword=true.`);
+
+  if (!loadedFromDisk) {
+    USERS = _seedUsers();
+    saveUsers();
+    console.log(`[tracknow] Seeded ${USERS.length} users from defaults.`);
+    return;
+  }
+
+  // Self-heal: for users that exist on disk from an older schema, raise
+  // the force2FA flag if the current seed requires it. Never downgrade
+  // (so an admin who turned 2FA off for someone doesn't get overridden
+  // by a deploy). Only sets the flag — doesn't touch totpEnabled, so an
+  // already-enrolled user is untouched.
+  let changed = false;
+  const seedMap = new Map(_seedUsers().map(s => [s.email.toLowerCase(), s]));
+  USERS.forEach(u => {
+    const seed = seedMap.get((u.email || '').toLowerCase());
+    if (!seed) return;
+    if (seed.force2FA && !u.force2FA) {
+      u.force2FA = true;
+      changed = true;
+      console.log(`[tracknow] Upgraded force2FA=true on ${u.email} (will enrol on next login).`);
+    }
+    // Fresh fields on existing rows
+    if (typeof u.totpEnabled !== 'boolean') { u.totpEnabled = false; changed = true; }
+  });
+  if (changed) saveUsers();
 }
 function saveUsers() {
   try { fs.writeFileSync(USERS_FILE, JSON.stringify(USERS, null, 2)); }
