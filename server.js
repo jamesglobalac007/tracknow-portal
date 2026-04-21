@@ -313,10 +313,22 @@ function clientIp(req) {
 }
 
 // ─── Auth middleware — gates every /api/* EXCEPT the whitelist ─────────────
+// The customer-facing endpoints are in here because proposals + agreements
+// are emailed out as self-contained HTML pages. When the customer clicks
+// "Proceed" or "Sign" in that email, their browser calls back to the portal
+// with NO session — they're not a portal user, they're the recipient. So
+// those endpoints stay unauthenticated, but each one has its own sanity
+// check (matching key, rate limit, or fixed recipient) so it can't be
+// abused by random internet traffic.
 const AUTH_EXEMPT = new Set([
   '/api/login',
-  '/api/disclaimer-accept',  // disclaimer is shown pre-login; it needs to record sign-off for the calling user
+  '/api/disclaimer-accept',      // disclaimer shown pre-login
   '/api/disclaimer-status',
+  '/api/agreement',              // GET + POST: customer opens agreement HTML
+  '/api/agreement-signed',       // GET + POST: customer uploads signed copy
+  '/api/event',                  // POST: customer pushes proposal/agreement-accepted event
+  '/api/status',                 // POST: customer dismisses a callback
+  '/api/send-email',             // gated inside the handler — customers get a restricted path
 ]);
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) return next();
@@ -912,44 +924,70 @@ function _emailQuotaOk() {
   return { ok: used < cap, used, cap };
 }
 
+// Per-IP rate limiter for unauthenticated (customer-side) send-email calls.
+// A legit customer clicking "Accept" + "Sign" on a proposal generates 2-4
+// emails across a session — 10 per 15 min per IP is plenty of headroom
+// without letting someone spam the sales mailbox.
+const _customerEmailRl = new Map();
+
 // POST /api/send-email — replaces all client-side emailjs.send() calls.
 // Accepts the same shape EmailJS was using: { to_email, subject,
 // from_name, message_html } — OR nested under template_params if the
 // monkey-patch passes through the raw EmailJS arg shape. Normalises both.
+//
+// Two access modes:
+//   1. Authenticated (portal user) — full recipient allowlist.
+//   2. Unauthenticated (customer clicking Accept / Sign in an emailed
+//      proposal/agreement) — recipient MUST be the portal's own
+//      SMTP_USER mailbox, per-IP rate-limited. Prevents the endpoint
+//      being turned into a spam relay.
 app.post('/api/send-email', async (req, res) => {
-  if (!req.user) return res.status(401).json({ ok: false, error: 'not authenticated' });
   try {
-    // Unpack either flavour (flat or nested under template_params)
     const body = req.body || {};
     const params = (body.template_params && typeof body.template_params === 'object') ? body.template_params : body;
     const to       = params.to_email || params.to;
     const subject  = params.subject;
     const fromName = params.from_name || 'TrackNow';
     const html     = params.message_html || params.html || params.body || '';
-
     if (!to || !subject) return res.status(400).json({ ok: false, error: 'to_email and subject required' });
 
-    if (!_recipientAllowed(to)) {
-      console.warn(`[security] send-email rejected recipient not on allowlist: ${to} (from ${req.user.email})`);
-      return res.status(403).json({ ok: false, error: 'Recipient must match a lead / prospect / customer on file, or be listed in EMAIL_EXTRA_RECIPIENTS.' });
+    const isAuthed = !!req.user;
+    const internalAddr = String(process.env.SMTP_USER || '').toLowerCase();
+
+    if (isAuthed) {
+      // Authenticated path — full allowlist check.
+      if (!_recipientAllowed(to)) {
+        console.warn(`[security] send-email rejected recipient not on allowlist: ${to} (from ${req.user.email})`);
+        return res.status(403).json({ ok: false, error: 'Recipient must match a lead / prospect / customer on file, or be listed in EMAIL_EXTRA_RECIPIENTS.' });
+      }
+    } else {
+      // Customer path — locked to the sales mailbox only, rate-limited per IP.
+      const recipientLower = String(to).toLowerCase();
+      if (!internalAddr || !recipientLower.split(',').every(r => r.trim() === internalAddr)) {
+        console.warn(`[security] public send-email rejected — recipient '${to}' is not the internal SMTP_USER`);
+        return res.status(403).json({ ok: false, error: 'Unauthenticated sends can only go to the internal sales mailbox.' });
+      }
+      const ip = clientIp(req);
+      const rl = rateLimit(_customerEmailRl, ip, 10);
+      if (!rl.ok) return res.status(429).json({ ok: false, error: `Too many notifications from this IP. Try again in ${rl.waitMin} min.` });
+      rl.bump();
     }
+
     const quota = _emailQuotaOk();
     if (!quota.ok) return res.status(429).json({ ok: false, error: `Daily email quota (${quota.cap}) reached. Try tomorrow.` });
 
     const mailer = getMailer();
-    if (!mailer) {
-      return res.status(503).json({ ok: false, error: 'SMTP not configured — set SMTP_HOST / SMTP_USER / SMTP_PASS env vars on Render.' });
-    }
+    if (!mailer) return res.status(503).json({ ok: false, error: 'SMTP not configured.' });
 
-    // Strip the <!doctype html> etc. if the client sent raw html — keep
-    // nodemailer happy with a plain html body.
     const info = await mailer.sendMail({
       from: process.env.SMTP_FROM || `${fromName} <${process.env.SMTP_USER}>`,
-      to,
-      subject,
-      html
+      to, subject, html
     });
-    pushAudit({ email: req.user.email, to, subject: String(subject).slice(0,120), success: true, reason: 'email_sent', messageId: info.messageId || '' });
+    pushAudit({
+      email: req.user ? req.user.email : '(customer)',
+      to, subject: String(subject).slice(0,120),
+      success: true, reason: 'email_sent', messageId: info.messageId || ''
+    });
     res.json({ ok: true, messageId: info.messageId || '' });
   } catch (err) {
     console.error('[tracknow] send-email error:', err);
