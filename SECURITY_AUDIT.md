@@ -181,3 +181,79 @@ Not tested in this audit:
 - `store` never holds regulated data (e.g. medical, payment-card). If it does, scope shifts dramatically.
 
 ---
+
+## 2026-04-21 — Post-remediation follow-up
+
+All baseline findings triaged and closed. Same day, separate entry so the before/after trail is preserved. Shipped across the day as a series of commits from `47bed63` (initial audit) through `d5f1dfd` (customer-callback fix for emailed proposals).
+
+### Status change summary
+
+| # | Severity | Item | Baseline (AM) | Now (PM) |
+|---|---|---|---|---|
+| 1 | CRITICAL | Unauthenticated `/api/*` endpoints | **FAIL** | **PASS** |
+| 2 | CRITICAL | Hardcoded plaintext passwords in `index.html` | **FAIL** | **PASS** |
+| 3 | CRITICAL | Client-side-only authentication | **FAIL** | **PASS** |
+| 4 | CRITICAL | No session concept (creds in `localStorage` forever) | **FAIL** | **PASS** |
+| 5 | HIGH | No security headers | **FAIL** | **PASS** |
+| 6 | HIGH | No server-side role enforcement | **FAIL** | **PASS** |
+| 7 | HIGH | In-memory-only data store | **FAIL** | **PASS** |
+| 8 | MEDIUM | Agreement HTML retrievable by guessable key | **FAIL** | **PARTIAL** — endpoint documented as customer-facing; key entropy upgrade deferred |
+| 9 | MEDIUM | Events log not tamper-evident | **FAIL** | **PASS** |
+| 10 | MEDIUM | Disclaimer signoffs readable without auth | **FAIL** | **PASS** |
+| 11 | LOW | Unused `cors` dependency / wide-open CORS | **FAIL** | **PASS** |
+| 12 | LOW | No XSS sweep on 903 KB `index.html` | **FAIL** | **PARTIAL** — primary injection points clean, dedicated sweep still owed |
+
+### New hardening added on top of baseline
+
+| # | Item | Notes |
+|---|---|---|
+| 13 | TOTP 2FA for `james@tracknow.com.au` + both mark accounts | Forced on first login via `force2FA:true`; 10 single-use backup codes; admin reset endpoint |
+| 14 | Rate limiting | Three parallel buckets on `/api/login` (per-IP 30/15m, per-email 10/15m, per-IP+email 5/15m). Same limiter applied to `/api/change-password` and `/api/2fa/setup-verify`. |
+| 15 | Email routing migrated EmailJS → nodemailer | GoDaddy SMTP from `sales@tracknow.com.au`. Password in Render env var, never in browser. Recipient allowlist + daily quota. Two access modes: authed (full allowlist) and unauthed (customer callbacks → sales mailbox only, per-IP rate-limited). |
+| 16 | Static-file blocklist | Explicit 404 on `users.json`, `sessions.json`, `audit.json`, `backups/`, `disclaimer-signoffs/`, `.env`, `.git`, `server.js`, legacy `TrackNow-Portal-v[2-6].html` files. |
+| 17 | Body-size caps scoped per route | 10 MB on agreement routes only; 2 MB everywhere else (was blanket 10 MB). |
+| 18 | `SECURITY.md` + fortnightly audit cadence | `SECURITY.md` present; Google Calendar recurring event every second Monday at 09:30 AEST reminds us to re-run this audit and append a new entry. |
+
+### New findings count
+
+| Severity | Count |
+|---|---|
+| CRITICAL | 0 |
+| HIGH | 0 |
+| MEDIUM | 1 — agreement key predictability |
+| LOW | 1 — XSS sweep on 903 KB `index.html` still owed |
+| INFO | 0 — `SECURITY.md` + audit file now both present |
+
+### Operational changes made today
+
+- **Render service type converted** from `static_site` → `web_service` (the old deployment never actually ran `server.js`). URL preserved.
+- **Persistent disk** attached at `/var/data` (1 GB).
+- **Env vars set on Render**: `DATA_DIR`, `BOOTSTRAP_PASSWORD`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`.
+- **npm deps added**: `bcryptjs`, `otplib`, `qrcode`, `nodemailer`. Removed: `cors` (unused).
+
+### Customer-facing endpoint exemptions
+
+Because proposals + agreements are emailed out as self-contained HTML, the recipient's browser needs to be able to call back to the portal without a session. Five endpoints are deliberately left unauthenticated, each with its own purpose-specific guard:
+
+| Endpoint | Guard |
+|---|---|
+| `POST /api/send-email` (customer mode) | Recipient locked to `SMTP_USER` (sales mailbox). Per-IP rate limit 10 per 15 min. |
+| `POST /api/event` | Size-capped, rolling 500-event buffer. |
+| `POST /api/status` | Size-capped. |
+| `POST /api/agreement-signed` | Requires a matching `key` from the sent agreement. |
+| `GET /api/agreement` | Requires a matching `key`. |
+
+### Follow-up items still worth doing (not blockers)
+
+1. **XSS sweep completion.** Item #12 — 903 KB `index.html` with lots of template-literal interpolation. A methodical `grep` + escape pass like I did on sb-empire is the honest next step.
+2. **Agreement-key entropy.** Item #8 — the current key is an ID-ish string. Upgrading to `crypto.randomBytes(16).toString('hex')` makes guessing an agreement URL impractical.
+3. **External backup of `data.json`.** Rolling + daily backups both sit on the same Render disk. A weekly off-Render copy to S3 or Dropbox would close the "Render region outage" gap.
+4. **`npm audit` in CI.** Add `npm audit --production` to a pre-deploy step so transitive vulnerabilities get flagged early.
+
+### Overall posture
+
+TrackNow portal has moved from *"openly exposes client pipeline data — do not leave running"* to **"hardened single-tenant business portal with documented audit trail"**. Same posture as sb-empire-portal after its Phase 1+2+3 remediation. All 4 CRITICAL + all 3 HIGH from the baseline are closed. Attacker-mindset path (`curl /api/data` → read everything) no longer works at any step. A client-side security review at handover would pass commonly-tested criteria: bcrypt passwords, mandatory 2FA for admins + client role, bearer-token sessions, strict CSP, HSTS, rate limiting on every auth surface, no third-party email dependency, daily persistent-disk backups, full audit log of sensitive actions.
+
+Next scheduled audit: **2026-05-05** (Mon 09:30 AEST, fortnightly cadence from Google Calendar reminder).
+
+---
