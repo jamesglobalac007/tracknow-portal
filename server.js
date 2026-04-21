@@ -328,6 +328,18 @@ app.use((req, res, next) => {
   const session = SESSIONS.find(s => s.token === m[1]);
   if (!session) return res.status(401).json({ ok: false, error: 'invalid or expired session' });
 
+  // Catch-up safeguard — if a session was issued as 'full' but the user
+  // still has force2FA + !totpEnabled (e.g. because of the earlier bug
+  // where change-password skipped the enrolment scope), retroactively
+  // clamp the session down so they can't reach the API until they enrol.
+  const sessionUser = USERS.find(u => u.email === session.email);
+  if (session.scope === 'full' && sessionUser && sessionUser.force2FA && !sessionUser.totpEnabled) {
+    session.scope = 'enrollment';
+    session.expiresAt = Date.now() + 15 * 60 * 1000;
+    saveSessions();
+    console.warn(`[security] Clamped session for ${session.email} back to 'enrollment' scope — 2FA not yet set up.`);
+  }
+
   // Narrow-scope sessions only reach the mandatory-setup endpoints.
   if (session.scope === 'password_change') {
     const allowed = ['/api/me', '/api/logout', '/api/change-password'];
@@ -341,7 +353,7 @@ app.use((req, res, next) => {
     }
   }
   req.session = session;
-  req.user = USERS.find(u => u.email === session.email);
+  req.user = sessionUser;
   next();
 });
 
@@ -581,14 +593,22 @@ app.post('/api/change-password', async (req, res) => {
   user.passwordEverChanged = true;
   user.updatedAt = new Date().toISOString();
   saveUsers();
-  // Upgrade the session from 'password_change' → 'full'.
+  // Upgrade the session. If force2FA is set and the user hasn't enrolled
+  // yet, go to 'enrollment' scope (NOT 'full') so they're still gated
+  // until 2FA setup completes. This was the bug that let james skip 2FA
+  // after his first-login password change.
   if (req.session) {
-    req.session.scope = 'full';
-    req.session.expiresAt = Date.now() + SESSION_MS;
+    if (user.force2FA && !user.totpEnabled) {
+      req.session.scope = 'enrollment';
+      req.session.expiresAt = Date.now() + 15 * 60 * 1000;
+    } else {
+      req.session.scope = 'full';
+      req.session.expiresAt = Date.now() + SESSION_MS;
+    }
     saveSessions();
   }
   pushAudit({ email: user.email, ip, success: true, reason: 'password_changed' });
-  res.json({ ok: true });
+  res.json({ ok: true, nextStep: (user.force2FA && !user.totpEnabled) ? 'enroll_2fa' : 'done' });
 });
 
 // Admin-only audit log viewer

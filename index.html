@@ -12850,10 +12850,13 @@ function _tnLoadAuth() {
 _tnLoadAuth();
 
 // Monkey-patch fetch() so every /api/* request automatically carries the
-// bearer token. Anything else (external CDN, etc.) is untouched.
+// bearer token. Also intercepts 403 must_enroll_2fa responses — if the
+// server tells us the current session needs to finish 2FA setup, pop the
+// enrolment overlay right now (don't wait for a fresh login).
+let _tn2faEnrolInFlight = false;
 (function() {
   const _origFetch = window.fetch.bind(window);
-  window.fetch = function(input, init) {
+  window.fetch = async function(input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     if (url.startsWith('/api/') && window.TN_AUTH.token) {
       init = init || {};
@@ -12862,7 +12865,23 @@ _tnLoadAuth();
         init.headers.set('Authorization', 'Bearer ' + window.TN_AUTH.token);
       }
     }
-    return _origFetch(input, init);
+    const resp = await _origFetch(input, init);
+    // Intercept 2FA-required response. We only want to pop the overlay
+    // once even if multiple /api/* calls fail simultaneously on page load.
+    if (resp.status === 403 && !_tn2faEnrolInFlight && typeof _tnEnrol2FA === 'function') {
+      const cloned = resp.clone();
+      try {
+        const body = await cloned.json();
+        if (body && body.error === 'must_enroll_2fa') {
+          _tn2faEnrolInFlight = true;
+          _tnEnrol2FA().then(ok => {
+            _tn2faEnrolInFlight = false;
+            if (ok) location.reload();  // pick up the freshly-upgraded 'full' session
+          });
+        }
+      } catch(e) { /* not JSON, ignore */ }
+    }
+    return resp;
   };
 })();
 
