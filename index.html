@@ -1480,23 +1480,23 @@ select option{background:#0a0a0a;color:#0098d4}
 
       <!-- Social Channel Cards — order: LinkedIn, Facebook, Instagram, YouTube, TikTok -->
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px">
-        <div class="card" style="padding:20px;text-align:center">
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openAddSocialAccount('linkedin')" title="Click to connect or edit">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(10,102,194,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" fill="#0A66C2" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
           </div>
           <div style="font-size:13px;font-weight:700;color:#0098d4">LinkedIn</div>
           <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
-          <span class="badge" style="background:rgba(10,102,194,.12);color:#0A66C2">Connected</span>
+          <span class="badge" style="background:rgba(10,102,194,.12);color:#0A66C2">Connect</span>
         </div>
-        <div class="card" style="padding:20px;text-align:center">
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openAddSocialAccount('facebook')" title="Click to connect or edit">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(24,119,242,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" fill="#1877F2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
           </div>
           <div style="font-size:13px;font-weight:700;color:#0098d4">Facebook</div>
           <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
-          <span class="badge" style="background:rgba(24,119,242,.12);color:#1877F2">Connected</span>
+          <span class="badge" style="background:rgba(24,119,242,.12);color:#1877F2">Connect</span>
         </div>
-        <div class="card" style="padding:20px;text-align:center">
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openAddSocialAccount('instagram')" title="Click to connect or edit">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(225,48,108,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" fill="none" stroke="#E1306C" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
           </div>
@@ -1504,7 +1504,7 @@ select option{background:#0a0a0a;color:#0098d4}
           <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
           <span class="badge" style="background:rgba(225,48,108,.12);color:#E1306C">Connected</span>
         </div>
-        <div class="card" style="padding:20px;text-align:center">
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openAddSocialAccount('youtube')" title="Click to connect or edit">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(255,0,0,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#FF0000" d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.5v2.1c0 2.3.3 4.5.3 4.5s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22.2 12 22.2 12 22.2s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.5v-2.1C23.3 9.2 23 7 23 7zm-13.5 8.9V8.1l8.1 3.9-8.1 3.9z"/></svg>
           </div>
@@ -1512,13 +1512,13 @@ select option{background:#0a0a0a;color:#0098d4}
           <div style="font-size:11px;color:#666;margin:4px 0 12px">0 subscribers</div>
           <span class="badge" style="background:rgba(255,0,0,.12);color:#FF0000">Connect</span>
         </div>
-        <div class="card" style="padding:20px;text-align:center">
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openAddSocialAccount('tiktok')" title="Click to connect or edit">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(255,255,255,.08);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#010101" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.05a8.16 8.16 0 004.77 1.52V7.12a4.85 4.85 0 01-1-.43z"/></svg>
           </div>
           <div style="font-size:13px;font-weight:700;color:#0098d4">TikTok</div>
           <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
-          <span class="badge" style="background:rgba(255,255,255,.08);color:#CCC">Connect</span>
+          <span class="badge" style="background:rgba(255,255,255,.08);color:#CCC">Connected</span>
         </div>
       </div>
 
@@ -6648,9 +6648,19 @@ function showMktTab(tab, btn) {
 // ── Init Marketing Hub ────────────────────────────────────────────────────
 // ═══════════ CONNECTED SOCIAL ACCOUNTS ═══════════
 var _defaultSocialAccounts = [
-  { id:'sa_ig_1', platform:'instagram', handle:'TrackNow_GPS', url:'https://www.instagram.com/TrackNow_GPS', email:'sales@tracknow.com.au', addedDate:'2026-04-12' }
+  { id:'sa_ig_1', platform:'instagram', handle:'TrackNow_GPS', url:'https://www.instagram.com/TrackNow_GPS', email:'sales@tracknow.com.au', addedDate:'2026-04-12' },
+  { id:'sa_tt_1', platform:'tiktok',    handle:'tracknowgpsau', url:'https://www.tiktok.com/@tracknowgpsau', email:'sales@tracknow.com.au', addedDate:'2026-04-22' }
 ];
 var SOCIAL_ACCOUNTS = JSON.parse(localStorage.getItem('tn_social_accounts') || 'null') || _defaultSocialAccounts;
+// Migration: ensure TikTok row exists for anyone who loaded the portal before 2026-04-22
+if (!SOCIAL_ACCOUNTS.some(function(a){ return a.platform === 'tiktok'; })) {
+  SOCIAL_ACCOUNTS.push({
+    id:'sa_tt_1', platform:'tiktok', handle:'tracknowgpsau',
+    url:'https://www.tiktok.com/@tracknowgpsau',
+    email:'sales@tracknow.com.au', addedDate:'2026-04-22'
+  });
+  localStorage.setItem('tn_social_accounts', JSON.stringify(SOCIAL_ACCOUNTS));
+}
 if (!localStorage.getItem('tn_social_accounts')) localStorage.setItem('tn_social_accounts', JSON.stringify(SOCIAL_ACCOUNTS));
 
 var SOCIAL_PLATFORM_META = {
@@ -6705,9 +6715,15 @@ function updateSocialAccountURL() {
   }
 }
 
-function openAddSocialAccount() {
+function openAddSocialAccount(prefillPlatform) {
+  // Clicking a platform card on the Marketing tab auto-opens the modal and
+  // jumps straight to an Edit form if an account for that platform already exists.
+  if (prefillPlatform) {
+    var existing = SOCIAL_ACCOUNTS.find(function(a){ return a.platform === prefillPlatform; });
+    if (existing) { editSocialAccount(existing.id); return; }
+  }
   document.getElementById('sa_modalTitle').textContent = 'Add Social Account';
-  document.getElementById('sa_platform').value = 'facebook';
+  document.getElementById('sa_platform').value = prefillPlatform || 'linkedin';
   document.getElementById('sa_handle').value = '';
   document.getElementById('sa_url').value = '';
   document.getElementById('sa_email').value = '';
