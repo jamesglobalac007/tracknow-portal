@@ -1478,16 +1478,8 @@ select option{background:#0a0a0a;color:#0098d4}
         </div>
       </div>
 
-      <!-- Social Channel Cards -->
-      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:20px">
-        <div class="card" style="padding:20px;text-align:center">
-          <div style="width:44px;height:44px;border-radius:0;background:rgba(24,119,242,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
-            <svg width="22" height="22" fill="#1877F2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-          </div>
-          <div style="font-size:13px;font-weight:700;color:#0098d4">Facebook</div>
-          <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
-          <span class="badge" style="background:rgba(24,119,242,.12);color:#1877F2">Connected</span>
-        </div>
+      <!-- Social Channel Cards — order: LinkedIn, Facebook, Instagram, YouTube, TikTok -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px">
         <div class="card" style="padding:20px;text-align:center">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(10,102,194,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" fill="#0A66C2" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
@@ -1497,20 +1489,20 @@ select option{background:#0a0a0a;color:#0098d4}
           <span class="badge" style="background:rgba(10,102,194,.12);color:#0A66C2">Connected</span>
         </div>
         <div class="card" style="padding:20px;text-align:center">
+          <div style="width:44px;height:44px;border-radius:0;background:rgba(24,119,242,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+            <svg width="22" height="22" fill="#1877F2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#0098d4">Facebook</div>
+          <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
+          <span class="badge" style="background:rgba(24,119,242,.12);color:#1877F2">Connected</span>
+        </div>
+        <div class="card" style="padding:20px;text-align:center">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(225,48,108,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
             <svg width="22" height="22" fill="none" stroke="#E1306C" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
           </div>
           <div style="font-size:13px;font-weight:700;color:#0098d4">Instagram</div>
           <div style="font-size:11px;color:#666;margin:4px 0 12px">0 followers</div>
           <span class="badge" style="background:rgba(225,48,108,.12);color:#E1306C">Connected</span>
-        </div>
-        <div class="card" style="padding:20px;text-align:center">
-          <div style="width:44px;height:44px;border-radius:0;background:rgba(0,152,212,.1);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
-            <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#FBBC05" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/><path fill="#EA4335" d="M15 8h-2v8h2V8z"/><path fill="#4285F4" d="M9 8H7v8h2V8z"/></svg>
-          </div>
-          <div style="font-size:13px;font-weight:700;color:#0098d4">Google Ads</div>
-          <div style="font-size:11px;color:#666;margin:4px 0 12px">Active campaigns</div>
-          <span class="badge" style="background:rgba(0,152,212,.1);color:#0098d4">Connect</span>
         </div>
         <div class="card" style="padding:20px;text-align:center">
           <div style="width:44px;height:44px;border-radius:0;background:rgba(255,0,0,.12);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
@@ -1644,10 +1636,9 @@ select option{background:#0a0a0a;color:#0098d4}
           </select>
           <select id="mktFilterChannel" onchange="renderCampaigns()" style="padding:8px 12px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a">
             <option value="All">All Channels</option>
-            <option>Facebook</option>
             <option>LinkedIn</option>
+            <option>Facebook</option>
             <option>Instagram</option>
-            <option>Google Ads</option>
             <option>YouTube</option>
             <option>TikTok</option>
             <option>Email</option>
@@ -7353,9 +7344,9 @@ function renderMktOverview() {
       new Chart(document.getElementById('chartMktChannels'), {
         type: 'doughnut',
         data: {
-          labels: ['Facebook','LinkedIn','Instagram','Google Ads','YouTube','TikTok'],
+          labels: ['LinkedIn','Facebook','Instagram','YouTube','TikTok'],
           datasets: [{
-            data: (() => { const ch = {Facebook:0,LinkedIn:0,Instagram:0,'Google Ads':0,YouTube:0,TikTok:0}; CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (ch[p] !== undefined) ch[p] += (c.reach||c.spent||1); }); }); return Object.values(ch); })(),
+            data: (() => { const ch = {LinkedIn:0,Facebook:0,Instagram:0,YouTube:0,TikTok:0}; CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (ch[p] !== undefined) ch[p] += (c.reach||c.spent||1); }); }); return Object.values(ch); })(),
             backgroundColor: ['#1877F2','#0A66C2','#E1306C','#EA4335','#FF0000','#69C9D0'],
             borderWidth: 3,
             borderColor: '#000',
@@ -7401,10 +7392,10 @@ function renderMktOverview() {
     })();
     const lgd = document.getElementById('mktChannelLegend');
     if(lgd) {
-      const _chD = {Facebook:0,LinkedIn:0,Instagram:0,'Google Ads':0,YouTube:0,TikTok:0};
+      const _chD = {LinkedIn:0,Facebook:0,Instagram:0,YouTube:0,TikTok:0};
       CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (_chD[p] !== undefined) _chD[p] += (c.reach||c.spent||1); }); });
       const _chT = Object.values(_chD).reduce((a,b)=>a+b,0);
-      const _chItems = [{label:'Facebook',c:'#1877F2'},{label:'LinkedIn',c:'#0A66C2'},{label:'Instagram',c:'#E1306C'},{label:'Google Ads',c:'#EA4335'},{label:'YouTube',c:'#FF0000'},{label:'TikTok',c:'#69C9D0'}].map(d => ({...d, pct: _chT > 0 ? Math.round((_chD[d.label]/_chT)*100)+'%' : '0%'}));
+      const _chItems = [{label:'LinkedIn',c:'#0A66C2'},{label:'Facebook',c:'#1877F2'},{label:'Instagram',c:'#E1306C'},{label:'YouTube',c:'#FF0000'},{label:'TikTok',c:'#69C9D0'}].map(d => ({...d, pct: _chT > 0 ? Math.round((_chD[d.label]/_chT)*100)+'%' : '0%'}));
       lgd.innerHTML = _chItems.map(d=>`
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:3px;background:${d.c};display:inline-block"></span><span style="font-size:12px;color:#CCC">${d.label}</span></div>
@@ -7781,7 +7772,7 @@ function launchCampaign() {
 }
 
 function _pushCampaign(name, status) {
-  const channels = ['cm_fb','cm_li','cm_ig','cm_ga','cm_yt','cm_tt','cm_em'].filter(id => document.getElementById(id)?.checked).map(id => ({cm_fb:'Facebook',cm_li:'LinkedIn',cm_ig:'Instagram',cm_ga:'Google Ads',cm_yt:'YouTube',cm_tt:'TikTok',cm_em:'Email'}[id]));
+  const channels = ['cm_li','cm_fb','cm_ig','cm_yt','cm_tt','cm_em'].filter(id => document.getElementById(id)?.checked).map(id => ({cm_li:'LinkedIn',cm_fb:'Facebook',cm_ig:'Instagram',cm_yt:'YouTube',cm_tt:'TikTok',cm_em:'Email'}[id]));
   const newCamp = {
     id: Date.now(), name, type: document.getElementById('cm_type').value,
     channels: channels.length ? channels : ['Facebook'],
@@ -13469,10 +13460,9 @@ window.doLogout = doLogout;
       </div>
       <div class="form-group"><label>Channels</label>
         <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_fb" checked> Facebook</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_li"> LinkedIn</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_li" checked> LinkedIn</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_fb"> Facebook</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_ig"> Instagram</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_ga"> Google Ads</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_yt"> YouTube</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_tt"> TikTok</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#CCC;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" id="cm_em"> Email</label>
