@@ -8156,39 +8156,32 @@ function saveNewLead() {
 }
 
 // ═══════════ LOGIN ═══════════
-const PORTAL_USERS = [
-  {email:'james@tracknow.com.au', pass:'tracknow2026', name:'James', role:'admin'},
-  {email:'jamesglobalac007@gmail.com', pass:'tracknow2026', name:'James', role:'admin'},
-  {email:'james', pass:'tracknow2026', name:'James', role:'admin'},
-  {email:'team@tracknow.com.au', pass:'tracknow2026', name:'TrackNow Team', role:'admin'},
-  {email:'mark@mdsdiversified.com.au', pass:'tracknow2026', name:'Mark Speelmeyer', role:'client'},
-  {email:'mark@tracknow.com.au', pass:'tracknow2026', name:'Mark Speelmeyer', role:'client'},
-  {email:'mark', pass:'tracknow2026', name:'Mark Speelmeyer', role:'client'}
-];
+// NOTE (2026-04-21): the old hardcoded PORTAL_USERS array with plaintext
+// passwords has been REMOVED. All authentication is now server-side via
+// POST /api/login + bcrypt, with bearer tokens in sessionStorage.
+// See doLogin() below and server.js for the new flow.
 
-// Auto-fill remembered credentials on load — and auto-login if valid
-(function() {
+// Token-based auto-login: if we have a live session token from a previous
+// tab in this browsing session, validate it with /api/me and skip the
+// login overlay on refresh. Plaintext-creds localStorage path is gone.
+// Deferred to DOMContentLoaded so window.TN_AUTH + _tnClearAuth (defined
+// further down the script) exist by the time this runs.
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const saved = localStorage.getItem('tn_creds');
-    if (saved) {
-      const c = JSON.parse(saved);
-      const emailEl = document.getElementById('loginEmail');
-      const passEl  = document.getElementById('loginPass');
-      const remEl   = document.getElementById('loginRemember');
-      if (emailEl) emailEl.value = c.email || '';
-      if (passEl)  passEl.value  = c.pass  || '';
-      if (remEl)   remEl.checked = true;
-      // Auto-login: if credentials are remembered, skip the login screen on refresh
-      if (c.email && c.pass && typeof PORTAL_USERS !== 'undefined') {
-        const user = PORTAL_USERS.find(u => u.email === c.email.toLowerCase() && u.pass === c.pass);
-        if (user) {
-          const ov = document.getElementById('loginOverlay');
-          if (ov) { ov.style.display = 'none'; }
-        }
-      }
-    }
-  } catch(e) {}
-})();
+    // Scrub any legacy tn_creds key that might still be lingering in
+    // localStorage from the old flow — stops any plaintext password
+    // from being re-read by accident after this deploy.
+    try { localStorage.removeItem('tn_creds'); } catch(e) {}
+    if (!window.TN_AUTH || !window.TN_AUTH.token) return;
+    const r = await fetch('/api/me');
+    if (!r.ok) { _tnClearAuth(); return; }
+    const d = await r.json();
+    if (!d.ok || !d.user) { _tnClearAuth(); return; }
+    // Session still valid — hide the login overlay.
+    const ov = document.getElementById('loginOverlay');
+    if (ov) ov.style.display = 'none';
+  } catch(e) { /* network / stale token → stay on login screen */ }
+});
 
 
 // ══════════════════════════════════════════════════════════════════
@@ -12820,51 +12813,130 @@ function submitLeadForm() {
   }
 }
 
-function doLogin() {
-  const em = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
-  const pw = (document.getElementById('loginPass').value || '');
-  const remember = document.getElementById('loginRemember') && document.getElementById('loginRemember').checked;
-  // Accept any of the portal users
-  const user = PORTAL_USERS.find(u => u.email === em && u.pass === pw);
-  if (user) {
-    try {
-      if (remember) {
-        localStorage.setItem('tn_creds', JSON.stringify({email: em, pass: pw}));
-      } else {
-        localStorage.removeItem('tn_creds');
-      }
-    } catch(e) {}
+// ─── SERVER-SIDE LOGIN ───────────────────────────────────────────────────────
+// Calls POST /api/login on the Express backend. bcrypt happens server-side;
+// we only receive a bearer token + public user profile. No password EVER
+// touches localStorage (the old flow stored plaintext creds there — wiped
+// by this function on every login). The token goes into sessionStorage
+// so it's cleared when the tab closes; "Remember me" is now a server-side
+// 4-hour session rather than a client-side password cache.
+window.TN_AUTH = window.TN_AUTH || { token: null, user: null };
 
-    if (user.role === 'client') {
+function _tnSetAuth(token, user) {
+  window.TN_AUTH.token = token;
+  window.TN_AUTH.user  = user;
+  try {
+    sessionStorage.setItem('tn_auth', JSON.stringify({ token, user }));
+    // Clean up the old plaintext-password creds key if it's still around.
+    localStorage.removeItem('tn_creds');
+  } catch(e) {}
+}
+function _tnClearAuth() {
+  window.TN_AUTH.token = null;
+  window.TN_AUTH.user  = null;
+  try {
+    sessionStorage.removeItem('tn_auth');
+    localStorage.removeItem('tn_creds');
+  } catch(e) {}
+}
+function _tnLoadAuth() {
+  try {
+    const raw = sessionStorage.getItem('tn_auth');
+    if (!raw) return;
+    const { token, user } = JSON.parse(raw);
+    if (token && user) { window.TN_AUTH.token = token; window.TN_AUTH.user = user; }
+  } catch(e) {}
+}
+_tnLoadAuth();
+
+// Monkey-patch fetch() so every /api/* request automatically carries the
+// bearer token. Anything else (external CDN, etc.) is untouched.
+(function() {
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (url.startsWith('/api/') && window.TN_AUTH.token) {
+      init = init || {};
+      init.headers = new Headers(init.headers || {});
+      if (!init.headers.has('Authorization')) {
+        init.headers.set('Authorization', 'Bearer ' + window.TN_AUTH.token);
+      }
+    }
+    return _origFetch(input, init);
+  };
+})();
+
+async function doLogin() {
+  const emailEl = document.getElementById('loginEmail');
+  const passEl  = document.getElementById('loginPass');
+  const errEl   = document.getElementById('loginError');
+  const em = (emailEl.value || '').trim().toLowerCase();
+  const pw = (passEl.value || '');
+  errEl.textContent = '';
+  if (!em || !pw) { errEl.textContent = 'Enter email + password.'; return; }
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: em, pass: pw })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) {
+      errEl.textContent = '\u274c ' + (data.error || 'Incorrect email or password.');
+      passEl.value = ''; passEl.focus();
+      setTimeout(() => { errEl.textContent = ''; }, 3500);
+      return;
+    }
+    _tnSetAuth(data.token, data.user);
+
+    // Must-change-password path — show a small inline prompt.
+    if (data.mustChangePassword) {
+      const np = prompt('First-time login — please set a new password (min 8 chars):');
+      if (!np || np.length < 8) {
+        _tnClearAuth();
+        errEl.textContent = 'New password must be at least 8 characters. Try logging in again.';
+        return;
+      }
+      const r2 = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPass: pw, newPass: np })
+      });
+      const d2 = await r2.json();
+      if (!r2.ok || !d2.ok) {
+        errEl.textContent = d2.error || 'Password change failed.';
+        _tnClearAuth();
+        return;
+      }
+      alert('Password updated. Welcome in.');
+    }
+
+    // Client role → show disclaimer first if not already accepted.
+    if (data.user.role === 'client') {
       let alreadyAccepted = false;
       try {
         const stored = localStorage.getItem('tn_disclaimer_accepted_' + em);
         if (stored) alreadyAccepted = JSON.parse(stored).accepted === true;
       } catch(e) {}
-
-      if (alreadyAccepted) {
-        const ov = document.getElementById('loginOverlay');
-        ov.style.transition = 'opacity .4s';
-        ov.style.opacity = '0';
-        setTimeout(() => { ov.style.display = 'none'; }, 420);
-      } else {
-        showDisclaimer(user);
-      }
-    } else {
-      const ov = document.getElementById('loginOverlay');
-      ov.style.transition = 'opacity .4s';
-      ov.style.opacity = '0';
-      setTimeout(() => { ov.style.display = 'none'; }, 420);
+      if (!alreadyAccepted) { showDisclaimer(data.user); return; }
     }
-  } else {
-    const err = document.getElementById('loginError');
-    err.textContent = '\u274c Incorrect email or password. Please try again.';
-    const passEl = document.getElementById('loginPass');
-    passEl.value = '';
-    passEl.focus();
-    setTimeout(() => { err.textContent = ''; }, 3500);
+
+    const ov = document.getElementById('loginOverlay');
+    ov.style.transition = 'opacity .4s';
+    ov.style.opacity = '0';
+    setTimeout(() => { ov.style.display = 'none'; }, 420);
+  } catch (err) {
+    errEl.textContent = 'Network error — try again.';
   }
 }
+
+// Logout — revoke the session server-side + clear token.
+async function doLogout() {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch(e) {}
+  _tnClearAuth();
+  location.reload();
+}
+window.doLogout = doLogout;
 
 </script>
 <!-- ═══════════ ADD LEAD MODAL ═══════════ -->
