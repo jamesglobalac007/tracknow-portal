@@ -12875,12 +12875,27 @@ async function doLogin() {
   errEl.textContent = '';
   if (!em || !pw) { errEl.textContent = 'Enter email + password.'; return; }
   try {
-    const r = await fetch('/api/login', {
+    // First hit — no TOTP yet
+    let r = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: em, pass: pw })
     });
-    const data = await r.json();
+    let data = await r.json();
+
+    // Server said "password ok, now give me the 6-digit code" — prompt for it
+    // (or a backup code) and replay the login with totpCode included.
+    if (r.ok && data.ok && data.requires2FA) {
+      const code = prompt('Enter the 6-digit code from your authenticator app (or a 10-char backup code):');
+      if (!code) { errEl.textContent = '2FA code required.'; return; }
+      r = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: em, pass: pw, totpCode: code.trim() })
+      });
+      data = await r.json();
+    }
+
     if (!r.ok || !data.ok) {
       errEl.textContent = '\u274c ' + (data.error || 'Incorrect email or password.');
       passEl.value = ''; passEl.focus();
@@ -12909,6 +12924,26 @@ async function doLogin() {
         return;
       }
       alert('Password updated. Welcome in.');
+      // Refresh user profile so the mustEnroll2FA flag (if any) is up to date.
+      try {
+        const me = await (await fetch('/api/me')).json();
+        if (me.ok && me.user) {
+          data.user = me.user;
+          data.mustEnroll2FA = (me.session && me.session.scope === 'enrollment');
+          _tnSetAuth(window.TN_AUTH.token, data.user);
+        }
+      } catch(e) {}
+    }
+
+    // Enrolment path — server said this user has force2FA but hasn't set
+    // up TOTP yet. Walk them through the QR + 6-digit confirmation flow.
+    if (data.mustEnroll2FA) {
+      const ok = await _tnEnrol2FA();
+      if (!ok) {
+        _tnClearAuth();
+        errEl.textContent = '2FA enrolment was cancelled. Log in again to retry.';
+        return;
+      }
     }
 
     // Client role → show disclaimer first if not already accepted.
@@ -12927,6 +12962,63 @@ async function doLogin() {
     setTimeout(() => { ov.style.display = 'none'; }, 420);
   } catch (err) {
     errEl.textContent = 'Network error — try again.';
+  }
+}
+
+// 2FA enrolment UX. Gets a fresh TOTP secret from the server, shows the
+// QR code in a full-screen overlay, asks the user to verify one 6-digit
+// code to confirm the authenticator app is wired up, then shows 10
+// single-use backup codes to save. Not the prettiest modal — ship it
+// better later — but fully functional.
+async function _tnEnrol2FA() {
+  try {
+    const r = await fetch('/api/2fa/setup-start', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { alert('Failed to start 2FA setup: ' + (d.error || '')); return false; }
+    // Show the QR in a styled overlay.
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:20px;';
+    overlay.innerHTML = `
+      <div style="background:#0a0a0a;border:1px solid #0098d4;border-radius:8px;padding:32px;max-width:420px;width:100%;text-align:center;color:#fff;">
+        <h2 style="margin:0 0 4px;color:#0098d4;font-size:18px;">Set up 2FA</h2>
+        <div style="color:#aaa;font-size:12px;margin-bottom:20px;">Required for your account — scan this QR in Google Authenticator, Authy, or 1Password.</div>
+        <img src="${d.qrDataUrl}" alt="QR code" style="width:200px;height:200px;display:block;margin:0 auto 12px;border:1px solid #222;background:#fff;padding:6px;border-radius:4px;" />
+        <div style="color:#666;font-size:10px;margin-bottom:16px;font-family:monospace;user-select:all;padding:8px;background:#111;border:1px solid #222;border-radius:4px;">Secret (manual entry fallback): ${d.secret}</div>
+        <label style="display:block;text-align:left;color:#aaa;font-size:11px;margin-bottom:6px;">Enter the 6-digit code from the app:</label>
+        <input id="_tn2faCode" type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" style="width:100%;padding:10px;background:#111;border:1px solid #222;color:#0098d4;font-size:16px;font-family:monospace;text-align:center;letter-spacing:4px;margin-bottom:12px;border-radius:4px;" />
+        <div id="_tn2faErr" style="color:#FF4444;font-size:11px;min-height:14px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button id="_tn2faCancel" style="flex:1;padding:10px;background:transparent;border:1px solid #333;color:#aaa;cursor:pointer;border-radius:4px;">Cancel</button>
+          <button id="_tn2faConfirm" style="flex:2;padding:10px;background:#0098d4;border:none;color:#000;font-weight:700;cursor:pointer;border-radius:4px;">Confirm &amp; enable</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    return new Promise((resolve) => {
+      const input = document.getElementById('_tn2faCode');
+      const err   = document.getElementById('_tn2faErr');
+      input.focus();
+      document.getElementById('_tn2faCancel').onclick = () => { overlay.remove(); resolve(false); };
+      document.getElementById('_tn2faConfirm').onclick = async () => {
+        const code = input.value.trim();
+        if (code.length !== 6) { err.textContent = '6 digits please'; return; }
+        const r2 = await fetch('/api/2fa/setup-verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const d2 = await r2.json();
+        if (!r2.ok || !d2.ok) { err.textContent = d2.error || 'Verify failed'; return; }
+        overlay.remove();
+        // Show the one-time backup codes.
+        const codesText = (d2.backupCodes || []).join('\n');
+        alert('2FA enabled. Save these 10 backup codes somewhere safe — each can be used ONCE if you lose your phone:\n\n' + codesText + '\n\nCopy them to 1Password now. They will not be shown again.');
+        resolve(true);
+      };
+      input.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('_tn2faConfirm').click(); };
+    });
+  } catch (e) {
+    alert('Network error during 2FA setup.');
+    return false;
   }
 }
 

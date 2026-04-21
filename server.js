@@ -1,6 +1,8 @@
 const express = require('express');
 const crypto  = require('crypto');
 const bcrypt  = require('bcryptjs');
+const { authenticator } = require('otplib');
+const qrcode = require('qrcode');
 const path    = require('path');
 const fs      = require('fs');
 const app = express();
@@ -141,10 +143,10 @@ function _seedUsers() {
   // set in production.
   const fallback = process.env.BOOTSTRAP_PASSWORD || 'change-me-tracknow-2026';
   const rows = [
-    { email: 'james@tracknow.com.au',         pass: process.env.JAMES_PASSWORD || fallback, name: 'James',           role: 'admin'  },
-    { email: 'team@tracknow.com.au',          pass: process.env.TEAM_PASSWORD  || fallback, name: 'TrackNow Team',   role: 'admin'  },
-    { email: 'mark@mdsdiversified.com.au',    pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client' },
-    { email: 'mark@tracknow.com.au',          pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client' },
+    { email: 'james@tracknow.com.au',         pass: process.env.JAMES_PASSWORD || fallback, name: 'James',           role: 'admin',  force2FA: true },
+    { email: 'team@tracknow.com.au',          pass: process.env.TEAM_PASSWORD  || fallback, name: 'TrackNow Team',   role: 'admin',  force2FA: false },
+    { email: 'mark@mdsdiversified.com.au',    pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client', force2FA: true },
+    { email: 'mark@tracknow.com.au',          pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client', force2FA: true },
   ];
   return rows.map(r => ({
     id: crypto.randomBytes(8).toString('hex'),
@@ -153,6 +155,8 @@ function _seedUsers() {
     role: r.role,
     passHash: bcrypt.hashSync(r.pass, 10),
     mustChangePassword: true,
+    force2FA: !!r.force2FA,
+    totpEnabled: false,
     createdAt: new Date().toISOString()
   }));
 }
@@ -178,6 +182,8 @@ function _publicUser(u) {
   return {
     id: u.id, email: u.email, name: u.name, role: u.role,
     mustChangePassword: !!u.mustChangePassword,
+    force2FA: !!u.force2FA,
+    totpEnabled: !!u.totpEnabled,
     createdAt: u.createdAt, updatedAt: u.updatedAt
   };
 }
@@ -303,6 +309,11 @@ app.use((req, res, next) => {
     if (!allowed.includes(req.path)) {
       return res.status(403).json({ ok: false, error: 'must_change_password' });
     }
+  } else if (session.scope === 'enrollment') {
+    const allowed = ['/api/me', '/api/logout', '/api/2fa/setup-start', '/api/2fa/setup-verify'];
+    if (!allowed.includes(req.path)) {
+      return res.status(403).json({ ok: false, error: 'must_enroll_2fa' });
+    }
   }
   req.session = session;
   req.user = USERS.find(u => u.email === session.email);
@@ -352,7 +363,7 @@ app.use(express.static(__dirname, {
 // ═══════════════════════════════════════════════════════════════════════════
 
 app.post('/api/login', async (req, res) => {
-  const { email, pass } = req.body || {};
+  const { email, pass, totpCode } = req.body || {};
   const ip = clientIp(req);
   if (!email || !pass) return res.status(400).json({ ok: false, error: 'Email and password required' });
   const emailLower = String(email).toLowerCase();
@@ -376,30 +387,139 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ ok: false, error: 'Invalid credentials' });
   }
 
-  // Successful password. Prune old sessions, issue one now.
+  // 2FA step. If the user has TOTP enabled, require a valid code (or a
+  // backup code) before issuing the full session. If 2FA is NOT enabled
+  // but force2FA is set, we issue a narrow-scope enrollment session
+  // instead — they must finish enrolling before they can do anything else.
+  if (user.totpEnabled && user.totpSecret) {
+    if (!totpCode) return res.json({ ok: true, requires2FA: true });
+    const code = String(totpCode).replace(/\s+/g, '');
+    let ok2fa = authenticator.check(code, user.totpSecret);
+    if (!ok2fa && Array.isArray(user.backupCodes)) {
+      for (const bc of user.backupCodes) {
+        if (!bc.used && await bcrypt.compare(code, bc.hash)) {
+          bc.used = true; bc.usedAt = new Date().toISOString();
+          ok2fa = true; saveUsers(); break;
+        }
+      }
+    }
+    if (!ok2fa) {
+      pairRl.bump(); ipRl.bump(); emailRl.bump();
+      pushAudit({ email: user.email, ip, success: false, reason: 'bad_totp' });
+      return res.status(401).json({ ok: false, error: 'Invalid 2FA code' });
+    }
+  }
+
+  // Successful password (+ TOTP if applicable). Prune old sessions, issue one now.
   pruneSessions();
   const token = crypto.randomBytes(32).toString('hex');
   const now = Date.now();
-  const session = {
-    token,
-    email: user.email,
-    role: user.role,
-    scope: user.mustChangePassword ? 'password_change' : 'full',
-    createdAt: now,
-    expiresAt: now + (user.mustChangePassword ? 15 * 60 * 1000 : SESSION_MS),
-    ip
-  };
+  // Pick the session scope based on what setup steps are outstanding.
+  //   mustChangePassword → 'password_change' (narrow, 15 min)
+  //   force2FA && !totpEnabled → 'enrollment' (narrow, 15 min)
+  //   otherwise → 'full' (SESSION_MS)
+  let scope = 'full';
+  let ttl = SESSION_MS;
+  if (user.mustChangePassword)            { scope = 'password_change'; ttl = 15 * 60 * 1000; }
+  else if (user.force2FA && !user.totpEnabled) { scope = 'enrollment';  ttl = 15 * 60 * 1000; }
+
+  const session = { token, email: user.email, role: user.role, scope, createdAt: now, expiresAt: now + ttl, ip };
   SESSIONS.push(session);
   saveSessions();
-  pushAudit({ email: user.email, ip, success: true, reason: user.mustChangePassword ? 'ok_pending_password_change' : 'ok' });
+  pushAudit({
+    email: user.email, ip, success: true,
+    reason: scope === 'full' ? 'ok' : ('ok_pending_' + scope)
+  });
 
   res.json({
     ok: true,
     token,
     mustChangePassword: !!user.mustChangePassword,
+    mustEnroll2FA: scope === 'enrollment',
     user: _publicUser(user),
     expiresAt: session.expiresAt
   });
+});
+
+// ═══ 2FA ENDPOINTS ═══
+// Enrolment is a two-step dance:
+//   1. POST /api/2fa/setup-start → returns { otpauth, qrDataUrl, secret }
+//   2. POST /api/2fa/setup-verify { code } → enables 2FA + returns 10 one-time backup codes
+// Disable requires the current password.
+app.post('/api/2fa/setup-start', async (req, res) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ ok: false, error: 'not authenticated' });
+  const secret = authenticator.generateSecret();
+  user._pendingTotpSecret = secret;
+  saveUsers();
+  const otpauth = authenticator.keyuri(user.email, 'TrackNow Portal', secret);
+  const qrDataUrl = await qrcode.toDataURL(otpauth);
+  res.json({ ok: true, otpauth, qrDataUrl, secret });
+});
+
+app.post('/api/2fa/setup-verify', async (req, res) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ ok: false, error: 'not authenticated' });
+  if (!user._pendingTotpSecret) return res.status(400).json({ ok: false, error: 'No setup in progress — click "Enable 2FA" first.' });
+  const ip = clientIp(req);
+  const rl = rateLimit(_rlPair, `${ip}:${user.email}:2fa-setup`, LOGIN_MAX_PAIR);
+  if (!rl.ok) return res.status(429).json({ ok: false, error: `Too many attempts. Try again in ${rl.waitMin} min.` });
+  const code = String(req.body?.code || '').replace(/\s+/g, '');
+  if (!authenticator.check(code, user._pendingTotpSecret)) {
+    rl.bump();
+    return res.status(400).json({ ok: false, error: 'Code does not match. Check the authenticator app time.' });
+  }
+  user.totpSecret = user._pendingTotpSecret;
+  delete user._pendingTotpSecret;
+  user.totpEnabled = true;
+  // Ten single-use backup codes. Hashed on disk, shown plain ONCE here.
+  const plainCodes = [];
+  user.backupCodes = [];
+  for (let i = 0; i < 10; i++) {
+    const p = crypto.randomBytes(5).toString('hex');
+    plainCodes.push(p);
+    user.backupCodes.push({ hash: await bcrypt.hash(p, 10), used: false });
+  }
+  // Upgrade this session from 'enrollment' → 'full' so the user can
+  // use the portal immediately after enrolment (no re-login).
+  if (req.session && req.session.scope === 'enrollment') {
+    req.session.scope = 'full';
+    req.session.expiresAt = Date.now() + SESSION_MS;
+    saveSessions();
+  }
+  saveUsers();
+  pushAudit({ email: user.email, ip, success: true, reason: '2fa_enrolled' });
+  res.json({ ok: true, backupCodes: plainCodes });
+});
+
+app.post('/api/2fa/disable', async (req, res) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ ok: false, error: 'not authenticated' });
+  const { currentPass } = req.body || {};
+  if (!currentPass) return res.status(400).json({ ok: false, error: 'Current password required' });
+  const ok = await bcrypt.compare(currentPass, user.passHash);
+  if (!ok) return res.status(401).json({ ok: false, error: 'Current password is incorrect' });
+  delete user.totpSecret;
+  delete user._pendingTotpSecret;
+  delete user.backupCodes;
+  user.totpEnabled = false;
+  saveUsers();
+  pushAudit({ email: user.email, ip: clientIp(req), success: true, reason: '2fa_disabled' });
+  res.json({ ok: true });
+});
+
+// Admin reset — clears 2FA on a target account so they can re-enrol.
+app.post('/api/admin/reset-2fa', requireAdmin, (req, res) => {
+  const { email } = req.body || {};
+  const target = USERS.find(u => u.email.toLowerCase() === String(email||'').toLowerCase());
+  if (!target) return res.status(404).json({ ok: false, error: 'User not found' });
+  delete target.totpSecret;
+  delete target._pendingTotpSecret;
+  delete target.backupCodes;
+  target.totpEnabled = false;
+  saveUsers();
+  pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: '2fa_reset_by_admin:' + req.user.email });
+  res.json({ ok: true });
 });
 
 app.post('/api/logout', (req, res) => {
