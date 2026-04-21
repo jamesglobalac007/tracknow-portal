@@ -3,6 +3,7 @@ const crypto  = require('crypto');
 const bcrypt  = require('bcryptjs');
 const { authenticator } = require('otplib');
 const qrcode = require('qrcode');
+const nodemailer = require('nodemailer');
 const path    = require('path');
 const fs      = require('fs');
 const app = express();
@@ -840,6 +841,123 @@ app.get('/api/disclaimer-signoffs', requireAdmin, (req, res) => {
   res.json({ ok: true, signoffs: disclaimerSignoffs });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// EMAIL — nodemailer via SMTP (replaces client-side EmailJS)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Every outbound email now goes through POST /api/send-email. The client's
+// existing emailjs.send() calls are monkey-patched in index.html so they
+// route here instead — no call-site refactor needed. The SMTP password
+// stays server-side (Render env var), so it's never exposed to the browser
+// like the EmailJS public key was.
+//
+// Env vars (all loaded lazily — blank values just mean email is disabled):
+//   SMTP_HOST    e.g. smtpout.secureserver.net (GoDaddy) /
+//                    smtp.office365.com (Microsoft 365) /
+//                    smtp.gmail.com (Google Workspace)
+//   SMTP_PORT    465 for SSL, 587 for STARTTLS (default 587)
+//   SMTP_SECURE  "true" for 465, "false" for 587 (default: auto based on port)
+//   SMTP_USER    sales@tracknow.com.au (also the From: address)
+//   SMTP_PASS    mailbox password or SMTP app password
+//   SMTP_FROM    optional override, e.g. "TrackNow Sales <sales@tracknow.com.au>"
+//   EMAIL_DAILY_QUOTA  default 200 (override per-deploy)
+//   EMAIL_EXTRA_RECIPIENTS  comma-sep allowlisted addresses beyond leads/prospects/customers
+
+let _mailer = null;
+function getMailer() {
+  if (_mailer) return _mailer;
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) return null;
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const secure = (process.env.SMTP_SECURE != null)
+    ? String(process.env.SMTP_SECURE) === 'true'
+    : (port === 465);
+  try {
+    _mailer = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    console.log(`[tracknow] SMTP ready (${host}:${port} ${secure?'SSL':'STARTTLS'} as ${user})`);
+  } catch (e) {
+    console.error('[tracknow] nodemailer init failed:', e.message);
+  }
+  return _mailer;
+}
+
+// Build the allowlist of acceptable recipient addresses: every lead /
+// prospect / customer email currently in the store, plus any extras
+// pinned in env vars. Admins additionally get to send to the same-domain
+// internal addresses (sales@tracknow.com.au, the sender itself) so the
+// internal "proceed to agreement" notifications can reach the team.
+function _emailAllowlist() {
+  const set = new Set();
+  const add = (e) => { if (e && typeof e === 'string') set.add(String(e).trim().toLowerCase()); };
+  (STORE.leads     || []).forEach(l => add(l.email));
+  (STORE.prospects || []).forEach(p => add(p.email));
+  (STORE.customers || []).forEach(c => add(c.email));
+  // Internal alias — emails to the sender's own mailbox are always safe
+  // (that's how the "client wants to proceed" notifications work).
+  add(process.env.SMTP_USER);
+  add(process.env.SMTP_FROM);
+  (process.env.EMAIL_EXTRA_RECIPIENTS || '').split(',').forEach(e => add(e.trim()));
+  return set;
+}
+function _recipientAllowed(to) {
+  const allowed = _emailAllowlist();
+  return String(to || '').split(',').every(r => allowed.has(r.trim().toLowerCase()));
+}
+function _emailQuotaOk() {
+  const today = new Date().toISOString().slice(0, 10);
+  const used = (AUDIT || []).filter(a => a.reason === 'email_sent' && String(a.ts||'').slice(0,10) === today).length;
+  const cap = Number(process.env.EMAIL_DAILY_QUOTA) || 200;
+  return { ok: used < cap, used, cap };
+}
+
+// POST /api/send-email — replaces all client-side emailjs.send() calls.
+// Accepts the same shape EmailJS was using: { to_email, subject,
+// from_name, message_html } — OR nested under template_params if the
+// monkey-patch passes through the raw EmailJS arg shape. Normalises both.
+app.post('/api/send-email', async (req, res) => {
+  if (!req.user) return res.status(401).json({ ok: false, error: 'not authenticated' });
+  try {
+    // Unpack either flavour (flat or nested under template_params)
+    const body = req.body || {};
+    const params = (body.template_params && typeof body.template_params === 'object') ? body.template_params : body;
+    const to       = params.to_email || params.to;
+    const subject  = params.subject;
+    const fromName = params.from_name || 'TrackNow';
+    const html     = params.message_html || params.html || params.body || '';
+
+    if (!to || !subject) return res.status(400).json({ ok: false, error: 'to_email and subject required' });
+
+    if (!_recipientAllowed(to)) {
+      console.warn(`[security] send-email rejected recipient not on allowlist: ${to} (from ${req.user.email})`);
+      return res.status(403).json({ ok: false, error: 'Recipient must match a lead / prospect / customer on file, or be listed in EMAIL_EXTRA_RECIPIENTS.' });
+    }
+    const quota = _emailQuotaOk();
+    if (!quota.ok) return res.status(429).json({ ok: false, error: `Daily email quota (${quota.cap}) reached. Try tomorrow.` });
+
+    const mailer = getMailer();
+    if (!mailer) {
+      return res.status(503).json({ ok: false, error: 'SMTP not configured — set SMTP_HOST / SMTP_USER / SMTP_PASS env vars on Render.' });
+    }
+
+    // Strip the <!doctype html> etc. if the client sent raw html — keep
+    // nodemailer happy with a plain html body.
+    const info = await mailer.sendMail({
+      from: process.env.SMTP_FROM || `${fromName} <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      html
+    });
+    pushAudit({ email: req.user.email, to, subject: String(subject).slice(0,120), success: true, reason: 'email_sent', messageId: info.messageId || '' });
+    res.json({ ok: true, messageId: info.messageId || '' });
+  } catch (err) {
+    console.error('[tracknow] send-email error:', err);
+    pushAudit({ email: req.user && req.user.email, success: false, reason: 'email_failed', error: String(err.message || err).slice(0, 200) });
+    res.status(500).json({ ok: false, error: 'Failed to send email: ' + (err.message || 'unknown') });
+  }
+});
+
 // ─── Catch-all ──────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api/')) res.sendFile(path.join(__dirname, 'index.html'));
@@ -857,5 +975,8 @@ app.listen(PORT, () => {
   console.log(`Users: ${USERS.length} · Sessions: ${SESSIONS.length} · Audit entries: ${AUDIT.length}`);
   if (!process.env.BOOTSTRAP_PASSWORD && !process.env.JAMES_PASSWORD) {
     console.warn('[security] No BOOTSTRAP_PASSWORD env var set — seeded users will use the hard-coded placeholder if users.json does not exist yet. Set one in Render env vars before first boot.');
+  }
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('[email] SMTP not configured — /api/send-email will return 503 until SMTP_HOST, SMTP_USER, and SMTP_PASS are set in Render env vars. All existing emailjs.send() calls in the client route through this endpoint, so email is disabled until SMTP is live.');
   }
 });

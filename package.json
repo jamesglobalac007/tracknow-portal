@@ -10,7 +10,8 @@
     "express": "^4.18.2",
     "bcryptjs": "^2.4.3",
     "otplib": "^12.0.1",
-    "qrcode": "^1.5.3"
+    "qrcode": "^1.5.3",
+    "nodemailer": "^6.9.13"
   },
   "engines": {
     "node": ">=18.0.0"

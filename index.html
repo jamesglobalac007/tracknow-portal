@@ -12822,6 +12822,69 @@ function submitLeadForm() {
 // 4-hour session rather than a client-side password cache.
 window.TN_AUTH = window.TN_AUTH || { token: null, user: null };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// EmailJS → server-side SMTP shim (2026-04-21)
+// ═══════════════════════════════════════════════════════════════════════════
+// The portal has 8+ existing emailjs.send(service_id, template_id, params)
+// call sites (proposals, agreements, signed agreements, follow-ups, fleet
+// reports, pipeline notifies). Rather than refactor every one of them, we
+// install a LOCKED window.emailjs stub with the same shape before any
+// CDN script loads — so every call routes through POST /api/send-email
+// on our server, which then calls nodemailer via GoDaddy SMTP.
+//
+// Why lock it: existing code calls  s.src = '…emailjs/browser…'  to load
+// the real EmailJS library. Without the lock, that CDN would overwrite
+// window.emailjs once it loads and bypass our stub. Object.defineProperty
+// with writable:false + configurable:false blocks that overwrite silently.
+//
+// The `init('public_key')` calls become no-ops — the server handles auth
+// via the user's bearer token, not an EmailJS public key.
+(function() {
+  async function _sendViaServer(serviceId, templateId, templateParams) {
+    const r = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: serviceId,
+        template_id: templateId,
+        template_params: templateParams || {}
+      })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) {
+      const err = new Error(data.error || 'send failed (' + r.status + ')');
+      err.status = r.status;
+      throw err;
+    }
+    // EmailJS returns { status, text } — fake the same shape so any
+    // caller inspecting the result doesn't break.
+    return { status: 200, text: 'OK', messageId: data.messageId || '' };
+  }
+  const tnEmailjs = {
+    init:        function() { /* no-op — server owns auth */ },
+    send:        _sendViaServer,
+    sendForm:    function(svc, tpl, form) {
+      // Form shape — convert to template_params.
+      const params = {};
+      const fd = new FormData(form);
+      fd.forEach((v, k) => { params[k] = v; });
+      return _sendViaServer(svc, tpl, params);
+    }
+  };
+  try {
+    Object.defineProperty(window, 'emailjs', {
+      value: tnEmailjs, writable: false, configurable: false
+    });
+  } catch (e) {
+    // Fallback if defineProperty isn't allowed — just assign + hope the
+    // CDN overwrite doesn't happen before our callers execute.
+    window.emailjs = tnEmailjs;
+  }
+  // Flag the existing loader-guard pattern as "already loaded" so the
+  // dynamic <script src=…emailjs/browser…> injection shortcircuits.
+  window._emailjsLoaded = true;
+})();
+
 function _tnSetAuth(token, user) {
   window.TN_AUTH.token = token;
   window.TN_AUTH.user  = user;
