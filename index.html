@@ -6788,10 +6788,19 @@ function saveSocialAccount() {
   var url = document.getElementById('sa_url').value.trim();
   var email = document.getElementById('sa_email').value.trim();
   var editId = document.getElementById('sa_editId').value;
-  if (!handle) { showToast('Please enter a handle or username', 'warn'); return; }
+  if (!handle && !url) { showToast('Please enter a handle or URL', 'warn'); return; }
   if (!url) {
     var meta = SOCIAL_PLATFORM_META[platform];
     if (meta) url = meta.urlTemplate.replace('{handle}', handle.replace(/^@/, ''));
+  }
+  // If no handle was entered, derive a display name from the URL
+  if (!handle && url) {
+    try {
+      var _parsed = new URL(url);
+      var _parts = _parsed.pathname.replace(/^\//, '').split('/').filter(Boolean);
+      var _atPart = _parts.find(function(p){ return p.charAt(0) === '@'; });
+      handle = _atPart || _parts[_parts.length - 1] || _parsed.hostname;
+    } catch(e) { handle = url; }
   }
   if (editId) {
     var acc = SOCIAL_ACCOUNTS.find(function(a) { return a.id === editId; });
