@@ -329,6 +329,7 @@ const AUTH_EXEMPT = new Set([
   '/api/event',                  // POST: customer pushes proposal/agreement-accepted event
   '/api/status',                 // POST: customer dismisses a callback
   '/api/send-email',             // gated inside the handler — customers get a restricted path
+  '/api/self-test-status',       // has its own SELFTEST_TOKEN guard
 ]);
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) return next();
@@ -993,6 +994,60 @@ app.post('/api/send-email', async (req, res) => {
     console.error('[tracknow] send-email error:', err);
     pushAudit({ email: req.user && req.user.email, success: false, reason: 'email_failed', error: String(err.message || err).slice(0, 200) });
     res.status(500).json({ ok: false, error: 'Failed to send email: ' + (err.message || 'unknown') });
+  }
+});
+
+// ─── Self-test status — read-only health probe for the nightly self-test ──
+// Gated by env var SELFTEST_TOKEN. Returns 503 if the env var is missing
+// (endpoint effectively disabled until explicitly enabled on Render). No
+// login, no 2FA, no writes. Reports store counts + backup freshness so a
+// scheduled task can alert when data disappears or backups stop running.
+function _selfTestTimingSafeEqual(a, b) {
+  const aBuf = Buffer.from(String(a || ''));
+  const bBuf = Buffer.from(String(b || ''));
+  if (aBuf.length !== bBuf.length) return false;
+  try { return crypto.timingSafeEqual(aBuf, bBuf); }
+  catch (_) { return false; }
+}
+app.get('/api/self-test-status', (req, res) => {
+  const token = process.env.SELFTEST_TOKEN;
+  if (!token) {
+    return res.status(503).json({ ok: false, error: 'Self-test disabled (SELFTEST_TOKEN not set)' });
+  }
+  const header = req.headers['x-selftest-token'] || '';
+  if (!_selfTestTimingSafeEqual(header, token)) {
+    return res.status(401).json({ ok: false, error: 'bad token' });
+  }
+  try {
+    const files = (function(){
+      try {
+        return fs.readdirSync(BACKUPS_DIR)
+          .filter(f => f.startsWith('data.') && f.endsWith('.json'));
+      } catch (_) { return []; }
+    })();
+    const latest = files
+      .map(f => { try { return { f, m: fs.statSync(path.join(BACKUPS_DIR, f)).mtimeMs }; } catch(_){ return null; } })
+      .filter(Boolean)
+      .sort((a, b) => b.m - a.m)[0];
+    const ageHours = latest ? +((Date.now() - latest.m) / 3600000).toFixed(2) : null;
+    res.json({
+      ok: true,
+      portal: 'tracknow-portal',
+      now: new Date().toISOString(),
+      dataDir: DATA_DIR,
+      data: {
+        leads: (STORE.leads || []).length,
+        prospects: (STORE.prospects || []).length,
+        customers: (STORE.customers || []).length,
+      },
+      backups: {
+        count: files.length,
+        mostRecent: latest ? latest.f : null,
+        ageHours
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e && e.message || 'self-test failed' });
   }
 });
 
