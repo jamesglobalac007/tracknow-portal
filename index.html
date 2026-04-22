@@ -6836,6 +6836,23 @@ function removeSocialAccount(id) {
   showToast('Account removed');
 }
 
+function buildSegment() {
+  var ind   = (document.getElementById('seg_ind')   || {}).value || 'All';
+  var st    = (document.getElementById('seg_st')    || {}).value || 'All';
+  var email = (document.getElementById('seg_email') || {}).value || 'All';
+  var src   = (document.getElementById('seg_src')   || {}).value || 'All';
+  var results = (window.LEADS || []).filter(function(l) {
+    if (ind   !== 'All' && l.industry !== ind)   return false;
+    if (st    !== 'All' && l.state    !== st)    return false;
+    if (src   !== 'All' && l.source   !== src)   return false;
+    if (email === 'yes' && !l.email)             return false;
+    if (email === 'no'  &&  l.email)             return false;
+    return true;
+  });
+  var countEl = document.getElementById('segCount');
+  if (countEl) countEl.textContent = results.length + ' contacts match';
+}
+
 function initMarketing() {
   recalcAllMetrics();
   renderMktOverview();
