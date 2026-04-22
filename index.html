@@ -1682,44 +1682,6 @@ select option{background:#0a0a0a;color:#0098d4}
         </div>
       </div>
 
-      <!-- Add/Edit Social Account Modal -->
-      <div class="modal-overlay" id="socialAccountModal" style="display:none" onclick="if(event.target===this)closeSocialAccountModal()">
-        <div class="modal" style="max-width:480px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <h2 style="font-size:16px;font-weight:700;color:#0098d4" id="sa_modalTitle">Add Social Account</h2>
-            <button onclick="closeSocialAccountModal()" style="background:none;border:none;color:#666;font-size:18px;cursor:pointer">&times;</button>
-          </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Platform</label>
-            <select id="sa_platform" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff" onchange="updateSocialAccountURL()">
-              <option value="facebook">Facebook</option>
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="youtube">YouTube</option>
-              <option value="twitter">X (Twitter)</option>
-              <option value="linkedin">LinkedIn</option>
-            </select>
-          </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Handle / Username</label>
-            <input type="text" id="sa_handle" placeholder="e.g. @TrackNowGPS or TrackNow_GPS" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff" oninput="updateSocialAccountURL()">
-          </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Profile URL</label>
-            <input type="text" id="sa_url" placeholder="https://..." style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff">
-          </div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Login Email (for your records — stored locally only)</label>
-            <input type="text" id="sa_email" placeholder="e.g. sales@tracknow.com.au" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff">
-          </div>
-          <input type="hidden" id="sa_editId" value="">
-          <div style="display:flex;gap:10px;margin-top:20px">
-            <button class="btn btn-primary" style="flex:1" onclick="saveSocialAccount()">Save Account</button>
-            <button class="btn btn-secondary" onclick="closeSocialAccountModal()">Cancel</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Platform selector pills -->
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
         <button class="social-pill active" id="spill-all" onclick="setSocialPlatform('all',this)">All Platforms</button>
@@ -13526,6 +13488,44 @@ window.doLogout = doLogout;
 </div>
 
 <!-- ═══════════ NEW CAMPAIGN MODAL ═══════════ -->
+<!-- Social Account Modal — global so it works from any tab -->
+<div class="modal-overlay" id="socialAccountModal" style="display:none" onclick="if(event.target===this)closeSocialAccountModal()">
+  <div class="modal" style="max-width:480px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="font-size:16px;font-weight:700;color:#0098d4" id="sa_modalTitle">Add Social Account</h2>
+      <button onclick="closeSocialAccountModal()" style="background:none;border:none;color:#666;font-size:18px;cursor:pointer">&times;</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Platform</label>
+      <select id="sa_platform" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff" onchange="updateSocialAccountURL()">
+        <option value="facebook">Facebook</option>
+        <option value="instagram">Instagram</option>
+        <option value="tiktok">TikTok</option>
+        <option value="youtube">YouTube</option>
+        <option value="twitter">X (Twitter)</option>
+        <option value="linkedin">LinkedIn</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Handle / Username</label>
+      <input type="text" id="sa_handle" placeholder="e.g. @TrackNowGPS or TrackNow_GPS" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff" oninput="updateSocialAccountURL()">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Profile URL</label>
+      <input type="text" id="sa_url" placeholder="https://..." style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Login Email (for your records — stored locally only)</label>
+      <input type="text" id="sa_email" placeholder="e.g. sales@tracknow.com.au" style="width:100%;padding:10px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a;color:#fff">
+    </div>
+    <input type="hidden" id="sa_editId" value="">
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveSocialAccount()">Save Account</button>
+      <button class="btn btn-secondary" onclick="closeSocialAccountModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="campaignModal" style="display:none" onclick="if(event.target===this)closeCampaignModal()">
   <div class="modal-box" style="width:600px">
     <div class="modal-header">
