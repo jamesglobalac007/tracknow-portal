@@ -6854,11 +6854,11 @@ function buildSegment() {
 }
 
 function initMarketing() {
-  recalcAllMetrics();
-  renderMktOverview();
-  renderConnectedAccounts();
-  renderPlatformCards();
-  buildSegment();
+  try { recalcAllMetrics(); } catch(e) { console.error('[mkt] recalcAllMetrics:', e); }
+  try { renderMktOverview(); } catch(e) { console.error('[mkt] renderMktOverview:', e); }
+  try { renderConnectedAccounts(); } catch(e) { console.error('[mkt] renderConnectedAccounts:', e); }
+  try { renderPlatformCards(); } catch(e) { console.error('[mkt] renderPlatformCards:', e); }
+  try { buildSegment(); } catch(e) { console.error('[mkt] buildSegment:', e); }
 }
 
 // ── Calendar ─────────────────────────────────────────────────────────────
