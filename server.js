@@ -86,6 +86,188 @@ function _writeBackupSnapshot() {
   } catch (e) { console.warn('[backup] snapshot failed:', e.message); }
 }
 
+// ─── Off-site encrypted backups → GitHub (every 2 hours) ───────────────────
+// Publishes an AES-256-GCM encrypted snapshot of data.json + users.json to
+// the private tracknow-portal-backups GitHub repo every 2 hours. Gives you
+// a copy of everything business-critical outside Render in case the
+// persistent disk ever goes bad or the whole account is compromised.
+//
+// Disabled automatically if either env var is missing, so local dev and
+// first-boot-before-secrets-are-set don't spam error logs.
+//
+// Env vars needed (set in Render dashboard):
+//   BACKUP_ENCRYPTION_KEY   base64-encoded 32 bytes (AES-256 key)
+//   BACKUP_GITHUB_TOKEN     GitHub PAT with `contents:write` on the backup repo
+//   BACKUP_GITHUB_REPO      e.g., "jamesglobalac007/tracknow-portal-backups"
+//   BACKUP_GITHUB_BRANCH    defaults to "main"
+//
+// Restore: clone the backup repo, run restore.js with the same key.
+const OFFSITE = {
+  enabled: !!(process.env.BACKUP_ENCRYPTION_KEY && process.env.BACKUP_GITHUB_TOKEN && process.env.BACKUP_GITHUB_REPO),
+  key: process.env.BACKUP_ENCRYPTION_KEY || '',
+  token: process.env.BACKUP_GITHUB_TOKEN || '',
+  repo: process.env.BACKUP_GITHUB_REPO || 'jamesglobalac007/tracknow-portal-backups',
+  branch: process.env.BACKUP_GITHUB_BRANCH || 'main',
+  intervalMs: 2 * 60 * 60 * 1000,  // 2 hours
+  minGapMs:   30 * 60 * 1000,       // never push more than once per 30 min
+};
+let _offsiteLastRun = 0;
+let _offsiteRunning = false;
+
+function _offsiteFormatStampAEST(d) {
+  // "2026-04-23_0845-AEST" — readable filename ordering by newest
+  const aest = new Date(d.getTime() + 10 * 60 * 60 * 1000);
+  const y = aest.getUTCFullYear();
+  const mo = String(aest.getUTCMonth() + 1).padStart(2, '0');
+  const da = String(aest.getUTCDate()).padStart(2, '0');
+  const h  = String(aest.getUTCHours()).padStart(2, '0');
+  const mi = String(aest.getUTCMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${da}_${h}${mi}-AEST`;
+}
+
+function _offsiteEncrypt(plaintextStr) {
+  const key = Buffer.from(OFFSITE.key, 'base64');
+  if (key.length !== 32) throw new Error('BACKUP_ENCRYPTION_KEY must decode to exactly 32 bytes (base64)');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ct = Buffer.concat([cipher.update(plaintextStr, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return {
+    version: 1,
+    alg: 'aes-256-gcm',
+    iv: iv.toString('base64'),
+    authTag: authTag.toString('base64'),
+    ciphertext: ct.toString('base64'),
+    sha256: crypto.createHash('sha256').update(plaintextStr).digest('hex'),
+    bytes: Buffer.byteLength(plaintextStr, 'utf8'),
+  };
+}
+
+function _offsiteCollectPayload() {
+  const files = {};
+  // data.json is the main business blob. users.json carries accounts + hashes.
+  // audit.json carries admin-visible history. All on the same persistent disk.
+  const sources = [
+    { path: DATA_FILE,  key: 'data.json'  },
+    { path: USERS_FILE, key: 'users.json' },
+    { path: AUDIT_FILE, key: 'audit.json' },
+    { path: TRUST_FILE, key: 'trustedDevices.json' },
+  ];
+  for (const s of sources) {
+    try {
+      if (fs.existsSync(s.path)) {
+        files[s.key] = fs.readFileSync(s.path, 'utf8');
+      }
+    } catch (e) {
+      console.warn('[offsite-backup] could not read', s.path, e.message);
+    }
+  }
+  return {
+    portal: 'tracknow-portal',
+    createdAt: new Date().toISOString(),
+    files,
+  };
+}
+
+async function _offsiteGithubPut(filepath, content, message, existingSha) {
+  const url = `https://api.github.com/repos/${OFFSITE.repo}/contents/${encodeURI(filepath)}`;
+  const body = {
+    message,
+    content: Buffer.from(content, 'utf8').toString('base64'),
+    branch: OFFSITE.branch,
+  };
+  if (existingSha) body.sha = existingSha;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${OFFSITE.token}`,
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'tracknow-portal-backup',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error(`GitHub PUT ${filepath} → ${r.status}: ${txt.slice(0, 200)}`);
+  }
+  return r.json();
+}
+
+async function _offsiteGithubGet(filepath) {
+  const url = `https://api.github.com/repos/${OFFSITE.repo}/contents/${encodeURI(filepath)}?ref=${encodeURIComponent(OFFSITE.branch)}`;
+  const r = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${OFFSITE.token}`,
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'tracknow-portal-backup',
+    },
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`GitHub GET ${filepath} → ${r.status}`);
+  return r.json();
+}
+
+async function runOffsiteBackup(reason) {
+  if (!OFFSITE.enabled) return { ok: false, skipped: 'not_configured' };
+  if (_offsiteRunning)  return { ok: false, skipped: 'already_running' };
+  const now = Date.now();
+  if (now - _offsiteLastRun < OFFSITE.minGapMs && reason !== 'manual') {
+    return { ok: false, skipped: 'rate_limited' };
+  }
+  _offsiteRunning = true;
+  try {
+    const payload = _offsiteCollectPayload();
+    const plaintext = JSON.stringify(payload);
+    const envelope = _offsiteEncrypt(plaintext);
+    const stamp = _offsiteFormatStampAEST(new Date());
+    const filename = `encrypted/data.${stamp}.json.enc`;
+    // 1) push the encrypted blob
+    await _offsiteGithubPut(
+      filename,
+      JSON.stringify(envelope, null, 2),
+      `Backup ${stamp} (${reason || 'scheduled'})`,
+    );
+    // 2) read + update manifest.json
+    let manifest = { entries: [] };
+    let manifestSha = undefined;
+    try {
+      const existing = await _offsiteGithubGet('manifest.json');
+      if (existing && existing.content) {
+        try { manifest = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8')); }
+        catch (_) { manifest = { entries: [] }; }
+        manifestSha = existing.sha;
+      }
+    } catch (_) {}
+    if (!Array.isArray(manifest.entries)) manifest.entries = [];
+    manifest.entries.push({
+      file: filename,
+      stamp,
+      bytes: envelope.bytes,
+      sha256: envelope.sha256,
+      reason: reason || 'scheduled',
+      portal: 'tracknow-portal',
+    });
+    // keep the last 200
+    manifest.entries = manifest.entries.slice(-200);
+    manifest.updatedAt = new Date().toISOString();
+    await _offsiteGithubPut(
+      'manifest.json',
+      JSON.stringify(manifest, null, 2),
+      `Manifest update ${stamp}`,
+      manifestSha,
+    );
+    _offsiteLastRun = now;
+    console.log(`[offsite-backup] pushed ${filename} (${envelope.bytes} bytes)`);
+    return { ok: true, file: filename, bytes: envelope.bytes, sha256: envelope.sha256 };
+  } catch (err) {
+    console.error('[offsite-backup] failed:', err.message);
+    return { ok: false, error: err.message };
+  } finally {
+    _offsiteRunning = false;
+  }
+}
+
 // ─── Body parser (scoped per route — no single 50 MB blanket) ───────────────
 const jsonNormal = express.json({ limit: '2mb' });
 const jsonLarge  = express.json({ limit: '10mb' });   // agreement HTML can be larger
@@ -985,6 +1167,35 @@ app.get('/api/data-backup-list', requireAdmin, (req, res) => {
   } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+// Trigger an off-site (encrypted GitHub) backup on demand. Useful to test
+// the pipeline is wired up correctly after setting env vars, or to capture
+// a snapshot right after a big data edit. Scheduled runs fire every 2 hours
+// independently of this endpoint.
+app.post('/api/admin/backup-offsite', requireAdmin, async (req, res) => {
+  if (!OFFSITE.enabled) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Off-site backup not configured. Set BACKUP_ENCRYPTION_KEY, BACKUP_GITHUB_TOKEN, BACKUP_GITHUB_REPO env vars in Render.'
+    });
+  }
+  const result = await runOffsiteBackup('manual');
+  if (!result.ok) return res.status(500).json(result);
+  res.json(result);
+});
+
+// Read-only: current status of the off-site backup system.
+app.get('/api/admin/backup-offsite-status', requireAdmin, (req, res) => {
+  res.json({
+    ok: true,
+    enabled: OFFSITE.enabled,
+    repo: OFFSITE.enabled ? OFFSITE.repo : null,
+    intervalMinutes: OFFSITE.intervalMs / 60000,
+    lastRunAt: _offsiteLastRun || null,
+    nextRunAt: _offsiteLastRun ? (_offsiteLastRun + OFFSITE.intervalMs) : null,
+    running: _offsiteRunning,
+  });
+});
+
 // Pin a manual baseline — "this is a known-good state, keep it forever".
 app.post('/api/data-backup-now', requireAdmin, (req, res) => {
   try {
@@ -1643,6 +1854,16 @@ loadTrust();
 loadStore();
 loadSignoffs();
 pruneTrust();
+
+// Off-site backups — fire 30s after boot so the server is stable, then
+// every 2 hours. No-op (no error log spam) if env vars aren't set yet.
+if (OFFSITE.enabled) {
+  setTimeout(() => { runOffsiteBackup('boot').catch(() => {}); }, 30_000);
+  setInterval(() => { runOffsiteBackup('scheduled').catch(() => {}); }, OFFSITE.intervalMs);
+  console.log(`[offsite-backup] enabled → ${OFFSITE.repo} (every ${OFFSITE.intervalMs / 60000} min)`);
+} else {
+  console.log('[offsite-backup] disabled — set BACKUP_ENCRYPTION_KEY + BACKUP_GITHUB_TOKEN + BACKUP_GITHUB_REPO to enable');
+}
 
 app.listen(PORT, () => {
   console.log(`TrackNow Portal server running on port ${PORT}`);
