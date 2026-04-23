@@ -7200,6 +7200,201 @@ function openContentPack(id) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+// ── Metricool CSV export ──────────────────────────────────────────────
+// Parse a signed-off social pack (HTML with .caption-text blocks) and
+// emit a CSV the user can bulk-upload into Metricool. Each post in the
+// pack turns into one row per selected platform, laid out over a
+// schedule the user picks in the modal.
+const METRICOOL_NETWORKS = [
+  { id: 'linkedin',  label: 'LinkedIn',        color: '#0A66C2' },
+  { id: 'facebook',  label: 'Facebook',        color: '#1877F2' },
+  { id: 'instagram', label: 'Instagram',       color: '#E1306C' },
+  { id: 'twitter',   label: 'X / Twitter',     color: '#000' },
+  { id: 'tiktok',    label: 'TikTok',          color: '#69C9D0' },
+  { id: 'youtube',   label: 'YouTube',         color: '#FF0000' },
+  { id: 'gmb',       label: 'Google Business', color: '#4285F4' },
+  { id: 'bluesky',   label: 'Bluesky',         color: '#00A8E8' },
+  { id: 'threads',   label: 'Threads',         color: '#000' }
+];
+
+function openMetricoolExport(id) {
+  const item = CONTENT_LIBRARY.find(c => String(c.id) === String(id));
+  if (!item || !item.url) { showToast('Pack missing — reupload it', true); return; }
+  if (!_contentIsApproved(item)) { showToast('Pack must be signed off before export', true); return; }
+
+  // Default schedule: first post next Tuesday at 10:00 AEST, one per week.
+  const nextTuesday = (function() {
+    const d = new Date();
+    d.setHours(10, 0, 0, 0);
+    const daysUntilTue = (2 - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + daysUntilTue);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'metricoolExportOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = '' +
+    '<div style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;max-width:640px;width:100%;max-height:90vh;overflow:auto;">' +
+      '<div style="padding:18px 22px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:0.2px;">Export to Metricool</div>' +
+          '<div style="font-size:11px;color:#888;margin-top:3px;">' + item.name + '</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'metricoolExportOverlay\').remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:22px;line-height:1;">&times;</button>' +
+      '</div>' +
+      '<div style="padding:22px;">' +
+        '<div id="mctlStatus" style="font-size:11px;color:#888;margin-bottom:14px;">Reading pack…</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">' +
+          '<div><label style="font-size:10px;font-weight:700;color:#666;letter-spacing:.6px;display:block;margin-bottom:5px;text-transform:uppercase;">Start date</label>' +
+            '<input id="mctlStartDate" type="date" value="' + nextTuesday + '" style="width:100%;padding:8px 10px;background:#0a0a0a;border:1px solid #222;color:#fff;font-size:13px;font-family:inherit;border-radius:3px;"></div>' +
+          '<div><label style="font-size:10px;font-weight:700;color:#666;letter-spacing:.6px;display:block;margin-bottom:5px;text-transform:uppercase;">Post time</label>' +
+            '<input id="mctlPostTime" type="time" value="10:00" style="width:100%;padding:8px 10px;background:#0a0a0a;border:1px solid #222;color:#fff;font-size:13px;font-family:inherit;border-radius:3px;"></div>' +
+        '</div>' +
+        '<div style="margin-bottom:16px;">' +
+          '<label style="font-size:10px;font-weight:700;color:#666;letter-spacing:.6px;display:block;margin-bottom:5px;text-transform:uppercase;">Cadence</label>' +
+          '<select id="mctlCadence" style="width:100%;padding:8px 10px;background:#0a0a0a;border:1px solid #222;color:#fff;font-size:13px;font-family:inherit;border-radius:3px;">' +
+            '<option value="7">One per week (Tue, Tue, Tue…)</option>' +
+            '<option value="3">Every 3 days</option>' +
+            '<option value="2">Every 2 days</option>' +
+            '<option value="1">Daily</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="margin-bottom:18px;">' +
+          '<label style="font-size:10px;font-weight:700;color:#666;letter-spacing:.6px;display:block;margin-bottom:8px;text-transform:uppercase;">Platforms — one CSV row per post per platform</label>' +
+          '<div id="mctlPlatforms" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
+            METRICOOL_NETWORKS.map(function(n, idx) {
+              const checked = ['linkedin','facebook','instagram'].includes(n.id) ? 'checked' : '';
+              return '<label style="display:flex;align-items:center;gap:7px;padding:7px 10px;background:#0a0a0a;border:1px solid #222;border-radius:3px;font-size:12px;color:#ccc;cursor:pointer;">' +
+                '<input type="checkbox" value="' + n.id + '" ' + checked + ' style="accent-color:' + n.color + ';"> ' + n.label +
+              '</label>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);border-radius:4px;padding:12px 14px;margin-bottom:18px;">' +
+          '<div style="font-size:11px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">What you get in the CSV</div>' +
+          '<div style="font-size:12px;color:#aaa;line-height:1.5;">One row per (post × platform × scheduled slot). Columns: <strong style="color:#ddd;">date, time, network, text, link, notes</strong>. Captions are parsed straight from the pack. <strong style="color:#ddd;">Media</strong> column is left blank — attach images/video in Metricool after import.</div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px;">' +
+          '<button onclick="document.getElementById(\'metricoolExportOverlay\').remove()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#999;font-size:12px;padding:9px 16px;border-radius:3px;cursor:pointer;">Cancel</button>' +
+          '<button id="mctlDownloadBtn" disabled style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 20px;border-radius:3px;cursor:not-allowed;opacity:.5;letter-spacing:.3px;">Loading pack…</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  // Fetch the HTML pack and parse captions out. Uses the server URL so
+  // the parse works whether or not the upload happened in this session.
+  fetch(item.url)
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function(htmlText) {
+      const posts = _parseSocialPackCaptions(htmlText);
+      const status = document.getElementById('mctlStatus');
+      if (!posts.length) {
+        status.innerHTML = '<span style="color:#f59e0b;">Couldn\'t find any caption blocks in this pack — Metricool CSV needs captions tagged with <code style="background:#1a1a1a;padding:2px 5px;border-radius:2px;">class=\"caption-text\"</code> or similar. Export disabled.</span>';
+        return;
+      }
+      status.innerHTML = '<span style="color:#00cc66;">Parsed <strong>' + posts.length + '</strong> post' + (posts.length!==1?'s':'') + '. Pick your schedule + platforms, then download.</span>';
+      const btn = document.getElementById('mctlDownloadBtn');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.textContent = 'Download CSV';
+      btn.onclick = function() { _generateMetricoolCsv(item, posts); };
+    })
+    .catch(function(err) {
+      document.getElementById('mctlStatus').innerHTML = '<span style="color:#ff6b6b;">Failed to load pack: ' + err.message + '</span>';
+    });
+}
+
+// Parse captions out of an HTML social pack. Looks for the canonical
+// .caption-text blocks first, then falls back to scanning any divs that
+// look like caption bodies. Also grabs a title per post from the card
+// header (e.g. "01 · Operational Efficiency").
+function _parseSocialPackCaptions(htmlText) {
+  try {
+    const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+    const blocks = doc.querySelectorAll('.caption-text, [class*="caption"]');
+    const posts = [];
+    blocks.forEach(function(el) {
+      const txt = (el.innerText || el.textContent || '').trim();
+      if (!txt || txt.length < 20) return; // skip empty/placeholder
+      // Find the nearest card-label title so we can name the row
+      let title = '';
+      let card = el.closest('.card-wrap, .card, .post, [class*="card"]');
+      if (card) {
+        const label = card.querySelector('.card-label span, .post-label, h2, h3');
+        if (label) title = (label.innerText || label.textContent || '').trim();
+      }
+      posts.push({ title: title || ('Post ' + (posts.length + 1)), caption: txt });
+    });
+    return posts;
+  } catch (e) {
+    console.warn('[Metricool export] parse failed:', e);
+    return [];
+  }
+}
+
+function _generateMetricoolCsv(item, posts) {
+  const startDate = document.getElementById('mctlStartDate').value;
+  const postTime = document.getElementById('mctlPostTime').value || '10:00';
+  const cadenceDays = parseInt(document.getElementById('mctlCadence').value) || 7;
+  const picked = Array.from(document.querySelectorAll('#mctlPlatforms input[type=checkbox]:checked')).map(function(el) { return el.value; });
+
+  if (!startDate) { showToast('Pick a start date', true); return; }
+  if (!picked.length) { showToast('Pick at least one platform', true); return; }
+
+  // Generate date for each post slot
+  const startParts = startDate.split('-').map(Number);
+  const start = new Date(startParts[0], startParts[1]-1, startParts[2]);
+  const rows = [];
+  posts.forEach(function(p, i) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + (i * cadenceDays));
+    const date = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    picked.forEach(function(net) {
+      rows.push({
+        date: date,
+        time: postTime,
+        network: net,
+        text: p.caption,
+        link: '',               // Metricool will auto-pull OG tags when link is posted via composer
+        media: '',              // left blank — attach image/video in Metricool's UI after import
+        notes: (p.title || '').replace(/\s+/g, ' ').trim()
+      });
+    });
+  });
+
+  // CSV serialisation — quote every field + escape internal quotes, so a
+  // caption containing commas / newlines / quotes doesn't break the file.
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  const header = ['date','time','network','text','link','media','notes'];
+  const csvLines = [header.join(',')];
+  rows.forEach(function(r) {
+    csvLines.push(header.map(function(k) { return csvCell(r[k]); }).join(','));
+  });
+  const csv = csvLines.join('\r\n');
+
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = (item.name || 'social-pack').replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
+  a.href = url;
+  a.download = safeName + '-metricool-' + startDate + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 4000);
+
+  showToast(rows.length + ' row' + (rows.length!==1?'s':'') + ' exported · ' + posts.length + ' posts × ' + picked.length + ' platform' + (picked.length!==1?'s':''));
+  const ov = document.getElementById('metricoolExportOverlay');
+  if (ov) ov.remove();
+}
+
+window.openMetricoolExport = openMetricoolExport;
+
 const CONTENT_TYPE_FOLDERS = {
   videos:    {name:'Videos',       color:'#FF4444'},
   brochures: {name:'Brochures',    color:'#0098d4'},
@@ -7439,6 +7634,14 @@ function renderContentLibrary() {
     const openBtn = openable
       ? '<button onclick="event.stopPropagation();openContentPack(' + idArg + ')" title="Open in a new tab" style="background:' + ctf.color + ';border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">Open</button>'
       : '';
+    // Metricool CSV export — only for HTML social packs (type: pack), only
+    // if they've been signed off. Gate here on approval so unapproved packs
+    // can't accidentally be scheduled.
+    const csvBtn = (c.type === 'pack' && c.url && _contentIsApproved(c))
+      ? '<button onclick="event.stopPropagation();openMetricoolExport(' + idArg + ')" title="Export to Metricool CSV — captions + schedule across platforms" style="background:#7C3AED;border:none;color:#fff;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">CSV →</button>'
+      : (c.type === 'pack' && c.url && !_contentIsApproved(c))
+        ? '<button disabled title="Sign off the pack first — CSV export is locked until Mark approves" style="background:#222;border:none;color:#555;cursor:not-allowed;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">CSV →</button>'
+        : '';
     html += '<tr style="border-bottom:1px solid #161616">' +
       '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + ctf.color + '">' + icon + '</span><div><div style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</div><div style="display:flex;gap:3px;margin-top:3px">' + platBadges + '</div></div></div></td>' +
       '<td style="padding:10px 12px;font-size:11px;color:#999">' + (c.desc || c.ext.toUpperCase() + ' file') + '</td>' +
@@ -7447,7 +7650,7 @@ function renderContentLibrary() {
       '<td style="padding:10px 12px;">' + approvalBadge + '<div>' + approvalAction + '</div>' +
         (_contentIsApproved(c) ? '<div style="font-size:10px;color:#666;margin-top:3px;">by ' + c.approval.approvedBy + '<br>' + c.approval.approvedAt + '</div>' : '') +
       '</td>' +
-      '<td style="padding:10px 12px;white-space:nowrap">' + openBtn + '<button onclick="removeContentItem(' + idArg + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Remove">&times;</button></td>' +
+      '<td style="padding:10px 12px;white-space:nowrap">' + openBtn + csvBtn + '<button onclick="removeContentItem(' + idArg + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Remove">&times;</button></td>' +
     '</tr>';
   });
 
