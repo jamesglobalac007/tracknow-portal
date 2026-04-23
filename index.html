@@ -7645,12 +7645,13 @@ function renderContentLibrary() {
       ? '<button onclick="event.stopPropagation();revokeContentApproval(' + idArg + ')" title="Revoke approval — return to Pending" style="background:none;border:1px solid #333;color:#888;cursor:pointer;font-size:10px;padding:3px 8px;border-radius:3px;margin-top:4px;">Revoke</button>'
       : '<button onclick="event.stopPropagation();approveContentItem(' + idArg + ')" title="Sign off on behalf of ' + CONTENT_APPROVER.name + ' (' + CONTENT_APPROVER.role + ')" style="background:#00cc66;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;margin-top:4px;letter-spacing:0.3px;">Sign Off</button>';
 
-    // Show the Open button for any file that has a server URL (new uploads)
-    // OR a local preview URL (legacy in-memory uploads). The colour picks up
-    // the folder tint so it's visually consistent with the folder header.
-    const openable = c.url || c.previewUrl;
-    const openBtn = openable
-      ? '<button onclick="event.stopPropagation();openContentPack(' + idArg + ')" title="Open in a new tab" style="background:' + ctf.color + ';border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">Open</button>'
+    // Show the Open link for any file that has a server URL (new uploads)
+    // OR a local preview URL (legacy in-memory uploads). We use a real
+    // <a target="_blank"> instead of a JS window.open() — popup blockers
+    // leave anchor tags alone, and the link still works if JS fails.
+    const openHref = c.url || c.previewUrl || '';
+    const openBtn = openHref
+      ? '<a href="' + openHref + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" title="Open in a new tab" style="background:' + ctf.color + ';border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;text-decoration:none;display:inline-block;">Open</a>'
       : '';
     // Metricool CSV export — only for HTML social packs (type: pack), only
     // if they've been signed off. Gate here on approval so unapproved packs
