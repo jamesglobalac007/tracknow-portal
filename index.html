@@ -2678,11 +2678,13 @@ let PROSPECTS = (function() {
 let _nextProspectId = (function() { var mx = 0; PROSPECTS.forEach(function(p) { if (p.id > mx) mx = p.id; }); return mx + 1; })();
 /* Persist prospects to localStorage after any change */
 function _saveProspects() { try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _syncPush(); }
-/* Persist LEADS + CUSTOMERS to localStorage */
+/* Persist LEADS + CUSTOMERS + CONTENT_LIBRARY to localStorage, then sync */
 function saveData() {
   try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){}
   try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){}
   try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){}
+  // CONTENT_LIBRARY may not be initialised yet on first paint — guard it.
+  try { if (typeof CONTENT_LIBRARY !== 'undefined') localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){}
   _syncPush();
 }
 
@@ -2719,7 +2721,10 @@ function _syncPush() {
     body: JSON.stringify({
       leads: LEADS,
       prospects: PROSPECTS,
-      customers: CUSTOMERS
+      customers: CUSTOMERS,
+      // Content Library metadata (approval state, platform tags, etc) rides
+      // alongside leads/etc. Upload bytes go through a separate endpoint.
+      contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined') ? CONTENT_LIBRARY : undefined
     })
   })
   .then(function(r) { return r.json(); })
@@ -2730,6 +2735,7 @@ function _syncPush() {
       if (d.leads) { LEADS = d.leads; try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){} }
       if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
       if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
+      if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
       // Refresh UI if dashboard is visible
       _syncRefreshUI();
       if (!_syncInitDone) { _syncInitDone = true; console.log('[Sync] Initial sync complete — v' + _syncVersion); }
@@ -2750,6 +2756,7 @@ function _syncPull() {
       if (d.leads) { LEADS = d.leads; try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){} }
       if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
       if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
+      if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
       _syncRefreshUI();
     }
   })
@@ -6998,7 +7005,16 @@ function renderTemplates() {
 }
 
 // ── Content Library ──────────────────────────────────────────────────
-const CONTENT_LIBRARY = [];
+// Hydrates from localStorage on load (fast first paint) and then refreshes
+// from the server via _syncPull. Metadata rides the same sync payload as
+// leads/prospects/customers — bytes live on disk under DATA_DIR.
+let CONTENT_LIBRARY = (function() {
+  try {
+    const saved = localStorage.getItem('tn_content_library');
+    if (saved) { const arr = JSON.parse(saved); if (Array.isArray(arr)) return arr; }
+  } catch(e){}
+  return [];
+})();
 
 // ── Content approval / sign-off ──────────────────────────────────────
 // Every piece of content must be signed off by the TrackNow director
@@ -7099,69 +7115,89 @@ function _classifyContent(ext) {
   return 'other';
 }
 
-function handleContentUpload(files) {
-  if (!files || !files.length) return;
-  for (let i = 0; i < files.length; i++) {
-    const f = files[i];
-    const ext = f.name.split('.').pop().toLowerCase();
-    const type = _classifyContent(ext);
-    const isVideo = type === 'video';
-    const isImage = type === 'image';
-    const isPDF = type === 'brochure';
-    const isPack = type === 'pack';
-    const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
-
-    // Auto-assign to platforms based on format compatibility
-    const platforms = [];
-    for (const [pid, spec] of Object.entries(PLATFORM_SPECS)) {
-      if (isVideo && spec.video.includes(ext)) platforms.push(pid);
-      else if (isImage && spec.image.includes(ext)) platforms.push(pid);
-      else if (isPDF) platforms.push(pid); // brochures go everywhere
-      else if (isPack) platforms.push(pid); // social packs cover multiple platforms
-    }
-
-    // Create preview URL — images render inline, HTML packs get an "Open" link
-    let thumbUrl = '';
-    let previewUrl = '';
-    if (isImage) {
-      try { thumbUrl = URL.createObjectURL(f); } catch(e) {}
-    }
-    if (isPack) {
-      try { previewUrl = URL.createObjectURL(f); } catch(e) {}
-    }
-
-    CONTENT_LIBRARY.push({
-      id: Date.now() + i,
-      name: f.name,
-      ext: ext,
-      type: type,
-      size: sizeMB + ' MB',
-      platforms: platforms,
-      thumbUrl: thumbUrl,
-      previewUrl: previewUrl,
-      uploaded: new Date().toLocaleDateString('en-AU'),
-      file: f,
-      // All new content enters the library as pending — cannot be shared
-      // until signed off by the TrackNow director (Mark Speelmeyer).
-      approval: { status: 'pending' }
-    });
-  }
-
-  // Show which folder it went into
-  const typeLabels = {video:'Videos', image:'Images', brochure:'Brochures', pack:'Social Packs', other:'Raw Files'};
-  const types = [...new Set(Array.from(files).map(f => _classifyContent(f.name.split('.').pop().toLowerCase())))];
-  const folderNames = types.map(t => typeLabels[t] || 'Raw Files').join(', ');
-  document.getElementById('clDropLabel').textContent = files.length + ' file' + (files.length > 1 ? 's' : '') + ' added to ' + folderNames;
-  renderContentLibrary();
-  showToast(files.length + ' file' + (files.length > 1 ? 's' : '') + ' sorted into ' + folderNames);
+// Upload a File to the server (base64 + metadata) and return the saved
+// record. Bytes are written to the Render disk so they survive redeploys.
+function _uploadContentFile(f) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onerror = function() { reject(new Error('Failed to read ' + f.name)); };
+    reader.onload = function() {
+      const ext = f.name.split('.').pop().toLowerCase();
+      const type = _classifyContent(ext);
+      const platforms = [];
+      for (const [pid, spec] of Object.entries(PLATFORM_SPECS)) {
+        if (type === 'video' && spec.video.includes(ext)) platforms.push(pid);
+        else if (type === 'image' && spec.image.includes(ext)) platforms.push(pid);
+        else if (type === 'brochure' || type === 'pack') platforms.push(pid);
+      }
+      const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
+      fetch('/api/content-library/upload', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, (typeof _authHeaders === 'function') ? _authHeaders() : {}),
+        body: JSON.stringify({
+          name: f.name,
+          ext: ext,
+          type: type,
+          size: sizeMB + ' MB',
+          platforms: platforms,
+          approval: { status: 'pending' },
+          dataUrl: reader.result
+        })
+      })
+      .then(function(r) { return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
+      .then(function(resp) {
+        if (!resp.ok || !resp.body || !resp.body.ok) return reject(new Error((resp.body && resp.body.error) || 'Upload failed'));
+        resolve(resp.body.record);
+      })
+      .catch(reject);
+    };
+    reader.readAsDataURL(f);
+  });
 }
 
-// Open a social pack (HTML file) in a new tab so Mark / James can preview
-// the multi-post layout. Uses the object URL created at upload time.
+function handleContentUpload(files) {
+  if (!files || !files.length) return;
+  const list = Array.from(files);
+  document.getElementById('clDropLabel').textContent = 'Uploading ' + list.length + ' file' + (list.length > 1 ? 's' : '') + '…';
+
+  // Upload each file serially so failures surface clearly and we don't spam
+  // the server with 5 parallel base64 payloads.
+  let done = 0;
+  let failed = 0;
+  const uploaded = [];
+  function next(i) {
+    if (i >= list.length) {
+      // Once every upload resolved, push the new records into CONTENT_LIBRARY
+      // and save so the sync engine broadcasts to other sessions too.
+      if (uploaded.length) {
+        uploaded.forEach(function(r) { CONTENT_LIBRARY.push(r); });
+        saveData();
+      }
+      renderContentLibrary();
+      const typeLabels = {video:'Videos', image:'Images', brochure:'Brochures', pack:'Social Packs', other:'Raw Files'};
+      const types = [...new Set(uploaded.map(function(r) { return r.type; }))];
+      const folderNames = types.map(function(t) { return typeLabels[t] || 'Raw Files'; }).join(', ');
+      document.getElementById('clDropLabel').textContent = done + ' file' + (done !== 1 ? 's' : '') + ' added' + (folderNames ? ' to ' + folderNames : '') + (failed ? ' · ' + failed + ' failed' : '');
+      if (done) showToast(done + ' file' + (done !== 1 ? 's' : '') + ' uploaded' + (folderNames ? ' to ' + folderNames : ''));
+      if (failed) showToast(failed + ' file' + (failed !== 1 ? 's' : '') + ' failed — try again', true);
+      return;
+    }
+    _uploadContentFile(list[i])
+      .then(function(rec) { uploaded.push(rec); done++; next(i + 1); })
+      .catch(function(err) { console.warn('Upload failed:', err); failed++; next(i + 1); });
+  }
+  next(0);
+}
+
+// Open any uploaded file in a new tab — uses the server URL so it works
+// across sessions / devices. Social packs (HTML) open as a live preview,
+// brochures (PDF) open in the browser PDF viewer, etc.
 function openContentPack(id) {
-  const item = CONTENT_LIBRARY.find(c => c.id === id);
-  if (!item || !item.previewUrl) { showToast('Preview unavailable — reupload the file'); return; }
-  window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
+  const item = CONTENT_LIBRARY.find(c => String(c.id) === String(id));
+  if (!item) { showToast('File missing — may have been removed'); return; }
+  const url = item.url || item.previewUrl;
+  if (!url) { showToast('No preview available'); return; }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 const CONTENT_TYPE_FOLDERS = {
@@ -7281,8 +7317,23 @@ function openPlatformFolder(pid) {
 }
 
 function removeContentItem(id) {
-  const idx = CONTENT_LIBRARY.findIndex(c => c.id === id);
-  if (idx > -1) { CONTENT_LIBRARY.splice(idx, 1); renderContentLibrary(); }
+  const idx = CONTENT_LIBRARY.findIndex(c => String(c.id) === String(id));
+  if (idx < 0) return;
+  const removed = CONTENT_LIBRARY[idx];
+  if (!confirm('Remove "' + (removed && removed.name || 'this file') + '" from the Content Library?\n\nThis deletes it from the server too.')) return;
+  CONTENT_LIBRARY.splice(idx, 1);
+  renderContentLibrary();
+  // Best-effort delete on the server. If the item was uploaded via the new
+  // upload endpoint it has a string id and will return ok. Local-only items
+  // (pre-sync) have numeric ids and 404 — that's fine, we just remove them
+  // from the local array.
+  fetch('/api/content-library/' + encodeURIComponent(id), {
+    method: 'DELETE',
+    headers: Object.assign({}, (typeof _authHeaders === 'function') ? _authHeaders() : {})
+  })
+  .then(function(r) { return r.json().catch(function(){return{};}); })
+  .then(function() { saveData(); })
+  .catch(function() { saveData(); });
 }
 
 function renderContentLibrary() {

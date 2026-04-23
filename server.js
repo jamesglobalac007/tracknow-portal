@@ -35,8 +35,13 @@ const AUDIT_FILE     = path.join(DATA_DIR, 'audit.json');
 const BACKUPS_DIR    = path.join(DATA_DIR, 'backups');
 const SIGNOFF_DIR    = path.join(DATA_DIR, 'disclaimer-signoffs');
 const SIGNOFF_INDEX  = path.join(SIGNOFF_DIR, '_index.json');
+// Marketing Hub → Content Library uploads (images, videos, PDFs, HTML packs).
+// Bytes live here on the Render disk; metadata rides STORE.contentLibrary so
+// it syncs alongside leads/prospects/customers.
+const CONTENT_DIR    = path.join(DATA_DIR, 'content-library');
 try { fs.mkdirSync(SIGNOFF_DIR, { recursive: true }); } catch (e) {}
 try { fs.mkdirSync(BACKUPS_DIR, { recursive: true }); } catch (e) {}
+try { fs.mkdirSync(CONTENT_DIR, { recursive: true }); } catch (e) {}
 console.log(`[tracknow] DATA_DIR = ${DATA_DIR}`);
 
 // ─── Backup system ───────────────────────────────────────────────────────────
@@ -82,10 +87,13 @@ function _writeBackupSnapshot() {
 
 // ─── Body parser (scoped per route — no single 50 MB blanket) ───────────────
 const jsonNormal = express.json({ limit: '2mb' });
-const jsonLarge  = express.json({ limit: '10mb' }); // agreement HTML can be larger
-const LARGE_ROUTES = new Set(['/api/agreement', '/api/agreement-signed']);
+const jsonLarge  = express.json({ limit: '10mb' });   // agreement HTML can be larger
+const jsonUpload = express.json({ limit: '60mb' });   // content-library uploads (base64 + 33% overhead)
+const LARGE_ROUTES  = new Set(['/api/agreement', '/api/agreement-signed']);
+const UPLOAD_ROUTES = new Set(['/api/content-library/upload']);
 app.use((req, res, next) => {
-  if (LARGE_ROUTES.has(req.path)) return jsonLarge(req, res, next);
+  if (UPLOAD_ROUTES.has(req.path)) return jsonUpload(req, res, next);
+  if (LARGE_ROUTES.has(req.path))  return jsonLarge(req, res, next);
   return jsonNormal(req, res, next);
 });
 
@@ -256,6 +264,10 @@ function pushAudit(entry) {
 // ─── Data store — file-backed ───────────────────────────────────────────────
 let STORE = {
   leads: [], prospects: [], customers: [],
+  // Marketing Hub → Content Library metadata (filename, approval state,
+  // which platforms it's for, etc). File bytes live on disk under
+  // CONTENT_DIR — this array just holds the metadata + stable URL.
+  contentLibrary: [],
   version: 0, lastUpdate: Date.now()
 };
 function loadStore() {
@@ -334,6 +346,12 @@ const AUTH_EXEMPT = new Set([
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) return next();
   if (AUTH_EXEMPT.has(req.path)) return next();
+  // Content-library file serving (/api/content-library/:id/file) has to be
+  // reachable without an Authorization header because the frontend opens
+  // these via window.open() / <img src>, neither of which can attach a
+  // bearer token. Filenames include unguessable random ids, and the
+  // content in the library is intended for public social posting anyway.
+  if (/^\/api\/content-library\/[^/]+\/file$/.test(req.path) && req.method === 'GET') return next();
 
   const auth = req.headers.authorization || '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
@@ -719,14 +737,15 @@ app.post('/api/data', (req, res) => {
         delete incoming[k];
       }
     });
-    const { leads, prospects, customers } = incoming;
-    if (Array.isArray(leads))     STORE.leads     = leads;
-    if (Array.isArray(prospects)) STORE.prospects = prospects;
-    if (Array.isArray(customers)) STORE.customers = customers;
+    const { leads, prospects, customers, contentLibrary } = incoming;
+    if (Array.isArray(leads))           STORE.leads          = leads;
+    if (Array.isArray(prospects))       STORE.prospects      = prospects;
+    if (Array.isArray(customers))       STORE.customers      = customers;
+    if (Array.isArray(contentLibrary))  STORE.contentLibrary = contentLibrary;
     STORE.version++;
     STORE.lastUpdate = Date.now();
     saveStore();
-    res.json({ ok: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers });
+    res.json({ ok: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary });
   } catch (err) {
     console.error('POST /api/data error:', err);
     res.status(500).json({ ok: false, error: 'Server error' });
@@ -736,7 +755,74 @@ app.post('/api/data', (req, res) => {
 app.get('/api/data', (req, res) => {
   const sinceVersion = parseInt(req.query.v) || 0;
   if (sinceVersion >= STORE.version) return res.json({ ok: true, changed: false, version: STORE.version });
-  res.json({ ok: true, changed: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers });
+  res.json({ ok: true, changed: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary || [] });
+});
+
+// ─── Content Library — file upload / serve / delete ────────────────────────
+// Frontend POSTs { name, type, ext, dataUrl (base64), ...meta }.
+// We write the bytes to DATA_DIR/content-library/<id>_<safeName> and append
+// the metadata (including a stable URL) to STORE.contentLibrary so the next
+// _syncPull pulls it back.
+app.post('/api/content-library/upload', (req, res) => {
+  try {
+    const { name, ext, type, dataUrl, size, platforms, approval, desc } = req.body || {};
+    if (!name || !dataUrl) return res.status(400).json({ ok: false, error: 'name and dataUrl required' });
+    const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
+    if (!m) return res.status(400).json({ ok: false, error: 'Invalid dataUrl (expected base64 data URL)' });
+    const buf = Buffer.from(m[2], 'base64');
+    const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const safeBase = String(name).replace(/[^a-z0-9._-]/gi, '_').slice(0, 120);
+    const filename = `${id}_${safeBase}`;
+    try { fs.mkdirSync(CONTENT_DIR, { recursive: true }); } catch (e) {}
+    try {
+      fs.writeFileSync(path.join(CONTENT_DIR, filename), buf);
+    } catch (writeErr) {
+      console.error('[tracknow] content-library writeFileSync failed', writeErr);
+      return res.status(500).json({ ok: false, error: 'Failed to write file: ' + (writeErr.code || writeErr.message || 'unknown') });
+    }
+    const record = {
+      id,
+      name,
+      ext: ext || '',
+      type: type || 'other',
+      size: size || ((buf.length / (1024*1024)).toFixed(1) + ' MB'),
+      platforms: Array.isArray(platforms) ? platforms : [],
+      // Stable URL — survives redeploys as long as DATA_DIR disk is mounted.
+      url: '/api/content-library/' + id + '/file',
+      filename,
+      desc: desc || '',
+      uploaded: new Date().toLocaleDateString('en-AU'),
+      uploadedBy: (req.user && req.user.email) || 'unknown',
+      uploadedAt: new Date().toISOString(),
+      approval: approval || { status: 'pending' }
+    };
+    STORE.contentLibrary = STORE.contentLibrary || [];
+    STORE.contentLibrary.push(record);
+    STORE.version++;
+    STORE.lastUpdate = Date.now();
+    saveStore();
+    res.json({ ok: true, record, version: STORE.version });
+  } catch (err) {
+    console.error('POST /api/content-library/upload error:', err);
+    res.status(500).json({ ok: false, error: 'Server error: ' + (err.code || err.message || 'unknown') });
+  }
+});
+
+app.get('/api/content-library/:id/file', (req, res) => {
+  const item = (STORE.contentLibrary || []).find(c => String(c.id) === String(req.params.id));
+  if (!item || !item.filename) return res.status(404).json({ ok: false, error: 'Not found' });
+  res.sendFile(path.join(CONTENT_DIR, item.filename));
+});
+
+app.delete('/api/content-library/:id', (req, res) => {
+  const idx = (STORE.contentLibrary || []).findIndex(c => String(c.id) === String(req.params.id));
+  if (idx < 0) return res.status(404).json({ ok: false, error: 'Not found' });
+  const [removed] = STORE.contentLibrary.splice(idx, 1);
+  try { if (removed && removed.filename) fs.unlinkSync(path.join(CONTENT_DIR, removed.filename)); } catch (e) {}
+  STORE.version++;
+  STORE.lastUpdate = Date.now();
+  saveStore();
+  res.json({ ok: true, version: STORE.version });
 });
 
 app.post('/api/event', (req, res) => {
