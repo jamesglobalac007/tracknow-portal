@@ -13468,6 +13468,7 @@ function openAdminTools() {
         '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:6px;">' +
           '<button onclick="runAdminGenerateResetLink()" style="background:#10b981;border:none;color:#000;font-size:12px;font-weight:700;padding:9px 20px;border-radius:3px;cursor:pointer;letter-spacing:.3px;">Generate Reset Link</button>' +
           '<button onclick="runAdminReset2faOnly()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;font-size:11px;font-weight:700;padding:9px 14px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Reset 2FA only</button>' +
+          '<button onclick="runAdminRevokeTrustedDevices()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;font-size:11px;font-weight:700;padding:9px 14px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;" title="Forces this user to do 2FA again on every browser they have trusted. Use if they report a lost device or suspicious activity.">Revoke trusted devices</button>' +
           '<button onclick="runAdminResetPassword()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 16px;border-radius:3px;cursor:pointer;letter-spacing:.3px;" title="Legacy — issues a temp password. Prefer Generate Reset Link above.">Temp Password</button>' +
         '</div>' +
         '<div style="margin-top:22px;padding-top:18px;border-top:1px solid #1a1a1a;">' +
@@ -13552,6 +13553,32 @@ async function runAdminReset2faOnly() {
     showToast('Network error: ' + err.message, true);
   }
 }
+// Revoke all 14-day trusted-device tokens for a user. Next login on any
+// browser they've trusted will ask for 2FA again. Does NOT touch password
+// or 2FA secrets — purely clears the trust markers.
+async function runAdminRevokeTrustedDevices() {
+  const email = (document.getElementById('adminTargetEmail').value || '').trim();
+  if (!email) { showToast('Enter the user\'s email first', true); return; }
+  if (!confirm('Revoke trusted devices for ' + email + '?\n\nNext login on every browser they\'ve trusted will ask for their 2FA code again.\n\nPassword + 2FA setup stay the same.')) return;
+  try {
+    const r = await fetch('/api/admin/revoke-trusted-devices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { showToast(d.error || 'Revoke failed', true); return; }
+    const box = document.getElementById('adminToolsResult');
+    box.style.display = 'block';
+    box.innerHTML =
+      '<div style="font-size:11px;font-weight:700;color:#00cc66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Trusted devices cleared</div>' +
+      '<div>' + email + ' had <strong style="color:#fff;">' + (d.revoked || 0) + '</strong> trusted device' + ((d.revoked||0)!==1?'s':'') + ' — all removed. They\'ll be asked for their 2FA code on next login everywhere.</div>';
+    showToast((d.revoked || 0) + ' trusted device' + ((d.revoked||0)!==1?'s':'') + ' revoked for ' + email);
+  } catch (err) {
+    showToast('Network error: ' + err.message, true);
+  }
+}
+
 async function runAdminSeedContent() {
   if (!confirm('Import files from the repo\'s content-library-seed/ folder into the Content Library?\n\nSafe to run — any file already in the library is skipped.')) return;
   try {
@@ -13689,24 +13716,37 @@ async function doLogin() {
   const pw = (passEl.value || '');
   errEl.textContent = '';
   if (!em || !pw) { errEl.textContent = 'Enter email + password.'; return; }
+  // Carry any previously-stored 14-day trust token for this browser.
+  // If it's still valid for this email the server will skip 2FA; if it's
+  // expired/revoked the server just falls back to the normal 2FA flow.
+  let trustToken = null;
+  try { trustToken = localStorage.getItem('tn_trust') || null; } catch(_) {}
   try {
-    // First hit — no TOTP yet
+    // First hit — send password + any cached trust token. If the token
+    // matches the email + is unexpired, the server skips requires2FA.
     let r = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: em, pass: pw })
+      body: JSON.stringify({ email: em, pass: pw, trustToken })
     });
     let data = await r.json();
 
     // Server said "password ok, now give me the 6-digit code" — prompt for it
     // (or a backup code) and replay the login with totpCode included.
+    let trustDeviceChoice = false;
     if (r.ok && data.ok && data.requires2FA) {
       const code = prompt('Enter the 6-digit code from your authenticator app (or a 10-char backup code):');
       if (!code) { errEl.textContent = '2FA code required.'; return; }
+      // Ask exactly once per 2FA step whether to trust this browser for 14 days.
+      // Default is Cancel (no trust) — safer fallback if the user misreads it.
+      trustDeviceChoice = confirm('Trust this device for 14 days?\n\n' +
+        'Tick OK to skip the 2FA code on this browser for the next 14 days.\n' +
+        'Password will still be required every login.\n\n' +
+        'Pick Cancel if you are on a shared or public computer.');
       r = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: em, pass: pw, totpCode: code.trim() })
+        body: JSON.stringify({ email: em, pass: pw, totpCode: code.trim(), trustDevice: trustDeviceChoice, trustToken })
       });
       data = await r.json();
     }
@@ -13718,6 +13758,18 @@ async function doLogin() {
       return;
     }
     _tnSetAuth(data.token, data.user);
+    // Persist the 14-day trust token if the server issued one this turn.
+    // Keyed in localStorage so it survives tab close. If no token came
+    // back (user didn't tick trust / not eligible), leave any existing
+    // value alone rather than wiping a still-valid trust from a prior
+    // session. If server signalled this login was itself skipped-by-trust
+    // we also leave the stored token as-is.
+    try {
+      if (data.trustToken) {
+        localStorage.setItem('tn_trust', data.trustToken);
+        if (data.trustExpiresAt) localStorage.setItem('tn_trust_exp', String(data.trustExpiresAt));
+      }
+    } catch(_) {}
 
     // Must-change-password path — show a small inline prompt.
     if (data.mustChangePassword) {

@@ -32,6 +32,7 @@ const DATA_FILE      = path.join(DATA_DIR, 'data.json');
 const USERS_FILE     = path.join(DATA_DIR, 'users.json');
 const SESSIONS_FILE  = path.join(DATA_DIR, 'sessions.json');
 const AUDIT_FILE     = path.join(DATA_DIR, 'audit.json');
+const TRUST_FILE     = path.join(DATA_DIR, 'trustedDevices.json');
 const BACKUPS_DIR    = path.join(DATA_DIR, 'backups');
 const SIGNOFF_DIR    = path.join(DATA_DIR, 'disclaimer-signoffs');
 const SIGNOFF_INDEX  = path.join(SIGNOFF_DIR, '_index.json');
@@ -249,6 +250,71 @@ function pruneSessions() {
   if (SESSIONS.length !== before) saveSessions();
 }
 
+// ─── Trusted-device tokens — 14-day skip-2FA markers ─────────────────────────
+// When a user logs in with 2FA successfully AND ticks "Trust this device for
+// 14 days", the server issues a random token stored here and echoed back to
+// the client (kept in localStorage as tn_trust). On subsequent logins the
+// client re-sends the token as trustToken in the login body — if it matches
+// the email, hasn't expired, and hasn't been revoked, the 2FA step is
+// skipped. Password is ALWAYS still required. Trust records are revoked:
+//   • automatically after 14 days (TRUST_TTL_MS)
+//   • when the user's password is reset or changed
+//   • when an admin clicks "Revoke trusted devices"
+//   • when force2FA is toggled on a user
+// Stored on disk so trust survives redeploys (same pattern as SESSIONS).
+const TRUST_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+let TRUSTED_DEVICES = []; // [{ token, email, expiresAt, createdAt, ip, ua }]
+function loadTrust() {
+  try {
+    if (fs.existsSync(TRUST_FILE)) {
+      TRUSTED_DEVICES = JSON.parse(fs.readFileSync(TRUST_FILE, 'utf8'));
+    }
+  } catch (e) { TRUSTED_DEVICES = []; }
+}
+function saveTrust() {
+  try { fs.writeFileSync(TRUST_FILE, JSON.stringify(TRUSTED_DEVICES)); }
+  catch (e) { console.error('[tracknow] saveTrust error:', e.message); }
+}
+function pruneTrust() {
+  const now = Date.now();
+  const before = TRUSTED_DEVICES.length;
+  TRUSTED_DEVICES = TRUSTED_DEVICES.filter(t => t && t.expiresAt > now);
+  if (TRUSTED_DEVICES.length !== before) saveTrust();
+}
+// true iff the caller-supplied trust token is valid for the given email.
+function isTrustedDevice(token, email) {
+  if (!token || !email) return false;
+  pruneTrust();
+  const rec = TRUSTED_DEVICES.find(t => t.token === token);
+  if (!rec) return false;
+  if (rec.expiresAt < Date.now()) return false;
+  return rec.email.toLowerCase() === String(email).toLowerCase();
+}
+function issueTrust(email, ip, ua) {
+  pruneTrust();
+  const token = crypto.randomBytes(32).toString('hex');
+  const now = Date.now();
+  TRUSTED_DEVICES.push({
+    token,
+    email,
+    expiresAt: now + TRUST_TTL_MS,
+    createdAt: now,
+    ip: ip || '',
+    ua: (ua || '').slice(0, 200)
+  });
+  saveTrust();
+  return { token, expiresAt: now + TRUST_TTL_MS };
+}
+function revokeTrustForEmail(email) {
+  const e = String(email || '').toLowerCase();
+  if (!e) return 0;
+  const before = TRUSTED_DEVICES.length;
+  TRUSTED_DEVICES = TRUSTED_DEVICES.filter(t => t.email.toLowerCase() !== e);
+  const removed = before - TRUSTED_DEVICES.length;
+  if (removed > 0) saveTrust();
+  return removed;
+}
+
 // ─── Audit log — append-only, file-backed ───────────────────────────────────
 let AUDIT = [];
 function loadAudit() {
@@ -446,8 +512,9 @@ app.use(express.static(__dirname, {
 // ═══════════════════════════════════════════════════════════════════════════
 
 app.post('/api/login', async (req, res) => {
-  let { email, pass, totpCode } = req.body || {};
+  let { email, pass, totpCode, trustDevice, trustToken } = req.body || {};
   const ip = clientIp(req);
+  const ua = String(req.headers['user-agent'] || '').slice(0, 200);
   if (!email || !pass) return res.status(400).json({ ok: false, error: 'Email and password required' });
   // Trim stray whitespace that sneaks in via copy/paste (SMS, email, chat).
   // Passwords themselves never legitimately start/end with a space, so this
@@ -479,7 +546,14 @@ app.post('/api/login', async (req, res) => {
   // backup code) before issuing the full session. If 2FA is NOT enabled
   // but force2FA is set, we issue a narrow-scope enrollment session
   // instead — they must finish enrolling before they can do anything else.
-  if (user.totpEnabled && user.totpSecret) {
+  //
+  // "Trust this device for 14 days" bypass: if the client sent a valid
+  // trustToken bound to this email, skip the 2FA step entirely. Password
+  // is still required (we already validated bcrypt above). The trust
+  // record is re-validated on every login; expired/revoked tokens fall
+  // back to the normal 2FA flow — never a lockout.
+  const twoFaSkippedByTrust = user.totpEnabled && user.totpSecret && isTrustedDevice(trustToken, user.email);
+  if (user.totpEnabled && user.totpSecret && !twoFaSkippedByTrust) {
     if (!totpCode) return res.json({ ok: true, requires2FA: true });
     const code = String(totpCode).replace(/\s+/g, '');
     let ok2fa = authenticator.check(code, user.totpSecret);
@@ -520,9 +594,25 @@ app.post('/api/login', async (req, res) => {
   const session = { token, email: user.email, role: user.role, scope, createdAt: now, expiresAt: now + ttl, ip };
   SESSIONS.push(session);
   saveSessions();
+  // Issue a 14-day trust token if:
+  //   a) user ticked "Trust this device for 14 days" on the 2FA screen
+  //   b) this is a fully-scoped session (no pending password change / enrolment)
+  //   c) the user actually uses 2FA (pointless to trust a device if they don't)
+  // Reuse an existing valid trust token for this email rather than piling up
+  // duplicates per browser refresh — keeps the table tidy.
+  let issuedTrust = null;
+  if (trustDevice && scope === 'full' && user.totpEnabled && user.totpSecret) {
+    if (isTrustedDevice(trustToken, user.email)) {
+      issuedTrust = { token: trustToken, expiresAt: TRUSTED_DEVICES.find(t => t.token === trustToken).expiresAt };
+    } else {
+      issuedTrust = issueTrust(user.email, ip, ua);
+    }
+  }
   pushAudit({
     email: user.email, ip, success: true,
-    reason: scope === 'full' ? 'ok' : ('ok_pending_' + scope)
+    reason: twoFaSkippedByTrust
+      ? (scope === 'full' ? 'ok_trusted_device' : ('ok_trusted_device_pending_' + scope))
+      : (scope === 'full' ? 'ok' : ('ok_pending_' + scope))
   });
 
   res.json({
@@ -531,7 +621,10 @@ app.post('/api/login', async (req, res) => {
     mustChangePassword: !!user.mustChangePassword,
     mustEnroll2FA: scope === 'enrollment',
     user: _publicUser(user),
-    expiresAt: session.expiresAt
+    expiresAt: session.expiresAt,
+    trustToken: issuedTrust ? issuedTrust.token : null,
+    trustExpiresAt: issuedTrust ? issuedTrust.expiresAt : null,
+    trustedDevice: twoFaSkippedByTrust
   });
 });
 
@@ -675,6 +768,10 @@ app.post('/api/reset-password', async (req, res) => {
     const before = SESSIONS.length;
     SESSIONS = SESSIONS.filter(s => s.email !== target.email);
     if (SESSIONS.length !== before) saveSessions();
+    // Password changed — revoke all trusted-device tokens for safety. If a
+    // device was stolen / phishing suspected, the new password stops it,
+    // but trust tokens would otherwise still let the attacker skip 2FA.
+    revokeTrustForEmail(target.email);
     pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_set_via_reset_link' });
     res.json({ ok: true, email: target.email });
   } catch (err) {
@@ -735,6 +832,10 @@ app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
     const before = SESSIONS.length;
     SESSIONS = SESSIONS.filter(s => s.email !== target.email);
     if (SESSIONS.length !== before) saveSessions();
+    // Revoke trusted-device tokens for the same reason — a trust marker
+    // left over from before the reset would let an attacker skip 2FA on
+    // their next login, defeating the point of the reset.
+    const revokedTrust = revokeTrustForEmail(target.email);
 
     pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_reset_by_admin:' + req.user.email
                                                                      + (resetTwoFactor ? ' (2FA cleared)' : '')
@@ -748,6 +849,7 @@ app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
       twoFactorReset: !!resetTwoFactor,
       skipForce2FA: !!skipForce2FA,
       revokedSessions: before - SESSIONS.length,
+      revokedTrustedDevices: revokedTrust,
       note: skipMustChange
         ? 'User can log in with this password — no forced change required.'
         : 'Give the user the temp password. They must change it on next login.'
@@ -756,6 +858,44 @@ app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
     console.error('[tracknow] admin reset-password error:', err);
     res.status(500).json({ ok: false, error: 'Server error' });
   }
+});
+
+// Admin: revoke all trusted-device tokens for a given user. Next time they
+// log in on any browser they'll be asked for 2FA again. Use if a client
+// reports a lost/stolen laptop or anything that suggests the trust marker
+// is no longer safe.
+app.post('/api/admin/revoke-trusted-devices', requireAdmin, (req, res) => {
+  const { email } = req.body || {};
+  if (!email) return res.status(400).json({ ok: false, error: 'email required' });
+  const removed = revokeTrustForEmail(email);
+  pushAudit({ email, ip: clientIp(req), success: true, reason: 'trust_revoked_by:' + req.user.email + ' (' + removed + ')' });
+  res.json({ ok: true, email, revoked: removed });
+});
+
+// User-facing: list the caller's own trusted devices (no tokens in response).
+// Useful if we ever add a "Manage devices" screen; also returns count so the
+// UI can reassure the user their trust is active.
+app.get('/api/my-trusted-devices', (req, res) => {
+  if (!req.user) return res.status(401).json({ ok: false, error: 'not authenticated' });
+  pruneTrust();
+  const mine = TRUSTED_DEVICES
+    .filter(t => t.email.toLowerCase() === req.user.email.toLowerCase())
+    .map(t => ({ createdAt: t.createdAt, expiresAt: t.expiresAt, ua: t.ua, ip: t.ip }));
+  res.json({ ok: true, count: mine.length, devices: mine });
+});
+
+// User-facing: forget THIS device (revoke the specific trust token the
+// client holds). Separate from password-triggered revoke-all — lets a user
+// "sign out everywhere" without changing their password.
+app.post('/api/forget-this-device', (req, res) => {
+  if (!req.user) return res.status(401).json({ ok: false, error: 'not authenticated' });
+  const { trustToken } = req.body || {};
+  if (!trustToken) return res.status(400).json({ ok: false, error: 'trustToken required' });
+  const before = TRUSTED_DEVICES.length;
+  TRUSTED_DEVICES = TRUSTED_DEVICES.filter(t => !(t.token === trustToken && t.email.toLowerCase() === req.user.email.toLowerCase()));
+  const removed = before - TRUSTED_DEVICES.length;
+  if (removed > 0) saveTrust();
+  res.json({ ok: true, removed });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -792,6 +932,10 @@ app.post('/api/change-password', async (req, res) => {
   user.passwordEverChanged = true;
   user.updatedAt = new Date().toISOString();
   saveUsers();
+  // Password just changed — drop any trust-device tokens for this user.
+  // Forces 2FA on all other browsers they might be signed into, which is
+  // the expected outcome of a password change.
+  revokeTrustForEmail(user.email);
   // Upgrade the session. If force2FA is set and the user hasn't enrolled
   // yet, go to 'enrollment' scope (NOT 'full') so they're still gated
   // until 2FA setup completes. This was the bug that let james skip 2FA
@@ -1495,12 +1639,14 @@ app.get('*', (req, res) => {
 loadUsers();
 loadSessions();
 loadAudit();
+loadTrust();
 loadStore();
 loadSignoffs();
+pruneTrust();
 
 app.listen(PORT, () => {
   console.log(`TrackNow Portal server running on port ${PORT}`);
-  console.log(`Users: ${USERS.length} · Sessions: ${SESSIONS.length} · Audit entries: ${AUDIT.length}`);
+  console.log(`Users: ${USERS.length} · Sessions: ${SESSIONS.length} · Audit entries: ${AUDIT.length} · Trusted devices: ${TRUSTED_DEVICES.length}`);
   if (!process.env.BOOTSTRAP_PASSWORD && !process.env.JAMES_PASSWORD) {
     console.warn('[security] No BOOTSTRAP_PASSWORD env var set — seeded users will use the hard-coded placeholder if users.json does not exist yet. Set one in Render env vars before first boot.');
   }
