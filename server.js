@@ -223,7 +223,13 @@ function _publicUser(u) {
 }
 
 // ─── Sessions — bearer tokens in a separate file (never backed up) ──────────
-const SESSION_MS = (Number(process.env.SESSION_HOURS) || 4) * 60 * 60 * 1000;
+// Default bumped from 4h → 30 days because the old 4h window meant any
+// client who closed their browser for longer (overnight, weekend off) came
+// back to an expired session and had to log in again. Sessions are rolling
+// (refreshed on every API call) so active users never see expiry; idle
+// sessions now survive up to 30 days. Admins can still override via the
+// SESSION_HOURS env var if they want a tighter policy.
+const SESSION_MS = (Number(process.env.SESSION_HOURS) || (30 * 24)) * 60 * 60 * 1000;
 let SESSIONS = [];
 function loadSessions() {
   try {

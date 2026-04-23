@@ -13361,13 +13361,25 @@ window.TN_AUTH = window.TN_AUTH || { token: null, user: null };
   window._emailjsLoaded = true;
 })();
 
+// Auth persistence strategy:
+//   * Write the token to BOTH localStorage and sessionStorage. localStorage
+//     survives tab close / browser restart — which is what clients expect
+//     from a normal portal ("I was logged in yesterday, why do I need to
+//     log in again today?"). sessionStorage kept in sync as a belt-and-braces
+//     so existing code paths that still read it don't break.
+//   * Read prefers localStorage and falls back to sessionStorage, so users
+//     currently logged in via the old (sessionStorage-only) path stay logged
+//     in through this code change — the next _tnSetAuth call promotes them
+//     to localStorage automatically.
+//   * Logout clears BOTH to ensure no stale state survives.
 function _tnSetAuth(token, user) {
   window.TN_AUTH.token = token;
   window.TN_AUTH.user  = user;
   try {
-    sessionStorage.setItem('tn_auth', JSON.stringify({ token, user }));
-    // Clean up the old plaintext-password creds key if it's still around.
-    localStorage.removeItem('tn_creds');
+    const payload = JSON.stringify({ token, user });
+    localStorage.setItem('tn_auth', payload);
+    sessionStorage.setItem('tn_auth', payload); // back-compat mirror
+    localStorage.removeItem('tn_creds');        // kill the legacy plaintext key
   } catch(e) {}
   // Reveal the Admin Tools button when an admin logs in, hide it for everyone
   // else. Called here (and on page load inside tryResumeAuth) so the button
@@ -13381,16 +13393,24 @@ function _tnClearAuth() {
   window.TN_AUTH.token = null;
   window.TN_AUTH.user  = null;
   try {
+    localStorage.removeItem('tn_auth');
     sessionStorage.removeItem('tn_auth');
     localStorage.removeItem('tn_creds');
   } catch(e) {}
 }
 function _tnLoadAuth() {
   try {
-    const raw = sessionStorage.getItem('tn_auth');
+    const raw = localStorage.getItem('tn_auth') || sessionStorage.getItem('tn_auth');
     if (!raw) return;
     const { token, user } = JSON.parse(raw);
-    if (token && user) { window.TN_AUTH.token = token; window.TN_AUTH.user = user; }
+    if (token && user) {
+      window.TN_AUTH.token = token;
+      window.TN_AUTH.user = user;
+      // If we hydrated from the old sessionStorage-only path, promote the
+      // payload to localStorage now so the next tab close doesn't log them
+      // out. Silent one-way migration.
+      try { if (!localStorage.getItem('tn_auth')) localStorage.setItem('tn_auth', raw); } catch(e){}
+    }
   } catch(e) {}
 }
 _tnLoadAuth();
