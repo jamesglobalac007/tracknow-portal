@@ -352,6 +352,9 @@ app.use((req, res, next) => {
   // bearer token. Filenames include unguessable random ids, and the
   // content in the library is intended for public social posting anyway.
   if (/^\/api\/content-library\/[^/]+\/file$/.test(req.path) && req.method === 'GET') return next();
+  // Diagnostic endpoint — no secrets, just paths + counts. Open so James
+  // can curl it without fishing out a bearer token when uploads go sideways.
+  if (req.path === '/api/content-library-diag' && req.method === 'GET') return next();
 
   const auth = req.headers.authorization || '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
@@ -812,6 +815,36 @@ app.get('/api/content-library/:id/file', (req, res) => {
   const item = (STORE.contentLibrary || []).find(c => String(c.id) === String(req.params.id));
   if (!item || !item.filename) return res.status(404).json({ ok: false, error: 'Not found' });
   res.sendFile(path.join(CONTENT_DIR, item.filename));
+});
+
+// Diagnostic — tells us whether the Render disk is actually mounted and
+// what's in STORE.contentLibrary. Hit /api/content-library-diag to see.
+app.get('/api/content-library-diag', (req, res) => {
+  const probe = (p) => {
+    const out = { path: p, exists: false, writable: false };
+    try { out.exists = fs.existsSync(p); } catch (e) { out.existsErr = String(e); }
+    try {
+      const test = path.join(p, '.probe_' + Date.now());
+      fs.writeFileSync(test, 'ok');
+      fs.unlinkSync(test);
+      out.writable = true;
+    } catch (e) { out.writeErr = String(e.code || e.message); }
+    try { out.files = fs.existsSync(p) ? fs.readdirSync(p).length : 0; } catch (e) {}
+    return out;
+  };
+  res.json({
+    env: { DATA_DIR: process.env.DATA_DIR || '(unset)' },
+    resolved: { DATA_DIR, CONTENT_DIR, DATA_FILE },
+    dataDir: probe(DATA_DIR),
+    contentDir: probe(CONTENT_DIR),
+    dataFileExists: fs.existsSync(DATA_FILE),
+    storeContentCount: (STORE.contentLibrary || []).length,
+    storeContentSample: (STORE.contentLibrary || []).slice(-3).map(c => ({
+      id: c.id, name: c.name, type: c.type, uploaded: c.uploaded, hasFile: !!c.filename,
+      fileOnDisk: c.filename ? fs.existsSync(path.join(CONTENT_DIR, c.filename)) : false
+    })),
+    version: STORE.version
+  });
 });
 
 app.delete('/api/content-library/:id', (req, res) => {
