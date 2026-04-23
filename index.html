@@ -791,6 +791,13 @@ select option{background:#0a0a0a;color:#0098d4}
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
       Refresh
     </button>
+    <!-- Admin-only tool — reveals itself after login if the user is an admin.
+         Lets James reset another user's password + clear their 2FA without
+         touching Render. -->
+    <button id="adminToolsBtn" onclick="openAdminTools()" style="display:none;width:100%;padding:10px 14px;background:transparent;border:1px solid #333;color:#888;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;align-items:center;gap:8px;letter-spacing:.3px;text-transform:uppercase;transition:all .2s;margin-bottom:8px" onmouseover="this.style.borderColor='#7C3AED';this.style.color='#7C3AED'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a5 5 0 015 5v3H7V7a5 5 0 015-5z"/><rect x="5" y="10" width="14" height="11" rx="2"/></svg>
+      Admin Tools
+    </button>
     <button onclick="doLogout()" style="width:100%;padding:10px 14px;background:transparent;border:1px solid #333;color:#888;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;letter-spacing:.3px;text-transform:uppercase;transition:all .2s" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Logout
@@ -13226,6 +13233,13 @@ function _tnSetAuth(token, user) {
     // Clean up the old plaintext-password creds key if it's still around.
     localStorage.removeItem('tn_creds');
   } catch(e) {}
+  // Reveal the Admin Tools button when an admin logs in, hide it for everyone
+  // else. Called here (and on page load inside tryResumeAuth) so the button
+  // state stays in sync with whoever's currently authenticated.
+  try {
+    const btn = document.getElementById('adminToolsBtn');
+    if (btn) btn.style.display = (user && user.role === 'admin') ? 'flex' : 'none';
+  } catch(e) {}
 }
 function _tnClearAuth() {
   window.TN_AUTH.token = null;
@@ -13244,6 +13258,107 @@ function _tnLoadAuth() {
   } catch(e) {}
 }
 _tnLoadAuth();
+// After page load, if we restored an admin session from sessionStorage, the
+// Admin Tools button still starts hidden (inline display:none). Surface it
+// once the DOM's ready and we know the stored user is an admin.
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const btn = document.getElementById('adminToolsBtn');
+    if (!btn) return;
+    btn.style.display = (window.TN_AUTH.user && window.TN_AUTH.user.role === 'admin') ? 'flex' : 'none';
+  } catch(e) {}
+});
+
+// ── Admin Tools (password reset + 2FA reset) ───────────────────────────
+// Lets an admin reset another user's password without touching Render.
+// Shows the temp password on screen so James can copy + relay it to the
+// user; forces the user to change it on next login.
+function openAdminTools() {
+  if (!window.TN_AUTH || !window.TN_AUTH.user || window.TN_AUTH.user.role !== 'admin') {
+    showToast('Admin only', true);
+    return;
+  }
+  const ov = document.createElement('div');
+  ov.id = 'adminToolsOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = '' +
+    '<div style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;max-width:520px;width:100%;">' +
+      '<div style="padding:18px 22px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div><div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:0.2px;">Admin Tools</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:3px;">Reset a user\'s password or 2FA</div></div>' +
+        '<button onclick="document.getElementById(\'adminToolsOverlay\').remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:22px;line-height:1;">&times;</button>' +
+      '</div>' +
+      '<div style="padding:22px;">' +
+        '<label style="font-size:10px;font-weight:700;color:#666;letter-spacing:.6px;display:block;margin-bottom:5px;text-transform:uppercase;">User email</label>' +
+        '<input id="adminTargetEmail" type="email" placeholder="mark@tracknow.com.au" style="width:100%;padding:9px 12px;background:#0a0a0a;border:1px solid #222;color:#fff;font-size:13px;font-family:inherit;border-radius:3px;margin-bottom:14px;">' +
+        '<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#ccc;padding:8px 0 16px;cursor:pointer;">' +
+          '<input id="adminAlso2fa" type="checkbox" checked style="accent-color:#7C3AED;">' +
+          'Also reset 2FA (recommended if user is locked out of their authenticator)' +
+        '</label>' +
+        '<div id="adminToolsResult" style="display:none;margin:14px 0;padding:14px 16px;background:rgba(0,204,102,.08);border:1px solid rgba(0,204,102,.35);border-radius:4px;font-size:12px;color:#ccc;line-height:1.6;"></div>' +
+        '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;">' +
+          '<button onclick="runAdminReset2faOnly()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;font-size:11px;font-weight:700;padding:9px 14px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Reset 2FA only</button>' +
+          '<button onclick="runAdminResetPassword()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 20px;border-radius:3px;cursor:pointer;letter-spacing:.3px;">Reset Password</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+}
+
+async function runAdminResetPassword() {
+  const email = (document.getElementById('adminTargetEmail').value || '').trim();
+  if (!email) { showToast('Enter the user\'s email first', true); return; }
+  const also2fa = document.getElementById('adminAlso2fa').checked;
+  if (!confirm('Reset password for ' + email + '?' + (also2fa ? ' (Also clears 2FA.)' : ''))) return;
+  try {
+    const r = await fetch('/api/admin/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, resetTwoFactor: !!also2fa })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { showToast(d.error || 'Reset failed', true); return; }
+    const box = document.getElementById('adminToolsResult');
+    box.style.display = 'block';
+    box.innerHTML =
+      '<div style="font-size:11px;font-weight:700;color:#00cc66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Password reset</div>' +
+      '<div>Temp password for <strong style="color:#fff;">' + d.email + '</strong>:</div>' +
+      '<div style="margin-top:8px;padding:10px 12px;background:#000;border:1px solid #2a2a2a;border-radius:3px;font-family:SFMono-Regular,Menlo,monospace;font-size:14px;color:#7C3AED;font-weight:700;letter-spacing:.5px;user-select:all;">' + d.tempPassword + '</div>' +
+      '<div style="margin-top:8px;font-size:11px;color:#888;">User must change this on next login.' +
+        (d.twoFactorReset ? ' 2FA was cleared — they\'ll need to re-enrol.' : '') +
+        (d.revokedSessions ? ' ' + d.revokedSessions + ' active session' + (d.revokedSessions!==1?'s':'') + ' revoked.' : '') +
+      '</div>';
+    showToast('Password reset — temp password shown above');
+  } catch (err) {
+    showToast('Network error: ' + err.message, true);
+  }
+}
+
+async function runAdminReset2faOnly() {
+  const email = (document.getElementById('adminTargetEmail').value || '').trim();
+  if (!email) { showToast('Enter the user\'s email first', true); return; }
+  if (!confirm('Clear 2FA for ' + email + '?\n\nTheir password stays the same. They\'ll re-enrol 2FA on next login.')) return;
+  try {
+    const r = await fetch('/api/admin/reset-2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { showToast(d.error || 'Reset failed', true); return; }
+    const box = document.getElementById('adminToolsResult');
+    box.style.display = 'block';
+    box.innerHTML =
+      '<div style="font-size:11px;font-weight:700;color:#00cc66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">2FA cleared</div>' +
+      '<div>' + email + ' will re-enrol their authenticator on next login. Password unchanged.</div>';
+    showToast('2FA cleared for ' + email);
+  } catch (err) {
+    showToast('Network error: ' + err.message, true);
+  }
+}
+window.openAdminTools = openAdminTools;
+window.runAdminResetPassword = runAdminResetPassword;
+window.runAdminReset2faOnly = runAdminReset2faOnly;
 
 // Monkey-patch fetch() so every /api/* request automatically carries the
 // bearer token. Also intercepts 403 must_enroll_2fa responses — if the
