@@ -7030,7 +7030,7 @@ function _contentApprovalBadge(c) {
     return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:2px 6px;background:#3a2a0a;color:#f59e0b;border:1px solid #f59e0b44;border-radius:3px;">Pending Sign-off</span>';
 }
 function approveContentItem(id) {
-    const c = CONTENT_LIBRARY.find(x => x.id === id);
+    const c = CONTENT_LIBRARY.find(x => String(x.id) === String(id));
     if (!c) return;
     if (_contentIsApproved(c)) { if (!confirm('This content is already approved. Re-confirm?')) return; }
     const msg = 'Sign off this content on behalf of ' + CONTENT_APPROVER.name + ' (' + CONTENT_APPROVER.role + ')?\n\n' +
@@ -7062,7 +7062,7 @@ function approveContentItem(id) {
     try { showToast && showToast(c.name + ' approved by ' + CONTENT_APPROVER.name); } catch(e) {}
 }
 function revokeContentApproval(id) {
-    const c = CONTENT_LIBRARY.find(x => x.id === id);
+    const c = CONTENT_LIBRARY.find(x => String(x.id) === String(id));
     if (!c || !_contentIsApproved(c)) return;
     if (!confirm('Revoke approval for "' + c.name + '"?\n\nThis content will no longer be shareable until re-approved.')) return;
     c.approval = { status: 'pending', previousApproval: c.approval };
@@ -7253,12 +7253,13 @@ function openPlatformFolder(pid) {
     const buildRow = function(c, isApproved) {
       const icon = typeIcons[c.type] || typeIcons.other;
       const badge = _contentApprovalBadge(c);
+      const idArg = JSON.stringify(String(c.id));
       const shareBtn = isApproved
         ? '<button title="Share to ' + spec.name + '" style="background:' + spec.color + ';border:none;color:#fff;cursor:pointer;font-size:10px;font-weight:700;padding:4px 12px;border-radius:3px;letter-spacing:0.3px;">Share</button>'
         : '<button disabled title="Must be signed off by ' + CONTENT_APPROVER.name + ' before sharing" style="background:#222;border:none;color:#555;cursor:not-allowed;font-size:10px;font-weight:700;padding:4px 12px;border-radius:3px;letter-spacing:0.3px;">Share</button>';
       const signOffCell = isApproved
         ? ''
-        : '<button onclick="approveContentItem(' + c.id + ')" title="Sign off on behalf of ' + CONTENT_APPROVER.name + '" style="background:#00cc66;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.3px;margin-left:6px;">Sign Off</button>';
+        : '<button onclick="approveContentItem(' + idArg + ')" title="Sign off on behalf of ' + CONTENT_APPROVER.name + '" style="background:#00cc66;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.3px;margin-left:6px;">Sign Off</button>';
       return '<tr style="border-bottom:1px solid #161616;' + (isApproved ? '' : 'opacity:0.75;') + '">' +
         '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + spec.color + '">' + icon + '</span><span style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</span></div></td>' +
         '<td style="padding:10px 12px;font-size:11px;color:#999">' + (c.desc || '-') + '</td>' +
@@ -7422,17 +7423,21 @@ function renderContentLibrary() {
       return '<span style="font-size:8px;font-weight:700;color:' + PLATFORM_SPECS[p].color + ';background:' + PLATFORM_SPECS[p].color + '18;padding:1px 4px;border-radius:2px">' + PLATFORM_SPECS[p].name + '</span>';
     }).join(' ');
 
+    // IDs are string-typed now (server issues tokens like "173_abc123"), so
+    // we have to quote them inside onclick="..." otherwise the browser parses
+    // them as JS identifiers and silently no-ops the click.
+    const idArg = JSON.stringify(String(c.id));
     const approvalBadge = _contentApprovalBadge(c);
     const approvalAction = _contentIsApproved(c)
-      ? '<button onclick="event.stopPropagation();revokeContentApproval(' + c.id + ')" title="Revoke approval — return to Pending" style="background:none;border:1px solid #333;color:#888;cursor:pointer;font-size:10px;padding:3px 8px;border-radius:3px;margin-top:4px;">Revoke</button>'
-      : '<button onclick="event.stopPropagation();approveContentItem(' + c.id + ')" title="Sign off on behalf of ' + CONTENT_APPROVER.name + ' (' + CONTENT_APPROVER.role + ')" style="background:#00cc66;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;margin-top:4px;letter-spacing:0.3px;">Sign Off</button>';
+      ? '<button onclick="event.stopPropagation();revokeContentApproval(' + idArg + ')" title="Revoke approval — return to Pending" style="background:none;border:1px solid #333;color:#888;cursor:pointer;font-size:10px;padding:3px 8px;border-radius:3px;margin-top:4px;">Revoke</button>'
+      : '<button onclick="event.stopPropagation();approveContentItem(' + idArg + ')" title="Sign off on behalf of ' + CONTENT_APPROVER.name + ' (' + CONTENT_APPROVER.role + ')" style="background:#00cc66;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;margin-top:4px;letter-spacing:0.3px;">Sign Off</button>';
 
     // Show the Open button for any file that has a server URL (new uploads)
     // OR a local preview URL (legacy in-memory uploads). The colour picks up
     // the folder tint so it's visually consistent with the folder header.
     const openable = c.url || c.previewUrl;
     const openBtn = openable
-      ? '<button onclick="event.stopPropagation();openContentPack(\'' + c.id + '\')" title="Open in a new tab" style="background:' + ctf.color + ';border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">Open</button>'
+      ? '<button onclick="event.stopPropagation();openContentPack(' + idArg + ')" title="Open in a new tab" style="background:' + ctf.color + ';border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">Open</button>'
       : '';
     html += '<tr style="border-bottom:1px solid #161616">' +
       '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + ctf.color + '">' + icon + '</span><div><div style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</div><div style="display:flex;gap:3px;margin-top:3px">' + platBadges + '</div></div></div></td>' +
@@ -7442,7 +7447,7 @@ function renderContentLibrary() {
       '<td style="padding:10px 12px;">' + approvalBadge + '<div>' + approvalAction + '</div>' +
         (_contentIsApproved(c) ? '<div style="font-size:10px;color:#666;margin-top:3px;">by ' + c.approval.approvedBy + '<br>' + c.approval.approvedAt + '</div>' : '') +
       '</td>' +
-      '<td style="padding:10px 12px;white-space:nowrap">' + openBtn + '<button onclick="removeContentItem(' + c.id + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Remove">&times;</button></td>' +
+      '<td style="padding:10px 12px;white-space:nowrap">' + openBtn + '<button onclick="removeContentItem(' + idArg + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Remove">&times;</button></td>' +
     '</tr>';
   });
 
