@@ -917,6 +917,85 @@ app.delete('/api/content-library/:id', (req, res) => {
   res.json({ ok: true, version: STORE.version });
 });
 
+// ─── Content Library seeding — admin-triggered import from the repo ────────
+// The repo ships pre-generated assets in content-library-seed/ (e.g. the
+// individual TrackNow social posts James spun out of the master pack).
+// This endpoint copies each one into the Render disk's CONTENT_DIR and
+// appends a STORE.contentLibrary record, but skips any file whose name is
+// already in the library — so calling it twice is safe and idempotent.
+// Admin-only. Everything imported starts as approval.status='pending' so
+// Mark's sign-off gate still applies.
+const CONTENT_SEED_DIR = path.join(__dirname, 'content-library-seed');
+app.post('/api/admin/seed-content-library', requireAdmin, (req, res) => {
+  try {
+    if (!fs.existsSync(CONTENT_SEED_DIR)) {
+      return res.json({ ok: true, scanned: 0, imported: 0, skipped: 0, message: 'No content-library-seed/ folder in repo' });
+    }
+    try { fs.mkdirSync(CONTENT_DIR, { recursive: true }); } catch (e) {}
+    const entries = fs.readdirSync(CONTENT_SEED_DIR).filter(n => !n.startsWith('.'));
+    const existing = new Set((STORE.contentLibrary || []).map(c => String(c.name || '').toLowerCase()));
+    const PLATFORM_ALL = ['facebook','linkedin','instagram','twitter','youtube','tiktok','gmb','bluesky','threads'];
+    let imported = 0, skipped = 0, errors = [];
+
+    const extToType = (ext) => {
+      ext = (ext || '').toLowerCase();
+      if (['mp4','mov','avi','webm','mkv'].includes(ext)) return 'video';
+      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
+      if (ext === 'pdf') return 'brochure';
+      if (['html','htm','txt'].includes(ext)) return 'pack';
+      return 'other';
+    };
+
+    STORE.contentLibrary = STORE.contentLibrary || [];
+
+    for (const name of entries) {
+      if (existing.has(name.toLowerCase())) { skipped++; continue; }
+      try {
+        const srcPath = path.join(CONTENT_SEED_DIR, name);
+        const stat = fs.statSync(srcPath);
+        if (!stat.isFile()) { skipped++; continue; }
+        const ext = name.includes('.') ? name.split('.').pop() : '';
+        const type = extToType(ext);
+        const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        const safeBase = name.replace(/[^a-z0-9._-]/gi, '_').slice(0, 120);
+        const filename = `${id}_${safeBase}`;
+        fs.copyFileSync(srcPath, path.join(CONTENT_DIR, filename));
+        const sizeMB = (stat.size / (1024 * 1024)).toFixed(1) + ' MB';
+        // Social packs cover every platform; images/videos/brochures do too
+        // for now (same as handleContentUpload's default tagging).
+        STORE.contentLibrary.push({
+          id, name, ext, type,
+          size: sizeMB,
+          platforms: PLATFORM_ALL,
+          url: '/api/content-library/' + id + '/file',
+          filename,
+          desc: 'Seeded from repo content-library-seed/',
+          uploaded: new Date().toLocaleDateString('en-AU'),
+          uploadedBy: (req.user && req.user.email) || 'seed',
+          uploadedAt: new Date().toISOString(),
+          approval: { status: 'pending' }
+        });
+        imported++;
+      } catch (e) {
+        errors.push({ name, error: String(e.code || e.message) });
+        console.warn('[tracknow] seed-content-library failed on', name, e);
+      }
+    }
+
+    if (imported > 0) {
+      STORE.version++;
+      STORE.lastUpdate = Date.now();
+      saveStore();
+    }
+
+    pushAudit({ email: req.user.email, ip: clientIp(req), success: true, reason: `content_library_seed: imported=${imported} skipped=${skipped}` });
+    res.json({ ok: true, scanned: entries.length, imported, skipped, errors, version: STORE.version });
+  } catch (err) {
+    console.error('[tracknow] seed-content-library error:', err);
+    res.status(500).json({ ok: false, error: 'Server error: ' + (err.code || err.message || 'unknown') });
+  }
+});
+
 app.post('/api/event', (req, res) => {
   try {
     const { type, data } = req.body;

@@ -13300,6 +13300,11 @@ function openAdminTools() {
           '<button onclick="runAdminReset2faOnly()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;font-size:11px;font-weight:700;padding:9px 14px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Reset 2FA only</button>' +
           '<button onclick="runAdminResetPassword()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 20px;border-radius:3px;cursor:pointer;letter-spacing:.3px;">Reset Password</button>' +
         '</div>' +
+        '<div style="margin-top:22px;padding-top:18px;border-top:1px solid #1a1a1a;">' +
+          '<div style="font-size:11px;font-weight:700;color:#666;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;">Content Library — seed from repo</div>' +
+          '<div style="font-size:11px;color:#888;line-height:1.5;margin-bottom:10px;">One-shot import of any HTML / image / video files shipped in the repo\'s <code style="background:#1a1a1a;padding:1px 5px;border-radius:2px;font-family:SFMono-Regular,Menlo,monospace;color:#ddd;">content-library-seed/</code> folder. Skips anything already in the library (safe to re-run).</div>' +
+          '<button onclick="runAdminSeedContent()" style="background:#0098d4;border:none;color:#000;font-size:11px;font-weight:700;padding:8px 16px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Seed Content Library</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
@@ -13356,9 +13361,37 @@ async function runAdminReset2faOnly() {
     showToast('Network error: ' + err.message, true);
   }
 }
+async function runAdminSeedContent() {
+  if (!confirm('Import files from the repo\'s content-library-seed/ folder into the Content Library?\n\nSafe to run — any file already in the library is skipped.')) return;
+  try {
+    const r = await fetch('/api/admin/seed-content-library', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { showToast(d.error || 'Seed failed', true); return; }
+    const box = document.getElementById('adminToolsResult');
+    box.style.display = 'block';
+    const errLines = (d.errors && d.errors.length)
+      ? '<div style="margin-top:6px;font-size:11px;color:#f59e0b;">Failed: ' + d.errors.map(function(e){return e.name;}).join(', ') + '</div>'
+      : '';
+    box.innerHTML =
+      '<div style="font-size:11px;font-weight:700;color:#00cc66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Content seed complete</div>' +
+      '<div>Scanned <strong style="color:#fff;">' + d.scanned + '</strong> file' + (d.scanned!==1?'s':'') +
+      ' · imported <strong style="color:#fff;">' + d.imported + '</strong>' +
+      ' · skipped <strong style="color:#fff;">' + d.skipped + '</strong> (already in library).</div>' +
+      '<div style="margin-top:6px;font-size:11px;color:#888;">New packs need Mark\'s sign-off before CSV export unlocks.</div>' +
+      errLines;
+    showToast(d.imported + ' file' + (d.imported!==1?'s':'') + ' seeded into Content Library');
+    // Force a sync pull so CONTENT_LIBRARY picks up the new records
+    try { if (typeof _syncPull === 'function') _syncPull(); } catch(e) {}
+    try { if (typeof renderContentLibrary === 'function') renderContentLibrary(); } catch(e) {}
+  } catch (err) {
+    showToast('Network error: ' + err.message, true);
+  }
+}
+
 window.openAdminTools = openAdminTools;
 window.runAdminResetPassword = runAdminResetPassword;
 window.runAdminReset2faOnly = runAdminReset2faOnly;
+window.runAdminSeedContent = runAdminSeedContent;
 
 // Monkey-patch fetch() so every /api/* request automatically carries the
 // bearer token. Also intercepts 403 must_enroll_2fa responses — if the
