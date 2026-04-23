@@ -594,6 +594,65 @@ app.post('/api/admin/reset-2fa', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// Admin password reset — issues a one-time temporary password and forces
+// the user to change it on next login. Also revokes every active session
+// for that user (so if someone's phished them, they're kicked immediately)
+// and clears 2FA state so the user can re-enrol cleanly if force2FA is on.
+// Optional body: { email, newPassword } — if newPassword is omitted, the
+// server generates a readable 12-char temp password.
+app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
+  try {
+    const { email, newPassword, resetTwoFactor } = req.body || {};
+    const target = USERS.find(u => u.email.toLowerCase() === String(email||'').toLowerCase());
+    if (!target) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    // Pick a password. If the admin didn't supply one, generate something
+    // that's easy to read aloud (no ambiguous I/l/1/0/O) and email-safe.
+    const tempPass = (typeof newPassword === 'string' && newPassword.length >= 6)
+      ? newPassword
+      : (function() {
+          const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+          let out = '';
+          const buf = crypto.randomBytes(12);
+          for (let i = 0; i < 12; i++) out += alphabet[buf[i] % alphabet.length];
+          return out;
+        })();
+
+    target.passHash = await bcrypt.hash(tempPass, 10);
+    target.mustChangePassword = true;
+
+    if (resetTwoFactor) {
+      delete target.totpSecret;
+      delete target._pendingTotpSecret;
+      delete target.backupCodes;
+      target.totpEnabled = false;
+    }
+
+    saveUsers();
+
+    // Revoke every active session this user has — defensive, so if the
+    // password reset was triggered because of a compromise, nothing keeps
+    // the attacker in.
+    const before = SESSIONS.length;
+    SESSIONS = SESSIONS.filter(s => s.email !== target.email);
+    if (SESSIONS.length !== before) saveSessions();
+
+    pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_reset_by_admin:' + req.user.email + (resetTwoFactor ? ' (2FA cleared)' : '') });
+    res.json({
+      ok: true,
+      email: target.email,
+      tempPassword: tempPass,
+      mustChangePassword: true,
+      twoFactorReset: !!resetTwoFactor,
+      revokedSessions: before - SESSIONS.length,
+      note: 'Give the user the temp password. They must change it on next login.'
+    });
+  } catch (err) {
+    console.error('[tracknow] admin reset-password error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
 app.post('/api/logout', (req, res) => {
   if (req.session) {
     SESSIONS = SESSIONS.filter(s => s.token !== req.session.token);
