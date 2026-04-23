@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TrackNow – Mark's Portal Access</title>
+<script>
+  // Legacy hard-coded credentials from this shortcut used to break Mark's
+  // login every time he clicked the bookmark — they'd blow away any real
+  // session. Zap any leftover key on page load so the main portal starts
+  // fresh when he goes there.
+  try {
+    localStorage.removeItem('tn_creds');
+    sessionStorage.removeItem('tn_auth');
+  } catch(e){}
+  // Auto-forward to the real portal so stale bookmarks still work.
+  setTimeout(function(){ window.location.href = '/'; }, 800);
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -36,31 +48,7 @@
   .tagline {
     color: rgba(255,255,255,0.45);
     font-size: 13px;
-    margin-bottom: 36px;
-  }
-  .avatar {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    font-weight: 700;
-    color: #fff;
-    margin: 0 auto 16px;
-  }
-  .welcome {
-    color: #fff;
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .sub {
-    color: rgba(255,255,255,0.45);
-    font-size: 13px;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
   }
   .btn {
     display: block;
@@ -78,33 +66,19 @@
   }
   .btn:hover { opacity: 0.88; }
   .note {
-    color: rgba(255,255,255,0.3);
-    font-size: 11px;
-    margin-top: 20px;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    margin-top: 22px;
+    line-height: 1.5;
   }
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">Track<span>Now</span></div>
-  <div class="tagline">GPS Fleet Tracking Portal</div>
-  <div class="avatar">M</div>
-  <div class="welcome">Welcome, Mark</div>
-  <div class="sub">Click below to open your portal</div>
-  <a class="btn" href="#" onclick="launch(); return false;">Open TrackNow Portal →</a>
-  <div class="note">Keep this file in the same folder as the portal</div>
+  <div class="tagline">Sales &amp; Marketing Portal</div>
+  <a class="btn" href="/">Open TrackNow Portal</a>
+  <div class="note">Taking you to the live portal. Log in with your own email + password.</div>
 </div>
-
-<script>
-function launch() {
-  // Pre-set login in localStorage so portal opens straight in
-  localStorage.setItem('tn_creds', JSON.stringify({
-    email: 'marktracknow',
-    pass: 'tracknow2026',
-    remember: true
-  }));
-  window.location.href = 'TrackNow-Portal-v5.html';
-}
-</script>
 </body>
 </html>

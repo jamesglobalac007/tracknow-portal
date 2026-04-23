@@ -439,10 +439,15 @@ app.use(express.static(__dirname, {
 // ═══════════════════════════════════════════════════════════════════════════
 
 app.post('/api/login', async (req, res) => {
-  const { email, pass, totpCode } = req.body || {};
+  let { email, pass, totpCode } = req.body || {};
   const ip = clientIp(req);
   if (!email || !pass) return res.status(400).json({ ok: false, error: 'Email and password required' });
-  const emailLower = String(email).toLowerCase();
+  // Trim stray whitespace that sneaks in via copy/paste (SMS, email, chat).
+  // Passwords themselves never legitimately start/end with a space, so this
+  // is safe + removes a common source of 'my password doesn't work' support.
+  email = String(email).trim();
+  pass  = String(pass).trim();
+  const emailLower = email.toLowerCase();
 
   // Three parallel rate-limit buckets.
   const pairRl  = rateLimit(_rlPair,  `${ip}:${emailLower}`, LOGIN_MAX_PAIR);
