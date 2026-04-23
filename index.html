@@ -7427,8 +7427,12 @@ function renderContentLibrary() {
       ? '<button onclick="event.stopPropagation();revokeContentApproval(' + c.id + ')" title="Revoke approval — return to Pending" style="background:none;border:1px solid #333;color:#888;cursor:pointer;font-size:10px;padding:3px 8px;border-radius:3px;margin-top:4px;">Revoke</button>'
       : '<button onclick="event.stopPropagation();approveContentItem(' + c.id + ')" title="Sign off on behalf of ' + CONTENT_APPROVER.name + ' (' + CONTENT_APPROVER.role + ')" style="background:#00cc66;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;margin-top:4px;letter-spacing:0.3px;">Sign Off</button>';
 
-    const openBtn = (c.type === 'pack' && c.previewUrl)
-      ? '<button onclick="event.stopPropagation();openContentPack(' + c.id + ')" title="Open HTML pack in a new tab" style="background:#FF7A2E;border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">Open</button>'
+    // Show the Open button for any file that has a server URL (new uploads)
+    // OR a local preview URL (legacy in-memory uploads). The colour picks up
+    // the folder tint so it's visually consistent with the folder header.
+    const openable = c.url || c.previewUrl;
+    const openBtn = openable
+      ? '<button onclick="event.stopPropagation();openContentPack(\'' + c.id + '\')" title="Open in a new tab" style="background:' + ctf.color + ';border:none;color:#000;cursor:pointer;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">Open</button>'
       : '';
     html += '<tr style="border-bottom:1px solid #161616">' +
       '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + ctf.color + '">' + icon + '</span><div><div style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</div><div style="display:flex;gap:3px;margin-top:3px">' + platBadges + '</div></div></div></td>' +
