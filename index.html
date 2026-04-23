@@ -7037,6 +7037,28 @@ let _contentLibraryHydrated = (CONTENT_LIBRARY.length > 0);
 // authorisation gate — nothing goes public without it.
 const CONTENT_APPROVER = { name: 'Mark Speelmeyer', role: 'Director, TrackNow' };
 function _contentIsApproved(c) { return c && c.approval && c.approval.status === 'approved'; }
+// Posted tracker — stamped when James ticks the "Posted" checkbox on a
+// Content Library row, so he can see at a glance what's already gone out.
+function _contentIsPosted(c) { return !!(c && c.posted && c.posted.status === true); }
+function togglePostedStatus(id, nextState) {
+  const c = CONTENT_LIBRARY.find(x => String(x.id) === String(id));
+  if (!c) return;
+  if (nextState) {
+    c.posted = {
+      status: true,
+      at: new Date().toLocaleString('en-AU', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+      by: (window.TN_AUTH && window.TN_AUTH.user && window.TN_AUTH.user.email) || 'unknown'
+    };
+  } else {
+    c.posted = { status: false };
+  }
+  // Make sure the sync push knows we have authoritative data before it fires
+  _contentLibraryHydrated = true;
+  try { saveData && saveData(); } catch(e) {}
+  renderContentLibrary();
+  try { showToast && showToast(nextState ? 'Marked posted — row dimmed' : 'Un-marked — back in active list'); } catch(e) {}
+}
+window.togglePostedStatus = togglePostedStatus;
 function _contentApprovalBadge(c) {
     if (_contentIsApproved(c)) {
         const when = c.approval.approvedAt || '';
@@ -7553,15 +7575,19 @@ function removeContentItem(id) {
 function renderContentLibrary() {
   const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other', packs:'pack'};
 
-  // Approval status summary — small chips above the folders
+  // Approval + Posted summary chips — above the folders
   (function() {
     const sumEl = document.getElementById('clApprovalSummary');
     if (!sumEl) return;
     const approved = CONTENT_LIBRARY.filter(_contentIsApproved).length;
     const pending = CONTENT_LIBRARY.length - approved;
+    const posted = CONTENT_LIBRARY.filter(_contentIsPosted).length;
+    const notPostedYet = CONTENT_LIBRARY.filter(c => _contentIsApproved(c) && !_contentIsPosted(c)).length;
     sumEl.innerHTML =
       '<span style="font-size:10px;font-weight:700;color:#00cc66;background:#0a3a1a;border:1px solid #00cc6644;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + approved + ' Approved</span>' +
-      (pending ? '<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#3a2a0a;border:1px solid #f59e0b44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + pending + ' Pending ' + CONTENT_APPROVER.name + '</span>' : '');
+      (pending ? '<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#3a2a0a;border:1px solid #f59e0b44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + pending + ' Pending ' + CONTENT_APPROVER.name + '</span>' : '') +
+      '<span style="font-size:10px;font-weight:700;color:#0098d4;background:#0a2a3a;border:1px solid #0098d444;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + posted + ' Posted</span>' +
+      (notPostedYet ? '<span style="font-size:10px;font-weight:700;color:#b79cff;background:#1f1533;border:1px solid #7C3AED44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;" title="Signed off + ready to post, not yet ticked">' + notPostedYet + ' Ready to post</span>' : '');
   })();
 
   // Update content-type folder counts
@@ -7621,6 +7647,7 @@ function renderContentLibrary() {
   // Table layout for inline content folders
   html += '<table style="width:100%;border-collapse:collapse">' +
     '<thead><tr style="border-bottom:1px solid #222">' +
+      '<th style="width:60px;text-align:center;padding:8px 8px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px" title="Tick once posted to socials">Posted</th>' +
       '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">File</th>' +
       '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Description</th>' +
       '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Size</th>' +
@@ -7661,7 +7688,24 @@ function renderContentLibrary() {
       : (c.type === 'pack' && c.url && !_contentIsApproved(c))
         ? '<button disabled title="Sign off the pack first — CSV export is locked until Mark approves" style="background:#222;border:none;color:#555;cursor:not-allowed;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">CSV →</button>'
         : '';
-    html += '<tr style="border-bottom:1px solid #161616">' +
+    // Posted tracker — tick once the post has gone out on socials. Dims the
+    // row + shows the date/user it was marked by. Toggles back if unticked.
+    const isPosted = _contentIsPosted(c);
+    const postedCell =
+      '<td style="text-align:center;padding:10px 6px;vertical-align:middle;">' +
+        '<input type="checkbox" ' + (isPosted ? 'checked' : '') +
+          ' onclick="event.stopPropagation();togglePostedStatus(' + idArg + ', this.checked)"' +
+          ' title="' + (isPosted ? 'Marked posted on ' + (c.posted && c.posted.at || '') : 'Tick once this has been posted to socials') + '"' +
+          ' style="width:16px;height:16px;accent-color:#00cc66;cursor:pointer;">' +
+        (isPosted && c.posted && c.posted.at
+          ? '<div style="font-size:9px;color:#00cc66;margin-top:3px;line-height:1.2;">' + c.posted.at + '</div>'
+          : '') +
+      '</td>';
+
+    // Row style dims posted rows so unposted ones stand out at a glance
+    const rowStyle = 'border-bottom:1px solid #161616;' + (isPosted ? 'opacity:0.55;' : '');
+    html += '<tr style="' + rowStyle + '">' +
+      postedCell +
       '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + ctf.color + '">' + icon + '</span><div><div style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</div><div style="display:flex;gap:3px;margin-top:3px">' + platBadges + '</div></div></div></td>' +
       '<td style="padding:10px 12px;font-size:11px;color:#999">' + (c.desc || c.ext.toUpperCase() + ' file') + '</td>' +
       '<td style="padding:10px 12px;font-size:11px;color:#888;white-space:nowrap">' + c.size + '</td>' +
