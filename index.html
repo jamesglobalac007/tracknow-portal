@@ -7073,6 +7073,41 @@ function togglePostedStatus(id, nextState) {
   try { showToast && showToast(nextState ? 'Marked posted — row dimmed' : 'Un-marked — back in active list'); } catch(e) {}
 }
 window.togglePostedStatus = togglePostedStatus;
+
+// Single-dropdown status setter — drives the whole "move between Active /
+// Posted / Archive" flow from one control per row. Called from the status
+// <select> change handler on each content row.
+//   '' (Active)  → clear both posted + archived flags (restore to its
+//                  original type folder)
+//   'posted'     → flip posted on (stamps date + user), clear archived
+//   'archived'   → flip archived on, clear posted
+function setContentRowStatus(id, nextStatus) {
+  const c = CONTENT_LIBRARY.find(x => String(x.id) === String(id));
+  if (!c) return;
+  const now = new Date().toLocaleString('en-AU', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const who = (window.TN_AUTH && window.TN_AUTH.user && window.TN_AUTH.user.email) || 'unknown';
+  if (nextStatus === 'posted') {
+    c.posted = { status: true, at: now, by: who };
+    delete c.archived; delete c.archivedAt; delete c.archivedBy;
+  } else if (nextStatus === 'archived') {
+    c.archived = true;
+    c.archivedAt = now;
+    c.archivedBy = who;
+    c.posted = { status: false };
+  } else {
+    // Active — strip both states so the row goes back to its type folder
+    c.posted = { status: false };
+    delete c.archived; delete c.archivedAt; delete c.archivedBy;
+  }
+  _contentLibraryHydrated = true;
+  try { saveData && saveData(); } catch(e) {}
+  renderContentLibrary();
+  const label = nextStatus === 'posted' ? 'Moved to Posted' :
+                nextStatus === 'archived' ? 'Moved to Archive' :
+                'Restored to active';
+  try { showToast && showToast(label); } catch(e) {}
+}
+window.setContentRowStatus = setContentRowStatus;
 function _contentApprovalBadge(c) {
     if (_contentIsApproved(c)) {
         const when = c.approval.approvedAt || '';
@@ -7714,7 +7749,7 @@ function renderContentLibrary() {
   // Table layout for inline content folders
   html += '<table style="width:100%;border-collapse:collapse">' +
     '<thead><tr style="border-bottom:1px solid #222">' +
-      '<th style="width:60px;text-align:center;padding:8px 8px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px" title="Tick once posted to socials">Posted</th>' +
+      '<th style="width:120px;text-align:center;padding:8px 8px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px" title="Set whether this item is active, posted to socials, or archived">Status</th>' +
       '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">File</th>' +
       '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Description</th>' +
       '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Size</th>' +
@@ -7755,28 +7790,44 @@ function renderContentLibrary() {
       : (c.type === 'pack' && c.url && !_contentIsApproved(c))
         ? '<button disabled title="Sign off the pack first — CSV export is locked until Mark approves" style="background:#222;border:none;color:#555;cursor:not-allowed;font-size:10px;font-weight:700;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;margin-right:6px;">CSV →</button>'
         : '';
-    // Posted tracker — tick once the post has gone out on socials. Dims the
-    // row + shows the date/user it was marked by. Toggles back if unticked.
+    // Status dropdown — one control, three states (Active / Posted / Archive).
+    // Changing it moves the row into the right folder and stamps the date.
     const isPosted = _contentIsPosted(c);
     const isArchived = c.archived === true;
+    const currentStatus = isArchived ? 'archived' : (isPosted ? 'posted' : '');
+    // Colour the select to match the destination folder so the current state
+    // is visually obvious even before the dropdown is opened.
+    const selBg = currentStatus === 'posted'   ? 'rgba(0,152,212,0.12)' :
+                  currentStatus === 'archived' ? 'rgba(100,116,139,0.18)' :
+                                                 '#0a0a0a';
+    const selBd = currentStatus === 'posted'   ? '#0098d4' :
+                  currentStatus === 'archived' ? '#64748b' :
+                                                 '#222';
+    const selFg = currentStatus === 'posted'   ? '#0098d4' :
+                  currentStatus === 'archived' ? '#94a3b8' :
+                                                 '#ccc';
+    const stampLine = isPosted && c.posted && c.posted.at
+      ? '<div style="font-size:9px;color:#0098d4;margin-top:3px;line-height:1.2;">Posted ' + c.posted.at + '</div>'
+      : (isArchived && c.archivedAt
+        ? '<div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.2;">Archived ' + c.archivedAt + '</div>'
+        : '');
     const postedCell =
       '<td style="text-align:center;padding:10px 6px;vertical-align:middle;">' +
-        '<input type="checkbox" ' + (isPosted ? 'checked' : '') +
-          ' onclick="event.stopPropagation();togglePostedStatus(' + idArg + ', this.checked)"' +
-          ' title="' + (isPosted ? 'Marked posted on ' + (c.posted && c.posted.at || '') : 'Tick once posted to socials (moves to Posted folder)') + '"' +
-          ' style="width:16px;height:16px;accent-color:#00cc66;cursor:pointer;">' +
-        (isPosted && c.posted && c.posted.at
-          ? '<div style="font-size:9px;color:#00cc66;margin-top:3px;line-height:1.2;">' + c.posted.at + '</div>'
-          : '') +
+        '<select onchange="event.stopPropagation();setContentRowStatus(' + idArg + ', this.value)" onclick="event.stopPropagation();"' +
+          ' style="padding:5px 8px;font-size:11px;font-weight:700;letter-spacing:0.3px;background:' + selBg + ';color:' + selFg + ';border:1px solid ' + selBd + ';border-radius:3px;cursor:pointer;width:100%;">' +
+          '<option value=""'         + (currentStatus === ''         ? ' selected' : '') + '>— Active</option>' +
+          '<option value="posted"'   + (currentStatus === 'posted'   ? ' selected' : '') + '>Posted</option>' +
+          '<option value="archived"' + (currentStatus === 'archived' ? ' selected' : '') + '>Archived</option>' +
+        '</select>' +
+        stampLine +
       '</td>';
 
-    // Last column: Archive/Delete + Restore button depending on folder
+    // Last column tail button. The dropdown in the Status column now drives
+    // Active ↔ Posted ↔ Archived, so the × button is only needed inside the
+    // Archive folder as a "permanent delete" — everywhere else it's noise.
     let tailBtn = '';
     if (isArchived) {
-      tailBtn = '<button onclick="event.stopPropagation();restoreContentItem(' + idArg + ')" title="Restore this item from Archive" style="background:none;border:1px solid #0098d4;color:#0098d4;cursor:pointer;font-size:10px;font-weight:700;padding:3px 9px;border-radius:3px;margin-right:6px;letter-spacing:.3px;">Restore</button>' +
-                '<button onclick="event.stopPropagation();removeContentItem(' + idArg + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px" title="Delete permanently (not reversible)">&times;</button>';
-    } else {
-      tailBtn = '<button onclick="event.stopPropagation();removeContentItem(' + idArg + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Move to Archive">&times;</button>';
+      tailBtn = '<button onclick="event.stopPropagation();removeContentItem(' + idArg + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px" title="Delete permanently (not reversible)">&times;</button>';
     }
 
     // Dim rows that are in Archive or already-Posted (so visually they settle
