@@ -7766,9 +7766,12 @@ function renderContentLibrary() {
     }).join(' ');
 
     // IDs are string-typed now (server issues tokens like "173_abc123"), so
-    // we have to quote them inside onclick="..." otherwise the browser parses
-    // them as JS identifiers and silently no-ops the click.
-    const idArg = JSON.stringify(String(c.id));
+    // they need quotes when embedded in onclick/onchange handlers — but
+    // JSON.stringify emits double quotes which collide with the double
+    // quotes wrapping the attribute value, silently breaking every click
+    // on a string-id row. HTML-entity-encoding the inner quotes keeps the
+    // attribute parser happy (&quot; decodes to " only at JS evaluation).
+    const idArg = JSON.stringify(String(c.id)).replace(/"/g, '&quot;');
     const approvalBadge = _contentApprovalBadge(c);
     const approvalAction = _contentIsApproved(c)
       ? '<button onclick="event.stopPropagation();revokeContentApproval(' + idArg + ')" title="Revoke approval — return to Pending" style="background:none;border:1px solid #333;color:#888;cursor:pointer;font-size:10px;padding:3px 8px;border-radius:3px;margin-top:4px;">Revoke</button>'
