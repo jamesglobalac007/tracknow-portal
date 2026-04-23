@@ -1554,7 +1554,7 @@ select option{background:#0a0a0a;color:#0098d4}
 
         <!-- Content Type Folders -->
         <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">CONTENT FOLDERS</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px">
           <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('videos')" id="clFolder-videos">
             <div style="width:40px;height:40px;border-radius:8px;background:rgba(255,0,0,.1);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
               <svg width="20" height="20" fill="none" stroke="#FF4444" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -1589,6 +1589,20 @@ select option{background:#0a0a0a;color:#0098d4}
             </div>
             <div style="font-size:12px;font-weight:700;color:#FF7A2E">Social Packs</div>
             <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-packs">0 files</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('posted')" id="clFolder-posted">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(0,152,212,.12);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" fill="none" stroke="#0098d4" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#0098d4">Posted</div>
+            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-posted">0 files</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;cursor:pointer;border:1px solid #222;transition:.2s" onclick="showContentFolder('archive')" id="clFolder-archive">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(100,116,139,.12);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#64748b">Archive</div>
+            <div style="font-size:10px;color:#666;margin-top:2px" id="clCount-archive">0 files</div>
           </div>
         </div>
 
@@ -7440,11 +7454,35 @@ const CONTENT_TYPE_FOLDERS = {
   brochures: {name:'Brochures',    color:'#0098d4'},
   images:    {name:'Images',       color:'#0088FF'},
   raw:       {name:'Raw Files',    color:'#64748b'},
-  packs:     {name:'Social Packs', color:'#FF7A2E'}
+  packs:     {name:'Social Packs', color:'#FF7A2E'},
+  // Virtual folders — not filtered by file type, but by state.
+  //   posted  = items the user has ticked as posted (and not archived)
+  //   archive = items the user has soft-deleted via the X (still on disk)
+  posted:    {name:'Posted',       color:'#0098d4'},
+  archive:   {name:'Archive',      color:'#64748b'}
 };
+
+// Predicate: does this item belong in a given folder right now?
+// Central so the counters, the inline list, and the platform overlay all
+// agree on what's "in" a folder. Items in archive disappear from every
+// other folder. Posted items disappear from their type folder and only
+// show up under Posted.
+function _contentInFolder(c, folderId) {
+  if (folderId === 'archive') return c.archived === true;
+  const hidden = c.archived === true;
+  if (hidden) return false;
+  if (folderId === 'posted') return _contentIsPosted(c);
+  if (_contentIsPosted(c)) return false; // hide posted items from type folders
+  const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other', packs:'pack'};
+  const t = typeMap[folderId];
+  return t !== undefined && c.type === t;
+}
 const ALL_FOLDER_IDS = Object.keys(CONTENT_TYPE_FOLDERS).concat(Object.keys(PLATFORM_SPECS));
 
 function showContentFolder(folderId) {
+  // typeMap is still used by the old type-folder path elsewhere, keep it in
+  // sync with CONTENT_TYPE_FOLDERS. Posted + archive don't appear here —
+  // renderContentLibrary handles them via _contentInFolder().
   const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other', packs:'pack'};
 
   // Platform folders open as overlay modal
@@ -7552,68 +7590,97 @@ function openPlatformFolder(pid) {
   document.body.appendChild(overlay);
 }
 
+// ✕ on a content row:
+//   - From any active folder → soft-archive (move to Archive folder,
+//     keep on the server). Reversible.
+//   - From the Archive folder → permanent delete (server DELETE, removes
+//     bytes too). Not reversible — confirm twice.
 function removeContentItem(id) {
-  const idx = CONTENT_LIBRARY.findIndex(c => String(c.id) === String(id));
-  if (idx < 0) return;
-  const removed = CONTENT_LIBRARY[idx];
-  if (!confirm('Remove "' + (removed && removed.name || 'this file') + '" from the Content Library?\n\nThis deletes it from the server too.')) return;
-  CONTENT_LIBRARY.splice(idx, 1);
+  const c = CONTENT_LIBRARY.find(x => String(x.id) === String(id));
+  if (!c) return;
+  const inArchive = _activeFolder === 'archive';
+  if (inArchive) {
+    if (!confirm('Permanently delete "' + (c.name || 'this file') + '"?\n\nThis removes it from the server. Cannot be undone.')) return;
+    const idx = CONTENT_LIBRARY.findIndex(x => String(x.id) === String(id));
+    if (idx >= 0) CONTENT_LIBRARY.splice(idx, 1);
+    _contentLibraryHydrated = true;
+    renderContentLibrary();
+    fetch('/api/content-library/' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function() { saveData(); })
+      .catch(function() { saveData(); });
+    try { showToast && showToast('Deleted permanently'); } catch(e) {}
+    return;
+  }
+  // Normal archive path — soft delete so James can restore if needed.
+  c.archived = true;
+  c.archivedAt = new Date().toLocaleString('en-AU', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  c.archivedBy = (window.TN_AUTH && window.TN_AUTH.user && window.TN_AUTH.user.email) || '';
+  _contentLibraryHydrated = true;
+  try { saveData && saveData(); } catch(e) {}
   renderContentLibrary();
-  // Best-effort delete on the server. If the item was uploaded via the new
-  // upload endpoint it has a string id and will return ok. Local-only items
-  // (pre-sync) have numeric ids and 404 — that's fine, we just remove them
-  // from the local array.
-  fetch('/api/content-library/' + encodeURIComponent(id), {
-    method: 'DELETE',
-    headers: Object.assign({}, (typeof _authHeaders === 'function') ? _authHeaders() : {})
-  })
-  .then(function(r) { return r.json().catch(function(){return{};}); })
-  .then(function() { saveData(); })
-  .catch(function() { saveData(); });
+  try { showToast && showToast('Moved to Archive'); } catch(e) {}
 }
 
-function renderContentLibrary() {
-  const typeMap = {videos:'video', brochures:'brochure', images:'image', raw:'other', packs:'pack'};
+// Restore an archived item back to its original folder (clears the archive flag).
+function restoreContentItem(id) {
+  const c = CONTENT_LIBRARY.find(x => String(x.id) === String(id));
+  if (!c) return;
+  delete c.archived;
+  delete c.archivedAt;
+  delete c.archivedBy;
+  _contentLibraryHydrated = true;
+  try { saveData && saveData(); } catch(e) {}
+  renderContentLibrary();
+  try { showToast && showToast('Restored from Archive'); } catch(e) {}
+}
+window.restoreContentItem = restoreContentItem;
 
-  // Approval + Posted summary chips — above the folders
+function renderContentLibrary() {
+  // Approval + Posted summary chips — above the folders. Exclude archived
+  // items from all counts so they don't inflate the backlog view.
   (function() {
     const sumEl = document.getElementById('clApprovalSummary');
     if (!sumEl) return;
-    const approved = CONTENT_LIBRARY.filter(_contentIsApproved).length;
-    const pending = CONTENT_LIBRARY.length - approved;
-    const posted = CONTENT_LIBRARY.filter(_contentIsPosted).length;
-    const notPostedYet = CONTENT_LIBRARY.filter(c => _contentIsApproved(c) && !_contentIsPosted(c)).length;
+    const active = CONTENT_LIBRARY.filter(c => !c.archived);
+    const approved = active.filter(_contentIsApproved).length;
+    const pending = active.length - approved;
+    const posted = active.filter(_contentIsPosted).length;
+    const notPostedYet = active.filter(c => _contentIsApproved(c) && !_contentIsPosted(c)).length;
+    const archived = CONTENT_LIBRARY.filter(c => c.archived).length;
     sumEl.innerHTML =
       '<span style="font-size:10px;font-weight:700;color:#00cc66;background:#0a3a1a;border:1px solid #00cc6644;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + approved + ' Approved</span>' +
       (pending ? '<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#3a2a0a;border:1px solid #f59e0b44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + pending + ' Pending ' + CONTENT_APPROVER.name + '</span>' : '') +
       '<span style="font-size:10px;font-weight:700;color:#0098d4;background:#0a2a3a;border:1px solid #0098d444;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + posted + ' Posted</span>' +
-      (notPostedYet ? '<span style="font-size:10px;font-weight:700;color:#b79cff;background:#1f1533;border:1px solid #7C3AED44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;" title="Signed off + ready to post, not yet ticked">' + notPostedYet + ' Ready to post</span>' : '');
+      (notPostedYet ? '<span style="font-size:10px;font-weight:700;color:#b79cff;background:#1f1533;border:1px solid #7C3AED44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;" title="Signed off + ready to post, not yet ticked">' + notPostedYet + ' Ready to post</span>' : '') +
+      (archived ? '<span style="font-size:10px;font-weight:700;color:#94a3b8;background:#1a1e26;border:1px solid #64748b55;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + archived + ' Archived</span>' : '');
   })();
 
-  // Update content-type folder counts
-  for (const tid of Object.keys(CONTENT_TYPE_FOLDERS)) {
-    const matchType = typeMap[tid];
-    const count = CONTENT_LIBRARY.filter(c => c.type === matchType).length;
-    const el = document.getElementById('clCount-' + tid);
+  // Update folder counts (type + virtual folders all use _contentInFolder)
+  for (const fid of Object.keys(CONTENT_TYPE_FOLDERS)) {
+    const count = CONTENT_LIBRARY.filter(c => _contentInFolder(c, fid)).length;
+    const el = document.getElementById('clCount-' + fid);
     if (el) el.textContent = count + ' file' + (count !== 1 ? 's' : '');
   }
 
-  // Update platform folder counts
+  // Update platform folder counts — exclude archived so the deleted items
+  // don't inflate the platform counts.
   for (const [pid, spec] of Object.entries(PLATFORM_SPECS)) {
-    const count = CONTENT_LIBRARY.filter(c => c.platforms.includes(pid)).length;
+    const count = CONTENT_LIBRARY.filter(c => c.platforms.includes(pid) && !c.archived).length;
     const el = document.getElementById('clCount-' + pid);
     if (el) el.textContent = count + ' file' + (count !== 1 ? 's' : '');
   }
 
-  // Render inline file list (content-type folders only)
+  // Render inline file list — any folder (type + virtual) now routes through
+  // the shared _contentInFolder predicate, so Posted/Archive get filtered
+  // identically to the type folders.
   const el = document.getElementById('clFilesList');
   if (!el) return;
 
   let filtered;
-  if (_activeFolder && typeMap[_activeFolder] !== undefined) {
-    filtered = CONTENT_LIBRARY.filter(c => c.type === typeMap[_activeFolder]);
+  if (_activeFolder && CONTENT_TYPE_FOLDERS[_activeFolder]) {
+    filtered = CONTENT_LIBRARY.filter(c => _contentInFolder(c, _activeFolder));
   } else {
-    // No active folder or not a content-type — show nothing inline (platform folders use overlay)
+    // No active folder or a platform folder (platform folders use overlay)
     if (_activeFolder) { el.innerHTML = ''; return; }
     filtered = [];
   }
@@ -7691,19 +7758,32 @@ function renderContentLibrary() {
     // Posted tracker — tick once the post has gone out on socials. Dims the
     // row + shows the date/user it was marked by. Toggles back if unticked.
     const isPosted = _contentIsPosted(c);
+    const isArchived = c.archived === true;
     const postedCell =
       '<td style="text-align:center;padding:10px 6px;vertical-align:middle;">' +
         '<input type="checkbox" ' + (isPosted ? 'checked' : '') +
           ' onclick="event.stopPropagation();togglePostedStatus(' + idArg + ', this.checked)"' +
-          ' title="' + (isPosted ? 'Marked posted on ' + (c.posted && c.posted.at || '') : 'Tick once this has been posted to socials') + '"' +
+          ' title="' + (isPosted ? 'Marked posted on ' + (c.posted && c.posted.at || '') : 'Tick once posted to socials (moves to Posted folder)') + '"' +
           ' style="width:16px;height:16px;accent-color:#00cc66;cursor:pointer;">' +
         (isPosted && c.posted && c.posted.at
           ? '<div style="font-size:9px;color:#00cc66;margin-top:3px;line-height:1.2;">' + c.posted.at + '</div>'
           : '') +
       '</td>';
 
-    // Row style dims posted rows so unposted ones stand out at a glance
-    const rowStyle = 'border-bottom:1px solid #161616;' + (isPosted ? 'opacity:0.55;' : '');
+    // Last column: Archive/Delete + Restore button depending on folder
+    let tailBtn = '';
+    if (isArchived) {
+      tailBtn = '<button onclick="event.stopPropagation();restoreContentItem(' + idArg + ')" title="Restore this item from Archive" style="background:none;border:1px solid #0098d4;color:#0098d4;cursor:pointer;font-size:10px;font-weight:700;padding:3px 9px;border-radius:3px;margin-right:6px;letter-spacing:.3px;">Restore</button>' +
+                '<button onclick="event.stopPropagation();removeContentItem(' + idArg + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px" title="Delete permanently (not reversible)">&times;</button>';
+    } else {
+      tailBtn = '<button onclick="event.stopPropagation();removeContentItem(' + idArg + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Move to Archive">&times;</button>';
+    }
+
+    // Dim rows that are in Archive or already-Posted (so visually they settle
+    // into the background). Posted folder itself keeps them bright since
+    // that folder is the point of focus.
+    const shouldDim = isArchived || (isPosted && _activeFolder !== 'posted');
+    const rowStyle = 'border-bottom:1px solid #161616;' + (shouldDim ? 'opacity:0.55;' : '');
     html += '<tr style="' + rowStyle + '">' +
       postedCell +
       '<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><span style="color:' + ctf.color + '">' + icon + '</span><div><div style="font-size:12px;font-weight:600;color:#CCC">' + c.name + '</div><div style="display:flex;gap:3px;margin-top:3px">' + platBadges + '</div></div></div></td>' +
@@ -7713,7 +7793,7 @@ function renderContentLibrary() {
       '<td style="padding:10px 12px;">' + approvalBadge + '<div>' + approvalAction + '</div>' +
         (_contentIsApproved(c) ? '<div style="font-size:10px;color:#666;margin-top:3px;">by ' + c.approval.approvedBy + '<br>' + c.approval.approvedAt + '</div>' : '') +
       '</td>' +
-      '<td style="padding:10px 12px;white-space:nowrap">' + openBtn + csvBtn + '<button onclick="removeContentItem(' + idArg + ')" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px" title="Remove">&times;</button></td>' +
+      '<td style="padding:10px 12px;white-space:nowrap">' + openBtn + csvBtn + tailBtn + '</td>' +
     '</tr>';
   });
 
