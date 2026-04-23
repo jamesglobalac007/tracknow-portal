@@ -313,7 +313,7 @@ let eventIdCounter = 1;
 
 // ─── Rate limiter helper ────────────────────────────────────────────────────
 const LOGIN_WINDOW = 15 * 60 * 1000;
-const LOGIN_MAX_PAIR   = 5;   // per ip+email
+const LOGIN_MAX_PAIR   = 10;  // per ip+email
 const LOGIN_MAX_IP     = 30;  // per ip (distributed stuffing)
 const LOGIN_MAX_EMAIL  = 10;  // per email (credential stuffing)
 const _rlPair  = new Map();
@@ -499,6 +499,12 @@ app.post('/api/login', async (req, res) => {
   }
 
   // Successful password (+ TOTP if applicable). Prune old sessions, issue one now.
+  // Clear rate-limit buckets so a run of typos/autofill misses before this
+  // successful login doesn't keep the user locked out on their next attempt.
+  // (Matches the equivalent fix in sb-empire-portal server.js.)
+  _rlPair.delete(`${ip}:${emailLower}`);
+  _rlIP.delete(ip);
+  _rlEmail.delete(emailLower);
   pruneSessions();
   const token = crypto.randomBytes(32).toString('hex');
   const now = Date.now();
