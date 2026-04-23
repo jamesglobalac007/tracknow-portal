@@ -13432,9 +13432,13 @@ function openAdminTools() {
           'Also reset 2FA (recommended if user is locked out of their authenticator)' +
         '</label>' +
         '<div id="adminToolsResult" style="display:none;margin:14px 0;padding:14px 16px;background:rgba(0,204,102,.08);border:1px solid rgba(0,204,102,.35);border-radius:4px;font-size:12px;color:#ccc;line-height:1.6;"></div>' +
-        '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;">' +
+        '<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:4px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:#6ee7b7;line-height:1.5;">' +
+          '<strong style="color:#a7f3d0;">Recommended:</strong> use <em>Generate Reset Link</em> — it produces a URL you send the user (SMS / email). They click, pick their own password, done. Zero temp-password typos.' +
+        '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:6px;">' +
+          '<button onclick="runAdminGenerateResetLink()" style="background:#10b981;border:none;color:#000;font-size:12px;font-weight:700;padding:9px 20px;border-radius:3px;cursor:pointer;letter-spacing:.3px;">Generate Reset Link</button>' +
           '<button onclick="runAdminReset2faOnly()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;font-size:11px;font-weight:700;padding:9px 14px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Reset 2FA only</button>' +
-          '<button onclick="runAdminResetPassword()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 20px;border-radius:3px;cursor:pointer;letter-spacing:.3px;">Reset Password</button>' +
+          '<button onclick="runAdminResetPassword()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 16px;border-radius:3px;cursor:pointer;letter-spacing:.3px;" title="Legacy — issues a temp password. Prefer Generate Reset Link above.">Temp Password</button>' +
         '</div>' +
         '<div style="margin-top:22px;padding-top:18px;border-top:1px solid #1a1a1a;">' +
           '<div style="font-size:11px;font-weight:700;color:#666;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;">Content Library — seed from repo</div>' +
@@ -13526,6 +13530,40 @@ async function runAdminSeedContent() {
     showToast('Network error: ' + err.message, true);
   }
 }
+
+// Generate a one-shot password-reset URL for a user. Shows the link in the
+// result box; James copies + SMSes/emails it to the target. Link expires in
+// 15 min and is consumed on first use.
+async function runAdminGenerateResetLink() {
+  const email = (document.getElementById('adminTargetEmail').value || '').trim();
+  if (!email) { showToast('Enter the user\'s email first', true); return; }
+  if (!confirm('Generate a reset link for ' + email + '?\n\nThe link is valid for 15 min and can only be used once.')) return;
+  try {
+    const r = await fetch('/api/admin/generate-reset-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { showToast(d.error || 'Failed to generate link', true); return; }
+    const box = document.getElementById('adminToolsResult');
+    box.style.display = 'block';
+    const urlEscaped = d.resetUrl.replace(/"/g, '&quot;');
+    box.innerHTML =
+      '<div style="font-size:11px;font-weight:700;color:#6ee7b7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Reset link ready</div>' +
+      '<div>Send this to <strong style="color:#fff;">' + d.email + '</strong>:</div>' +
+      '<div style="margin-top:10px;padding:10px 12px;background:#000;border:1px solid #2a2a2a;border-radius:3px;font-family:SFMono-Regular,Menlo,monospace;font-size:11px;color:#6ee7b7;word-break:break-all;user-select:all;">' + d.resetUrl + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;">' +
+        '<button onclick="navigator.clipboard.writeText(\'' + urlEscaped + '\').then(function(){showToast(&quot;Copied to clipboard&quot;);})" style="background:#0098d4;border:none;color:#000;font-size:11px;font-weight:700;padding:7px 14px;border-radius:3px;cursor:pointer;letter-spacing:.3px;">Copy link</button>' +
+        '<a href="sms:?body=' + encodeURIComponent('Set your TrackNow password: ' + d.resetUrl) + '" target="_blank" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;text-decoration:none;font-size:11px;font-weight:700;padding:7px 14px;border-radius:3px;letter-spacing:.3px;display:inline-block;">SMS it</a>' +
+      '</div>' +
+      '<div style="margin-top:8px;font-size:11px;color:#888;">Valid for <strong style="color:#fff;">' + d.validForMinutes + ' minutes</strong>. Single use. If the user misses the window, generate another.</div>';
+    showToast('Reset link generated — copy + send to ' + d.email);
+  } catch (err) {
+    showToast('Network error: ' + err.message, true);
+  }
+}
+window.runAdminGenerateResetLink = runAdminGenerateResetLink;
 
 async function runAdminVerifyContent() {
   try {

@@ -346,6 +346,7 @@ const AUTH_EXEMPT = new Set([
   '/api/status',                 // POST: customer dismisses a callback
   '/api/send-email',             // gated inside the handler — customers get a restricted path
   '/api/self-test-status',       // has its own SELFTEST_TOKEN guard
+  '/api/reset-password',         // token-gated; user hasn't logged in yet
 ]);
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) return next();
@@ -601,6 +602,73 @@ app.post('/api/admin/reset-2fa', requireAdmin, (req, res) => {
   saveUsers();
   pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: '2fa_reset_by_admin:' + req.user.email });
   res.json({ ok: true });
+});
+
+// ─── Password reset links — James-generated, consumed by the user ──────────
+// The manual 'Mark type this temp password' flow is fragile (whitespace
+// from copy/paste, user typos, client stress). A signed single-use link is
+// simpler + safer: James clicks Generate, gets a URL, SMS/email it to Mark,
+// Mark opens it, types a password he picks, done. Token lives 15 min, is
+// one-shot (consumed = invalid).
+const PASSWORD_RESET_TOKENS = new Map(); // token -> { email, expiresAt, createdBy }
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
+function _pruneResetTokens() {
+  const now = Date.now();
+  for (const [tok, rec] of PASSWORD_RESET_TOKENS) {
+    if (rec.expiresAt < now) PASSWORD_RESET_TOKENS.delete(tok);
+  }
+}
+
+app.post('/api/admin/generate-reset-link', requireAdmin, (req, res) => {
+  try {
+    const { email } = req.body || {};
+    const target = USERS.find(u => u.email.toLowerCase() === String(email || '').toLowerCase());
+    if (!target) return res.status(404).json({ ok: false, error: 'User not found' });
+    _pruneResetTokens();
+    const token = crypto.randomBytes(24).toString('base64url');
+    const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
+    PASSWORD_RESET_TOKENS.set(token, { email: target.email, expiresAt, createdBy: req.user.email });
+    // Build a full URL so James can just copy + send. protocol comes from
+    // the forwarded header (Render is behind https) with a sensible default.
+    const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
+    const host  = req.headers['x-forwarded-host'] || req.headers.host;
+    const resetUrl = proto + '://' + host + '/reset.html?token=' + encodeURIComponent(token);
+    pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'reset_link_generated_by:' + req.user.email });
+    res.json({ ok: true, email: target.email, resetUrl, expiresAt, validForMinutes: 15 });
+  } catch (err) {
+    console.error('[tracknow] generate-reset-link error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// The token carries identity; no existing session needed. Consumes the token
+// on first use. Resets mustChangePassword=false since the user has actively
+// set the new password (they already proved ownership via the link). Also
+// revokes all existing sessions for safety.
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body || {};
+    const pass = String(newPassword || '').trim();
+    if (!token || !pass) return res.status(400).json({ ok: false, error: 'token and newPassword required' });
+    if (pass.length < 8) return res.status(400).json({ ok: false, error: 'Password must be at least 8 characters' });
+    _pruneResetTokens();
+    const rec = PASSWORD_RESET_TOKENS.get(token);
+    if (!rec) return res.status(400).json({ ok: false, error: 'Link expired or already used. Ask James for a new one.' });
+    PASSWORD_RESET_TOKENS.delete(token); // one-shot
+    const target = USERS.find(u => u.email.toLowerCase() === rec.email.toLowerCase());
+    if (!target) return res.status(404).json({ ok: false, error: 'User not found' });
+    target.passHash = await bcrypt.hash(pass, 10);
+    target.mustChangePassword = false;
+    saveUsers();
+    const before = SESSIONS.length;
+    SESSIONS = SESSIONS.filter(s => s.email !== target.email);
+    if (SESSIONS.length !== before) saveSessions();
+    pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_set_via_reset_link' });
+    res.json({ ok: true, email: target.email });
+  } catch (err) {
+    console.error('[tracknow] reset-password error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
 });
 
 // Admin password reset — issues a one-time temporary password and forces

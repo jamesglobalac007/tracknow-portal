@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackNow — Set Your Password</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    color: #fff; padding: 20px;
+  }
+  .card {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 40px 36px;
+    max-width: 420px; width: 100%;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  }
+  .logo { font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -0.5px; text-align: center; margin-bottom: 6px; }
+  .logo span { color: #0098d4; }
+  .tagline { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 28px; text-align: center; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .sub { color: rgba(255,255,255,0.6); font-size: 13px; line-height: 1.5; margin-bottom: 22px; }
+  label { display: block; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; margin-top: 14px; }
+  input[type=password] {
+    width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15); color: #fff;
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  input[type=password]:focus { outline: 0; border-color: #0098d4; background: rgba(0,0,0,0.45); }
+  .btn {
+    width: 100%; padding: 14px; margin-top: 22px;
+    background: linear-gradient(135deg, #0098d4, #6366f1);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .btn:hover:not([disabled]) { filter: brightness(1.1); }
+  .hint { color: rgba(255,255,255,0.4); font-size: 11px; margin-top: 8px; line-height: 1.5; }
+  .msg { padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-top: 14px; line-height: 1.5; display: none; }
+  .msg.err { background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.4); color: #fca5a5; display: block; }
+  .msg.ok  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7; display: block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Track<span>Now</span></div>
+  <div class="tagline">Sales &amp; Marketing Portal</div>
+
+  <div id="formArea">
+    <h1>Set a new password</h1>
+    <div class="sub">Pick something you'll remember. Minimum 8 characters.</div>
+
+    <form onsubmit="return submitReset(event)">
+      <label for="np">New password</label>
+      <input type="password" id="np" required autofocus minlength="8" autocomplete="new-password">
+      <label for="np2">Confirm password</label>
+      <input type="password" id="np2" required minlength="8" autocomplete="new-password">
+      <button type="submit" class="btn" id="submitBtn">Set password &amp; sign in</button>
+      <div class="hint">After you set it, you'll be sent to the portal.</div>
+      <div id="msg" class="msg"></div>
+    </form>
+  </div>
+
+  <div id="doneArea" style="display:none;">
+    <h1 style="color:#6ee7b7;">Password set</h1>
+    <div class="sub">Taking you to the portal…</div>
+  </div>
+
+  <div id="expiredArea" style="display:none;">
+    <h1 style="color:#fca5a5;">Link invalid or expired</h1>
+    <div class="sub">Ask James to generate a new reset link. They expire after 15 minutes and can only be used once.</div>
+    <a class="btn" style="display:block;text-align:center;text-decoration:none;" href="/">Back to login</a>
+  </div>
+</div>
+
+<script>
+  function getToken(){
+    const u = new URL(window.location.href);
+    return u.searchParams.get('token') || '';
+  }
+  function showMsg(text, isErr){
+    const m = document.getElementById('msg');
+    m.textContent = text;
+    m.className = 'msg ' + (isErr ? 'err' : 'ok');
+  }
+  async function submitReset(ev){
+    ev.preventDefault();
+    const token = getToken();
+    if (!token){ document.getElementById('formArea').style.display='none'; document.getElementById('expiredArea').style.display='block'; return false; }
+    const p1 = document.getElementById('np').value;
+    const p2 = document.getElementById('np2').value;
+    if (p1 !== p2){ showMsg('Passwords don\'t match — try again.', true); return false; }
+    if (p1.trim().length < 8){ showMsg('At least 8 characters please.', true); return false; }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const r = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: p1.trim() })
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok){
+        btn.disabled = false; btn.textContent = 'Set password & sign in';
+        showMsg(d.error || 'Something went wrong. Try again.', true);
+        if (r.status === 400 && /expired|used/i.test(d.error || '')){
+          document.getElementById('formArea').style.display='none';
+          document.getElementById('expiredArea').style.display='block';
+        }
+        return false;
+      }
+      document.getElementById('formArea').style.display='none';
+      document.getElementById('doneArea').style.display='block';
+      // Clear any stale auth state then bounce to the main portal
+      try { localStorage.removeItem('tn_creds'); sessionStorage.removeItem('tn_auth'); } catch(e){}
+      setTimeout(() => { window.location.href = '/'; }, 1200);
+    } catch(e){
+      btn.disabled = false; btn.textContent = 'Set password & sign in';
+      showMsg('Network error — try again.', true);
+    }
+    return false;
+  }
+  // If the URL has no token at all, bail straight to the 'expired' view
+  if (!getToken()) {
+    document.getElementById('formArea').style.display='none';
+    document.getElementById('expiredArea').style.display='block';
+  }
+</script>
+</body>
+</html>
