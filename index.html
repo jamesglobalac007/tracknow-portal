@@ -2729,9 +2729,9 @@ function _syncPush() {
       leads: LEADS,
       prospects: PROSPECTS,
       customers: CUSTOMERS,
-      // Content Library metadata (approval state, platform tags, etc) rides
-      // alongside leads/etc. Upload bytes go through a separate endpoint.
-      contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined') ? CONTENT_LIBRARY : undefined
+      // Only push contentLibrary once we've hydrated from the server.
+      // Protects against fresh-session empty-push wiping the server's data.
+      contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined' && _contentLibraryHydrated) ? CONTENT_LIBRARY : undefined
     })
   })
   .then(function(r) { return r.json(); })
@@ -2742,7 +2742,7 @@ function _syncPush() {
       if (d.leads) { LEADS = d.leads; try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){} }
       if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
       if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
-      if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
+      if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; _contentLibraryHydrated = true; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
       // Refresh UI if dashboard is visible
       _syncRefreshUI();
       if (!_syncInitDone) { _syncInitDone = true; console.log('[Sync] Initial sync complete — v' + _syncVersion); }
@@ -2763,7 +2763,7 @@ function _syncPull() {
       if (d.leads) { LEADS = d.leads; try { localStorage.setItem('tn_leads', JSON.stringify(LEADS)); } catch(e){} }
       if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
       if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
-      if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
+      if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; _contentLibraryHydrated = true; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
       _syncRefreshUI();
     }
   })
@@ -7022,6 +7022,14 @@ let CONTENT_LIBRARY = (function() {
   } catch(e){}
   return [];
 })();
+// CRITICAL: only start broadcasting CONTENT_LIBRARY to the server once we
+// have genuinely hydrated from the server (or done a legit mutation like an
+// upload). Before that, an empty-array push on a fresh browser session
+// would overwrite the server's copy — which is exactly how James lost his
+// uploads earlier. The flag flips true:
+//   - on any successful upload (we know we have authoritative data)
+//   - after _syncPull pulls back a contentLibrary array from the server
+let _contentLibraryHydrated = (CONTENT_LIBRARY.length > 0);
 
 // ── Content approval / sign-off ──────────────────────────────────────
 // Every piece of content must be signed off by the TrackNow director
@@ -7175,9 +7183,12 @@ function handleContentUpload(files) {
   function next(i) {
     if (i >= list.length) {
       // Once every upload resolved, push the new records into CONTENT_LIBRARY
-      // and save so the sync engine broadcasts to other sessions too.
+      // and save so the sync engine broadcasts to other sessions too. Flag
+      // hydrated=true because we now have authoritative data (at least the
+      // just-uploaded items) — safe to broadcast.
       if (uploaded.length) {
         uploaded.forEach(function(r) { CONTENT_LIBRARY.push(r); });
+        _contentLibraryHydrated = true;
         saveData();
       }
       renderContentLibrary();
@@ -13303,7 +13314,10 @@ function openAdminTools() {
         '<div style="margin-top:22px;padding-top:18px;border-top:1px solid #1a1a1a;">' +
           '<div style="font-size:11px;font-weight:700;color:#666;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;">Content Library — seed from repo</div>' +
           '<div style="font-size:11px;color:#888;line-height:1.5;margin-bottom:10px;">One-shot import of any HTML / image / video files shipped in the repo\'s <code style="background:#1a1a1a;padding:1px 5px;border-radius:2px;font-family:SFMono-Regular,Menlo,monospace;color:#ddd;">content-library-seed/</code> folder. Skips anything already in the library (safe to re-run).</div>' +
-          '<button onclick="runAdminSeedContent()" style="background:#0098d4;border:none;color:#000;font-size:11px;font-weight:700;padding:8px 16px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Seed Content Library</button>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button onclick="runAdminSeedContent()" style="background:#0098d4;border:none;color:#000;font-size:11px;font-weight:700;padding:8px 16px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Seed from repo</button>' +
+            '<button onclick="runAdminVerifyContent()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;font-size:11px;font-weight:700;padding:8px 16px;border-radius:3px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;">Verify files on disk</button>' +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -13388,10 +13402,37 @@ async function runAdminSeedContent() {
   }
 }
 
+async function runAdminVerifyContent() {
+  try {
+    const r = await fetch('/api/admin/content-library-verify');
+    const d = await r.json();
+    if (!r.ok) { showToast(d.error || 'Verify failed', true); return; }
+    const box = document.getElementById('adminToolsResult');
+    box.style.display = 'block';
+    const missingLines = d.missing && d.missing.length
+      ? '<div style="margin-top:6px;font-size:11px;color:#f59e0b;">Missing on disk: ' + d.missing.map(function(m){return m.name;}).join(', ') + '</div>'
+      : '';
+    const unseededLines = d.unseededInRepo && d.unseededInRepo.length
+      ? '<div style="margin-top:6px;font-size:11px;color:#0098d4;">Not yet seeded from repo: ' + d.unseededInRepo.join(', ') + ' — click <strong>Seed from repo</strong> to import.</div>'
+      : '';
+    box.innerHTML =
+      '<div style="font-size:11px;font-weight:700;color:' + (d.ok ? '#00cc66' : '#f59e0b') + ';text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">' +
+        (d.ok ? 'Content Library verified' : 'Content Library check — drift found') +
+      '</div>' +
+      '<div>Total records: <strong style="color:#fff;">' + d.total + '</strong> · ' +
+      'files on disk: <strong style="color:' + (d.fileOnDisk === d.total ? '#00cc66' : '#f59e0b') + ';">' + d.fileOnDisk + '</strong></div>' +
+      missingLines + unseededLines;
+    showToast(d.ok ? 'All ' + d.total + ' files verified' : 'Drift found — see details above', !d.ok);
+  } catch (err) {
+    showToast('Network error: ' + err.message, true);
+  }
+}
+
 window.openAdminTools = openAdminTools;
 window.runAdminResetPassword = runAdminResetPassword;
 window.runAdminReset2faOnly = runAdminReset2faOnly;
 window.runAdminSeedContent = runAdminSeedContent;
+window.runAdminVerifyContent = runAdminVerifyContent;
 
 // Monkey-patch fetch() so every /api/* request automatically carries the
 // bearer token. Also intercepts 403 must_enroll_2fa responses — if the

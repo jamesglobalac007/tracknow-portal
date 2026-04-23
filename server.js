@@ -268,6 +268,10 @@ let STORE = {
   // which platforms it's for, etc). File bytes live on disk under
   // CONTENT_DIR — this array just holds the metadata + stable URL.
   contentLibrary: [],
+  // Names of seed files we've already auto-imported at boot. Keeps the
+  // auto-seed idempotent — once a file's in here, we don't re-import it
+  // even if James later deletes it from the library on purpose.
+  seededContent: [],
   version: 0, lastUpdate: Date.now()
 };
 function loadStore() {
@@ -803,7 +807,23 @@ app.post('/api/data', (req, res) => {
     if (Array.isArray(leads))           STORE.leads          = leads;
     if (Array.isArray(prospects))       STORE.prospects      = prospects;
     if (Array.isArray(customers))       STORE.customers      = customers;
-    if (Array.isArray(contentLibrary))  STORE.contentLibrary = contentLibrary;
+    // Content Library is DESTRUCTIVE-MERGE protected:
+    //   - If the incoming array is empty but we have stuff, refuse and
+    //     log a warning. This protects against the classic "fresh browser
+    //     session, empty localStorage, sync push wipes everything" bug.
+    //   - If the incoming array is non-empty, accept it — frontend has
+    //     the authoritative view (including any deletes the user made).
+    //   - Dedicated DELETE /api/content-library/:id is the only intended
+    //     removal path; it handles file cleanup too.
+    if (Array.isArray(contentLibrary)) {
+      const existingCount = (STORE.contentLibrary || []).length;
+      if (contentLibrary.length === 0 && existingCount > 0) {
+        console.warn(`[tracknow] REFUSED to wipe contentLibrary — incoming=0, existing=${existingCount}, user=${req.user && req.user.email}`);
+        // Silently skip the write — frontend will re-sync the server's copy on next pull.
+      } else {
+        STORE.contentLibrary = contentLibrary;
+      }
+    }
     STORE.version++;
     STORE.lastUpdate = Date.now();
     saveStore();
@@ -917,83 +937,140 @@ app.delete('/api/content-library/:id', (req, res) => {
   res.json({ ok: true, version: STORE.version });
 });
 
-// ─── Content Library seeding — admin-triggered import from the repo ────────
+// ─── Content Library seeding — admin-triggered + auto on boot ─────────────
 // The repo ships pre-generated assets in content-library-seed/ (e.g. the
 // individual TrackNow social posts James spun out of the master pack).
-// This endpoint copies each one into the Render disk's CONTENT_DIR and
-// appends a STORE.contentLibrary record, but skips any file whose name is
-// already in the library — so calling it twice is safe and idempotent.
-// Admin-only. Everything imported starts as approval.status='pending' so
-// Mark's sign-off gate still applies.
+// Files are imported into the Render disk's CONTENT_DIR and appended to
+// STORE.contentLibrary. Two triggers:
+//   1. Auto-seed runs on boot for any file not already listed in
+//      STORE.seededContent[] — so newly-committed seed files land in the
+//      library automatically the next time Render deploys.
+//   2. Admin button hits /api/admin/seed-content-library to force a rescan.
+// Both paths are idempotent — a file is imported at most once per name,
+// tracked via STORE.seededContent[] so deleting from the library doesn't
+// cause it to come back on the next boot.
 const CONTENT_SEED_DIR = path.join(__dirname, 'content-library-seed');
+const PLATFORM_ALL_SEED = ['facebook','linkedin','instagram','twitter','youtube','tiktok','gmb','bluesky','threads'];
+
+function _seedContentExtToType(ext) {
+  ext = (ext || '').toLowerCase();
+  if (['mp4','mov','avi','webm','mkv'].includes(ext)) return 'video';
+  if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
+  if (ext === 'pdf') return 'brochure';
+  if (['html','htm','txt'].includes(ext)) return 'pack';
+  return 'other';
+}
+
+function _seedContentLibraryFromRepo(triggeredBy) {
+  if (!fs.existsSync(CONTENT_SEED_DIR)) return { scanned: 0, imported: 0, skipped: 0, errors: [] };
+  try { fs.mkdirSync(CONTENT_DIR, { recursive: true }); } catch (e) {}
+
+  const entries = fs.readdirSync(CONTENT_SEED_DIR).filter(n => !n.startsWith('.'));
+  STORE.contentLibrary = STORE.contentLibrary || [];
+  STORE.seededContent  = STORE.seededContent  || [];
+  const seenSeeded = new Set(STORE.seededContent.map(s => s.toLowerCase()));
+  const seenLib    = new Set(STORE.contentLibrary.map(c => String(c.name || '').toLowerCase()));
+
+  let imported = 0, skipped = 0, errors = [];
+
+  for (const name of entries) {
+    if (seenSeeded.has(name.toLowerCase()) || seenLib.has(name.toLowerCase())) {
+      skipped++;
+      // Make sure the tracker knows about it for next time
+      if (!seenSeeded.has(name.toLowerCase())) STORE.seededContent.push(name);
+      continue;
+    }
+    try {
+      const srcPath = path.join(CONTENT_SEED_DIR, name);
+      const stat = fs.statSync(srcPath);
+      if (!stat.isFile()) { skipped++; continue; }
+      const ext = name.includes('.') ? name.split('.').pop() : '';
+      const type = _seedContentExtToType(ext);
+      const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      const safeBase = name.replace(/[^a-z0-9._-]/gi, '_').slice(0, 120);
+      const filename = `${id}_${safeBase}`;
+      fs.copyFileSync(srcPath, path.join(CONTENT_DIR, filename));
+      const sizeMB = (stat.size / (1024 * 1024)).toFixed(1) + ' MB';
+      STORE.contentLibrary.push({
+        id, name, ext, type,
+        size: sizeMB,
+        platforms: PLATFORM_ALL_SEED,
+        url: '/api/content-library/' + id + '/file',
+        filename,
+        desc: 'Seeded from repo content-library-seed/',
+        uploaded: new Date().toLocaleDateString('en-AU'),
+        uploadedBy: triggeredBy || 'boot-autoseed',
+        uploadedAt: new Date().toISOString(),
+        approval: { status: 'pending' }
+      });
+      STORE.seededContent.push(name);
+      imported++;
+    } catch (e) {
+      errors.push({ name, error: String(e.code || e.message) });
+      console.warn('[tracknow] seed failed on', name, e);
+    }
+  }
+
+  if (imported > 0) {
+    STORE.version++;
+    STORE.lastUpdate = Date.now();
+    saveStore();
+  }
+  return { scanned: entries.length, imported, skipped, errors };
+}
+
+// Run the auto-seed once on boot, after loadStore() has populated STORE.
+// Deferred with setImmediate so it doesn't block the listen() call.
+setImmediate(function() {
+  try {
+    const r = _seedContentLibraryFromRepo('boot-autoseed');
+    if (r.imported > 0) console.log(`[tracknow] auto-seed: imported ${r.imported}/${r.scanned} content-library seed file(s)`);
+    else                console.log(`[tracknow] auto-seed: nothing new (${r.scanned} scanned, ${r.skipped} already present)`);
+  } catch (e) { console.warn('[tracknow] auto-seed failed:', e.message); }
+});
 app.post('/api/admin/seed-content-library', requireAdmin, (req, res) => {
   try {
     if (!fs.existsSync(CONTENT_SEED_DIR)) {
       return res.json({ ok: true, scanned: 0, imported: 0, skipped: 0, message: 'No content-library-seed/ folder in repo' });
     }
-    try { fs.mkdirSync(CONTENT_DIR, { recursive: true }); } catch (e) {}
-    const entries = fs.readdirSync(CONTENT_SEED_DIR).filter(n => !n.startsWith('.'));
-    const existing = new Set((STORE.contentLibrary || []).map(c => String(c.name || '').toLowerCase()));
-    const PLATFORM_ALL = ['facebook','linkedin','instagram','twitter','youtube','tiktok','gmb','bluesky','threads'];
-    let imported = 0, skipped = 0, errors = [];
-
-    const extToType = (ext) => {
-      ext = (ext || '').toLowerCase();
-      if (['mp4','mov','avi','webm','mkv'].includes(ext)) return 'video';
-      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
-      if (ext === 'pdf') return 'brochure';
-      if (['html','htm','txt'].includes(ext)) return 'pack';
-      return 'other';
-    };
-
-    STORE.contentLibrary = STORE.contentLibrary || [];
-
-    for (const name of entries) {
-      if (existing.has(name.toLowerCase())) { skipped++; continue; }
-      try {
-        const srcPath = path.join(CONTENT_SEED_DIR, name);
-        const stat = fs.statSync(srcPath);
-        if (!stat.isFile()) { skipped++; continue; }
-        const ext = name.includes('.') ? name.split('.').pop() : '';
-        const type = extToType(ext);
-        const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        const safeBase = name.replace(/[^a-z0-9._-]/gi, '_').slice(0, 120);
-        const filename = `${id}_${safeBase}`;
-        fs.copyFileSync(srcPath, path.join(CONTENT_DIR, filename));
-        const sizeMB = (stat.size / (1024 * 1024)).toFixed(1) + ' MB';
-        // Social packs cover every platform; images/videos/brochures do too
-        // for now (same as handleContentUpload's default tagging).
-        STORE.contentLibrary.push({
-          id, name, ext, type,
-          size: sizeMB,
-          platforms: PLATFORM_ALL,
-          url: '/api/content-library/' + id + '/file',
-          filename,
-          desc: 'Seeded from repo content-library-seed/',
-          uploaded: new Date().toLocaleDateString('en-AU'),
-          uploadedBy: (req.user && req.user.email) || 'seed',
-          uploadedAt: new Date().toISOString(),
-          approval: { status: 'pending' }
-        });
-        imported++;
-      } catch (e) {
-        errors.push({ name, error: String(e.code || e.message) });
-        console.warn('[tracknow] seed-content-library failed on', name, e);
-      }
-    }
-
-    if (imported > 0) {
-      STORE.version++;
-      STORE.lastUpdate = Date.now();
-      saveStore();
-    }
-
-    pushAudit({ email: req.user.email, ip: clientIp(req), success: true, reason: `content_library_seed: imported=${imported} skipped=${skipped}` });
-    res.json({ ok: true, scanned: entries.length, imported, skipped, errors, version: STORE.version });
+    const r = _seedContentLibraryFromRepo(req.user.email);
+    pushAudit({ email: req.user.email, ip: clientIp(req), success: true, reason: `content_library_seed: imported=${r.imported} skipped=${r.skipped}` });
+    res.json({ ok: true, ...r, version: STORE.version });
   } catch (err) {
     console.error('[tracknow] seed-content-library error:', err);
     res.status(500).json({ ok: false, error: 'Server error: ' + (err.code || err.message || 'unknown') });
   }
+});
+
+// Verify — for every STORE.contentLibrary record, confirm the file it
+// points at is actually on disk. Returns any drift so we can see at a
+// glance whether bytes and metadata are in sync.
+app.get('/api/admin/content-library-verify', requireAdmin, (req, res) => {
+  const lib = STORE.contentLibrary || [];
+  const missing = [];
+  const ok = [];
+  for (const c of lib) {
+    const full = c.filename ? path.join(CONTENT_DIR, c.filename) : null;
+    if (full && fs.existsSync(full)) ok.push({ id: c.id, name: c.name, size: fs.statSync(full).size });
+    else missing.push({ id: c.id, name: c.name, filename: c.filename || '(none)' });
+  }
+  // Also flag anything in the seed folder that isn't imported yet
+  let unseeded = [];
+  try {
+    if (fs.existsSync(CONTENT_SEED_DIR)) {
+      const entries = fs.readdirSync(CONTENT_SEED_DIR).filter(n => !n.startsWith('.'));
+      const seen = new Set(lib.map(c => String(c.name || '').toLowerCase()).concat((STORE.seededContent || []).map(s => s.toLowerCase())));
+      unseeded = entries.filter(n => !seen.has(n.toLowerCase()));
+    }
+  } catch (e) {}
+  res.json({
+    ok: missing.length === 0,
+    total: lib.length,
+    fileOnDisk: ok.length,
+    missing: missing.length ? missing : undefined,
+    unseededInRepo: unseeded.length ? unseeded : undefined,
+    seededTracker: (STORE.seededContent || []).length
+  });
 });
 
 app.post('/api/event', (req, res) => {
