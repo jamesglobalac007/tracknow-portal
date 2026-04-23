@@ -685,14 +685,16 @@ app.post('/api/reset-password', async (req, res) => {
 // server generates a readable 12-char temp password.
 app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
   try {
-    const { email, newPassword, resetTwoFactor } = req.body || {};
+    const { email, newPassword, resetTwoFactor, skipMustChange, skipForce2FA } = req.body || {};
     const target = USERS.find(u => u.email.toLowerCase() === String(email||'').toLowerCase());
     if (!target) return res.status(404).json({ ok: false, error: 'User not found' });
 
-    // Pick a password. If the admin didn't supply one, generate something
-    // that's easy to read aloud (no ambiguous I/l/1/0/O) and email-safe.
-    const tempPass = (typeof newPassword === 'string' && newPassword.length >= 6)
-      ? newPassword
+    // Pick a password. If the admin supplied one (min 6 chars), use it
+    // verbatim — trim whitespace so copy/paste artefacts don't creep in.
+    // Otherwise generate a readable 12-char password (no I/l/1/0/O).
+    const supplied = (typeof newPassword === 'string') ? String(newPassword).trim() : '';
+    const tempPass = (supplied.length >= 6)
+      ? supplied
       : (function() {
           const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
           let out = '';
@@ -702,7 +704,15 @@ app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
         })();
 
     target.passHash = await bcrypt.hash(tempPass, 10);
-    target.mustChangePassword = true;
+    // skipMustChange: admin wants the user to go straight in with the
+    // preset password (no forced change on next login). Useful when
+    // handing pre-set credentials to a colleague who'll just use them.
+    target.mustChangePassword = !skipMustChange;
+
+    // skipForce2FA: clear the force2FA flag so the user isn't shoved into
+    // enrollment scope on next login. Only pair with resetTwoFactor if
+    // you genuinely want the user past 2FA — this loosens security.
+    if (skipForce2FA) target.force2FA = false;
 
     if (resetTwoFactor) {
       delete target.totpSecret;
@@ -720,15 +730,21 @@ app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
     SESSIONS = SESSIONS.filter(s => s.email !== target.email);
     if (SESSIONS.length !== before) saveSessions();
 
-    pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_reset_by_admin:' + req.user.email + (resetTwoFactor ? ' (2FA cleared)' : '') });
+    pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_reset_by_admin:' + req.user.email
+                                                                     + (resetTwoFactor ? ' (2FA cleared)' : '')
+                                                                     + (skipMustChange ? ' (skipMustChange)' : '')
+                                                                     + (skipForce2FA ? ' (skipForce2FA)' : '') });
     res.json({
       ok: true,
       email: target.email,
       tempPassword: tempPass,
-      mustChangePassword: true,
+      mustChangePassword: !skipMustChange,
       twoFactorReset: !!resetTwoFactor,
+      skipForce2FA: !!skipForce2FA,
       revokedSessions: before - SESSIONS.length,
-      note: 'Give the user the temp password. They must change it on next login.'
+      note: skipMustChange
+        ? 'User can log in with this password — no forced change required.'
+        : 'Give the user the temp password. They must change it on next login.'
     });
   } catch (err) {
     console.error('[tracknow] admin reset-password error:', err);
