@@ -7164,6 +7164,43 @@ function revokeContentApproval(id) {
 }
 window.approveContentItem = approveContentItem;
 window.revokeContentApproval = revokeContentApproval;
+
+// Bulk sign-off — sign off every pending item in one go. Confirmation
+// lists the count so Mark always knows what he's about to approve (no
+// accidental rubber-stamping of 50 items). Archived items are skipped
+// regardless; already-approved items are skipped.
+function approveAllPendingContent() {
+    const pending = (CONTENT_LIBRARY || []).filter(c => !c.archived && !_contentIsApproved(c));
+    if (!pending.length) {
+        try { showToast && showToast('Nothing pending — all content already signed off.'); } catch(e) {}
+        return;
+    }
+    const msg = 'Sign off ALL ' + pending.length + ' pending item' + (pending.length === 1 ? '' : 's') +
+                ' on behalf of ' + CONTENT_APPROVER.name + ' (' + CONTENT_APPROVER.role + ')?\n\n' +
+                'This records an approval timestamp + approver name against every item. Once approved each piece can be shared on socials.';
+    if (!confirm(msg)) return;
+    const stamp = new Date().toLocaleString('en-AU', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    if (!Array.isArray(window.CONTENT_APPROVAL_LOG)) window.CONTENT_APPROVAL_LOG = [];
+    pending.forEach(c => {
+        c.approval = {
+            status: 'approved',
+            approvedBy: CONTENT_APPROVER.name,
+            approverRole: CONTENT_APPROVER.role,
+            approvedAt: stamp,
+            bulkApproval: true
+        };
+        window.CONTENT_APPROVAL_LOG.push({
+            contentId: c.id, name: c.name, action: 'approved',
+            by: CONTENT_APPROVER.name, role: CONTENT_APPROVER.role,
+            at: new Date().toISOString(), bulk: true
+        });
+    });
+    _contentLibraryHydrated = true;
+    try { saveData && saveData(); } catch(e) {}
+    renderContentLibrary();
+    try { showToast && showToast(pending.length + ' item' + (pending.length===1?'':'s') + ' approved by ' + CONTENT_APPROVER.name); } catch(e) {}
+}
+window.approveAllPendingContent = approveAllPendingContent;
 const PLATFORM_SPECS = {
   facebook:  {name:'Facebook',  color:'#1877F2', video:['mp4','mov'], image:['jpg','jpeg','png'], ratios:['16:9','1:1','4:5'], maxDur:'240 min', maxSize:'4 GB', recVideo:'1280×720 (16:9) or 1080×1080 (1:1)', recImage:'1200×630 (link) or 1080×1080 (post)'},
   linkedin:  {name:'LinkedIn',  color:'#0A66C2', video:['mp4'], image:['jpg','jpeg','png'], ratios:['16:9','1:1'], maxDur:'10 min', maxSize:'5 GB', recVideo:'1920×1080 (16:9) or 1080×1080 (1:1)', recImage:'1200×627 (link) or 1080×1080 (post)'},
@@ -7687,7 +7724,12 @@ function renderContentLibrary() {
       (pending ? '<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#3a2a0a;border:1px solid #f59e0b44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + pending + ' Pending ' + CONTENT_APPROVER.name + '</span>' : '') +
       '<span style="font-size:10px;font-weight:700;color:#0098d4;background:#0a2a3a;border:1px solid #0098d444;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + posted + ' Posted</span>' +
       (notPostedYet ? '<span style="font-size:10px;font-weight:700;color:#b79cff;background:#1f1533;border:1px solid #7C3AED44;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;" title="Signed off + ready to post, not yet ticked">' + notPostedYet + ' Ready to post</span>' : '') +
-      (archived ? '<span style="font-size:10px;font-weight:700;color:#94a3b8;background:#1a1e26;border:1px solid #64748b55;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + archived + ' Archived</span>' : '');
+      (archived ? '<span style="font-size:10px;font-weight:700;color:#94a3b8;background:#1a1e26;border:1px solid #64748b55;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;">' + archived + ' Archived</span>' : '') +
+      // Bulk sign-off button appears only when there's something to approve.
+      // Lets Mark rubber-stamp everything in one click instead of Sign Off
+      // per row. The underlying function still confirms count + logs each
+      // approval individually so the audit trail is identical.
+      (pending ? '<button onclick="approveAllPendingContent()" title="Sign off every pending item on behalf of ' + CONTENT_APPROVER.name + '" style="font-size:10px;font-weight:700;color:#000;background:#00cc66;border:none;padding:4px 10px;border-radius:3px;letter-spacing:0.3px;text-transform:uppercase;cursor:pointer;margin-left:4px;">Approve All ' + pending + '</button>' : '');
   })();
 
   // Update folder counts (type + virtual folders all use _contentInFolder)
