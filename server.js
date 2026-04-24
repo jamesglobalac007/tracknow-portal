@@ -162,11 +162,104 @@ function _offsiteCollectPayload() {
       console.warn('[offsite-backup] could not read', s.path, e.message);
     }
   }
-  return {
+
+  // Content-library blob inclusion — memory-safe re-introduction after the
+  // 24 Apr 2026 OOM incident. The original implementation pulled every file
+  // in CONTENT_DIR into memory as base64, which blew past Render's 512 MB
+  // instance limit once the library grew (and in combination with 5-min
+  // cadence, overlapping backup runs never got a chance to GC).
+  //
+  // These strict caps keep peak memory during assembly well under 300 MB
+  // regardless of library size:
+  //   - Per-file cap:  2 MB raw bytes  (skip individual oversize files)
+  //   - Cumulative cap: 30 MB raw bytes (stop adding once exceeded)
+  //   - Payload-string emergency brake: if JSON.stringify of the blob-
+  //     included payload exceeds 40 MB, fall back to text-only for THIS
+  //     run and log loudly. The scheduled loop will try again next cycle.
+  //
+  // Skipped files are logged by name/size so James can see exactly what
+  // isn't being backed up. If a real customer uploads something over the
+  // cap, we find out quickly and can raise the cap or switch to
+  // streaming encryption as a follow-up.
+  const BLOB_MAX_FILE_BYTES     = 2  * 1024 * 1024;   // 2 MB
+  const BLOB_MAX_TOTAL_BYTES    = 30 * 1024 * 1024;   // 30 MB
+  const PAYLOAD_EMERGENCY_BRAKE = 40 * 1024 * 1024;   // 40 MB JSON string
+
+  const blobs = {};
+  let blobTotalBytes = 0;
+  const skipped = [];
+  try {
+    if (fs.existsSync(CONTENT_DIR)) {
+      const entries = fs.readdirSync(CONTENT_DIR);
+      for (const name of entries) {
+        const full = path.join(CONTENT_DIR, name);
+        try {
+          const stat = fs.statSync(full);
+          if (!stat.isFile()) continue;
+          if (stat.size > BLOB_MAX_FILE_BYTES) {
+            skipped.push({ name, size: stat.size, reason: 'over_per_file_cap' });
+            continue;
+          }
+          if (blobTotalBytes + stat.size > BLOB_MAX_TOTAL_BYTES) {
+            skipped.push({ name, size: stat.size, reason: 'total_cap_reached' });
+            continue;
+          }
+          const buf = fs.readFileSync(full);
+          blobs[`content-library/${name}`] = buf.toString('base64');
+          blobTotalBytes += stat.size;
+        } catch (e) {
+          skipped.push({ name, size: 0, reason: 'read_failed: ' + e.message });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[offsite-backup] content-library scan failed', e.message);
+  }
+
+  const includedCount = Object.keys(blobs).length;
+  if (skipped.length) {
+    console.log(`[offsite-backup] content-library: ${includedCount} included (${blobTotalBytes} bytes), ${skipped.length} skipped`);
+    for (const s of skipped) {
+      console.log(`  skipped "${s.name}" (${s.size}B): ${s.reason}`);
+    }
+  } else if (includedCount > 0) {
+    console.log(`[offsite-backup] content-library: ${includedCount} files, ${blobTotalBytes} bytes included`);
+  }
+
+  const payload = {
     portal: 'tracknow-portal',
     createdAt: new Date().toISOString(),
     files,
+    blobs,
+    blobStats: {
+      included: includedCount,
+      totalBytes: blobTotalBytes,
+      skipped: skipped.length,
+      skippedDetail: skipped,
+    },
   };
+
+  // Emergency brake — if the final JSON string is still too big, drop blobs.
+  // Better to back up text only than to crash the server mid-boot.
+  try {
+    const sizeCheck = JSON.stringify(payload).length;
+    if (sizeCheck > PAYLOAD_EMERGENCY_BRAKE) {
+      console.warn(`[offsite-backup] EMERGENCY BRAKE: payload ${sizeCheck}B exceeds ${PAYLOAD_EMERGENCY_BRAKE}B cap — dropping blobs for this run`);
+      payload.blobs = {};
+      payload.blobStats = {
+        included: 0,
+        totalBytes: 0,
+        skipped: includedCount,
+        skippedDetail: [{ name: '(all)', size: blobTotalBytes, reason: 'emergency_brake' }],
+        emergencyBrake: true,
+      };
+    }
+  } catch (e) {
+    console.warn('[offsite-backup] payload size check failed, dropping blobs defensively', e.message);
+    payload.blobs = {};
+  }
+
+  return payload;
 }
 
 async function _offsiteGithubPut(filepath, content, message, existingSha) {
