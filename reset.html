@@ -118,8 +118,20 @@
       }
       document.getElementById('formArea').style.display='none';
       document.getElementById('doneArea').style.display='block';
-      // Clear any stale auth state then bounce to the main portal
-      try { localStorage.removeItem('tn_creds'); sessionStorage.removeItem('tn_auth'); } catch(e){}
+      // Clear legacy stale auth state first, then write the FRESH session
+      // token the server just issued so when we bounce to '/' the portal
+      // sees us as already-logged-in and lands Mark straight on the
+      // dashboard — no re-typing of the password he just set, no Chrome
+      // autofill filling an old saved password.
+      try {
+        localStorage.removeItem('tn_creds');
+        sessionStorage.removeItem('tn_auth');
+        if (d.token && d.user) {
+          const payload = JSON.stringify({ token: d.token, user: d.user });
+          localStorage.setItem('tn_auth', payload);
+          sessionStorage.setItem('tn_auth', payload);
+        }
+      } catch(e){}
       setTimeout(() => { window.location.href = '/'; }, 1200);
     } catch(e){
       btn.disabled = false; btn.textContent = 'Set password & sign in';

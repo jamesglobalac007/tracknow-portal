@@ -1046,15 +1046,40 @@ app.post('/api/reset-password', async (req, res) => {
       delete target.backupCodes;
     }
     saveUsers();
-    const before = SESSIONS.length;
+    // Revoke every prior session for this user (forces fresh auth elsewhere)
+    // AND every trust-device marker (safety — reset often follows a security
+    // concern). The NEW session we issue below replaces all of them.
     SESSIONS = SESSIONS.filter(s => s.email !== target.email);
-    if (SESSIONS.length !== before) saveSessions();
-    // Password changed — revoke all trusted-device tokens for safety. If a
-    // device was stolen / phishing suspected, the new password stops it,
-    // but trust tokens would otherwise still let the attacker skip 2FA.
     revokeTrustForEmail(target.email);
+
+    // Issue a logged-in session right now so the user doesn't land on the
+    // login page and have to re-type the password they just set. Fixes the
+    // 'I set my password but now it says invalid credentials' confusion —
+    // Chrome's autofill kept putting in their old saved password. Same
+    // scope logic as normal login (full for clean users, enrollment for
+    // anyone still stuck with force2FA+!totpEnabled, password_change
+    // should never apply here since we just cleared mustChangePassword).
+    const now = Date.now();
+    let scope = 'full';
+    let ttl = SESSION_MS;
+    if (target.force2FA && !target.totpEnabled) { scope = 'enrollment'; ttl = 15 * 60 * 1000; }
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const session = {
+      token: sessionToken, email: target.email, role: target.role, scope,
+      createdAt: now, expiresAt: now + ttl, ip: clientIp(req)
+    };
+    SESSIONS.push(session);
+    saveSessions();
+
     pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: 'password_set_via_reset_link' });
-    res.json({ ok: true, email: target.email });
+    res.json({
+      ok: true,
+      email: target.email,
+      token: sessionToken,
+      user: _publicUser(target),
+      expiresAt: session.expiresAt,
+      scope
+    });
   } catch (err) {
     console.error('[tracknow] reset-password error:', err);
     res.status(500).json({ ok: false, error: 'Server error' });
