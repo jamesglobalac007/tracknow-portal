@@ -946,6 +946,19 @@ app.post('/api/reset-password', async (req, res) => {
     if (!target) return res.status(404).json({ ok: false, error: 'User not found' });
     target.passHash = await bcrypt.hash(pass, 10);
     target.mustChangePassword = false;
+    // When a user sets their own password via the reset-link flow we want
+    // them to go STRAIGHT into the portal. Leaving force2FA:true here
+    // would dump them onto a 2FA enrolment screen right after their
+    // successful login — which clients consistently misread as 'my password
+    // failed'. Only admins should still hit the 2FA wall, so we preserve
+    // force2FA for admin accounts and clear it for everyone else.
+    if (target.role !== 'admin') {
+      target.force2FA = false;
+      target.totpEnabled = false;
+      delete target.totpSecret;
+      delete target._pendingTotpSecret;
+      delete target.backupCodes;
+    }
     saveUsers();
     const before = SESSIONS.length;
     SESSIONS = SESSIONS.filter(s => s.email !== target.email);
