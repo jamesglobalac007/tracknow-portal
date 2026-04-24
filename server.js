@@ -395,14 +395,26 @@ function loadUsers() {
     }
     // Client-role downgrade — fixes the force2FA-keeps-coming-back loop
     // that was burning support time every time a client reset password.
-    if (u.role === 'client' && seed.force2FA === false && u.force2FA) {
-      u.force2FA = false;
-      u.totpEnabled = false;
-      delete u.totpSecret;
-      delete u._pendingTotpSecret;
-      delete u.backupCodes;
-      changed = true;
-      console.log(`[tracknow] Cleared force2FA on client ${u.email} (seed no longer requires 2FA for this role).`);
+    // This block fires UNCONDITIONALLY when the seed says force2FA=false
+    // for a client-role user (not just on transition). Previously the
+    // check was 'seed says false AND disk says true', which missed the
+    // case where force2FA was already false on disk but totpEnabled was
+    // still true from a past enrolment — that user would still be asked
+    // for a 2FA code at login and be stuck if they'd lost the authenticator.
+    if (u.role === 'client' && seed.force2FA === false) {
+      let rowChanged = false;
+      if (u.force2FA)    { u.force2FA = false;   rowChanged = true; }
+      if (u.totpEnabled) { u.totpEnabled = false; rowChanged = true; }
+      if (u.totpSecret || u._pendingTotpSecret || u.backupCodes) {
+        delete u.totpSecret;
+        delete u._pendingTotpSecret;
+        delete u.backupCodes;
+        rowChanged = true;
+      }
+      if (rowChanged) {
+        changed = true;
+        console.log(`[tracknow] Enforced 2FA-off on client ${u.email} (seed says force2FA=false for this role).`);
+      }
     }
     // Fresh fields on existing rows
     if (typeof u.totpEnabled !== 'boolean') { u.totpEnabled = false; changed = true; }
@@ -774,6 +786,18 @@ app.post('/api/login', async (req, res) => {
   // but force2FA is set, we issue a narrow-scope enrollment session
   // instead — they must finish enrolling before they can do anything else.
   //
+  // Defensive — if somehow totpEnabled got stuck true but totpSecret is
+  // missing (data corruption / partial restore), a naive check would skip
+  // 2FA entirely (silent downgrade). Instead, treat this as a broken
+  // enrolment: clear the flag on the user record so the login proceeds
+  // under whatever force2FA says. Logged so ops can see it happened.
+  if (user.totpEnabled && !user.totpSecret) {
+    console.warn(`[security] User ${user.email} had totpEnabled:true but no totpSecret — clearing flag.`);
+    user.totpEnabled = false;
+    delete user.backupCodes;
+    saveUsers();
+  }
+
   // "Trust this device for 14 days" bypass: if the client sent a valid
   // trustToken bound to this email, skip the 2FA step entirely. Password
   // is still required (we already validated bcrypt above). The trust
