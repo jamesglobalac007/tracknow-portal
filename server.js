@@ -596,6 +596,21 @@ function rateLimit(map, key, max) {
     bump() { rec.count++; map.set(key, rec); }
   };
 }
+// Prune stale rate-limit entries across every bucket. Without this, the
+// maps grow one entry per unique ip+email pair forever — which on a busy
+// portal running for months is a slow memory leak. Called on an interval
+// so it runs regardless of whether login traffic is active.
+function _pruneRateLimitMaps() {
+  const cutoff = Date.now() - LOGIN_WINDOW;
+  [_rlPair, _rlIP, _rlEmail, _publicWriteRl].forEach(map => {
+    if (!map) return;
+    for (const [k, rec] of map) {
+      if (!rec || rec.windowStart < cutoff) map.delete(k);
+    }
+  });
+}
+// Every 10 min — window is 15 min, so we never kill a live bucket.
+setInterval(_pruneRateLimitMaps, 10 * 60 * 1000).unref();
 function clientIp(req) {
   return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
          req.socket?.remoteAddress || req.ip || 'unknown';
@@ -641,12 +656,23 @@ app.use((req, res, next) => {
   const session = SESSIONS.find(s => s.token === m[1]);
   if (!session) return res.status(401).json({ ok: false, error: 'invalid or expired session' });
 
+  // Resolve the user record. If the user was deleted while their session
+  // was still live, kill the session and reject — otherwise every
+  // downstream endpoint crashes reading req.user.email and the client
+  // sees a misleading 500.
+  const sessionUser = USERS.find(u => u.email === session.email);
+  if (!sessionUser) {
+    SESSIONS = SESSIONS.filter(s => s.token !== session.token);
+    saveSessions();
+    console.warn(`[security] Orphan session rejected for deleted user: ${session.email}`);
+    return res.status(401).json({ ok: false, error: 'invalid or expired session' });
+  }
+
   // Catch-up safeguard — if a session was issued as 'full' but the user
   // still has force2FA + !totpEnabled (e.g. because of the earlier bug
   // where change-password skipped the enrolment scope), retroactively
   // clamp the session down so they can't reach the API until they enrol.
-  const sessionUser = USERS.find(u => u.email === session.email);
-  if (session.scope === 'full' && sessionUser && sessionUser.force2FA && !sessionUser.totpEnabled) {
+  if (session.scope === 'full' && sessionUser.force2FA && !sessionUser.totpEnabled) {
     session.scope = 'enrollment';
     session.expiresAt = Date.now() + 15 * 60 * 1000;
     saveSessions();
