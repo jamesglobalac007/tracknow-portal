@@ -1141,6 +1141,47 @@ app.get('/api/audit/logins', requireAdmin, (req, res) => {
   res.json({ ok: true, entries: AUDIT.slice(-200).reverse() });
 });
 
+// Admin-only user inspector — confirm a given user's current auth flags
+// without ever exposing the passHash. Also returns the last 20 audit
+// entries for that email so you can see reset history / failed logins /
+// etc. at a glance. Use when a user reports 'my password doesn't work'
+// to figure out whether it's a reset that didn't stick, stale 2FA,
+// or user error.
+app.get('/api/admin/user-state', requireAdmin, (req, res) => {
+  const email = String(req.query.email || '').toLowerCase();
+  if (!email) return res.status(400).json({ ok: false, error: 'email query param required' });
+  const u = USERS.find(x => x.email.toLowerCase() === email);
+  if (!u) return res.status(404).json({ ok: false, error: 'User not found' });
+  const active = SESSIONS.filter(s => s.email.toLowerCase() === email);
+  const userAudit = AUDIT.filter(a => String(a.email || '').toLowerCase() === email).slice(-20).reverse();
+  const trusted = (typeof TRUSTED_DEVICES !== 'undefined')
+    ? TRUSTED_DEVICES.filter(t => String(t.email || '').toLowerCase() === email).length
+    : 0;
+  res.json({
+    ok: true,
+    user: {
+      email: u.email,
+      name: u.name || '',
+      role: u.role,
+      hasPassHash: !!u.passHash,
+      passHashPrefix: u.passHash ? u.passHash.slice(0, 7) : null, // identifies the bcrypt version/hash block, not the password itself
+      mustChangePassword: !!u.mustChangePassword,
+      force2FA: !!u.force2FA,
+      totpEnabled: !!u.totpEnabled,
+      hasTotpSecret: !!u.totpSecret,
+      createdAt: u.createdAt || null,
+      updatedAt: u.updatedAt || null,
+      lastPasswordChangeAt: u.lastPasswordChangeAt || null
+    },
+    sessions: {
+      active: active.length,
+      expiries: active.map(s => ({ scope: s.scope, expiresAt: new Date(s.expiresAt).toISOString(), ip: s.ip }))
+    },
+    trustedDevices: trusted,
+    audit: userAudit.map(a => ({ ts: a.ts, success: a.success, reason: a.reason, ip: a.ip }))
+  });
+});
+
 // ─── Backups — admin only ───────────────────────────────────────────────────
 // List all snapshot files (rolling + pinned), newest first. Each entry has
 // filename, size, created timestamp, and a quick summary of what's in it so
