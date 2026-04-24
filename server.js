@@ -1134,9 +1134,14 @@ app.post('/api/change-password', async (req, res) => {
   const ip = clientIp(req);
   const rl = rateLimit(_rlPair, `${ip}:${user.email}:change`, LOGIN_MAX_PAIR);
   if (!rl.ok) return res.status(429).json({ ok: false, error: `Too many attempts. Try again in ${rl.waitMin} min.` });
-  const { currentPass, newPass } = req.body || {};
+  // Trim whitespace on both inputs — copy/paste from SMS/email/chat
+  // loves to append a trailing newline, and bcrypt.compare on a padded
+  // string silently fails. Matches the same trim the /api/login endpoint
+  // already does (see 23 Apr commit '8d5cb2c').
+  const currentPass = String((req.body || {}).currentPass || '').trim();
+  const newPass     = String((req.body || {}).newPass     || '').trim();
   if (!currentPass || !newPass) return res.status(400).json({ ok: false, error: 'currentPass and newPass required' });
-  if (String(newPass).length < 8) return res.status(400).json({ ok: false, error: 'New password must be at least 8 characters.' });
+  if (newPass.length < 8) return res.status(400).json({ ok: false, error: 'New password must be at least 8 characters.' });
   if (newPass === currentPass) return res.status(400).json({ ok: false, error: 'New password must be different.' });
   const ok = await bcrypt.compare(currentPass, user.passHash);
   if (!ok) { rl.bump(); return res.status(401).json({ ok: false, error: 'Current password is incorrect' }); }
@@ -1332,27 +1337,30 @@ app.post('/api/data', (req, res) => {
         delete incoming[k];
       }
     });
-    const { leads, prospects, customers, contentLibrary } = incoming;
-    if (Array.isArray(leads))           STORE.leads          = leads;
-    if (Array.isArray(prospects))       STORE.prospects      = prospects;
-    if (Array.isArray(customers))       STORE.customers      = customers;
-    // Content Library is DESTRUCTIVE-MERGE protected:
-    //   - If the incoming array is empty but we have stuff, refuse and
-    //     log a warning. This protects against the classic "fresh browser
-    //     session, empty localStorage, sync push wipes everything" bug.
-    //   - If the incoming array is non-empty, accept it — frontend has
-    //     the authoritative view (including any deletes the user made).
-    //   - Dedicated DELETE /api/content-library/:id is the only intended
-    //     removal path; it handles file cleanup too.
-    if (Array.isArray(contentLibrary)) {
-      const existingCount = (STORE.contentLibrary || []).length;
-      if (contentLibrary.length === 0 && existingCount > 0) {
-        console.warn(`[tracknow] REFUSED to wipe contentLibrary — incoming=0, existing=${existingCount}, user=${req.user && req.user.email}`);
-        // Silently skip the write — frontend will re-sync the server's copy on next pull.
-      } else {
-        STORE.contentLibrary = contentLibrary;
+    // ANTI-WIPE GUARD — applies to every array the client can write
+    // through this endpoint. Refuses to replace a non-empty server array
+    // with an empty / missing incoming one. Fixes the classic "fresh
+    // browser session, empty localStorage, initial sync push wipes
+    // everything" bug that was already fixed for contentLibrary — now
+    // extended to leads/prospects/customers so the same bug class can't
+    // surface elsewhere. Real deletes still work: the client sends an
+    // array with ≥1 fewer entries, never an empty one, unless the user
+    // has actually emptied a collection (in which case the guard refuses
+    // and the next pull re-hydrates them — 'graceful no-op' beats
+    // 'silent data loss').
+    const _applySyncField = (key, incomingVal) => {
+      if (!Array.isArray(incomingVal)) return;
+      const existing = STORE[key] || [];
+      if (incomingVal.length === 0 && existing.length > 0) {
+        console.warn(`[tracknow] anti-wipe: refused to overwrite ${key} (had ${existing.length}) with empty array — user=${req.user && req.user.email}`);
+        return;
       }
-    }
+      STORE[key] = incomingVal;
+    };
+    _applySyncField('leads',          incoming.leads);
+    _applySyncField('prospects',      incoming.prospects);
+    _applySyncField('customers',      incoming.customers);
+    _applySyncField('contentLibrary', incoming.contentLibrary);
     STORE.version++;
     STORE.lastUpdate = Date.now();
     saveStore();
@@ -1602,8 +1610,26 @@ app.get('/api/admin/content-library-verify', requireAdmin, (req, res) => {
   });
 });
 
+// Per-IP rate limit for public write endpoints (/api/event, /api/status,
+// /api/agreement*). 30 writes per 15-min window is generous for normal
+// customer activity but shuts down runaway automation/DoS.
+const _publicWriteRl = new Map();
+function _rateLimitPublic(ip) {
+  const rec = _publicWriteRl.get(ip) || { count: 0, windowStart: Date.now() };
+  if (Date.now() - rec.windowStart > 15 * 60 * 1000) { rec.count = 0; rec.windowStart = Date.now(); }
+  rec.count++;
+  _publicWriteRl.set(ip, rec);
+  return rec.count <= 30;
+}
+
 app.post('/api/event', (req, res) => {
   try {
+    // Public endpoint — rate limit by IP. Memory buffer is already capped
+    // at 500 events so the existing 24h prune protects against slow drift,
+    // but a flood would still burn CPU parsing bodies.
+    if (!req.user && !_rateLimitPublic(clientIp(req))) {
+      return res.status(429).json({ ok: false, error: 'Too many events from this IP, try again later.' });
+    }
     const { type, data } = req.body;
     if (!type || !data) return res.status(400).json({ ok: false, error: 'Missing type or data' });
     const evt = { id: eventIdCounter++, type, data, ts: Date.now(), by: req.user && req.user.email };
@@ -1630,8 +1656,23 @@ const agreementSignedStore = {};
 
 app.post('/api/agreement', (req, res) => {
   try {
+    // Public endpoint — rate-limit + require a reasonably-entropic key
+    // (base64url tokens issued by the portal are >20 chars). The
+    // no-overwrite rule below is the bigger protection: even if an
+    // attacker guesses a key, they can't corrupt an existing agreement.
+    if (!req.user && !_rateLimitPublic(clientIp(req))) {
+      return res.status(429).json({ ok: false, error: 'Too many agreement writes from this IP.' });
+    }
     const { key, html } = req.body;
     if (!key || !html) return res.status(400).json({ ok: false, error: 'Missing key or html' });
+    if (String(key).length < 16) return res.status(400).json({ ok: false, error: 'Key too short.' });
+    // NO-OVERWRITE — an agreement HTML, once posted, is immutable from
+    // this endpoint. Authenticated admins can still replace via the
+    // sync path if ever needed; a random customer hitting POST again
+    // gets rejected. Eliminates "guess the key + corrupt the contract".
+    if (agreementStore[key] && !req.user) {
+      return res.status(409).json({ ok: false, error: 'Agreement already posted for this key.' });
+    }
     agreementStore[key] = html;
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ ok: false, error: 'Server error' }); }
@@ -1644,8 +1685,15 @@ app.get('/api/agreement', (req, res) => {
 
 app.post('/api/agreement-signed', (req, res) => {
   try {
+    if (!req.user && !_rateLimitPublic(clientIp(req))) {
+      return res.status(429).json({ ok: false, error: 'Too many signed-agreement writes from this IP.' });
+    }
     const { key, html, company, email } = req.body;
     if (!key || !html) return res.status(400).json({ ok: false, error: 'Missing key or html' });
+    if (String(key).length < 16) return res.status(400).json({ ok: false, error: 'Key too short.' });
+    if (agreementSignedStore[key] && !req.user) {
+      return res.status(409).json({ ok: false, error: 'Signed agreement already posted for this key.' });
+    }
     agreementSignedStore[key] = { html, company: company || '', email: email || '', ts: Date.now() };
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ ok: false, error: 'Server error' }); }
