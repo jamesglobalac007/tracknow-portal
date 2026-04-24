@@ -1245,6 +1245,111 @@ app.get('/api/audit/logins', requireAdmin, (req, res) => {
   res.json({ ok: true, entries: AUDIT.slice(-200).reverse() });
 });
 
+// ─── Auth health check ──────────────────────────────────────────────────────
+// Walks every user record and flags anything that's drifted away from the
+// invariants we've codified in memory/feedback_portal_auth_template.md.
+// Returns a structured report: ok=true when every user is clean.
+//
+// Runs automatically every 7 days (setInterval below). Admins can also
+// trigger it manually via /api/admin/auth-health or the Admin Tools UI.
+// When the automatic run finds anomalies, they're written to the audit
+// log so ops can see drift without needing to open the portal.
+function _runAuthHealthCheck() {
+  const issues = [];
+  const now = Date.now();
+  // Re-derive the current seed so we can compare each user against the
+  // expected state for their email.
+  const seedMap = new Map(_seedUsers().map(s => [s.email.toLowerCase(), s]));
+
+  (USERS || []).forEach(u => {
+    const email = (u.email || '').toLowerCase();
+    const seed = seedMap.get(email);
+
+    // INVARIANT 1: no plaintext pass field, ever.
+    if (u.pass) {
+      issues.push({ email: u.email, severity: 'high',
+        issue: 'plaintext password field on disk (u.pass is set)',
+        fix: 'Run /api/admin/reset-password — the current hashing path scrubs u.pass automatically.' });
+    }
+    // INVARIANT 2: every user has a passHash.
+    if (!u.passHash) {
+      issues.push({ email: u.email, severity: 'high',
+        issue: 'no passHash — user cannot log in at all',
+        fix: 'Run /api/admin/reset-password or /api/admin/generate-reset-link to set one.' });
+    }
+    // INVARIANT 3: totpEnabled without totpSecret = corrupt state.
+    if (u.totpEnabled && !u.totpSecret) {
+      issues.push({ email: u.email, severity: 'high',
+        issue: 'totpEnabled=true but totpSecret missing — login will silently downgrade 2FA',
+        fix: 'The login endpoint auto-heals this on next login attempt, or run /api/admin/reset-2fa.' });
+    }
+    // INVARIANT 4: seed force2FA matches disk for known named users.
+    if (seed && seed.force2FA === false && u.role !== 'admin' && u.force2FA === true) {
+      issues.push({ email: u.email, severity: 'medium',
+        issue: 'force2FA=true on a user whose seed says false — self-heal will clear on next boot',
+        fix: 'Expected to self-heal. If persists across a restart, check the loadUsers() downgrade branch.' });
+    }
+    // INVARIANT 5: mustChangePassword that's been stuck for >14 days.
+    if (u.mustChangePassword && u.updatedAt) {
+      const age = now - new Date(u.updatedAt).getTime();
+      if (age > 14 * 24 * 60 * 60 * 1000) {
+        issues.push({ email: u.email, severity: 'low',
+          issue: 'mustChangePassword stuck true for >14 days — user hasn\'t logged in to complete first-login flow',
+          fix: 'Contact the user to log in + change password, or run Admin Tools reset with Ready to hand off.' });
+      }
+    }
+  });
+
+  // INVARIANT 6: no trust tokens for users who no longer exist (orphan trust).
+  const userEmails = new Set((USERS || []).map(u => (u.email || '').toLowerCase()));
+  (TRUSTED_DEVICES || []).forEach(t => {
+    const te = (t.email || '').toLowerCase();
+    if (!userEmails.has(te)) {
+      issues.push({ email: t.email, severity: 'medium',
+        issue: 'trust token exists for a user record that\'s been deleted',
+        fix: 'Call revokeTrustForEmail on boot or add a periodic sweep.' });
+    }
+  });
+
+  return {
+    ok: issues.length === 0,
+    checkedAt: new Date().toISOString(),
+    totalUsers: (USERS || []).length,
+    totalTrustedDevices: (TRUSTED_DEVICES || []).length,
+    issueCount: issues.length,
+    issues
+  };
+}
+
+app.get('/api/admin/auth-health', requireAdmin, (req, res) => {
+  res.json(_runAuthHealthCheck());
+});
+
+// Run the health check every 7 days. If anything's wrong, write an audit
+// entry so ops can see drift even without opening the portal. Scheduled
+// via setInterval().unref() so tests / one-shot runs don't hang.
+function _scheduledAuthHealth() {
+  try {
+    const report = _runAuthHealthCheck();
+    if (!report.ok) {
+      pushAudit({
+        email: '(system)', success: false, reason: 'auth_health_drift',
+        issueCount: report.issueCount,
+        issues: report.issues.map(i => `${i.severity}:${i.email}:${i.issue}`).join(' | ').slice(0, 500)
+      });
+      console.warn(`[auth-health] ${report.issueCount} issue(s) detected. Details in audit log.`);
+    } else {
+      console.log(`[auth-health] Clean — ${report.totalUsers} users scanned, no drift.`);
+    }
+  } catch (e) {
+    console.error('[auth-health] scheduled run failed:', e.message);
+  }
+}
+// Run once a few seconds after boot so the first deploy shows a fresh
+// status line in the logs, then weekly.
+setTimeout(_scheduledAuthHealth, 10_000).unref();
+setInterval(_scheduledAuthHealth, 7 * 24 * 60 * 60 * 1000).unref();
+
 // Admin-only user inspector — confirm a given user's current auth flags
 // without ever exposing the passHash. Also returns the last 20 audit
 // entries for that email so you can see reset history / failed logins /
