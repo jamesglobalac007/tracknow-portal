@@ -108,8 +108,8 @@ const OFFSITE = {
   token: process.env.BACKUP_GITHUB_TOKEN || '',
   repo: process.env.BACKUP_GITHUB_REPO || 'jamesglobalac007/tracknow-portal-backups',
   branch: process.env.BACKUP_GITHUB_BRANCH || 'main',
-  intervalMs: 2 * 60 * 60 * 1000,  // 2 hours
-  minGapMs:   30 * 60 * 1000,       // never push more than once per 30 min
+  intervalMs: 5 * 60 * 1000,        // 5 minutes (matches sb-empire cadence, safe now that _offsiteCollectPayload has strict blob memory caps)
+  minGapMs:   2 * 60 * 1000,        // allow scheduled runs as often as every 2 minutes if needed
 };
 let _offsiteLastRun = 0;
 let _offsiteRunning = false;
@@ -301,6 +301,56 @@ async function _offsiteGithubGet(filepath) {
   return r.json();
 }
 
+async function _offsiteGithubDelete(filepath, sha) {
+  const url = `https://api.github.com/repos/${OFFSITE.repo}/contents/${encodeURI(filepath)}`;
+  const r = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${OFFSITE.token}`,
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'tracknow-portal-backup',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message: `Prune ${filepath}`, sha, branch: OFFSITE.branch }),
+  });
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error(`GitHub DELETE ${filepath} → ${r.status}: ${txt.slice(0, 200)}`);
+  }
+  return r.json();
+}
+
+// Retention — keep last OFFSITE_KEEP_COUNT snapshots on GitHub. Prevents
+// unbounded growth at 5-min cadence (288 backups/day). Overridable via env.
+const OFFSITE_KEEP_COUNT = Number(process.env.BACKUP_KEEP_OFFSITE_COUNT) || 300;
+
+async function _offsitePruneOldBackups() {
+  if (!OFFSITE.enabled) return;
+  const url = `https://api.github.com/repos/${OFFSITE.repo}/contents/encrypted?ref=${encodeURIComponent(OFFSITE.branch)}`;
+  const r = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${OFFSITE.token}`,
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'tracknow-portal-backup',
+    },
+  });
+  if (r.status === 404) return;
+  if (!r.ok) throw new Error(`GitHub list encrypted/ → ${r.status}`);
+  const entries = (await r.json()).filter(e => e.type === 'file' && e.name.endsWith('.enc'));
+  if (entries.length <= OFFSITE_KEEP_COUNT) return;
+  // Sort newest first (by filename, which starts with the timestamp).
+  entries.sort((a, b) => b.name.localeCompare(a.name));
+  const toDelete = entries.slice(OFFSITE_KEEP_COUNT);
+  console.log(`[offsite-backup] pruning ${toDelete.length} old snapshot(s) beyond keep=${OFFSITE_KEEP_COUNT}`);
+  for (const ent of toDelete) {
+    try {
+      await _offsiteGithubDelete(ent.path, ent.sha);
+    } catch (e) {
+      console.warn(`[offsite-backup] delete ${ent.path} failed:`, e.message);
+    }
+  }
+}
+
 async function runOffsiteBackup(reason) {
   if (!OFFSITE.enabled) return { ok: false, skipped: 'not_configured' };
   if (_offsiteRunning)  return { ok: false, skipped: 'already_running' };
@@ -352,6 +402,9 @@ async function runOffsiteBackup(reason) {
     );
     _offsiteLastRun = now;
     console.log(`[offsite-backup] pushed ${filename} (${envelope.bytes} bytes)`);
+    // Fire-and-forget prune of older snapshots — keeps the GitHub repo
+    // bounded at 5-min cadence. Errors are logged but don't fail the run.
+    _offsitePruneOldBackups().catch(e => console.warn('[offsite-backup] prune failed:', e.message));
     return { ok: true, file: filename, bytes: envelope.bytes, sha256: envelope.sha256 };
   } catch (err) {
     console.error('[offsite-backup] failed:', err.message);
