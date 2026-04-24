@@ -337,8 +337,12 @@ function _seedUsers() {
   const rows = [
     { email: 'james@tracknow.com.au',         pass: process.env.JAMES_PASSWORD || fallback, name: 'James',           role: 'admin',  force2FA: true },
     { email: 'team@tracknow.com.au',          pass: process.env.TEAM_PASSWORD  || fallback, name: 'TrackNow Team',   role: 'admin',  force2FA: false },
-    { email: 'mark@mdsdiversified.com.au',    pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client', force2FA: true },
-    { email: 'mark@tracknow.com.au',          pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client', force2FA: true },
+    // Client users — force2FA=false because 2FA was causing a 'login doesn't
+    // work' loop (clients misread the 2FA enrollment screen as a failed
+    // login). Admins still have force2FA=true so the 2FA gate stays in
+    // place where it matters (user/session write access).
+    { email: 'mark@mdsdiversified.com.au',    pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client', force2FA: false },
+    { email: 'mark@tracknow.com.au',          pass: process.env.MARK_PASSWORD  || fallback, name: 'Mark Speelmeyer', role: 'client', force2FA: false },
   ];
   return rows.map(r => ({
     id: crypto.randomBytes(8).toString('hex'),
@@ -370,11 +374,15 @@ function loadUsers() {
     return;
   }
 
-  // Self-heal: for users that exist on disk from an older schema, raise
-  // the force2FA flag if the current seed requires it. Never downgrade
-  // (so an admin who turned 2FA off for someone doesn't get overridden
-  // by a deploy). Only sets the flag — doesn't touch totpEnabled, so an
-  // already-enrolled user is untouched.
+  // Self-heal: align each existing user with the current seed's force2FA
+  // setting. UPGRADE path: seed says true, disk says false → set true.
+  // DOWNGRADE path (client-role only): seed says false, disk says true
+  // → clear it, plus wipe any stale TOTP state so the user isn't stuck
+  // on an enrollment screen. We DON'T downgrade admins — an admin is
+  // allowed to have 2FA toggled off manually for a specific account
+  // without a deploy overriding them. Clients, on the other hand, should
+  // never have 2FA (the 2FA enrollment screen was being misread as a
+  // 'password is wrong' error, burning support time on every reset).
   let changed = false;
   const seedMap = new Map(_seedUsers().map(s => [s.email.toLowerCase(), s]));
   USERS.forEach(u => {
@@ -384,6 +392,17 @@ function loadUsers() {
       u.force2FA = true;
       changed = true;
       console.log(`[tracknow] Upgraded force2FA=true on ${u.email} (will enrol on next login).`);
+    }
+    // Client-role downgrade — fixes the force2FA-keeps-coming-back loop
+    // that was burning support time every time a client reset password.
+    if (u.role === 'client' && seed.force2FA === false && u.force2FA) {
+      u.force2FA = false;
+      u.totpEnabled = false;
+      delete u.totpSecret;
+      delete u._pendingTotpSecret;
+      delete u.backupCodes;
+      changed = true;
+      console.log(`[tracknow] Cleared force2FA on client ${u.email} (seed no longer requires 2FA for this role).`);
     }
     // Fresh fields on existing rows
     if (typeof u.totpEnabled !== 'boolean') { u.totpEnabled = false; changed = true; }
