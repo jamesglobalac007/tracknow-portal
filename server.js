@@ -883,20 +883,36 @@ app.post('/api/2fa/setup-verify', async (req, res) => {
 app.post('/api/2fa/disable', async (req, res) => {
   const user = req.user;
   if (!user) return res.status(401).json({ ok: false, error: 'not authenticated' });
-  const { currentPass } = req.body || {};
+  // Rate-limit the password check — without this, a stolen session token
+  // could brute-force the account password by bombing this endpoint to
+  // turn off 2FA. Same 10-per-15-min bucket pattern login uses.
+  const ip = clientIp(req);
+  const rl = rateLimit(_rlPair, `${ip}:${user.email}:2fa-disable`, LOGIN_MAX_PAIR);
+  if (!rl.ok) return res.status(429).json({ ok: false, error: `Too many attempts. Try again in ${rl.waitMin} min.` });
+  // Trim whitespace — copy/paste from SMS/email often adds a trailing
+  // newline and bcrypt.compare silently fails as 'incorrect password'.
+  const currentPass = String((req.body || {}).currentPass || '').trim();
   if (!currentPass) return res.status(400).json({ ok: false, error: 'Current password required' });
   const ok = await bcrypt.compare(currentPass, user.passHash);
-  if (!ok) return res.status(401).json({ ok: false, error: 'Current password is incorrect' });
+  if (!ok) { rl.bump(); return res.status(401).json({ ok: false, error: 'Current password is incorrect' }); }
   delete user.totpSecret;
   delete user._pendingTotpSecret;
   delete user.backupCodes;
   user.totpEnabled = false;
   saveUsers();
-  pushAudit({ email: user.email, ip: clientIp(req), success: true, reason: '2fa_disabled' });
+  // Turning 2FA off invalidates every trusted-device marker for this user
+  // (those markers exist to SKIP 2FA, which is now moot — and keeping them
+  // would let a future re-enrolment silently bypass 2FA on old browsers).
+  revokeTrustForEmail(user.email);
+  pushAudit({ email: user.email, ip, success: true, reason: '2fa_disabled' });
   res.json({ ok: true });
 });
 
 // Admin reset — clears 2FA on a target account so they can re-enrol.
+// ALSO revokes every trusted-device marker for the target. Common use case
+// is 'user lost their phone' — without revoking trust, whoever's holding
+// that stolen phone still has a valid tn_trust cookie that skips 2FA on
+// next login, defeating the point of the reset.
 app.post('/api/admin/reset-2fa', requireAdmin, (req, res) => {
   const { email } = req.body || {};
   const target = USERS.find(u => u.email.toLowerCase() === String(email||'').toLowerCase());
@@ -906,8 +922,9 @@ app.post('/api/admin/reset-2fa', requireAdmin, (req, res) => {
   delete target.backupCodes;
   target.totpEnabled = false;
   saveUsers();
-  pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: '2fa_reset_by_admin:' + req.user.email });
-  res.json({ ok: true });
+  const revokedTrust = revokeTrustForEmail(target.email);
+  pushAudit({ email: target.email, ip: clientIp(req), success: true, reason: '2fa_reset_by_admin:' + req.user.email + (revokedTrust ? ` (revoked ${revokedTrust} trusted device${revokedTrust===1?'':'s'})` : '') });
+  res.json({ ok: true, revokedTrustedDevices: revokedTrust });
 });
 
 // ─── Password reset links — James-generated, consumed by the user ──────────
