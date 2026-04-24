@@ -162,50 +162,10 @@ function _offsiteCollectPayload() {
       console.warn('[offsite-backup] could not read', s.path, e.message);
     }
   }
-
-  // Content-library file bytes (HTML social packs, images, videos). These
-  // live on disk as separate files with just a filename reference in
-  // data.json, so without this the metadata is backed up but the actual
-  // bytes aren't. Included as base64-encoded entries under `blobs` so a
-  // full restore brings back the file content, not just the record.
-  const blobs = {};
-  let blobCount = 0, blobBytes = 0;
-  try {
-    if (fs.existsSync(CONTENT_DIR)) {
-      const entries = fs.readdirSync(CONTENT_DIR).filter(n => !n.startsWith('.'));
-      for (const name of entries) {
-        try {
-          const full = path.join(CONTENT_DIR, name);
-          const stat = fs.statSync(full);
-          if (!stat.isFile()) continue;
-          // Safety cap — skip any single file >20 MB to stop a rogue
-          // upload blowing the GitHub API 100 MB request limit. The
-          // file's metadata still backs up via data.json; just the bytes
-          // are skipped, with a warning logged.
-          if (stat.size > 20 * 1024 * 1024) {
-            console.warn(`[offsite-backup] skipped oversize blob: content-library/${name} (${stat.size} bytes)`);
-            continue;
-          }
-          const buf = fs.readFileSync(full);
-          blobs[`content-library/${name}`] = buf.toString('base64');
-          blobCount++;
-          blobBytes += stat.size;
-        } catch (e) {
-          console.warn('[offsite-backup] could not read blob', name, e.message);
-        }
-      }
-    }
-  } catch (e) { console.warn('[offsite-backup] blob scan failed:', e.message); }
-
-  if (blobCount > 0) {
-    console.log(`[offsite-backup] packing ${blobCount} blob(s) / ${(blobBytes/1024/1024).toFixed(1)} MB from content-library/`);
-  }
-
   return {
     portal: 'tracknow-portal',
     createdAt: new Date().toISOString(),
     files,
-    blobs,
   };
 }
 
@@ -246,60 +206,6 @@ async function _offsiteGithubGet(filepath) {
   if (r.status === 404) return null;
   if (!r.ok) throw new Error(`GitHub GET ${filepath} → ${r.status}`);
   return r.json();
-}
-
-async function _offsiteGithubDelete(filepath, sha) {
-  const url = `https://api.github.com/repos/${OFFSITE.repo}/contents/${encodeURI(filepath)}`;
-  const r = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${OFFSITE.token}`,
-      'Accept': 'application/vnd.github+json',
-      'User-Agent': 'tracknow-portal-backup',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ message: `Prune ${filepath}`, sha, branch: OFFSITE.branch }),
-  });
-  if (!r.ok) {
-    const txt = await r.text().catch(() => '');
-    throw new Error(`GitHub DELETE ${filepath} → ${r.status}: ${txt.slice(0, 200)}`);
-  }
-  return r.json();
-}
-
-// Retention policy — how many snapshots to keep on GitHub. At the 2-hour
-// backup interval, 50 covers ~4 days of history. Now that blobs (uploaded
-// files) are included in each snapshot, capacity matters: without pruning
-// the repo would grow ~ sum(all-files-ever) × snapshots-per-day.
-// Overridable via env var for clients who want longer history + bigger repo.
-const OFFSITE_KEEP_COUNT = Number(process.env.BACKUP_KEEP_OFFSITE_COUNT) || 50;
-
-async function _offsitePruneOldBackups() {
-  if (!OFFSITE.enabled) return;
-  // List everything in encrypted/
-  const url = `https://api.github.com/repos/${OFFSITE.repo}/contents/encrypted?ref=${encodeURIComponent(OFFSITE.branch)}`;
-  const r = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${OFFSITE.token}`,
-      'Accept': 'application/vnd.github+json',
-      'User-Agent': 'tracknow-portal-backup',
-    },
-  });
-  if (r.status === 404) return; // empty folder
-  if (!r.ok) throw new Error(`GitHub list encrypted/ → ${r.status}`);
-  const entries = (await r.json()).filter(e => e.type === 'file' && e.name.endsWith('.enc'));
-  if (entries.length <= OFFSITE_KEEP_COUNT) return;
-  // Snapshot names are ISO-ish timestamps, so lexicographic sort == chronological.
-  entries.sort((a, b) => b.name.localeCompare(a.name));
-  const toDelete = entries.slice(OFFSITE_KEEP_COUNT);
-  console.log(`[offsite-backup] pruning ${toDelete.length} old snapshot(s) beyond keep=${OFFSITE_KEEP_COUNT}`);
-  for (const ent of toDelete) {
-    try {
-      await _offsiteGithubDelete(ent.path, ent.sha);
-    } catch (e) {
-      console.warn(`[offsite-backup] delete ${ent.path} failed:`, e.message);
-    }
-  }
 }
 
 async function runOffsiteBackup(reason) {
@@ -353,12 +259,6 @@ async function runOffsiteBackup(reason) {
     );
     _offsiteLastRun = now;
     console.log(`[offsite-backup] pushed ${filename} (${envelope.bytes} bytes)`);
-    // Prune old snapshots from the GitHub repo to keep storage bounded.
-    // Without this the repo grows forever — especially now that blobs are
-    // included. Keep last OFFSITE_KEEP_COUNT snapshots, delete the rest.
-    // Runs after a successful push so a failed prune never breaks the
-    // backup itself.
-    _offsitePruneOldBackups().catch(e => console.warn('[offsite-backup] prune failed:', e.message));
     return { ok: true, file: filename, bytes: envelope.bytes, sha256: envelope.sha256 };
   } catch (err) {
     console.error('[offsite-backup] failed:', err.message);
