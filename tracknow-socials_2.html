@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TrackNow — Social Graphics Pack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A2540;
+    --navy-2: #0F3259;
+    --navy-deep: #061729;
+    --orange: #F26B21;
+    --orange-bright: #FF7A2E;
+    --cream: #FAF6F0;
+    --ink: #1A1A1A;
+    --grey: #6B7280;
+    --display: 'Barlow Condensed', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--body);
+    background: #EEE9E0;
+    color: var(--ink);
+    padding: 40px 20px 80px;
+  }
+
+  /* ========== PAGE HEADER ========== */
+  .page-header {
+    max-width: 1200px;
+    margin: 0 auto 50px;
+    text-align: center;
+  }
+  .page-header img { height: 56px; margin-bottom: 24px; }
+  .logo-source {
+    display: inline-block;
+    margin-top: -12px;
+    margin-bottom: 20px;
+    font-size: 11px;
+    color: var(--grey);
+    letter-spacing: 0.05em;
+    font-family: var(--body);
+  }
+  .logo-source code {
+    background: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--grey);
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    color: var(--navy);
+  }
+  .page-header h1 {
+    font-family: var(--display);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    color: var(--navy);
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .page-header h1 span { color: var(--orange); }
+  .page-header p {
+    font-size: 16px;
+    color: var(--grey);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .instructions {
+    max-width: 640px;
+    margin: 24px auto 0;
+    padding: 14px 20px;
+    background: white;
+    border-left: 4px solid var(--orange);
+    font-size: 14px;
+    color: var(--navy);
+    text-align: left;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .instructions strong {
+    font-family: var(--display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--orange);
+  }
+
+  /* ========== GRAPHICS GRID ========== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .card-wrap {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 28px rgba(10, 37, 64, 0.12);
+  }
+  .card-label {
+    padding: 14px 20px;
+    background: var(--navy);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .card-label span:first-child {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .card-label span.pillar-tag {
+    color: var(--orange-bright);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border: 1px solid rgba(242, 107, 33, 0.4);
+    background: rgba(242, 107, 33, 0.08);
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ========== GRAPHIC (1:1 square) ========== */
+  .graphic {
+    aspect-ratio: 1/1;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    background: var(--navy);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 7%;
+  }
+
+  .g-bg-pattern {
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .g-glow {
+    position: absolute;
+    width: 70%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(242, 107, 33, 0.35) 0%, transparent 70%);
+    filter: blur(40px);
+    top: -20%;
+    right: -20%;
+    pointer-events: none;
+  }
+
+  .g-top, .g-bottom {
+    position: relative;
+    z-index: 2;
+  }
+  .g-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .g-logo img { 
+    height: 40px; 
+    width: auto; 
+    display: block; 
+    filter: brightness(0) invert(1);
+  }
+  .g-pillar-num {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: clamp(32px, 5.5vw, 52px);
+    line-height: 1;
+    color: var(--orange);
+    opacity: 0.9;
+  }
+  .g-pillar-num::before { content: '/ '; opacity: 0.5; }
+
+  .g-middle {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5% 0;
+  }
+  .g-label {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(12px, 1.6vw, 16px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange-bright);
+    margin-bottom: 16px;
+  }
+  .g-hook {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(36px, 6.2vw, 64px);
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .g-hook em { font-style: normal; color: var(--orange); }
+  .g-hook .underline {
+    position: relative;
+    display: inline-block;
+  }
+  .g-hook .underline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 4px;
+    width: 100%;
+    height: 8%;
+    background: var(--orange);
+    opacity: 0.8;
+    z-index: -1;
+  }
+  .g-sub {
+    font-family: var(--body);
+    font-size: clamp(13px, 1.55vw, 17px);
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+    max-width: 92%;
+  }
+  .g-big {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: clamp(72px, 11vw, 120px);
+    line-height: 0.9;
+    color: var(--orange);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .g-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .g-cta {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(13px, 1.6vw, 17px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--orange);
+    color: white;
+    padding: 14px 22px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .g-contact {
+    font-family: var(--body);
+    font-size: clamp(11px, 1.2vw, 13px);
+    color: rgba(255,255,255,0.6);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .g-contact strong {
+    display: block;
+    color: white;
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    font-size: clamp(12px, 1.35vw, 15px);
+  }
+
+  /* ========== CAPTION BLOCK ========== */
+  .caption {
+    padding: 20px;
+    background: white;
+  }
+  .caption-label {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--grey);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .caption-text {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+    padding: 12px;
+    background: #F8F8F4;
+    border-radius: 4px;
+    border-left: 3px solid var(--orange);
+  }
+  .copy-btn {
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+  .copy-btn:hover { background: var(--orange); }
+  .copy-btn.copied { background: #10B981; }
+
+  /* ========== TOAST ========== */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--navy);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 4px;
+    font-family: var(--display);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    transition: transform 0.3s;
+    z-index: 100;
+    border-left: 4px solid var(--orange);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ========== GRAPHIC VARIANTS ========== */
+  .v-stat .g-middle { justify-content: center; }
+  .v-stat .g-label { margin-bottom: 12px; }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .page-header, .instructions, .card-label, .caption, .toast { display: none !important; }
+    .card-wrap { box-shadow: none; page-break-inside: avoid; margin-bottom: 20px; }
+    .grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+  }
+
+  @media (max-width: 500px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow">
+  <div class="logo-source">Logo pulled live from <code>tracknow.com.au/tracknow-logo.avif</code></div>
+  <h1>Social One-Pagers — <span>6 Ready Posts</span></h1>
+  <p>One square graphic per pillar. Same image works for LinkedIn, Facebook & Instagram. Caption included below each.</p>
+  <div class="instructions">
+    <strong>How to post</strong>
+    Right-click any graphic → "Save image as" (or screenshot it square). Click "Copy caption" to grab the text. Post as image + caption on LinkedIn, Facebook and Instagram.
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- ============ 1. OPERATIONAL EFFICIENCY ============ -->
+  <div class="card-wrap">
+    <div class="card-label">
+      <span>01 · Operational Efficiency</span>
+      <span class="pillar-tag">1080 × 1080</span>
+    </div>
+    <div class="graphic" id="g1">
+      <div class="g-bg-pattern"></div>
+      <div class="g-glow"></div>
+      <div class="g-top">
+        <div class="g-logo"><img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow"></div>
+        <div class="g-pillar-num">01</div>
+      </div>
+      <div class="g-middle">
+        <div class="g-label">— Operational Efficiency</div>
+        <div class="g-hook">Stop guessing. <br><span class="underline">Start</span> <em>knowing.</em></div>
+        <div class="g-sub">Real-time GPS means every vehicle, every job, every ETA — on one live screen. Cut dispatch time by 30–40% in your first month.</div>
+      </div>
+      <div class="g-bottom">
+        <div class="g-cta">Book a demo →</div>
+        <div class="g-contact">
+          <strong>tracknow.com.au</strong>
+          1300 TRACK NOW
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="caption-label">
+        <span>Caption · LinkedIn · Facebook · Instagram</span>
+        <button class="copy-btn" data-target="c1">Copy</button>
+      </div>
+      <div class="caption-text" id="c1">Your dispatcher shouldn't need a crystal ball.
+
+If scheduling the next job means ringing three drivers to figure out who's closest, you're losing money before the quote even goes out.
+
+Real-time GPS tracking means you see your whole fleet on one screen — where every vehicle is, what it's doing, when it'll be free. No guessing. No 4pm scramble.
+
+Our clients typically cut dispatch time 30–40% in the first month.
+
+Book a free 15-minute demo → tracknow.com.au
+
+#FleetManagement #Logistics #AustralianBusiness #GPSTracking #FleetEfficiency</div>
+    </div>
+  </div>
+
+  <!-- ============ 2. COST SAVINGS ============ -->
+  <div class="card-wrap">
+    <div class="card-label">
+      <span>02 · Cost Savings</span>
+      <span class="pillar-tag">1080 × 1080</span>
+    </div>
+    <div class="graphic v-stat" id="g2">
+      <div class="g-bg-pattern"></div>
+      <div class="g-glow"></div>
+      <div class="g-top">
+        <div class="g-logo"><img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow"></div>
+        <div class="g-pillar-num">02</div>
+      </div>
+      <div class="g-middle">
+        <div class="g-label">— Hidden Cost / Vehicle / Year</div>
+        <div class="g-big">$7,700</div>
+        <div class="g-hook" style="font-size: clamp(22px, 3.2vw, 34px); margin-bottom: 14px;">That's what your fleet's <em>quietly</em> costing you.</div>
+        <div class="g-sub">Fuel slippage. Idling. Wasted km. Unnecessary maintenance. TrackNow pays itself back in under 90 days.</div>
+      </div>
+      <div class="g-bottom">
+        <div class="g-cta">Run the numbers →</div>
+        <div class="g-contact">
+          <strong>tracknow.com.au</strong>
+          1300 TRACK NOW
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="caption-label">
+        <span>Caption · LinkedIn · Facebook · Instagram</span>
+        <button class="copy-btn" data-target="c2">Copy</button>
+      </div>
+      <div class="caption-text" id="c2">The average vehicle in an unmanaged fleet costs ~$7,700/year more than it should.
+
+Fuel slippage. Wasted km. Unnecessary maintenance. Unaccounted hours. None of it shows up on a single invoice — which is why most owners miss it until year-end.
+
+A decent tracking system pays for itself within 90 days. The rest is margin.
+
+Run the numbers on your fleet with our free ROI calculator → tracknow.com.au
+
+#FleetCosts #FuelSavings #SmallBusinessAU #Profitability #FleetManagement</div>
+    </div>
+  </div>
+
+  <!-- ============ 3. PRODUCTIVITY & ACCOUNTABILITY ============ -->
+  <div class="card-wrap">
+    <div class="card-label">
+      <span>03 · Productivity & Accountability</span>
+      <span class="pillar-tag">1080 × 1080</span>
+    </div>
+    <div class="graphic" id="g3">
+      <div class="g-bg-pattern"></div>
+      <div class="g-glow"></div>
+      <div class="g-top">
+        <div class="g-logo"><img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow"></div>
+        <div class="g-pillar-num">03</div>
+      </div>
+      <div class="g-middle">
+        <div class="g-label">— Productivity & Accountability</div>
+        <div class="g-hook">Not about <em>trust.</em><br>About not having to <span class="underline">check.</span></div>
+        <div class="g-sub">Good operators don't want to micromanage — and they don't want to wonder either. TrackNow gives managers visibility and drivers the backup they deserve.</div>
+      </div>
+      <div class="g-bottom">
+        <div class="g-cta">See how it works →</div>
+        <div class="g-contact">
+          <strong>tracknow.com.au</strong>
+          1300 TRACK NOW
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="caption-label">
+        <span>Caption · LinkedIn · Facebook · Instagram</span>
+        <button class="copy-btn" data-target="c3">Copy</button>
+      </div>
+      <div class="caption-text" id="c3">GPS tracking isn't about not trusting your team. It's about not having to check.
+
+Good operators don't want to micromanage. They also don't want to wonder. Tracking gives managers the visibility to stop asking — and gives drivers the backup they need when a customer claims they weren't on site.
+
+Done well, tracking builds trust. Both ways.
+
+See how we roll it out without friction → tracknow.com.au
+
+#FleetManagement #Leadership #DriverSafety #TrustAndAccountability #AustralianBusiness</div>
+    </div>
+  </div>
+
+  <!-- ============ 4. SECURITY & PROTECTION ============ -->
+  <div class="card-wrap">
+    <div class="card-label">
+      <span>04 · Security & Protection</span>
+      <span class="pillar-tag">1080 × 1080</span>
+    </div>
+    <div class="graphic v-stat" id="g4">
+      <div class="g-bg-pattern"></div>
+      <div class="g-glow"></div>
+      <div class="g-top">
+        <div class="g-logo"><img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow"></div>
+        <div class="g-pillar-num">04</div>
+      </div>
+      <div class="g-middle">
+        <div class="g-label">— A Stolen Work Ute Every</div>
+        <div class="g-big">12 min</div>
+        <div class="g-hook" style="font-size: clamp(22px, 3.2vw, 34px); margin-bottom: 14px;">The ones recovered all have <em>one thing</em> in common.</div>
+        <div class="g-sub">Live GPS. Geofence alerts. Instant police handover. One saved vehicle pays for years of TrackNow.</div>
+      </div>
+      <div class="g-bottom">
+        <div class="g-cta">Protect your assets →</div>
+        <div class="g-contact">
+          <strong>tracknow.com.au</strong>
+          1300 TRACK NOW
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="caption-label">
+        <span>Caption · LinkedIn · Facebook · Instagram</span>
+        <button class="copy-btn" data-target="c4">Copy</button>
+      </div>
+      <div class="caption-text" id="c4">A work ute is stolen in Australia every 12 minutes. Most are never recovered.
+
+The ones that are? Almost always have GPS tracking.
+
+TrackNow gives you live location, geofence alerts, and instant police handover. Your yard, your plant, your valuable equipment — all monitored while you sleep.
+
+One recovered vehicle pays for years of tracking.
+
+Protect your assets → tracknow.com.au
+
+#AssetProtection #FleetSecurity #VehicleTheft #AustralianBusiness #PeaceOfMind</div>
+    </div>
+  </div>
+
+  <!-- ============ 5. BUSINESS INTELLIGENCE ============ -->
+  <div class="card-wrap">
+    <div class="card-label">
+      <span>05 · Business Intelligence</span>
+      <span class="pillar-tag">1080 × 1080</span>
+    </div>
+    <div class="graphic" id="g5">
+      <div class="g-bg-pattern"></div>
+      <div class="g-glow"></div>
+      <div class="g-top">
+        <div class="g-logo"><img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow"></div>
+        <div class="g-pillar-num">05</div>
+      </div>
+      <div class="g-middle">
+        <div class="g-label">— Business Intelligence</div>
+        <div class="g-hook">Stop quoting on <em>instinct.</em><br><span class="underline">Start quoting</span> on data.</div>
+        <div class="g-sub">Real job durations. True running costs. Know which routes are slower than they should be — and which jobs are quietly bleeding you dry.</div>
+      </div>
+      <div class="g-bottom">
+        <div class="g-cta">See your data live →</div>
+        <div class="g-contact">
+          <strong>tracknow.com.au</strong>
+          1300 TRACK NOW
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="caption-label">
+        <span>Caption · LinkedIn · Facebook · Instagram</span>
+        <button class="copy-btn" data-target="c5">Copy</button>
+      </div>
+      <div class="caption-text" id="c5">Most fleet owners quote on instinct.
+
+The ones winning contracts are quoting on data.
+
+TrackNow shows you the real average time for every job type, down to the minute. No more undercooked quotes. No more mystery overruns. No more "we've always done it this way" costing you margin.
+
+You can't improve what you don't measure.
+
+See your fleet's data in action → tracknow.com.au
+
+#FleetData #BusinessIntelligence #Quoting #SmallBusinessAU #DataDriven</div>
+    </div>
+  </div>
+
+  <!-- ============ 6. CUSTOMER SERVICE & GROWTH ============ -->
+  <div class="card-wrap">
+    <div class="card-label">
+      <span>06 · Customer Service & Growth</span>
+      <span class="pillar-tag">1080 × 1080</span>
+    </div>
+    <div class="graphic" id="g6">
+      <div class="g-bg-pattern"></div>
+      <div class="g-glow"></div>
+      <div class="g-top">
+        <div class="g-logo"><img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow"></div>
+        <div class="g-pillar-num">06</div>
+      </div>
+      <div class="g-middle">
+        <div class="g-label">— Customer Service & Growth</div>
+        <div class="g-hook">"He's <em>12 min</em> away"<br><span class="underline">beats</span> "sometime today."</div>
+        <div class="g-sub">Live ETAs. Automatic updates. Proof of arrival. Turn one-off jobs into repeat contracts — because communication is what customers actually remember.</div>
+      </div>
+      <div class="g-bottom">
+        <div class="g-cta">Win more work →</div>
+        <div class="g-contact">
+          <strong>tracknow.com.au</strong>
+          1300 TRACK NOW
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="caption-label">
+        <span>Caption · LinkedIn · Facebook · Instagram</span>
+        <button class="copy-btn" data-target="c6">Copy</button>
+      </div>
+      <div class="caption-text" id="c6">The fleets winning new contracts aren't the cheapest. They're the ones giving customers real-time ETAs.
+
+"He's 12 minutes away" beats "sometime this afternoon" every single time.
+
+TrackNow gives customers live visibility, builds trust, and turns one-off jobs into repeat clients. Your best salesperson is your ETA — accurate, reliable, automatically sent. Every time.
+
+Win more work → tracknow.com.au
+
+#CustomerExperience #FleetGrowth #ServiceBusiness #AustralianBusiness #FleetTracking</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Caption copied ✓</div>
+
+<script>
+  // Copy caption
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const targetId = btn.dataset.target;
+      const text = document.getElementById(targetId).innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+          toast.classList.remove('show');
+        }, 1800);
+      } catch (e) {
+        alert('Could not copy — please select and copy manually.');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

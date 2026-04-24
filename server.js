@@ -108,8 +108,8 @@ const OFFSITE = {
   token: process.env.BACKUP_GITHUB_TOKEN || '',
   repo: process.env.BACKUP_GITHUB_REPO || 'jamesglobalac007/tracknow-portal-backups',
   branch: process.env.BACKUP_GITHUB_BRANCH || 'main',
-  intervalMs: 2 * 60 * 60 * 1000,  // 2 hours
-  minGapMs:   30 * 60 * 1000,       // never push more than once per 30 min
+  intervalMs: 5 * 60 * 1000,        // 5 minutes (was 2h — tightened 24 Apr in line with sb-empire)
+  minGapMs:   2 * 60 * 1000,        // allow scheduled runs as often as every 2 minutes if needed
 };
 let _offsiteLastRun = 0;
 let _offsiteRunning = false;
@@ -272,7 +272,7 @@ async function _offsiteGithubDelete(filepath, sha) {
 // files) are included in each snapshot, capacity matters: without pruning
 // the repo would grow ~ sum(all-files-ever) × snapshots-per-day.
 // Overridable via env var for clients who want longer history + bigger repo.
-const OFFSITE_KEEP_COUNT = Number(process.env.BACKUP_KEEP_OFFSITE_COUNT) || 50;
+const OFFSITE_KEEP_COUNT = Number(process.env.BACKUP_KEEP_OFFSITE_COUNT) || 300;
 
 async function _offsitePruneOldBackups() {
   if (!OFFSITE.enabled) return;
