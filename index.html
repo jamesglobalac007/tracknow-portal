@@ -2745,7 +2745,14 @@ function _syncPush() {
       customers: CUSTOMERS,
       // Only push contentLibrary once we've hydrated from the server.
       // Protects against fresh-session empty-push wiping the server's data.
-      contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined' && _contentLibraryHydrated) ? CONTENT_LIBRARY : undefined
+      contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined' && _contentLibraryHydrated) ? CONTENT_LIBRARY : undefined,
+      // INTENTIONAL-EMPTY: tell the server's anti-wipe guard that a save
+      // arriving after we've fully hydrated from the server is genuinely
+      // a user action — including any "I deleted the last item" empties.
+      // Pre-hydration this flag is omitted so the wipe-protection is
+      // still active during the fresh-session danger window.
+      // (Pairs with the _allowEmpty handling in server.js _applySyncField.)
+      _allowEmpty: _syncInitDone ? ['leads','prospects','customers','contentLibrary'] : undefined
     })
   })
   .then(function(r) { return r.json(); })

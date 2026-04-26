@@ -1686,15 +1686,27 @@ app.post('/api/data', (req, res) => {
     // browser session, empty localStorage, initial sync push wipes
     // everything" bug that was already fixed for contentLibrary — now
     // extended to leads/prospects/customers so the same bug class can't
-    // surface elsewhere. Real deletes still work: the client sends an
-    // array with ≥1 fewer entries, never an empty one, unless the user
-    // has actually emptied a collection (in which case the guard refuses
-    // and the next pull re-hydrates them — 'graceful no-op' beats
-    // 'silent data loss').
+    // surface elsewhere.
+    //
+    // INTENTIONAL-EMPTY ESCAPE HATCH (27 Apr 2026): the client can opt
+    // out of anti-wipe per-field by including `_allowEmpty: ['customers']`
+    // in the request body. The client only sets this flag AFTER it has
+    // successfully hydrated from the server (_syncInitDone === true), so
+    // an "I just emptied this collection" save is genuinely intentional
+    // and the user's delete persists. The fresh-session initial-push
+    // attack is still blocked because pre-hydration the client never
+    // sets the flag. Without this fix the user's "delete the last
+    // customer" action got silently reverted on next page load.
+    const allowEmptySet = new Set(Array.isArray(incoming._allowEmpty) ? incoming._allowEmpty : []);
     const _applySyncField = (key, incomingVal) => {
       if (!Array.isArray(incomingVal)) return;
       const existing = STORE[key] || [];
       if (incomingVal.length === 0 && existing.length > 0) {
+        if (allowEmptySet.has(key)) {
+          console.log(`[tracknow] anti-wipe bypassed by _allowEmpty flag for ${key} (was ${existing.length}, now 0) — user=${req.user && req.user.email}`);
+          STORE[key] = incomingVal;
+          return;
+        }
         console.warn(`[tracknow] anti-wipe: refused to overwrite ${key} (had ${existing.length}) with empty array — user=${req.user && req.user.email}`);
         return;
       }
