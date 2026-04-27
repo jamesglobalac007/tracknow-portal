@@ -11437,7 +11437,7 @@ function sendEmailFromPortal() {
       '<p style="font-size:10px;color:#999;margin:10px 0 0">tracknow.com.au/demo</p>' +
       '</div>';
     // Pricing & Packages CTA with Request Callback
-    var _cbUrl = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=fleet_report' +
+    var _cbUrl = 'https://tracknow-portal.onrender.com/?callback=1&source=fleet_report' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11453,7 +11453,7 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'proposal') {
-    var _paUrl = 'https://tracknow-portal-sync.onrender.com/?proposal_accept=1' +
+    var _paUrl = 'https://tracknow-portal.onrender.com/?proposal_accept=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11471,17 +11471,26 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'agreement') {
-    // Store agreement HTML on SERVER so signing page can display it from any device
-    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0');
+    // Store agreement HTML on SERVER so signing page can display it from any device.
+    // Key MUST be at least 16 chars — the server's POST /api/agreement rejects
+    // shorter keys with "Key too short." (silently swallowed by the .catch
+    // below, which is why this used to look like it was working).
+    // We append a base36 timestamp + 6 random chars so the key is ~25 chars,
+    // unique per send (so resending creates a new immutable record), and only
+    // contains URL-safe characters [a-z0-9-]. The SAME _agrKey is then reused
+    // in the email's signing URL so the customer's link matches what's stored.
+    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0') +
+                  '-' + Date.now().toString(36) +
+                  Math.random().toString(36).slice(2, 8);
     try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
     try { fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) }).catch(function(){}); } catch(x2) {}
-    var _agrSignUrl = 'https://tracknow-portal-sync.onrender.com/?agreement_sign=1' +
+    var _agrSignUrl = 'https://tracknow-portal.onrender.com/?agreement_sign=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '') +
-      '&agreement=' + encodeURIComponent('TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0'));
-    var _cbUrlA = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=agreement' +
+      '&agreement=' + encodeURIComponent(_agrKey);
+    var _cbUrlA = 'https://tracknow-portal.onrender.com/?callback=1&source=agreement' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
