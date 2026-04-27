@@ -2197,8 +2197,15 @@ app.get('/api/disclaimer-signoffs', requireAdmin, (req, res) => {
 //                    smtp.gmail.com (Google Workspace)
 //   SMTP_PORT    465 for SSL, 587 for STARTTLS (default 587)
 //   SMTP_SECURE  "true" for 465, "false" for 587 (default: auto based on port)
-//   SMTP_USER    sales@tracknow.com.au (also the From: address)
+//   SMTP_USER    sales@tracknow.com.au (also the From: address and the
+//                  internal sales-notification recipient — the allowlist /
+//                  /api/send-email recipient filter keys off this value)
 //   SMTP_PASS    mailbox password or SMTP app password
+//   SMTP_AUTH_USER  optional — SMTP login when it differs from SMTP_USER.
+//                  Brevo gives e.g. a95f08001@smtp-brevo.com as the SMTP
+//                  login while the From: stays sales@tracknow.com.au; set
+//                  SMTP_AUTH_USER to the Brevo login and keep SMTP_USER as
+//                  the human address. Falls back to SMTP_USER if unset.
 //   SMTP_FROM    optional override, e.g. "TrackNow Sales <sales@tracknow.com.au>"
 //   EMAIL_DAILY_QUOTA  default 200 (override per-deploy)
 //   EMAIL_EXTRA_RECIPIENTS  comma-sep allowlisted addresses beyond leads/prospects/customers
@@ -2210,13 +2217,17 @@ function getMailer() {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   if (!host || !user || !pass) return null;
+  // Auth login can differ from SMTP_USER (Brevo: auth is xxx@smtp-brevo.com,
+  // From stays sales@tracknow.com.au). Falls back to SMTP_USER for the
+  // GoDaddy/Office365 case where they're the same address.
+  const authUser = process.env.SMTP_AUTH_USER || user;
   const port = Number(process.env.SMTP_PORT) || 587;
   const secure = (process.env.SMTP_SECURE != null)
     ? String(process.env.SMTP_SECURE) === 'true'
     : (port === 465);
   try {
-    _mailer = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
-    console.log(`[tracknow] SMTP ready (${host}:${port} ${secure?'SSL':'STARTTLS'} as ${user})`);
+    _mailer = nodemailer.createTransport({ host, port, secure, auth: { user: authUser, pass } });
+    console.log(`[tracknow] SMTP ready (${host}:${port} ${secure?'SSL':'STARTTLS'} auth=${authUser} from=${user})`);
   } catch (e) {
     console.error('[tracknow] nodemailer init failed:', e.message);
   }
