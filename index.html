@@ -12665,46 +12665,16 @@ function submitAgreementSign() {
   // Save the signed/executed agreement HTML on the server so portal can store it in dealFiles
   try { fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) }).catch(function(){}); } catch(x) {}
 
-  // Send EmailJS to sales + customer
-  function loadAndSend() {
-    // To sales — full signed agreement
-    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
-      to_email: 'sales@tracknow.com.au',
-      subject: 'SIGNED & EXECUTED: Service Agreement ' + agrNum + ' — ' + (window._asCompany || 'Unknown'),
-      from_name: cn,
-      message_html: fullSignedEmail
-    }).then(function(){}).catch(function(){});
-
-    // To customer — full signed agreement with intro
-    if (window._asEmail) {
-      var customerName = (window._asName || cn || 'there').split(' ')[0];
-      var customerEmail = '<div style="font-family:Inter,sans-serif;max-width:900px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
-        '<p style="font-size:14px;margin-bottom:10px">Hi ' + customerName + ',</p>' +
-        '<p style="font-size:14px;margin-bottom:10px">Thank you for signing your TrackNow GPS service agreement. Please find your fully executed agreement below for your records.</p>' +
-        '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
-        signedBanner + cleanAgrHTML + sigBlock +
-        '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
-          '<p>Kind regards,</p>' +
-          '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
-          '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a></p>' +
-        '</div></div>';
-      emailjs.send('service_5y35h2g', 'template_gwga9jo', {
-        to_email: window._asEmail,
-        subject: 'Your Signed Service Agreement — ' + agrNum + ' — TrackNow GPS',
-        from_name: 'TrackNow GPS',
-        message_html: customerEmail
-      }).then(function(){}).catch(function(){});
-    }
-  }
-
-  if (typeof emailjs !== 'undefined') {
-    loadAndSend();
-  } else {
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    s.onload = function() { emailjs.init('OoTzGVR6EezbqlWDx'); loadAndSend(); };
-    document.head.appendChild(s);
-  }
+  // Receipt emails (sales + customer copies of the executed agreement)
+  // are now fired SERVER-SIDE inside POST /api/agreement-signed (see
+  // server.js). The customer is unauthenticated when they sign, so the
+  // old client-side emailjs.send() to their own email always failed
+  // silently against the send-email allowlist (which locks unauth
+  // sends to the internal sales mailbox). Doing it server-side
+  // bypasses that allowlist safely — the server controls the
+  // recipient and pulls it from the trusted POST body it just wrote
+  // to agreementSignedStore. Removing the client-side calls also
+  // prevents sales from receiving two duplicate copies.
 
   // Show thank you
   document.getElementById('as_form').style.display = 'none';

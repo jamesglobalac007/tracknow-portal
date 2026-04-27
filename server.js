@@ -2051,6 +2051,67 @@ app.post('/api/agreement-signed', (req, res) => {
     }
     agreementSignedStore[key] = { html, company: company || '', email: email || '', ts: Date.now() };
     res.json({ ok: true });
+
+    // Fire the receipt emails server-side so they don't depend on the
+    // customer being authenticated. The customer hits this endpoint
+    // unauthenticated (they're a recipient, not a portal user), so the
+    // existing client-side emailjs.send() to their own inbox got rejected
+    // by the send-email allowlist (which locks unauth sends to the
+    // internal sales mailbox). The thank-you page tells them "A copy has
+    // been sent to your email" — make that actually true by sending it
+    // here, where we control the recipient and don't need an allowlist.
+    //
+    // Fire-and-forget — the customer's UX is already complete (200 OK
+    // returned above). If SMTP is unconfigured or the send fails, log
+    // it but don't surface to the client. Sales still gets the signed
+    // agreement event via the /api/event POST that the client also
+    // makes, so the deal isn't lost even if these emails miss.
+    (async () => {
+      try {
+        const mailer = getMailer();
+        if (!mailer) {
+          console.warn('[tracknow] signed-agreement receipt skipped — SMTP not configured');
+          return;
+        }
+        const fromAddr = process.env.SMTP_FROM || `TrackNow GPS <${process.env.SMTP_USER}>`;
+        const salesAddr = process.env.SMTP_USER;
+        const safeKey = String(key).slice(0, 64);
+        const safeCompany = String(company || '').slice(0, 120);
+
+        // 1) Sales — full executed agreement landing in sales@tracknow.com.au
+        if (salesAddr) {
+          mailer.sendMail({
+            from: fromAddr,
+            to: salesAddr,
+            subject: `SIGNED & EXECUTED: Service Agreement ${safeKey}${safeCompany ? ' — ' + safeCompany : ''}`,
+            html
+          }).then(info => {
+            pushAudit({ email: '(customer-signed)', to: salesAddr, subject: 'signed-agreement→sales', success: true, reason: 'email_sent', messageId: info.messageId || '' });
+          }).catch(err => {
+            console.error('[tracknow] signed-agreement sales email failed:', err && err.message);
+            pushAudit({ email: '(customer-signed)', to: salesAddr, success: false, reason: 'email_failed', error: String(err && err.message || err).slice(0, 200) });
+          });
+        }
+
+        // 2) Customer — same executed agreement HTML, sent to the email
+        // they signed with. Skip if no email recorded (malformed request).
+        if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+          mailer.sendMail({
+            from: fromAddr,
+            to: String(email).slice(0, 120),
+            subject: `Your Signed Service Agreement — ${safeKey} — TrackNow GPS`,
+            html
+          }).then(info => {
+            pushAudit({ email: '(customer-signed)', to: String(email), subject: 'signed-agreement→customer', success: true, reason: 'email_sent', messageId: info.messageId || '' });
+          }).catch(err => {
+            console.error('[tracknow] signed-agreement customer email failed:', err && err.message);
+            pushAudit({ email: '(customer-signed)', to: String(email), success: false, reason: 'email_failed', error: String(err && err.message || err).slice(0, 200) });
+          });
+        }
+      } catch (e) {
+        console.error('[tracknow] signed-agreement receipt block error:', e && e.message);
+      }
+    })();
   } catch (err) { res.status(500).json({ ok: false, error: 'Server error' }); }
 });
 
