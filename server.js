@@ -2210,6 +2210,29 @@ const _customerEmailRl = new Map();
 //      being turned into a spam relay.
 app.post('/api/send-email', async (req, res) => {
   try {
+    // /api/send-email is in AUTH_EXEMPT so unauthenticated customers can
+    // fire callback / proposal-accept notifications to the sales mailbox.
+    // Side-effect: the global auth middleware never runs for this route,
+    // so req.user stays undefined even when a logged-in staff member
+    // sends a valid bearer token. That broke the staff send path —
+    // every staff send fell through to the customer-only "internal
+    // mailbox only" branch and got rejected with 403 "Unauthenticated
+    // sends can only go to the internal sales mailbox." Resolve the
+    // bearer token ourselves here so the staff path runs when it should.
+    // (Customer / unauthenticated sends keep the restricted path.)
+    if (!req.user) {
+      const _auth = req.headers.authorization || '';
+      const _m = _auth.match(/^Bearer\s+(.+)$/i);
+      if (_m) {
+        try { pruneSessions(); } catch(_) {}
+        const _session = SESSIONS.find(s => s.token === _m[1]);
+        if (_session && _session.scope !== 'password_change' && _session.scope !== 'enrollment' && _session.expiresAt > Date.now()) {
+          const _u = USERS.find(x => x.email === _session.email);
+          if (_u) { req.user = _u; req.session = _session; }
+        }
+      }
+    }
+
     const body = req.body || {};
     const params = (body.template_params && typeof body.template_params === 'object') ? body.template_params : body;
     const to       = params.to_email || params.to;
