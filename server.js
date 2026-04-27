@@ -1716,10 +1716,16 @@ app.post('/api/data', (req, res) => {
     _applySyncField('prospects',      incoming.prospects);
     _applySyncField('customers',      incoming.customers);
     _applySyncField('contentLibrary', incoming.contentLibrary);
+    // Pricing config from the Revenue & Commission tab — small object, not
+    // an array, so anti-wipe doesn't apply. Merge so a partial push (e.g.
+    // one tab updates only HW_PRICES) doesn't blow away the others.
+    if (incoming.pricing && typeof incoming.pricing === 'object') {
+      STORE.pricing = Object.assign({}, STORE.pricing || {}, incoming.pricing);
+    }
     STORE.version++;
     STORE.lastUpdate = Date.now();
     saveStore();
-    res.json({ ok: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary });
+    res.json({ ok: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary, pricing: STORE.pricing || null });
   } catch (err) {
     console.error('POST /api/data error:', err);
     res.status(500).json({ ok: false, error: 'Server error' });
@@ -1729,7 +1735,7 @@ app.post('/api/data', (req, res) => {
 app.get('/api/data', (req, res) => {
   const sinceVersion = parseInt(req.query.v) || 0;
   if (sinceVersion >= STORE.version) return res.json({ ok: true, changed: false, version: STORE.version });
-  res.json({ ok: true, changed: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary || [] });
+  res.json({ ok: true, changed: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary || [], pricing: STORE.pricing || null });
 });
 
 // ─── Content Library — file upload / serve / delete ────────────────────────

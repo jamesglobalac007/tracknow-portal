@@ -159,8 +159,8 @@ tr:hover td a{color:#0098d4}
 .stage-col{flex:1 1 0;min-width:130px;display:flex;flex-direction:column}
 .stage-header{display:flex;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #222}
 .stage-dot{width:6px;height:6px;border-radius:50%}
-.stage-label{font-size:10px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.3px}
-.stage-count{margin-left:auto;font-size:9px;font-weight:700;color:#0098d4;background:#111;width:20px;height:20px;border-radius:0px;display:flex;align-items:center;justify-content:center;border:1px solid #222}
+.stage-label{font-size:14px;font-weight:800;color:#0098d4;text-transform:uppercase;letter-spacing:.5px}
+.stage-count{margin-left:auto;font-size:11px;font-weight:700;color:#0098d4;background:#111;min-width:24px;height:24px;padding:0 6px;border-radius:0px;display:flex;align-items:center;justify-content:center;border:1px solid #222}
 
 /* ═══════════ PIPELINE CARD ═══════════ */
 .pipeline-card{background:#0a0a0a;border-left:3px solid #0098d4;padding:12px;margin-bottom:10px;border-radius:0px;border-top:none;border-right:none;border-bottom:none;cursor:grab;transition:all .1s}
@@ -314,6 +314,36 @@ select option{background:#0a0a0a;color:#0098d4}
 </style>
 </head>
 <body>
+    <!-- ================================================================ -->
+    <!-- SANDBOX TEST ENVIRONMENT BANNER                                   -->
+    <!--                                                                   -->
+    <!-- Auto-shows only when the hostname starts with "sandbox-". Means   -->
+    <!-- this same file can safely be copied to the live tracknow-portal   -->
+    <!-- repo without the banner ever appearing on live. The inline script -->
+    <!-- below sets display + body padding at parse time, so the banner    -->
+    <!-- either shows instantly with the banner's 36px offset or doesn't   -->
+    <!-- show at all (no layout flash on live).                            -->
+    <!--                                                                   -->
+    <!-- Same pattern used on sandbox-sb-empire (proven safe). Hostname    -->
+    <!-- guard prevents any accidental banner-leak to live tracknow-portal -->
+    <!-- if the file is flat-copied across during a promote.               -->
+    <!-- ================================================================ -->
+    <div id="sandboxBanner" style="position:fixed;top:0;left:0;right:0;height:36px;background:linear-gradient(90deg,#ff8c00,#ff6a00);color:#000;font-weight:800;font-size:13px;letter-spacing:1.2px;display:none;align-items:center;justify-content:center;z-index:999999;box-shadow:0 2px 8px rgba(0,0,0,0.4);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border-bottom:2px solid #000;"> &nbsp; SANDBOX TEST ENVIRONMENT &nbsp; · &nbsp; sandbox-tracknow.onrender.com &nbsp; · &nbsp; NOT LIVE — NO REAL CUSTOMER DATA &nbsp; </div>
+    <script>
+      // Banner guard — only render on sandbox hostnames. Runs at parse
+      // time (before any big script blocks) so the 36px body offset is
+      // applied synchronously, no layout flash.
+      (function () {
+        try {
+          var h = (location && location.hostname) || '';
+          if (h.indexOf('sandbox-') === 0 || h === 'localhost' && /sandbox/i.test(location.href)) {
+            var banner = document.getElementById('sandboxBanner');
+            if (banner) banner.style.display = 'flex';
+            document.body.style.paddingTop = '36px';
+          }
+        } catch (_) { /* fail silent — never let the banner guard break the page */ }
+      })();
+    </script>
 
 <!-- SIM Provider suggestions (type any name or pick from list) -->
 <datalist id="simProviders">
@@ -339,7 +369,7 @@ select option{background:#0a0a0a;color:#0098d4}
       <!-- Logo -->
       <div style="text-align:center;margin-bottom:32px">
         <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:10px">
-          <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
+          <div style="font-family:Inter,Arial,sans-serif;font-size:26px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;display:block">TrackNow <span style="font-weight:600;color:#666;font-size:14px;letter-spacing:1.5px">GPS</span></div>
         </div>
         <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
       </div>
@@ -414,7 +444,7 @@ select option{background:#0a0a0a;color:#0098d4}
     <div style="width:100%;max-width:480px">
       <div style="text-align:center;margin-bottom:32px">
         <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:10px">
-          <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
+          <div style="font-family:Inter,Arial,sans-serif;font-size:26px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;display:block">TrackNow <span style="font-weight:600;color:#666;font-size:14px;letter-spacing:1.5px">GPS</span></div>
         </div>
         <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
       </div>
@@ -500,7 +530,7 @@ select option{background:#0a0a0a;color:#0098d4}
     <div style="width:100%;max-width:480px">
       <div style="text-align:center;margin-bottom:32px">
         <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:10px">
-          <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
+          <div style="font-family:Inter,Arial,sans-serif;font-size:26px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;display:block">TrackNow <span style="font-weight:600;color:#666;font-size:14px;letter-spacing:1.5px">GPS</span></div>
         </div>
         <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px">GPS Fleet Tracking</div>
       </div>
@@ -616,7 +646,7 @@ select option{background:#0a0a0a;color:#0098d4}
   <div id="as_thanks" style="display:none;min-height:100vh;background:#000;padding:20px">
     <div style="max-width:480px;margin:0 auto;padding-top:15vh;text-align:center">
       <div style="display:inline-block;background:#fff;padding:12px 24px;border-radius:8px;margin-bottom:24px">
-        <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow GPS" style="height:42px;display:block">
+        <div style="font-family:Inter,Arial,sans-serif;font-size:26px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;display:block">TrackNow <span style="font-weight:600;color:#666;font-size:14px;letter-spacing:1.5px">GPS</span></div>
       </div>
       <div style="background:#0a0a0a;border:1px solid #222;padding:40px;text-align:center">
         <div style="font-size:40px;margin-bottom:16px">&#10003;</div>
@@ -871,22 +901,17 @@ select option{background:#0a0a0a;color:#0098d4}
       </div>
     </div>
 
-    <!-- Charts Row -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
+    <!-- Top KPI tiles — Monthly Revenue / Monthly Prospects / Live Customers / Sectors -->
+    <div id="dashTopKpis" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:24px"></div>
+
+    <!-- Charts Row — single full-width Monthly Prospects line chart -->
+    <div style="margin-bottom:28px">
       <div class="card" style="padding:24px">
         <div style="margin-bottom:20px">
-          <div class="section-title" style="font-size:16px">Monthly Prospects & Live Customers</div>
-          <div class="section-sub">New additions per month</div>
+          <div class="section-title" style="font-size:16px">Monthly Prospects</div>
+          <div class="section-sub">New prospects added per month — last 6 months</div>
         </div>
         <div class="chart-box" style="height:320px"><canvas id="chartMonthly"></canvas></div>
-      </div>
-      <div class="card" style="padding:24px">
-        <div style="margin-bottom:20px">
-          <div class="section-title" style="font-size:16px">Live Customer Breakdown</div>
-          <div class="section-sub">Customers by industry</div>
-        </div>
-        <div style="height:260px"><canvas id="chartPipeline"></canvas></div>
-        <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px" id="pipelineLegend"></div>
       </div>
     </div>
 
@@ -939,11 +964,8 @@ select option{background:#0a0a0a;color:#0098d4}
       <p class="page-desc">Manage prospects to call and track all live customer accounts in one place.</p>
     </div>
     <div style="display:flex;gap:10px" id="custHeaderBtns">
-      <button id="btnImportCsv" class="btn btn-secondary btn-sm" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Import CSV
-      </button>
-      <button id="btnNewProspect" class="btn btn-sm" onclick="openProspectModal()" style="background:#0098d4;color:#000;font-weight:700;border:none">+ New Prospect</button>
+      <!-- Prospects-tab buttons live inline above the table now (see filter row).
+           Live-customer buttons stay here so they're visible on that tab. -->
       <button id="btnAddCustomer" class="btn btn-primary btn-sm" onclick="openCustomerModal()" style="display:none">+ Add Customer</button>
       <button id="btnImportSalesFee" class="btn btn-sm" onclick="openSalesFeeModal()" style="display:none;background:#00CC66;color:#000;font-weight:700;border:none">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -967,7 +989,7 @@ select option{background:#0a0a0a;color:#0098d4}
 
   <!-- ── PROSPECTS VIEW ─────────────────────────────────── -->
   <div id="custView-prospects">
-    <!-- filters -->
+    <!-- filters + inline action buttons (right side, just above the table) -->
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
       <select id="pFilter-source" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
         <option value="">All Sources</option>
@@ -994,6 +1016,13 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="not-ready">Not Ready</option>
         <option value="not-interested">Not Interested</option>
       </select>
+      <!-- spacer pushes the action buttons to the right edge -->
+      <div style="flex:1 1 auto"></div>
+      <button id="btnNewProspect" class="btn btn-sm" onclick="openProspectModal()" style="background:#0098d4;color:#000;font-weight:700;border:none;padding:7px 14px;font-size:13px">+ New Prospect</button>
+      <button id="btnImportCsv" class="btn btn-secondary btn-sm" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;font-size:13px">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import CSV
+      </button>
     </div>
     <div id="prospectsTable"></div>
     <div id="parkedProspectsSection" style="margin-top:28px"></div>
@@ -1428,39 +1457,15 @@ select option{background:#0a0a0a;color:#0098d4}
       </div>
     </div>
 
-    <!-- KPI Row -->
-    <div class="kpi-grid" style="margin-bottom:28px">
-      <div class="kpi-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div><div class="kpi-label">Total Reach</div><div class="kpi-value" id="mkt-reach">0</div><div class="kpi-trend" style="color:#666">—</div></div>
-          <div class="kpi-icon-wrap" style="background:rgba(0,152,212,.1);color:#0098d4"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-        </div>
-      </div>
-      <div class="kpi-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div><div class="kpi-label">Engagement Rate</div><div class="kpi-value" id="mkt-engage">0%</div><div class="kpi-trend" style="color:#666">—</div></div>
-          <div class="kpi-icon-wrap" style="background:rgba(124,58,237,.12);color:var(--purple)"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
-        </div>
-      </div>
-      <div class="kpi-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div><div class="kpi-label">Leads Generated</div><div class="kpi-value" id="mkt-leads">0</div><div class="kpi-trend" style="color:#666">—</div></div>
-          <div class="kpi-icon-wrap" style="background:rgba(0,204,102,.1);color:var(--success)"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
-        </div>
-      </div>
-      <div class="kpi-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div><div class="kpi-label">Campaign ROI</div><div class="kpi-value" id="mkt-roi">0%</div><div class="kpi-trend" style="color:#666">—</div></div>
-          <div class="kpi-icon-wrap" style="background:rgba(0,152,212,.1);color:var(--warning)"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
-        </div>
-      </div>
-    </div>
+    <!-- KPI Row removed per James — Total Reach / Engagement Rate / Leads
+         Generated / Campaign ROI were too noisy and rarely accurate. The
+         single combined Activity chart on the Overview tab now tells the
+         story (sectors × posts/day × platform × leads). -->
 
-    <!-- Tab Nav -->
+    <!-- Tab Nav — Campaigns + Social Media tabs removed; the connect-account
+         cards moved into the simplified Overview tab. -->
     <div class="tab-group" style="margin-bottom:24px">
       <button class="tab-btn active" id="mktTab-overview" onclick="showMktTab('overview',this)">Overview</button>
-      <button class="tab-btn" id="mktTab-campaigns" onclick="showMktTab('campaigns',this)">Campaigns</button>
-      <button class="tab-btn" id="mktTab-social" onclick="showMktTab('social',this)">Social Media</button>
       <button class="tab-btn" id="mktTab-audience" onclick="showMktTab('audience',this)">Audiences</button>
       <button class="tab-btn" id="mktTab-calendar" onclick="showMktTab('calendar',this)">Calendar</button>
       <button class="tab-btn" id="mktTab-templates" onclick="showMktTab('templates',this)">Templates</button>
@@ -1469,20 +1474,25 @@ select option{background:#0a0a0a;color:#0098d4}
 
     <!-- ── OVERVIEW TAB ── -->
     <div id="mktSection-overview">
-      <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px">
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <div><div class="section-title">Campaign Performance</div><div class="section-sub">Last 30 days</div></div>
+
+      <!-- Single combined Activity chart — replaces the old Campaign
+           Performance / Channel Mix split. Shows posts per day, stacked
+           by platform, with summary chips for sectors targeted + leads
+           generated. James's brief: "how many posts a day, what
+           sectors, where the leads come from, what's giving the best
+           return". The Activity chart on its own answers the first
+           three; the small chips above the chart answer "what's
+           giving the best return". -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="section-title">Marketing Activity</div>
+            <div class="section-sub">Posts per day by platform · last 30 days</div>
           </div>
-          <div class="chart-box"><canvas id="chartMktPerf"></canvas></div>
+          <div id="mktActivityChips" style="display:flex;gap:10px;flex-wrap:wrap"></div>
         </div>
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <div><div class="section-title">Channel Mix</div><div class="section-sub">By reach</div></div>
-          </div>
-          <div style="height:280px;position:relative"><canvas id="chartMktChannels"></canvas></div>
-          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px" id="mktChannelLegend"></div>
-        </div>
+        <div class="chart-box" style="height:300px"><canvas id="chartMktActivity"></canvas></div>
+        <div id="mktSectorBreakdown" style="margin-top:18px;padding-top:16px;border-top:1px solid #1a1a1a;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px"></div>
       </div>
 
       <!-- Social Channel Cards — order: LinkedIn, Facebook, Instagram, YouTube, TikTok -->
@@ -1648,170 +1658,6 @@ select option{background:#0a0a0a;color:#0098d4}
 
         <!-- Active folder contents -->
         <div id="clFilesList"></div>
-      </div>
-    </div>
-
-    <!-- ── CAMPAIGNS TAB ── -->
-    <div id="mktSection-campaigns" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <div style="display:flex;gap:10px">
-          <select id="mktFilterStatus" onchange="renderCampaigns()" style="padding:8px 12px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a">
-            <option value="All">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Scheduled">Scheduled</option>
-            <option value="Completed">Completed</option>
-            <option value="Draft">Draft</option>
-          </select>
-          <select id="mktFilterChannel" onchange="renderCampaigns()" style="padding:8px 12px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;background:#0a0a0a">
-            <option value="All">All Channels</option>
-            <option>LinkedIn</option>
-            <option>Facebook</option>
-            <option>Instagram</option>
-            <option>YouTube</option>
-            <option>TikTok</option>
-            <option>Email</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="openCampaignModal()">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Campaign
-        </button>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table>
-          <thead><tr>
-            <th>Campaign</th><th>Channel</th><th>Audience</th><th>Status</th><th>Reach</th><th>Clicks</th><th>Leads</th><th>Budget</th><th></th>
-          </tr></thead>
-          <tbody id="campaignsTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ── SOCIAL MEDIA TAB ── -->
-    <div id="mktSection-social" style="display:none">
-
-      <!-- Connected Social Accounts -->
-      <div class="card" style="margin-bottom:20px;border-left:3px solid #0098d4">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div>
-            <div class="section-title">Connected Accounts</div>
-            <div class="section-sub">Your TrackNow social media profiles — click any to open</div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="openAddSocialAccount()">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Account
-          </button>
-        </div>
-        <div id="connectedAccountsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
-          <!-- rendered by JS -->
-        </div>
-        <div id="connectedAccountsEmpty" style="display:none;text-align:center;padding:24px;color:#666;font-size:13px">
-          No accounts connected yet. Click <strong>Add Account</strong> to get started.
-        </div>
-      </div>
-
-      <!-- Platform selector pills -->
-      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="social-pill active" id="spill-all" onclick="setSocialPlatform('all',this)">All Platforms</button>
-        <button class="social-pill" id="spill-facebook" onclick="setSocialPlatform('facebook',this)" style="--pill-c:#1877F2">
-          <svg width="14" height="14" fill="#1877F2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg> Facebook
-        </button>
-        <button class="social-pill" id="spill-linkedin" onclick="setSocialPlatform('linkedin',this)" style="--pill-c:#0A66C2">
-          <svg width="14" height="14" fill="#0A66C2" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg> LinkedIn
-        </button>
-        <button class="social-pill" id="spill-instagram" onclick="setSocialPlatform('instagram',this)" style="--pill-c:#E1306C">
-          <svg width="14" height="14" fill="none" stroke="#E1306C" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> Instagram
-        </button>
-        <button class="social-pill" id="spill-twitter" onclick="setSocialPlatform('twitter',this)" style="--pill-c:#000">
-          <svg width="14" height="14" fill="#000" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.736-8.849L1.254 2.25H8.08l4.261 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter
-        </button>
-        <button class="social-pill" id="spill-google" onclick="setSocialPlatform('google',this)" style="--pill-c:#EA4335">
-          <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#EA4335" d="M22.5 12.23c0-.82-.07-1.6-.2-2.35H12v4.45h5.9a5.06 5.06 0 01-2.2 3.32v2.76h3.56c2.08-1.92 3.24-4.75 3.24-8.18z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-1 7.28-2.7l-3.56-2.77c-.99.66-2.25 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.06A7.08 7.08 0 015.46 12c0-.72.12-1.42.38-2.06V7.1H2.18A11.01 11.01 0 001 12c0 1.77.42 3.45 1.18 4.9l3.66-2.84z"/><path fill="#4285F4" d="M12 4.96c1.62 0 3.06.56 4.2 1.64l3.15-3.15C17.45 1.6 14.97.5 12 .5 7.7.5 3.99 2.97 2.18 6.6l3.66 2.84C6.71 6.9 9.14 4.96 12 4.96z"/></svg> Google Ads
-        </button>
-        <button class="social-pill" id="spill-youtube" onclick="setSocialPlatform('youtube',this)" style="--pill-c:#FF0000">
-          <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#FF0000" d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.5v2.1c0 2.3.3 4.5.3 4.5s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 22.2 12 22.2 12 22.2s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.2.3-4.5v-2.1C23.3 9.2 23 7 23 7zm-13.5 8.9V8.1l8.1 3.9-8.1 3.9z"/></svg> YouTube
-        </button>
-        <button class="social-pill" id="spill-tiktok" onclick="setSocialPlatform('tiktok',this)" style="--pill-c:#010101">
-          <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#010101" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.05a8.16 8.16 0 004.77 1.52V7.12a4.85 4.85 0 01-1-.43z"/></svg> TikTok
-        </button>
-      </div>
-
-      <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px">
-        <!-- Main Composer -->
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div class="section-title" id="composerTitle">Post Composer</div>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-secondary btn-sm" onclick="loadTemplate()">Templates</button>
-              <button class="btn btn-secondary btn-sm" onclick="openScheduleModal()">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Schedule
-              </button>
-            </div>
-          </div>
-
-          <!-- Link to share (optional) -->
-          <div style="margin-bottom:12px">
-            <div style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Link to Share (optional)</div>
-            <input type="text" id="postLink" value="https://www.tracknow.com.au" style="width:100%;padding:9px 14px;border:1px solid #222;border-radius:0;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-          </div>
-
-          <!-- Per-platform text areas -->
-          <div id="socialComposers">
-            <!-- rendered by JS -->
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-            <div id="postFeedback" style="font-size:12px;min-height:16px;flex:1"></div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-secondary btn-sm" onclick="copyPostToClipboard()">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copy
-              </button>
-              <button class="btn btn-primary" id="publishBtn" onclick="publishAllSelected()">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Publish Now
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Live Preview + Queue -->
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <!-- Post Preview -->
-          <div class="card" style="padding:18px">
-            <div class="section-title" style="margin-bottom:12px;font-size:12px">Post Preview</div>
-            <div id="postPreview" style="background:#000;border-radius:0;padding:14px;font-size:12px;color:#CCC;line-height:1.6;min-height:80px;white-space:pre-wrap;word-break:break-word">Start typing to see preview...</div>
-            <div style="margin-top:10px;font-size:11px;color:#666" id="charLimits"></div>
-          </div>
-          <!-- Scheduled Queue -->
-          <div class="card" style="padding:18px;flex:1">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <div class="section-title" style="font-size:12px">Scheduled Queue</div>
-              <span class="badge" style="background:rgba(0,152,212,.1);color:#0098d4;font-size:10px" id="scheduledCount">0 pending</span>
-            </div>
-            <div id="scheduledPosts" style="max-height:220px;overflow-y:auto"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- How to post to each platform -->
-      <div class="card" style="margin-bottom:20px;border-left:3px solid var(--accent)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div><div class="section-title">How to Post — Platform Guide</div><div class="section-sub">Click a platform to go directly and post</div></div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="platformLaunchGrid"></div>
-      </div>
-
-      <!-- Performance by Channel -->
-      <div class="card">
-        <div class="section-title" style="margin-bottom:20px">Channel Performance — Last 30 Days</div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr><th>Channel</th><th>Posts</th><th>Total Reach</th><th>Engagement</th><th>Clicks</th><th>Leads</th><th>Best Post</th></tr></thead>
-            <tbody id="channelPerfTable"></tbody>
-          </table>
-        </div>
       </div>
     </div>
 
@@ -2720,8 +2566,12 @@ let CUSTOMERS = (function() {
 let _nextCustomerId = (function() { var mx = 0; CUSTOMERS.forEach(function(c) { if (c.id > mx) mx = c.id; }); return mx + 1; })();
 let _custSortField = null; // 'date','expiry','trackers','company','subscription'
 let _custSortDir = 1; // 1 = ascending (oldest first), -1 = descending (newest first)
-let _prospSortField = null;
-let _prospSortDir = 1;
+// Default to newest-first by 'added' so freshly-added prospects are at the top
+// (sort comparator uses p.addedAt ms-timestamp when available, else parses
+// the DD/MM/YY string).
+let _prospSortField = 'added';
+// -1 = descending (newest first when sorting on 'added')
+let _prospSortDir = -1;
 
 // ══════════════════════════════════════════════════════════════════
 // CLOUD SYNC ENGINE — Shared data between all portal users
@@ -2746,13 +2596,9 @@ function _syncPush() {
       // Only push contentLibrary once we've hydrated from the server.
       // Protects against fresh-session empty-push wiping the server's data.
       contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined' && _contentLibraryHydrated) ? CONTENT_LIBRARY : undefined,
-      // INTENTIONAL-EMPTY: tell the server's anti-wipe guard that a save
-      // arriving after we've fully hydrated from the server is genuinely
-      // a user action — including any "I deleted the last item" empties.
-      // Pre-hydration this flag is omitted so the wipe-protection is
-      // still active during the fresh-session danger window.
-      // (Pairs with the _allowEmpty handling in server.js _applySyncField.)
-      _allowEmpty: _syncInitDone ? ['leads','prospects','customers','contentLibrary'] : undefined
+      // Pricing config (Revenue & Commission tab) — small object, sent
+      // on every push so cross-machine edits flow through.
+      pricing: (typeof _pricingPayload === 'function') ? _pricingPayload() : undefined
     })
   })
   .then(function(r) { return r.json(); })
@@ -2764,6 +2610,10 @@ function _syncPush() {
       if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
       if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
       if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; _contentLibraryHydrated = true; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
+      if (d.pricing && typeof _applyPricingPayload === 'function') {
+        _applyPricingPayload(d.pricing);
+        try { localStorage.setItem('tn_pricing', JSON.stringify(_pricingPayload())); } catch(e){}
+      }
       // Refresh UI if dashboard is visible
       _syncRefreshUI();
       if (!_syncInitDone) { _syncInitDone = true; console.log('[Sync] Initial sync complete — v' + _syncVersion); }
@@ -2785,6 +2635,11 @@ function _syncPull() {
       if (d.prospects) { PROSPECTS = d.prospects; try { localStorage.setItem('tn_prospects', JSON.stringify(PROSPECTS)); } catch(e){} _nextProspectId = (function(){ var mx=0; PROSPECTS.forEach(function(p){if(p.id>mx)mx=p.id;}); return mx+1; })(); }
       if (d.customers) { CUSTOMERS = d.customers; try { localStorage.setItem('tn_customers', JSON.stringify(CUSTOMERS)); } catch(e){} _nextCustomerId = (function(){ var mx=0; CUSTOMERS.forEach(function(c){if(c.id>mx)mx=c.id;}); return mx+1; })(); }
       if (Array.isArray(d.contentLibrary)) { CONTENT_LIBRARY = d.contentLibrary; _contentLibraryHydrated = true; try { localStorage.setItem('tn_content_library', JSON.stringify(CONTENT_LIBRARY)); } catch(e){} if (typeof renderContentLibrary === 'function') renderContentLibrary(); }
+      if (d.pricing && typeof _applyPricingPayload === 'function') {
+        _applyPricingPayload(d.pricing);
+        try { localStorage.setItem('tn_pricing', JSON.stringify(_pricingPayload())); } catch(e){}
+        if (typeof renderHwExtras === 'function' && document.getElementById('hwPriceTable')) renderHwExtras();
+      }
       _syncRefreshUI();
     }
   })
@@ -3058,25 +2913,57 @@ function initDashboard() {
       <div style="flex:1"><div style="font-size:13px;color:#CCC;line-height:1.5">${a.text}</div><div style="font-size:11px;color:#666;margin-top:3px">${a.time}</div></div>
     </div>`).join('');
 
-  // Live Customer Breakdown Legend — dynamic from CUSTOMERS
-  const custIndMap = {};
-  const indColors = {'Transport & Logistics':'#0098d4','Transport':'#0098d4','Civil & Construction':'#7c3aed','Civil':'#7c3aed','Mining & Resources':'#d97706','Mining':'#d97706','Agriculture':'#00CC66','Service':'#0088FF','Storage & Waste':'#db2777','Manufacturing':'#64748b','Other':'#CCC'};
-  const defaultColors = ['#0098d4','#7c3aed','#d97706','#059669','#0088FF','#db2777','#64748b','#CCC'];
-  CUSTOMERS.forEach(c => {
-    const sec = c.sector || 'Other';
-    custIndMap[sec] = (custIndMap[sec] || 0) + 1;
+  // ── TOP KPI TILES — Monthly Revenue / Monthly Prospects / Live Customers / Sectors ──
+  // Replaces the old Live Customer Breakdown donut (which never finished
+  // rendering cleanly) with four crisp number tiles. The four metrics
+  // James asked for are computed here and rendered into #dashTopKpis.
+  const _kpiNow = new Date();
+  const _kpiThisMonth = _kpiNow.getMonth();
+  const _kpiThisYear  = _kpiNow.getFullYear();
+  // Monthly Revenue: monthly recurring from active customers
+  const _activeCustomers = CUSTOMERS.filter(c => c.status === 'active' || c.status === 'renewal-due');
+  const _kpiMrr = _activeCustomers.reduce((s,c) => {
+    if (Array.isArray(c.devices) && c.devices.length) return s + c.devices.reduce((ss,d) => ss + (d.qty||0)*(d.sub||0), 0);
+    return s + (c.trackers||0) * (c.subPrice||0);
+  }, 0);
+  // Monthly Prospects: prospects whose `added` (DD/MM/YY) falls in this month/year
+  let _kpiMonthlyProsp = 0;
+  PROSPECTS.forEach(p => {
+    const src = p.added || '';
+    const parts = src.split('/');
+    if (parts.length < 3) return;
+    const pMon = parseInt(parts[1]) - 1;
+    let pYr = parseInt(parts[2]); if (pYr < 100) pYr += 2000;
+    if (pMon === _kpiThisMonth && pYr === _kpiThisYear) _kpiMonthlyProsp++;
   });
-  const custIndData = Object.entries(custIndMap).sort((a,b) => b[1] - a[1]).map((e,i) => ({label:e[0], count:e[1], color: indColors[e[0]] || defaultColors[i % defaultColors.length]}));
-  document.getElementById('pipelineLegend').innerHTML = custIndData.map(d => `
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="width:8px;height:8px;border-radius:3px;background:${d.color};display:inline-block"></span>
-        <span style="font-size:12px;color:#CCC">${d.label}</span>
-      </div>
-      <span style="font-size:12px;font-weight:600;color:#FFFFFF">${d.count}</span>
-    </div>`).join('');
+  // Live Customers: non-cancelled, non-overdue active accounts
+  const _kpiLiveCust = _activeCustomers.length;
+  // Sectors: distinct sector values across all live customers
+  const _kpiSectors = (function(){
+    const set = new Set();
+    _activeCustomers.forEach(c => { if (c.sector) set.add(c.sector); });
+    return set.size;
+  })();
+  const _kpiTiles = [
+    { label: 'Monthly Revenue',   value: '$' + Math.round(_kpiMrr).toLocaleString('en-AU'),   sub: 'MRR from active customers',     accent: '#0098d4' },
+    { label: 'Monthly Prospects', value: String(_kpiMonthlyProsp),                            sub: 'Added in ' + _kpiNow.toLocaleDateString('en-AU',{month:'long'}), accent: '#0088FF' },
+    { label: 'Live Customers',    value: String(_kpiLiveCust),                                sub: _activeCustomers.reduce((s,c)=>s+(c.trackers||0),0) + ' trackers deployed', accent: '#00CC66' },
+    { label: 'Sectors',           value: String(_kpiSectors),                                 sub: 'Distinct industries served',   accent: '#7c3aed' },
+  ];
+  const _kpiEl = document.getElementById('dashTopKpis');
+  if (_kpiEl) {
+    _kpiEl.innerHTML = _kpiTiles.map(t =>
+      '<div class="card" style="padding:18px 20px;border-left:3px solid '+t.accent+'">' +
+        '<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">'+t.label+'</div>' +
+        '<div style="font-size:26px;font-weight:800;color:'+t.accent+';line-height:1">'+t.value+'</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:6px">'+t.sub+'</div>' +
+      '</div>'
+    ).join('');
+  }
 
-  // Monthly Prospects & Live Customers chart — dynamic from data
+  // Monthly Prospects line chart — single series, dynamic from PROSPECTS.
+  // (Live Customers series removed per James — chart now shows just the
+  // prospect intake curve so it's easier to read at a glance.)
   (function(){
     const ctx = document.getElementById('chartMonthly').getContext('2d');
 
@@ -3084,7 +2971,6 @@ function initDashboard() {
     const now = new Date();
     const monthLabels = [];
     const prospCounts = [];
-    const custCounts = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mm = d.getMonth();
@@ -3098,7 +2984,6 @@ function initDashboard() {
         if (!p.added) return;
         const parts = p.added.split('/');
         if (parts.length >= 3) {
-          const pDay = parseInt(parts[0]);
           const pMon = parseInt(parts[1]) - 1;
           let pYr = parseInt(parts[2]);
           if (pYr < 100) pYr += 2000;
@@ -3106,36 +2991,23 @@ function initDashboard() {
         }
       });
       prospCounts.push(pCount);
-
-      // Count customers started in this month (yyyy-mm-dd or similar)
-      let cCount = 0;
-      CUSTOMERS.forEach(c => {
-        if (!c.start) return;
-        const cd = new Date(c.start);
-        if (cd.getMonth() === mm && cd.getFullYear() === yy) cCount++;
-      });
-      custCounts.push(cCount);
     }
 
     const grad1 = ctx.createLinearGradient(0, 0, 0, 280);
     grad1.addColorStop(0, 'rgba(0,152,212,0.25)');
     grad1.addColorStop(1, 'rgba(0,152,212,0.0)');
-    const grad2 = ctx.createLinearGradient(0, 0, 0, 280);
-    grad2.addColorStop(0, 'rgba(0,204,102,0.25)');
-    grad2.addColorStop(1, 'rgba(0,204,102,0.0)');
 
     new Chart(ctx, {
       type: 'line',
       data: {
         labels: monthLabels,
         datasets: [
-          { label: 'New Prospects', data: prospCounts, borderColor: '#0098d4', backgroundColor: grad1, fill: true, tension: .3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#0098d4', pointHoverRadius: 6 },
-          { label: 'New Live Customers', data: custCounts, borderColor: '#00CC66', backgroundColor: grad2, fill: true, tension: .3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#00CC66', pointHoverRadius: 6 }
+          { label: 'New Prospects', data: prospCounts, borderColor: '#0098d4', backgroundColor: grad1, fill: true, tension: .3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#0098d4', pointHoverRadius: 6 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, boxWidth: 8, color: '#999' } } },
+        plugins: { legend: { display: false } },
         scales: {
           x: { grid: { display: false }, border: { display: false }, ticks: { color: '#666', font:{size:10} } },
           y: { position:'right', beginAtZero: true, grid:{ color:'rgba(255,255,255,0.04)', drawTicks:false }, border: { display: false }, ticks: { padding: 12, color:'#0098d4', font:{size:10}, stepSize: 1 } }
@@ -3144,13 +3016,6 @@ function initDashboard() {
       }
     });
   })();
-
-  // Live Customer donut — dynamic, high-quality
-  new Chart(document.getElementById('chartPipeline'), {
-    type: 'doughnut',
-    data: { labels: custIndData.map(d=>d.label), datasets: [{ data: custIndData.map(d=>d.count), backgroundColor: custIndData.map(d=>d.color), borderWidth: 3, borderColor:'#000', spacing: 4, hoverOffset: 12, hoverBorderWidth: 3, hoverBorderColor:'#0098d4' }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '66%', animation: { animateRotate: true, duration: 1000, easing: 'easeOutQuart' }, layout: { padding: 12 }, plugins: { legend: { display: false }, tooltip: { backgroundColor:'rgba(0,0,0,.95)', titleColor:'#0098d4', bodyColor:'#CCC', borderColor:'#0098d4', borderWidth:1, padding:12, cornerRadius:0, titleFont:{weight:'700',size:13}, bodyFont:{size:12}, displayColors:true, boxPadding:4 } } }
-  });
 
   // Activity Summary — dynamic counts
   const totalProspects = PROSPECTS.length;
@@ -3270,7 +3135,7 @@ function renderFollowUpBar(l) {
 
   // Determine when the doc was first sent
   var sentDate = l.stage === 'proposal' ? l.proposalSentDate : l.agreementSentDate;
-  var _fd = function(d) { if (!d) return null; try { return new Date(d).toLocaleDateString('en-AU', {day:'2-digit', month:'short', year:'numeric'}); } catch(e) { return null; } };
+  var _fd = function(d) { if (!d) return null; try { return auDate(d); } catch(e) { return null; } };
   var sentStr = _fd(sentDate);
 
   // Get follow-up history for this stage
@@ -3313,7 +3178,7 @@ function renderFollowUpBar(l) {
 function openDemoEmail(leadId) {
   const l = LEADS.find(x => x.id === leadId);
   if (!l) return;
-  const firstName = l.name.split(' ')[0];
+  const firstName = _titleCase((l.name || '').split(' ')[0]);
   const subject = encodeURIComponent('Your TrackNow GPS Demo — ' + l.co);
   const body = encodeURIComponent('Hi ' + firstName + ',\n\nGreat speaking with you. As promised, here is your personalised TrackNow GPS demo for ' + l.co + '.\n\n▶ WATCH DEMO VIDEO\nhttps://tracknow.com.au/demo\n\nIn this demo you will see:\n\n• Live GPS tracking across your entire fleet\n• Real-time fuel monitoring & slippage alerts\n• Geofence boundaries — get notified when vehicles go off-route\n• Driver behaviour scoring — speeding, harsh braking, idle time\n• Automated daily & weekly fleet reports\n• Anti-theft alerts & vehicle recovery\n\nThe demo is based on a fleet similar to yours, so you can see exactly how it would work for ' + l.co + '.\n\nI have also attached a quick overview of the TrackNow platform for your reference.\n\nHappy to jump on a call to walk through anything — just let me know a time that suits.\n\nKind regards,\nTrackNow GPS Sales Team\nsales@tracknow.com.au\n1300 TRACK NOW');
   const email = l.email || '';
@@ -3498,7 +3363,7 @@ function _sendAgreementNotify(btn) {
 
     // 2. Send to customer (their copy of the signed agreement)
     if (ld.email) {
-      var customerName = (ld.name || cn || 'there').split(' ')[0];
+      var customerName = _titleCase((ld.name || cn || 'there').split(' ')[0]);
       var customerHTML = '<div style="font-family:Inter,sans-serif;max-width:800px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
         '<p style="font-size:14px;margin-bottom:20px">Hi ' + customerName + ',</p>' +
         '<p style="font-size:14px;margin-bottom:20px">Thank you for signing your TrackNow GPS service agreement. Please find your executed copy below for your records.</p>' +
@@ -3655,7 +3520,7 @@ function openProposalDoc(leadId) {
 </div>
 <div class="header">
   <div>
-    <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
+    <div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>
     <div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
     <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
@@ -3800,12 +3665,12 @@ function _buildProposalEmailHTML(l) {
   var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
   html += '<div>';
-  html += '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">';
+  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>';
   html += '<div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>';
   html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
   html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '</div>';
-  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700">' + l.co + '</div><div style="font-size:11px;color:#666;margin-top:2px">' + l.name + (l.city ? ' · '+l.city : '') + (l.st ? ', '+l.st : '') + '</div><div style="font-size:11px;color:#666">' + (l.email || '') + '</div><div style="font-size:11px;color:#666">' + today + '</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-' + String(l.id).padStart(4,'0') + '</div></div>';
+  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700">' + l.co + '</div><div style="font-size:11px;color:#666;margin-top:2px">' + _titleCase(l.name) + (l.city ? ' · '+l.city : '') + (l.st ? ', '+l.st : '') + '</div><div style="font-size:11px;color:#666">' + (l.email || '') + '</div><div style="font-size:11px;color:#666">' + today + '</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-' + String(l.id).padStart(4,'0') + '</div></div>';
   html += '</div>';
 
   html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Scope of Service</h2>';
@@ -3998,7 +3863,7 @@ function _restoreArchivedDeal(prospectId) {
     city: '', st: '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
-    lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:199, hwInstall:0}],
+    lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:(HW_PRICES['OBD2 Plug-In Device']||199), hwInstall:(HW_INSTALL_DEFAULT['OBD2 Plug-In Device']||0)}],
     _productsSet: !!(p.lineItems && p.lineItems.length),
     fleetSegments: p.fleetSegments || null,
     dealFiles: p.dealFiles || {},
@@ -4100,7 +3965,7 @@ function openAgreementDoc(leadId) {
 </div>
 <div class="header">
   <div>
-    <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">
+    <div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>
     <div class="doc-type">Service Agreement</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
     <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
@@ -4287,12 +4152,12 @@ function _buildAgreementEmailHTML(l) {
   var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px;font-size:13px;line-height:1.6">';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
   html += '<div>';
-  html += '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:34px;margin-bottom:6px">';
+  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>';
   html += '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-top:4px">Service Agreement</div>';
   html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
   html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '</div>';
-  html += '<div style="text-align:right;font-size:12px;color:#666"><div style="font-weight:600;color:#1a1a1a">' + l.co + '</div><div>' + (l.name || '') + '</div><div>' + (l.email || '') + '</div><div>' + today + '</div><div>Ref: TN-AGR-' + String(l.id).padStart(4,'0') + '</div></div>';
+  html += '<div style="text-align:right;font-size:12px;color:#666"><div style="font-weight:600;color:#1a1a1a">' + l.co + '</div><div>' + _titleCase(l.name || '') + '</div><div>' + (l.email || '') + '</div><div>' + today + '</div><div>Ref: TN-AGR-' + String(l.id).padStart(4,'0') + '</div></div>';
   html += '</div>';
 
   html += '<div style="margin-bottom:28px">';
@@ -5692,7 +5557,7 @@ function renderHwExtras() {
       <span style="font-size:13px;font-weight:600;color:#e5e5e5">${name}</span>
       <div style="display:flex;align-items:center;gap:2px">
         <span style="font-size:14px;font-weight:800;color:#7c3aed">$</span>
-        <input type="number" value="${price}" min="0" step="1" onfocus="this.select()" onchange="HW_PRICES['${name}']=parseFloat(this.value)||0;showToast('${name} updated to $'+this.value)" style="width:70px;padding:4px 6px;background:#111;border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:14px;font-weight:800;text-align:center;font-family:inherit;outline:none">
+        <input type="number" value="${price}" min="0" step="1" onfocus="this.select()" onchange="HW_PRICES['${name}']=parseFloat(this.value)||0;savePricing();showToast('${name} updated to $'+this.value)" style="width:70px;padding:4px 6px;background:#111;border:1px solid rgba(124,58,237,.3);color:#7c3aed;font-size:14px;font-weight:800;text-align:center;font-family:inherit;outline:none">
       </div>
     </div>`
   ).join('');
@@ -5705,7 +5570,7 @@ function renderHwExtras() {
       </div>
       <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
         <span style="font-size:14px;font-weight:800;color:#0098d4">$</span>
-        <input type="number" value="${ex.price}" min="0" step="1" onfocus="this.select()" onchange="OPTIONAL_EXTRAS[${idx}].price=parseFloat(this.value)||0;showToast('${ex.name} updated to $'+this.value)" style="width:60px;padding:4px 6px;background:#111;border:1px solid rgba(0,152,212,.3);color:#0098d4;font-size:14px;font-weight:800;text-align:center;font-family:inherit;outline:none">
+        <input type="number" value="${ex.price}" min="0" step="1" onfocus="this.select()" onchange="OPTIONAL_EXTRAS[${idx}].price=parseFloat(this.value)||0;savePricing();showToast('${ex.name} updated to $'+this.value)" style="width:60px;padding:4px 6px;background:#111;border:1px solid rgba(0,152,212,.3);color:#0098d4;font-size:14px;font-weight:800;text-align:center;font-family:inherit;outline:none">
         <span style="font-size:11px;color:#888">${ex.unit}</span>
       </div>
     </div>`
@@ -5730,6 +5595,7 @@ function renderHwExtras() {
           '<input type="number" value="' + val + '" min="0" step="0.50" onfocus="this.select()" ' +
           'onchange="PRICING_MATRIX[\'' + product + '\'][' + t + ']=parseFloat(this.value)||0;' +
           'if(' + t + '===24){GPS_PRICES[\'' + product + '\']=parseFloat(this.value)||0;}' +
+          'savePricing();' +
           'showToast(\'' + product + ' ' + TERM_LABELS[t] + ' updated to $\'+this.value+\'/mo\')" ' +
           'style="width:60px;padding:4px 6px;background:#111;border:1px solid rgba(0,136,255,.3);color:#0088FF;font-size:14px;font-weight:800;text-align:center;font-family:inherit;outline:none">' +
           '<span style="font-size:10px;color:#666">/mo</span></div></td>';
@@ -6637,15 +6503,17 @@ let calOffset = 0;
 
 // ── Tab switching ─────────────────────────────────────────────────────────
 function showMktTab(tab, btn) {
-  ['overview','campaigns','social','audience','calendar','templates','emailcampaigns'].forEach(t => {
+  // Campaigns + Social tabs were removed — left in the iteration list as
+  // safe-no-ops via getElementById guards (so any old onclick="showMktTab('campaigns'...)"
+  // attribute that escaped the cleanup just toggles non-existent nodes).
+  ['overview','audience','calendar','templates','emailcampaigns'].forEach(t => {
     const s = document.getElementById('mktSection-' + t);
     const b = document.getElementById('mktTab-' + t);
     if (s) s.style.display = t === tab ? '' : 'none';
     if (b) b.classList.toggle('active', t === tab);
   });
+  if (tab === 'overview') renderMktOverview();
   if (tab === 'calendar') renderCalendar();
-  if (tab === 'campaigns') renderCampaigns();
-  if (tab === 'social') renderSocialTab();
   if (tab === 'templates') renderTemplates();
 }
 
@@ -7905,90 +7773,142 @@ function renderContentLibrary() {
 }
 
 function renderMktOverview() {
-  // Init content library
+  // Init content library (folders + files at the bottom of the tab)
   initContentLibrary();
 
-  // Charts
-  if (!window.mktChartsInit) {
-    window.mktChartsInit = true;
-    (function(){
-      const ctx = document.getElementById('chartMktPerf').getContext('2d');
-      const grad = ctx.createLinearGradient(0, 0, 0, 280);
-      grad.addColorStop(0, 'rgba(0,210,190,0.35)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      new Chart(ctx, {
-        type:'line',
-        data:{
-          labels:['Week 1','Week 2','Week 3','Week 4'],
-          datasets:[
-            {label:'Reach',data:(() => { const w=[0,0,0,0]; CAMPAIGNS.forEach(c => { const wi = Math.min(3, Math.floor(((Date.now() - new Date(c.start||Date.now()).getTime()) / 604800000))); if (wi >= 0 && wi <= 3) w[wi] += (c.reach||0); }); return w; })(),borderColor:'#FFFFFF',backgroundColor:grad,fill:true,tension:.3,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,yAxisID:'y'},
-            {label:'Leads',data:(() => { const w=[0,0,0,0]; CAMPAIGNS.forEach(c => { const wi = Math.min(3, Math.floor(((Date.now() - new Date(c.start||Date.now()).getTime()) / 604800000))); if (wi >= 0 && wi <= 3) w[wi] += (c.leads||0); }); return w; })(),borderColor:'#00CC66',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0,pointHoverRadius:4,yAxisID:'y1'}
-          ]
-        },
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'line',padding:16,boxWidth:20,color:'#999'}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)',drawTicks:false},border:{display:false},ticks:{padding:10,color:'#00CC66',font:{size:10}}},y1:{position:'right',grid:{display:false},border:{display:false},ticks:{color:'#0098d4',font:{size:10}}}},interaction:{intersect:false,mode:'index'}}
-      });
-    })();
-    (function(){
-      new Chart(document.getElementById('chartMktChannels'), {
-        type: 'doughnut',
+  // ── Marketing Activity chart — single combined view ─────────────
+  // Replaces the old Campaign Performance / Channel Mix / KPI tiles.
+  // Shows posts per day stacked by platform for the last 30 days.
+  // The summary chips above the chart and sector cards below cover
+  // the rest of James's brief (sectors targeted, leads by source,
+  // best-performing channel).
+  const platforms = [
+    { key: 'LinkedIn',  color: '#0A66C2' },
+    { key: 'Facebook',  color: '#1877F2' },
+    { key: 'Instagram', color: '#E1306C' },
+    { key: 'YouTube',   color: '#FF0000' },
+    { key: 'TikTok',    color: '#69C9D0' },
+    { key: 'Email',     color: '#0098d4' },
+  ];
+
+  // Build last 30 days of post counts by platform from SCHEDULED_POSTS
+  // (the live feed of what's been posted / queued from the portal).
+  const dayLabels = [];
+  const dayKeys = [];
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    dayLabels.push(d.toLocaleDateString('en-AU', { day:'2-digit', month:'short' }));
+    dayKeys.push(d.toISOString().slice(0, 10));
+  }
+  const platformCounts = {}; platforms.forEach(p => platformCounts[p.key] = new Array(30).fill(0));
+  let totalPostsInWindow = 0;
+  (SCHEDULED_POSTS || []).forEach(post => {
+    if (!post || !post.date) return;
+    // SCHEDULED_POSTS use a free-text date label — try multiple formats
+    let iso = '';
+    try {
+      const parsed = new Date(post.date);
+      if (!isNaN(parsed.getTime())) iso = parsed.toISOString().slice(0, 10);
+    } catch (e) {}
+    const idx = dayKeys.indexOf(iso);
+    if (idx < 0) return;
+    const ch = post.channel;
+    if (Array.isArray(ch)) ch.forEach(c => { if (platformCounts[c]) { platformCounts[c][idx]++; totalPostsInWindow++; } });
+    else if (typeof ch === 'string' && platformCounts[ch]) { platformCounts[ch][idx]++; totalPostsInWindow++; }
+  });
+
+  if (!window.mktActivityChart) {
+    const canvas = document.getElementById('chartMktActivity');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      window.mktActivityChart = new Chart(ctx, {
+        type: 'bar',
         data: {
-          labels: ['LinkedIn','Facebook','Instagram','YouTube','TikTok'],
-          datasets: [{
-            data: (() => { const ch = {LinkedIn:0,Facebook:0,Instagram:0,YouTube:0,TikTok:0}; CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (ch[p] !== undefined) ch[p] += (c.reach||c.spent||1); }); }); return Object.values(ch); })(),
-            backgroundColor: ['#1877F2','#0A66C2','#E1306C','#EA4335','#FF0000','#69C9D0'],
-            borderWidth: 3,
-            borderColor: '#000',
-            spacing: 4,
-            hoverOffset: 14,
-            hoverBorderWidth: 3,
-            hoverBorderColor: '#0098d4',
-            weight: 1
-          }]
+          labels: dayLabels,
+          datasets: platforms.map(p => ({
+            label: p.key,
+            data: platformCounts[p.key],
+            backgroundColor: p.color,
+            borderWidth: 0,
+            stack: 'posts',
+          })),
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          devicePixelRatio: 3,
-          cutout: '62%',
-          radius: '90%',
-          animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutQuart' },
-          layout: { padding: 16 },
+          responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: 'rgba(0,0,0,.95)',
-              titleColor: '#0098d4',
-              bodyColor: '#EEE',
-              borderColor: '#0098d4',
-              borderWidth: 1,
-              padding: 14,
-              cornerRadius: 0,
-              titleFont: { weight: '800', size: 13 },
-              bodyFont: { size: 12, weight: '600' },
-              displayColors: true,
-              boxPadding: 6,
-              caretSize: 6,
-              callbacks: {
-                label: function(ctx) {
-                  return ' ' + ctx.label + ': ' + ctx.raw + '%';
-                }
-              }
-            }
-          }
-        }
+            legend: { position:'bottom', labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, color:'#999', padding:14 } },
+            tooltip: { backgroundColor:'rgba(0,0,0,.95)', titleColor:'#0098d4', bodyColor:'#CCC', borderColor:'#0098d4', borderWidth:1, padding:12, cornerRadius:0 },
+          },
+          scales: {
+            x: { stacked:true, grid:{ display:false }, border:{ display:false }, ticks:{ color:'#666', font:{ size:10 }, autoSkip:true, maxTicksLimit:10 } },
+            y: { stacked:true, beginAtZero:true, position:'right', grid:{ color:'rgba(255,255,255,0.04)', drawTicks:false }, border:{ display:false }, ticks:{ color:'#0098d4', font:{ size:10 }, stepSize:1 } },
+          },
+        },
       });
-    })();
-    const lgd = document.getElementById('mktChannelLegend');
-    if(lgd) {
-      const _chD = {LinkedIn:0,Facebook:0,Instagram:0,YouTube:0,TikTok:0};
-      CAMPAIGNS.forEach(c => { (c.channels||[]).forEach(p => { if (_chD[p] !== undefined) _chD[p] += (c.reach||c.spent||1); }); });
-      const _chT = Object.values(_chD).reduce((a,b)=>a+b,0);
-      const _chItems = [{label:'LinkedIn',c:'#0A66C2'},{label:'Facebook',c:'#1877F2'},{label:'Instagram',c:'#E1306C'},{label:'YouTube',c:'#FF0000'},{label:'TikTok',c:'#69C9D0'}].map(d => ({...d, pct: _chT > 0 ? Math.round((_chD[d.label]/_chT)*100)+'%' : '0%'}));
-      lgd.innerHTML = _chItems.map(d=>`
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:3px;background:${d.c};display:inline-block"></span><span style="font-size:12px;color:#CCC">${d.label}</span></div>
-        <span style="font-size:12px;font-weight:600;color:#FFFFFF">${d.pct}</span>
-      </div>`).join('');
+    }
+  } else {
+    // Refresh existing chart in place when re-rendering
+    window.mktActivityChart.data.labels = dayLabels;
+    window.mktActivityChart.data.datasets.forEach(ds => { ds.data = platformCounts[ds.label] || []; });
+    window.mktActivityChart.update('none');
+  }
+
+  // ── Summary chips: total posts · top channel · top sector ──
+  const chipsEl = document.getElementById('mktActivityChips');
+  if (chipsEl) {
+    // Best channel = platform with highest cumulative leads attributed via campaigns
+    const channelLeads = {};
+    platforms.forEach(p => channelLeads[p.key] = 0);
+    (CAMPAIGNS || []).forEach(c => {
+      const leads = c.leads || 0;
+      (c.channels || []).forEach(ch => { if (channelLeads[ch] != null) channelLeads[ch] += leads; });
+    });
+    const bestChannel = Object.entries(channelLeads).sort((a,b) => b[1] - a[1])[0];
+
+    // Sectors targeted = distinct industry/sector across CAMPAIGNS audience
+    const sectorSet = new Set();
+    (CAMPAIGNS || []).forEach(c => { if (c.audience) sectorSet.add(c.audience); });
+
+    const chips = [
+      { label: 'Posts (last 30d)', value: totalPostsInWindow, accent: '#0098d4' },
+      { label: 'Top channel',      value: bestChannel && bestChannel[1] > 0 ? bestChannel[0] + ' (' + bestChannel[1] + ' leads)' : '—', accent: '#00CC66' },
+      { label: 'Sectors targeted', value: sectorSet.size,    accent: '#7c3aed' },
+    ];
+    chipsEl.innerHTML = chips.map(c =>
+      '<div style="padding:8px 14px;border:1px solid '+c.accent+'33;background:'+c.accent+'14">' +
+        '<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;font-weight:700">'+c.label+'</div>' +
+        '<div style="font-size:14px;font-weight:800;color:'+c.accent+';margin-top:2px">'+c.value+'</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  // ── Sector breakdown cards: leads + revenue per sector ──
+  const sectorEl = document.getElementById('mktSectorBreakdown');
+  if (sectorEl) {
+    const sectorData = {};
+    (CAMPAIGNS || []).forEach(c => {
+      const sec = c.audience || 'Unspecified';
+      if (!sectorData[sec]) sectorData[sec] = { posts: 0, leads: 0, revenue: 0 };
+      sectorData[sec].posts++;
+      sectorData[sec].leads += (c.leads || 0);
+      sectorData[sec].revenue += (c.revenue || 0);
+    });
+    const entries = Object.entries(sectorData).sort((a,b) => b[1].leads - a[1].leads);
+    if (!entries.length) {
+      sectorEl.innerHTML = '<div style="font-size:12px;color:#666;font-style:italic;padding:8px">No campaigns yet — sector breakdown will populate once campaigns run.</div>';
+    } else {
+      sectorEl.innerHTML = entries.map(function(e){
+        var sec = e[0]; var d = e[1];
+        return '<div style="padding:12px 14px;background:#0a0a0a;border:1px solid #1a1a1a;border-left:3px solid #0098d4">' +
+          '<div style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">'+sec+'</div>' +
+          '<div style="display:flex;gap:14px;font-size:11px;color:#888">' +
+            '<div><span style="color:#FFF;font-weight:700;font-size:13px">'+d.posts+'</span> campaigns</div>' +
+            '<div><span style="color:#00CC66;font-weight:700;font-size:13px">'+d.leads+'</span> leads</div>' +
+            '<div><span style="color:#7c3aed;font-weight:700;font-size:13px">$'+d.revenue.toLocaleString('en-AU')+'</span></div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
     }
   }
 }
@@ -8852,14 +8772,16 @@ function renderCustStats() {
 let _openNotesId = null;
 
 function toggleProspectNotes(id) {
-  // If another notes row is open, close it first
+  // If another details row is open, close it first
   if (_openNotesId && _openNotesId !== id) {
     closeProspectNotes(_openNotesId);
   }
   const row = document.getElementById('notesRow-' + id);
+  const chevron = document.getElementById('prospChevron_' + id);
   if (!row) return;
   if (row.style.display === 'none') {
     row.style.display = 'table-row';
+    if (chevron) chevron.style.transform = 'rotate(90deg)';
     _openNotesId = id;
     const ta = document.getElementById('notes-' + id);
     if (ta) setTimeout(() => ta.focus(), 50);
@@ -8870,11 +8792,13 @@ function toggleProspectNotes(id) {
 
 function closeProspectNotes(id) {
   const row = document.getElementById('notesRow-' + id);
+  const chevron = document.getElementById('prospChevron_' + id);
   if (!row) return;
   // Save the notes before closing
   const ta = document.getElementById('notes-' + id);
   if (ta) updateProspectField(id, 'notes', ta.value);
   row.style.display = 'none';
+  if (chevron) chevron.style.transform = '';
   if (_openNotesId === id) _openNotesId = null;
   // Re-render to update the notes count badge
   renderProspects();
@@ -9008,30 +8932,53 @@ function hideGlobalSearchResults() {
 
 function openGlobalSearchHit(kind, id) {
   hideGlobalSearchResults();
-  // Navigate to the Customers page (the "scraper" page contains both tables)
+  // 1) Navigate to the Customers page (the "scraper" page contains both tables)
   try {
     const navBtn = document.querySelector('.nav-btn[onclick*="showPage(\'scraper\'"]');
     if (navBtn) showPage('scraper', navBtn); else showPage('scraper');
   } catch(e){ try { showPage('scraper'); } catch(e2){} }
-  // Give the page a beat to show, then either open the edit modal (prospects) or
-  // scroll-and-flash the matching customer row.
+
+  // 2) Switch to the right tab so the row is in the visible table
+  try {
+    if (kind === 'prospect') showCustTab('prospects');
+    else if (kind === 'customer') showCustTab('customers');
+  } catch(e){}
+
+  // 3) Clear the search filter + re-render so EVERY row is in the DOM (otherwise
+  //    we might scroll to a row that's filtered out of view)
+  const input = document.getElementById('globalSearch');
+  if (input) { input.value = ''; try { renderProspects(); renderCustomers(); } catch(e){} }
+
+  // 4) Find the now-rendered row, expand the archive if the prospect lives
+  //    there, then scroll-and-flash so it's clear which one matched.
+  const flash = (row) => {
+    if (!row) return;
+    row.scrollIntoView({behavior:'smooth', block:'center'});
+    const prev = row.style.background;
+    row.style.transition = 'background .3s';
+    row.style.background = 'rgba(0,152,212,.25)';
+    setTimeout(() => { row.style.background = prev; }, 1800);
+  };
   setTimeout(() => {
     if (kind === 'prospect') {
-      try { if (typeof openEditProspect === 'function') openEditProspect(id); } catch(e){}
+      let row = document.querySelector('#prospectsTable tr[data-id="'+id+'"]');
+      if (row) { flash(row); return; }
+      // Prospect might be in the Archive section (Not Ready / Not Interested)
+      const parked = document.querySelector('#parkedProspectsSection tr[data-id="'+id+'"]');
+      if (parked) { flash(parked); return; }
+      const headerInArchive = document.querySelector('#parkedProspectsSection');
+      if (headerInArchive && typeof _toggleProspArchive === 'function' && typeof _prospArchiveOpen !== 'undefined' && !_prospArchiveOpen) {
+        _toggleProspArchive();
+        setTimeout(() => {
+          const r = document.querySelector('#parkedProspectsSection tr[data-id="'+id+'"]');
+          if (r) flash(r);
+        }, 120);
+      }
     } else if (kind === 'customer') {
       const row = document.querySelector('#customersTable tr[data-cust-id="'+id+'"]');
-      if (row) {
-        row.scrollIntoView({behavior:'smooth', block:'center'});
-        const prev = row.style.background;
-        row.style.transition = 'background .3s';
-        row.style.background = 'rgba(0,152,212,.25)';
-        setTimeout(() => { row.style.background = prev; }, 1600);
-      }
+      flash(row);
     }
-    // Also clear the search box so the tables unfilter
-    const input = document.getElementById('globalSearch');
-    if (input) { input.value = ''; try { renderProspects(); renderCustomers(); } catch(e){} }
-  }, 150);
+  }, 200);
 }
 
 function renderProspects() {
@@ -9063,10 +9010,12 @@ function renderProspects() {
       let va, vb;
       switch (_prospSortField) {
         case 'added':
-          // Parse dd/mm/yy date format for sorting
-          const pa = (a.added||'').split('/'); const pb = (b.added||'').split('/');
-          va = pa.length===3 ? new Date(pa[2].length===2?'20'+pa[2]:pa[2], pa[1]-1, pa[0]).getTime() : 0;
-          vb = pb.length===3 ? new Date(pb[2].length===2?'20'+pb[2]:pb[2], pb[1]-1, pb[0]).getTime() : 0;
+          // Prefer the ms-precision addedAt when present (sorts within the
+          // same day correctly); fall back to parsing the DD/MM/YY string.
+          if (typeof a.addedAt === 'number') va = a.addedAt;
+          else { const pa = (a.added||'').split('/'); va = pa.length===3 ? new Date(pa[2].length===2?'20'+pa[2]:pa[2], pa[1]-1, pa[0]).getTime() : 0; }
+          if (typeof b.addedAt === 'number') vb = b.addedAt;
+          else { const pb = (b.added||'').split('/'); vb = pb.length===3 ? new Date(pb[2].length===2?'20'+pb[2]:pb[2], pb[1]-1, pb[0]).getTime() : 0; }
           break;
         case 'company': va = (a.co||'').toLowerCase(); vb = (b.co||'').toLowerCase(); break;
         case 'fleet': va = a.fleet || 0; vb = b.fleet || 0; break;
@@ -9087,54 +9036,80 @@ function renderProspects() {
 
   function buildRow(p, i) {
     const sm = SOURCE_META[p.source] || {label:p.source,color:'#666',bg:'#111'};
-    const escapedNotes = (p.notes||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
     const notesCount = p.notes ? p.notes.split('\n').filter(n=>n.trim()).length || 1 : 0;
+    const phoneClean = p.phone ? p.phone.replace(/\s/g,'') : '';
     return `<tr data-id="${p.id}" style="border-bottom:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td style="padding:12px 14px">
-        <div onclick="openEditProspect(${p.id})" style="font-weight:600;color:#0098d4;font-size:13px;cursor:pointer;text-decoration:underline;text-decoration-color:#333;text-underline-offset:3px" onmouseover="this.style.textDecorationColor='#0098d4'" onmouseout="this.style.textDecorationColor='#333'" title="Click to edit prospect details">${p.co} <span style="font-size:9px;color:#555">✏</span></div>
+      <td style="padding:9px 12px">
+        <div onclick="toggleProspectNotes(${p.id})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
+          <svg id="prospChevron_${p.id}" width="10" height="10" fill="none" stroke="#666" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+          <div>
+            <div style="font-weight:600;color:#0098d4;font-size:13px">${p.co}</div>
+            ${notesCount ? '<div style="font-size:10px;color:#666">'+notesCount+' note'+(notesCount>1?'s':'')+'</div>' : ''}
+          </div>
+        </div>
       </td>
-      <td style="padding:12px 14px">
-        <div onclick="openEditProspect(${p.id})" style="font-size:13px;color:#0098d4;cursor:pointer" title="Click to edit">${p.name||'—'}</div>
-        ${p.phone ? '<div style="font-size:11px;font-weight:600"><a href="tel:'+p.phone.replace(/\s/g,'')+'" style="color:#00CC66;text-decoration:none" title="Click to call">📞 '+p.phone+'</a></div>' : ''}
-        ${p.email ? '<div style="font-size:11px"><a href="mailto:'+p.email+'" style="color:#0088FF;text-decoration:none" title="Click to email">✉ '+p.email+'</a></div>' : ''}
+      <td style="padding:9px 12px;white-space:nowrap">
+        ${p.name ? '<div onclick="event.stopPropagation();openEditProspect('+p.id+')" style="font-size:13px;color:#0098d4;cursor:pointer" title="Click to edit">'+p.name+'</div>' : ''}
+        ${p.phone ? '<div style="margin-top:'+(p.name?'2px':'0')+'"><a href="tel:'+phoneClean+'" onclick="event.stopPropagation()" title="Call '+p.phone+'" style="font-size:11px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a></div>' : ''}
       </td>
-      <td style="padding:12px 14px;font-size:13px;color:#0098d4">${p.ind}</td>
-      <td style="padding:12px 14px"><span style="font-size:11px;font-weight:700;color:${sm.color};background:${sm.bg};padding:3px 8px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
-      <td style="padding:12px 14px">
-        <select onchange="updateProspectField(${p.id},'status',this.value)" style="${selectStyle}">
+      <td style="padding:9px 12px;font-size:12px;color:#0098d4">${p.ind}</td>
+      <td style="padding:9px 12px"><span style="font-size:10px;font-weight:700;color:${sm.color};background:${sm.bg};padding:2px 7px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
+      <td style="padding:9px 12px">
+        <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
           ${statusOptions.replace('value="'+p.status+'"', 'value="'+p.status+'" selected')}
         </select>
         ${p.status === 'callback' ? (function(){
           const u = getCallbackUrgency(p);
-          return '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">' +
-            '<input type="date" value="'+(p.callbackDate||'')+'" onchange="updateProspectField('+p.id+',\'callbackDate\',this.value);renderProspects()" style="font-size:11px;padding:3px 5px;border:1px solid #333;border-radius:0;background:#111;color:#0098d4;font-family:inherit;outline:none">' +
-            '<input type="time" value="'+(p.callbackTime||'')+'" onchange="updateProspectField('+p.id+',\'callbackTime\',this.value)" style="font-size:11px;padding:3px 5px;border:1px solid #333;border-radius:0;background:#111;color:#0098d4;font-family:inherit;outline:none">' +
+          return '<div style="margin-top:5px;display:flex;flex-direction:column;gap:3px" onclick="event.stopPropagation()">' +
+            '<input type="date" value="'+(p.callbackDate||'')+'" onchange="updateProspectField('+p.id+',\'callbackDate\',this.value);renderProspects()" style="font-size:11px;padding:2px 4px;border:1px solid #333;border-radius:0;background:#111;color:#0098d4;font-family:inherit;outline:none">' +
+            '<input type="time" value="'+(p.callbackTime||'')+'" onchange="updateProspectField('+p.id+',\'callbackTime\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid #333;border-radius:0;background:#111;color:#0098d4;font-family:inherit;outline:none">' +
             (p.callbackDate ? '<span style="font-size:10px;font-weight:800;color:'+u.color+';background:'+u.bg+';padding:2px 6px;border-radius:0;text-align:center;'+(u.urgent?'animation:pulse 1.5s infinite':'')+'">'+u.label+(p.callbackTime?' @ '+p.callbackTime:'')+'</span>' : '') +
           '</div>';
         })() : ''}
       </td>
-      <td style="padding:12px 14px;font-size:12px;color:#666;white-space:nowrap;min-width:80px">${p.added}</td>
-      <td style="padding:12px 14px">
-        <div style="display:flex;gap:5px;flex-wrap:wrap">
-          <button onclick="toggleProspectNotes(${p.id})" title="Notes"
-            style="font-size:11px;padding:4px 8px;border:1px solid #444;color:${notesCount?'#0098d4':'#666'};background:#111;border-radius:0;cursor:pointer;font-weight:600;position:relative">📝${notesCount?' '+notesCount:''}</button>
-          <button onclick="openProspectFleetProfile(${p.id})" title="Fleet Profile & Products"
-            style="font-size:10px;padding:4px 8px;border:1px solid #0088FF;color:#0088FF;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">📊 Fleet</button>
-          <button onclick="sendProspectFleetReport(${p.id})" title="View Fleet Optimisation Report"
-            style="font-size:10px;padding:4px 8px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'📄 View Report':'📄 Generate'}</button>
-          <button onclick="emailFleetOverview(${p.id})" title="Email Fleet Optimisation Report to client" style="font-size:10px;padding:4px 8px;border:1px solid #0098d4;color:#fff;background:#0098d4;border-radius:0;cursor:pointer;font-weight:600">✉ Send</button>
-          <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline (Proposal stage)"
-            style="font-size:10px;padding:4px 8px;border:1px solid #0098d4;color:#0098d4;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">→ Pipeline</button>
-          <button onclick="deleteProspect(${p.id})"
-            style="font-size:10px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">✕</button>
+      <td style="padding:9px 12px;font-size:12px;color:#666;white-space:nowrap;min-width:88px">
+        <div style="font-weight:600;color:#888">${auDate(p.added || p.addedAt)}</div>
+        ${p.addedAt ? '<div style="font-size:10px;color:#555;margin-top:2px">'+auTime(p.addedAt)+'</div>' : ''}
+      </td>
+      <td style="padding:9px 12px">
+        <div style="display:flex;gap:4px;flex-wrap:nowrap;align-items:center;justify-content:flex-end" onclick="event.stopPropagation()">
+          <button onclick="deleteProspect(${p.id})" title="Delete prospect" style="font-size:10px;padding:4px 8px;border:1px solid #333;color:#666;background:#111;border-radius:0;cursor:pointer">X</button>
         </div>
-        ${p.status==='warm' && p.fleetReportSentDate ? '<div style="font-size:10px;color:#0088FF;margin-top:4px">📄 Fleet Optimisation Report sent '+p.fleetReportSentDate+'</div>' : ''}
-        ${p.status==='warm' && p.callbackDate ? '<div style="font-size:10px;color:#0098d4;margin-top:2px">📞 Follow-up: '+p.callbackDate+(p.callbackTime?' @ '+p.callbackTime:'')+'</div>' : ''}
       </td>
     </tr>
     <tr id="notesRow-${p.id}" style="display:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td colspan="7" style="padding:0 14px 14px 14px;border-bottom:1px solid #222">
-        <div style="background:#080808;border:1px solid #222;border-left:3px solid #0098d4;padding:10px 14px">
+      <td colspan="7" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
+        <div style="background:#050505;border:1px solid #1a1a1a;border-left:3px solid #0098d4;padding:12px 16px">
+
+          <!-- Header strip: status / source / industry / fleet shortcut -->
+          <div style="display:flex;gap:18px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #1a1a1a">
+            <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Industry</span><div style="font-size:13px;font-weight:600;color:#0098d4">${p.ind||'—'}</div></div>
+            <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Source</span><div style="font-size:13px;font-weight:600;color:${sm.color}">${sm.label}</div></div>
+            <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Added</span><div style="font-size:13px;font-weight:600;color:#0098d4">${auDate(p.added || p.addedAt)||'—'}${p.addedAt ? ' <span style=\"font-size:11px;color:#888;font-weight:500\">'+auTime(p.addedAt)+'</span>' : ''}</div></div>
+            ${p.status==='warm' && p.fleetReportSentDate ? '<div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Fleet Report Sent</span><div style="font-size:12px;font-weight:600;color:#0088FF">'+auDate(p.fleetReportSentDate)+'</div></div>' : ''}
+            ${p.callbackDate ? '<div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Follow-up</span><div style="font-size:12px;font-weight:600;color:#0098d4">'+auDate(p.callbackDate)+(p.callbackTime?' @ '+p.callbackTime:'')+'</div></div>' : ''}
+          </div>
+
+          <!-- Contact strip: phone · email · Edit (Edit sits right of the email) -->
+          ${(p.phone || p.email || p.name) ? '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #1a1a1a">' +
+            (p.phone ? '<a href="tel:'+phoneClean+'" style="font-size:13px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a>' : '') +
+            (p.email ? '<a href="mailto:'+p.email+'" style="font-size:14px;font-weight:700;color:#00CC66;text-decoration:none">'+p.email+'</a>' : '') +
+            '<button onclick="openEditProspect('+p.id+')" title="Edit prospect details" style="font-size:11px;padding:5px 12px;border:1px solid #0098d4;color:#0098d4;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">Edit</button>' +
+          '</div>' : ''}
+
+          <!-- Quick-actions strip: Fleet Profile · Generate Report · Send · Move to Pipeline -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #1a1a1a">
+            <button onclick="openProspectFleetProfile(${p.id})" title="Fleet Profile & Products"
+              style="font-size:11px;padding:5px 10px;border:1px solid #0088FF;color:#0088FF;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">Fleet Profile</button>
+            <button onclick="sendProspectFleetReport(${p.id})" title="View / Generate Fleet Optimisation Report"
+              style="font-size:11px;padding:5px 10px;border:1px solid ${p.status==='warm'?'#00CC66':'#0088FF'};color:${p.status==='warm'?'#00CC66':'#0088FF'};background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">${p.status==='warm'?'View Report':'Generate Report'}</button>
+            <button onclick="emailFleetOverview(${p.id})" title="Email Fleet Optimisation Report"
+              style="font-size:11px;padding:5px 12px;border:1px solid #0098d4;color:#fff;background:#0098d4;border-radius:0;cursor:pointer;font-weight:700">Send</button>
+            <button onclick="this.disabled=true;this.textContent='Moving...';moveProspectToPipeline(${p.id})" title="Move to Pipeline (Proposal stage)"
+              style="font-size:11px;padding:5px 10px;border:1px solid #0098d4;color:#0098d4;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">Move to Pipeline</button>
+          </div>
+
+          <!-- Notes -->
           <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Notes — ${p.co}</div>
           <textarea id="notes-${p.id}" onchange="updateProspectField(${p.id},'notes',this.value)"
             style="width:100%;min-height:60px;padding:8px 10px;border:1px solid #222;border-radius:0;background:#111;color:#CCC;font-size:12px;font-family:inherit;outline:none;resize:vertical;line-height:1.5"
@@ -9146,6 +9121,7 @@ function renderProspects() {
               <button onclick="closeProspectNotes(${p.id})" style="font-size:10px;padding:3px 10px;border:1px solid #0098d4;color:#000;background:#0098d4;border-radius:0;cursor:pointer;font-weight:700">Done ✓</button>
             </div>
           </div>
+
         </div>
       </td>
     </tr>`;
@@ -9218,7 +9194,7 @@ function expiryChip(c) {
   const exp = custExpiryDate(c);
   if (!exp) return '<span style="font-size:11px;color:#666">MTM</span>';
   const days = daysUntilExpiry(exp);
-  const dateStr = exp.toLocaleDateString('en-AU', {day:'2-digit',month:'short',year:'numeric'});
+  const dateStr = auDate(exp);
   let col = '#00CC66', bg = 'rgba(0,204,102,.12)', label = days + 'd left';
   if (days < 0)      { col='#FF4444'; bg='rgba(255,68,68,.12)'; label='EXPIRED'; }
   else if (days < 30) { col='#FF4444'; bg='rgba(255,68,68,.12)'; label=days+'d left'; }
@@ -9364,7 +9340,7 @@ function renderCustomers() {
           <div style="background:#050505;border:1px solid #1a1a1a;border-radius:0;padding:12px 16px">
             <div style="display:flex;gap:20px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1a1a1a;flex-wrap:wrap">
               <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Subscription</span><div style="font-size:13px;font-weight:700;color:#0098d4">$${actualMRev.toFixed(2)}/mo</div><div style="font-size:10px;color:#666">${devs.length ? devs.length + ' product line' + (devs.length>1?'s':'') : '$' + c.subPrice.toFixed(2) + ' x ' + c.trackers}</div></div>
-              <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Contract</span><div style="font-size:13px;font-weight:700;color:#0098d4">${c.term == 1 ? 'Month-to-Month' : c.term + ' months'}</div>${c.start ? '<div style="font-size:10px;color:#666">From ' + new Date(c.start).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) + '</div>' : ''}</div>
+              <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Contract</span><div style="font-size:13px;font-weight:700;color:#0098d4">${c.term == 1 ? 'Month-to-Month' : c.term + ' months'}</div>${c.start ? '<div style="font-size:10px;color:#666">From ' + auDate(c.start) + '</div>' : ''}</div>
               <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Expiry</span><div>${expiryChip(c)}</div></div>
               <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Renewal</span><div style="font-size:12px;font-weight:600;color:${c.renewal==='auto'?'#059669':'#d97706'}">${c.renewal==='auto'?'Auto-Renew':'Manual'}</div></div>
             </div>` +
@@ -9387,7 +9363,7 @@ function renderCustomers() {
             ${devicesHtml}
             ` + (function(){
               const _df = c.dealFiles || {};
-              const _fd = function(d){ if(!d) return '—'; try { return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return '—'; } };
+              const _fd = function(d){ if(!d) return '—'; try { return auDate(d); } catch(e){ return '—'; } };
               const _hasLead = !!_findLeadForCustomer(c);
               // 3 document rows + Closed Won
               const docs = [
@@ -9468,7 +9444,7 @@ function sendOverdueEmail(custId) {
   const c = CUSTOMERS.find(x => x.id === custId);
   if (!c) return;
   const email = c.email || '';
-  const contact = c.contact || 'Accounts';
+  const contact = _titleCase(c.contact || 'Accounts');
   const dueStr = c.paymentDueDate ? new Date(c.paymentDueDate).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : 'recently';
   const subject = encodeURIComponent('Payment Reminder — ' + c.co + ' — TrackNow GPS');
   const body = encodeURIComponent(
@@ -9499,7 +9475,7 @@ function sendRenewalEmail(custId) {
   const c = CUSTOMERS.find(x => x.id === custId);
   if (!c) return;
   const email = c.email || '';
-  const contact = c.contact || 'Team';
+  const contact = _titleCase(c.contact || 'Team');
   const devs = c.devices || [];
   const actualMRev = devs.length ? devs.reduce((s,d) => s + d.qty * d.sub, 0) : c.trackers * c.subPrice;
   const exp = custExpiryDate(c);
@@ -9548,7 +9524,7 @@ function callToRenew(custId) {
     // No phone — open email instead
     const subject = encodeURIComponent('Subscription Renewal — ' + c.co + ' — TrackNow GPS');
     const body = encodeURIComponent(
-      'Hi ' + (c.contact||'Team') + ',\n\n' +
+      'Hi ' + _titleCase(c.contact||'Team') + ',\n\n' +
       'Your TrackNow GPS subscription is coming up for renewal and requires your confirmation to continue.\n\n' +
       'Would you be available for a quick call to discuss your renewal options? We\'d love to keep you on board.\n\n' +
       'Kind regards,\nTrackNow GPS Team\nsales@tracknow.com.au\nwww.tracknow.com.au\n'
@@ -9726,7 +9702,6 @@ function importCsvProspects() {
     'walk-in':'walk-in','walkin':'walk-in','walk in':'walk-in'};
 
   let imported = 0, dupCount = 0, emptyCount = 0;
-  const today = new Date().toISOString().slice(0, 10);
 
   _csvParsedRows.forEach(row => {
     // Use company if available, fall back to contact name so partial CSVs still import
@@ -9742,8 +9717,11 @@ function importCsvProspects() {
     const rawSource = getVal(row, 'source').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
     const source = SOURCE_MAP[rawSource] || 'database';
 
+    // Stagger addedAt by import order so the row order matches CSV order
+    // when sorted by 'added' (ms-precision timestamp, newest first).
+    const nowTs = Date.now() + imported;
     PROSPECTS.push({
-      id: Date.now() + imported,
+      id: nowTs,
       co: co,
       name: getVal(row, 'name'),
       phone: getVal(row, 'phone'),
@@ -9751,7 +9729,8 @@ function importCsvProspects() {
       ind: getVal(row, 'ind') || '',
       source: source,
       fleet: parseInt(getVal(row, 'fleet')) || 0,
-      added: today,
+      added: auDate(nowTs),
+      addedAt: nowTs,
       status: 'new',
       callbackDate: '',
       callbackTime: '',
@@ -9785,17 +9764,58 @@ function openCustomerModal()  {
 function closeCustomerModal() { document.getElementById('customerModal').style.display='none'; }
 
 // ── Save prospect ────────────────────────────────────────────────
+// Format any date input (Date, ISO YYYY-MM-DD string, DD/MM/YYYY string,
+// DD/MM/YY string, epoch ms number) as DD/MM/YY for portal display.
+// Used as the canonical user-facing date format throughout the portal.
 function auDate(d) {
-  const dt = d || new Date();
+  let dt;
+  if (d == null || d === '') {
+    dt = new Date();
+  } else if (d instanceof Date) {
+    dt = d;
+  } else if (typeof d === 'number') {
+    dt = new Date(d);
+  } else if (typeof d === 'string') {
+    // Already in DD/MM/YY → pass through
+    if (/^\d{2}\/\d{2}\/\d{2}$/.test(d)) return d;
+    // DD/MM/YYYY → trim year to 2 digits
+    const au = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d);
+    if (au) return au[1] + '/' + au[2] + '/' + au[3].slice(-2);
+    // ISO YYYY-MM-DD (or longer) → reorder
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+    if (iso) return iso[3] + '/' + iso[2] + '/' + iso[1].slice(-2);
+    // Anything else: hand off to Date
+    dt = new Date(d);
+    if (isNaN(dt.getTime())) return d; // give up — display as-is
+  } else {
+    dt = new Date();
+  }
   const dd = String(dt.getDate()).padStart(2,'0');
   const mm = String(dt.getMonth()+1).padStart(2,'0');
   const yy = String(dt.getFullYear()).slice(-2);
   return dd+'/'+mm+'/'+yy;
 }
 
+// Format a timestamp / Date as h:mmam (Australian, lowercase).
+// e.g. auTime(Date.now()) → "10:32am". Returns '' for missing/invalid input.
+function auTime(d) {
+  let dt;
+  if (d == null || d === '') return '';
+  if (d instanceof Date) dt = d;
+  else if (typeof d === 'number') dt = new Date(d);
+  else dt = new Date(d);
+  if (isNaN(dt.getTime())) return '';
+  let h = dt.getHours();
+  const m = String(dt.getMinutes()).padStart(2,'0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12; if (h === 0) h = 12;
+  return h + ':' + m + ampm;
+}
+
 function saveProspect() {
   const co = document.getElementById('pm_co').value.trim();
   if (!co) { alert('Company name is required'); return; }
+  const nowTs = Date.now();
   PROSPECTS.push({
     id: _nextProspectId++,
     co, name: document.getElementById('pm_name').value.trim(),
@@ -9806,7 +9826,8 @@ function saveProspect() {
     fleet: 0,
     trackers: 0,
     subPrice: 29.95,
-    added: auDate(),
+    added: auDate(nowTs),
+    addedAt: nowTs,
     status: document.getElementById('pm_status').value,
     callbackDate: '', callbackTime: '',
     notes: document.getElementById('pm_notes').value.trim(),
@@ -10146,7 +10167,7 @@ function moveProspectToPipeline(id) {
     city: '', st: '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
-    lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:199, hwInstall:0}],
+    lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:(HW_PRICES['OBD2 Plug-In Device']||199), hwInstall:(HW_INSTALL_DEFAULT['OBD2 Plug-In Device']||0)}],
     _productsSet: !!(p.lineItems && p.lineItems.length),
     fleetSegments: p.fleetSegments || null,
     dealFiles: p.dealFiles || {},
@@ -10237,6 +10258,55 @@ const OPTIONAL_EXTRAS = [
 // Legacy compat — default 24-month sub prices
 const GPS_PRICES = {};
 Object.keys(PRICING_MATRIX).forEach(k => { GPS_PRICES[k] = PRICING_MATRIX[k][24]; });
+
+// ── PRICING PERSISTENCE ─────────────────────────────────────────────
+// HW_PRICES / OPTIONAL_EXTRAS / PRICING_MATRIX / HW_INSTALL_DEFAULT are
+// edited from the Revenue & Commission tab. They were previously in-memory
+// only — refreshing the page or switching machines lost the edits, and
+// new proposals quoted the original hardcoded numbers. These helpers
+// persist the config to localStorage AND push it through the server-side
+// data store so it survives refreshes and syncs across machines.
+function _loadPricingFromStorage() {
+  try {
+    const raw = localStorage.getItem('tn_pricing');
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p && typeof p === 'object') _applyPricingPayload(p);
+  } catch (e) { console.warn('[pricing] localStorage load failed:', e && e.message); }
+}
+function _applyPricingPayload(p) {
+  if (!p || typeof p !== 'object') return;
+  if (p.hwPrices && typeof p.hwPrices === 'object') Object.assign(HW_PRICES, p.hwPrices);
+  if (p.hwInstallDefault && typeof p.hwInstallDefault === 'object') Object.assign(HW_INSTALL_DEFAULT, p.hwInstallDefault);
+  if (Array.isArray(p.optionalExtras)) {
+    p.optionalExtras.forEach(function(saved, i) {
+      if (saved && OPTIONAL_EXTRAS[i]) Object.assign(OPTIONAL_EXTRAS[i], saved);
+    });
+  }
+  if (p.pricingMatrix && typeof p.pricingMatrix === 'object') {
+    Object.keys(p.pricingMatrix).forEach(function(prod) {
+      if (PRICING_MATRIX[prod]) Object.assign(PRICING_MATRIX[prod], p.pricingMatrix[prod]);
+      else PRICING_MATRIX[prod] = p.pricingMatrix[prod];
+    });
+    // Refresh GPS_PRICES legacy alias
+    Object.keys(PRICING_MATRIX).forEach(function(k) { GPS_PRICES[k] = PRICING_MATRIX[k][24]; });
+  }
+}
+function _pricingPayload() {
+  return {
+    hwPrices:         Object.assign({}, HW_PRICES),
+    hwInstallDefault: Object.assign({}, HW_INSTALL_DEFAULT),
+    optionalExtras:   OPTIONAL_EXTRAS.map(function(ex){ return Object.assign({}, ex); }),
+    pricingMatrix:    JSON.parse(JSON.stringify(PRICING_MATRIX)),
+  };
+}
+function savePricing() {
+  try { localStorage.setItem('tn_pricing', JSON.stringify(_pricingPayload())); } catch (e) {}
+  // Push to server so the other machine picks it up next sync
+  try { if (typeof _syncPush === 'function') _syncPush(); } catch (e) {}
+}
+// Hydrate on boot, before any rendering uses the constants.
+_loadPricingFromStorage();
 
 function calcLeadFromLines(lead) {
   if (!lead.lineItems || !lead.lineItems.length) return;
@@ -10391,7 +10461,17 @@ function addLineItem() {
   const l = _getDealEntity();
   if (!l) return;
   if (!l.lineItems) l.lineItems = [];
-  l.lineItems.push({type:'OBD2 Plug-In',qty:1,sub:29.95,asset:'',hwType:'OBD2 Plug-In Device',hwPrice:149,hwInstall:0});
+  // Pull current pricing from the Revenue tab — falls back to the
+  // legacy default only if the entry has been deleted from HW_PRICES.
+  l.lineItems.push({
+    type: 'OBD2 Plug-In',
+    qty: 1,
+    sub: (PRICING_MATRIX['OBD2 Plug-In'] && PRICING_MATRIX['OBD2 Plug-In'][24]) || 29.95,
+    asset: '',
+    hwType: 'OBD2 Plug-In Device',
+    hwPrice: HW_PRICES['OBD2 Plug-In Device'] || 149,
+    hwInstall: HW_INSTALL_DEFAULT['OBD2 Plug-In Device'] || 0
+  });
   renderDealProductLines();
   updateDealProductTotals();
 }
@@ -10969,7 +11049,7 @@ function generateFleetReport() {
 
 <div class="header">
   <div>
-    <img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:36px;margin-bottom:8px">
+    <div style="font-family:Inter,Arial,sans-serif;font-size:24px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:8px">TrackNow <span style="font-weight:600;color:#666;font-size:13px;letter-spacing:1.3px">GPS</span></div>
     <div class="subtitle">Fleet Optimisation Report</div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
     <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
@@ -11181,12 +11261,12 @@ function _buildFleetEmailHTML(p) {
   var html = '<div style="font-family:Inter,sans-serif;background:#fff;color:#0b1320;padding:0;max-width:800px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
   html += '<div>';
-  html += '<img src="https://www.tracknow.com.au/tracknow-logo.avif" alt="TrackNow" style="height:36px;margin-bottom:8px">';
+  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:24px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:8px">TrackNow <span style="font-weight:600;color:#666;font-size:13px;letter-spacing:1.3px">GPS</span></div>';
   html += '<div style="font-size:11px;color:#5a6675;margin-top:4px">Fleet Optimisation Report</div>';
   html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
   html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '</div>';
-  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0a1726">' + p.co + '</div><div style="font-size:11px;color:#5a6675;margin-top:2px">' + p.name + (p.city ? ' · '+p.city : '') + (p.st ? ', '+p.st : '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.email || '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.ind || '') + '</div><div style="font-size:11px;color:#5a6675">Prepared: ' + new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'}) + '</div></div>';
+  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0a1726">' + p.co + '</div><div style="font-size:11px;color:#5a6675;margin-top:2px">' + _titleCase(p.name) + (p.city ? ' · '+p.city : '') + (p.st ? ', '+p.st : '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.email || '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.ind || '') + '</div><div style="font-size:11px;color:#5a6675">Prepared: ' + new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'}) + '</div></div>';
   html += '</div>';
 
   html += '<h2 style="font-size:15px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:28px 0 14px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Fleet Overview</h2>';
@@ -11228,6 +11308,16 @@ function _buildFleetEmailHTML(p) {
   html += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:12px"><div style="font-weight:600;color:#0a1726">Reduced Wear &amp; Maintenance</div><div style="font-size:11px;color:#7a8595;margin-top:2px">Fewer unnecessary kilometres = less servicing, tyres, and depreciation</div></td><td style="font-weight:700;color:#0098d4;text-align:right;padding:10px 12px">' + fmt(wearSaving) + '</td></tr>';
   html += '<tr style="border-top:2px solid #0098d4;font-weight:800;font-size:13px;color:#0098d4"><td style="padding:10px 12px">TOTAL PROJECTED ANNUAL SAVING</td><td style="font-size:16px;text-align:right;padding:10px 12px">' + fmt(totalAnnualSaving) + '</td></tr>';
   html += '</tbody></table>';
+
+  // ── DISCLAIMER ───────────────────────────────────────────────
+  // The numbers above are projections, not guarantees. We tell the
+  // customer up front so the report is read in the right spirit:
+  // a directional ROI guide, not a contractual promise of savings.
+  html += '<div style="margin-top:24px;padding:14px 16px;background:#fff8e6;border:1px solid #f0c065;border-left:4px solid #d97706;font-size:11px;line-height:1.6;color:#333">';
+  html += '<div style="font-size:12px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Important — These Figures Are An Estimate</div>';
+  html += 'The savings projected in this report are <strong>estimates</strong> calculated from industry benchmarks (Radius Fleet Management AU 2024 data) and the operating inputs supplied by your team. Actual results will vary based on your fleet&rsquo;s real-world routes, driver behaviour, idle patterns, fuel-card practices, insurance arrangements, and maintenance cycles. ';
+  html += 'This document is intended as a directional ROI guide for evaluating GPS tracking — it is <strong>not a contractual guarantee of savings</strong>. Final outcomes will depend on adoption, training, and ongoing use of the platform after installation.';
+  html += '</div>';
 
   html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
   html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
@@ -11310,6 +11400,21 @@ function _openGmailCompose(to, subject, body) {
 
 function _tnSig() {
   return '\n\n—\nTrackNow GPS Sales Team\n1300 TRACK NOW\nsales@tracknow.com.au\nwww.tracknow.com.au';
+}
+
+// Normalise an imported name for use in email greetings / letters.
+// Handles the common case where CSV-imported data is ALL CAPS ("JAY",
+// "JAY SMITH") or all-lowercase ("jay smith") — converts to Title Case.
+// If the name is already mixed-case (e.g. "Jay", "McDonald", "O'Brien")
+// it's left alone so we don't break correct casing.
+function _titleCase(s) {
+  s = String(s == null ? '' : s).trim();
+  if (!s) return s;
+  var hasUpper = /[A-Z]/.test(s);
+  var hasLower = /[a-z]/.test(s);
+  // Leave already-mixed-case names alone
+  if (hasUpper && hasLower) return s;
+  return s.toLowerCase().replace(/\b([a-z])/g, function(m){ return m.toUpperCase(); });
 }
 
 function _markSig() {
@@ -11437,7 +11542,7 @@ function sendEmailFromPortal() {
       '<p style="font-size:10px;color:#999;margin:10px 0 0">tracknow.com.au/demo</p>' +
       '</div>';
     // Pricing & Packages CTA with Request Callback
-    var _cbUrl = 'https://tracknow-portal.onrender.com/?callback=1&source=fleet_report' +
+    var _cbUrl = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=fleet_report' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11453,7 +11558,7 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'proposal') {
-    var _paUrl = 'https://tracknow-portal.onrender.com/?proposal_accept=1' +
+    var _paUrl = 'https://tracknow-portal-sync.onrender.com/?proposal_accept=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11471,26 +11576,17 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'agreement') {
-    // Store agreement HTML on SERVER so signing page can display it from any device.
-    // Key MUST be at least 16 chars — the server's POST /api/agreement rejects
-    // shorter keys with "Key too short." (silently swallowed by the .catch
-    // below, which is why this used to look like it was working).
-    // We append a base36 timestamp + 6 random chars so the key is ~25 chars,
-    // unique per send (so resending creates a new immutable record), and only
-    // contains URL-safe characters [a-z0-9-]. The SAME _agrKey is then reused
-    // in the email's signing URL so the customer's link matches what's stored.
-    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0') +
-                  '-' + Date.now().toString(36) +
-                  Math.random().toString(36).slice(2, 8);
+    // Store agreement HTML on SERVER so signing page can display it from any device
+    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0');
     try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
     try { fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) }).catch(function(){}); } catch(x2) {}
-    var _agrSignUrl = 'https://tracknow-portal.onrender.com/?agreement_sign=1' +
+    var _agrSignUrl = 'https://tracknow-portal-sync.onrender.com/?agreement_sign=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '') +
-      '&agreement=' + encodeURIComponent(_agrKey);
-    var _cbUrlA = 'https://tracknow-portal.onrender.com/?callback=1&source=agreement' +
+      '&agreement=' + encodeURIComponent('TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0'));
+    var _cbUrlA = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=agreement' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11628,7 +11724,7 @@ function emailFleetOverview(prospectId) {
   var p = PROSPECTS.find(function(x){return x.id===prospectId;});
   if (!p) return;
   if (!p.email) { showToast('No email address for ' + p.co + ' — add one in the prospect details first','warn'); return; }
-  var name = (p.name || 'there').split(' ')[0];
+  var name = _titleCase((p.name || 'there').split(' ')[0]);
   var subject = 'Fleet Optimisation Report — ' + p.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for taking the time to speak with us about your fleet.\n\n' +
@@ -11656,7 +11752,7 @@ function emailProposal(leadId) {
   var l = LEADS.find(function(x){return x.id===leadId;});
   if (!l) return;
   if (!l.email) { showToast('No email address for ' + l.co + ' — add one in the deal first','warn'); return; }
-  var name = (l.name || 'there').split(' ')[0];
+  var name = _titleCase((l.name || 'there').split(' ')[0]);
   var totalUnits = l.lineItems ? l.lineItems.reduce(function(s,li){return s+(li.qty||0);},0) : (l.v||0);
   var subject = 'TrackNow GPS Proposal — ' + l.co;
   var body = 'Hi ' + name + ',\n\n' +
@@ -11685,7 +11781,7 @@ function emailAgreement(leadId) {
   var l = LEADS.find(function(x){return x.id===leadId;});
   if (!l) return;
   if (!l.email) { showToast('No email address for ' + l.co + ' — add one in the deal first','warn'); return; }
-  var name = (l.name || 'there').split(' ')[0];
+  var name = _titleCase((l.name || 'there').split(' ')[0]);
   var subject = 'TrackNow GPS Service Agreement — ' + l.co;
   var body = 'Hi ' + name + ',\n\n' +
     'Thank you for choosing TrackNow GPS.\n\n' +
@@ -12254,6 +12350,7 @@ function _importQueuedWebLeads() {
       if (lead.email && PROSPECTS.some(function(p){ return (p.email||'').toLowerCase() === lead.email.toLowerCase(); })) return;
       var noteText = (lead.type === 'quote' ? 'Quote request' : 'Demo request') + ' via website.';
       if (lead.product) noteText += ' Product interest: ' + lead.product + '.';
+      var nowTs = Date.now() + imported;
       PROSPECTS.push({
         id: _nextProspectId++,
         co: lead.company || lead.name,
@@ -12265,7 +12362,8 @@ function _importQueuedWebLeads() {
         fleet: 0,
         trackers: 0,
         subPrice: 0,
-        added: auDate(),
+        added: auDate(nowTs),
+        addedAt: nowTs,
         status: 'new',
         callbackDate: '',
         callbackTime: '',
@@ -12665,16 +12763,46 @@ function submitAgreementSign() {
   // Save the signed/executed agreement HTML on the server so portal can store it in dealFiles
   try { fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) }).catch(function(){}); } catch(x) {}
 
-  // Receipt emails (sales + customer copies of the executed agreement)
-  // are now fired SERVER-SIDE inside POST /api/agreement-signed (see
-  // server.js). The customer is unauthenticated when they sign, so the
-  // old client-side emailjs.send() to their own email always failed
-  // silently against the send-email allowlist (which locks unauth
-  // sends to the internal sales mailbox). Doing it server-side
-  // bypasses that allowlist safely — the server controls the
-  // recipient and pulls it from the trusted POST body it just wrote
-  // to agreementSignedStore. Removing the client-side calls also
-  // prevents sales from receiving two duplicate copies.
+  // Send EmailJS to sales + customer
+  function loadAndSend() {
+    // To sales — full signed agreement
+    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+      to_email: 'sales@tracknow.com.au',
+      subject: 'SIGNED & EXECUTED: Service Agreement ' + agrNum + ' — ' + (window._asCompany || 'Unknown'),
+      from_name: cn,
+      message_html: fullSignedEmail
+    }).then(function(){}).catch(function(){});
+
+    // To customer — full signed agreement with intro
+    if (window._asEmail) {
+      var customerName = _titleCase((window._asName || cn || 'there').split(' ')[0]);
+      var customerEmail = '<div style="font-family:Inter,sans-serif;max-width:900px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
+        '<p style="font-size:14px;margin-bottom:10px">Hi ' + customerName + ',</p>' +
+        '<p style="font-size:14px;margin-bottom:10px">Thank you for signing your TrackNow GPS service agreement. Please find your fully executed agreement below for your records.</p>' +
+        '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
+        signedBanner + cleanAgrHTML + sigBlock +
+        '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
+          '<p>Kind regards,</p>' +
+          '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
+          '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a></p>' +
+        '</div></div>';
+      emailjs.send('service_5y35h2g', 'template_gwga9jo', {
+        to_email: window._asEmail,
+        subject: 'Your Signed Service Agreement — ' + agrNum + ' — TrackNow GPS',
+        from_name: 'TrackNow GPS',
+        message_html: customerEmail
+      }).then(function(){}).catch(function(){});
+    }
+  }
+
+  if (typeof emailjs !== 'undefined') {
+    loadAndSend();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = function() { emailjs.init('OoTzGVR6EezbqlWDx'); loadAndSend(); };
+    document.head.appendChild(s);
+  }
 
   // Show thank you
   document.getElementById('as_form').style.display = 'none';
@@ -13125,16 +13253,54 @@ function dismissAgreementSign(id) {
 renderAgreementSigns();
 setInterval(renderAgreementSigns, 15000);
 
-// ── Cash register "ka-ching" sound effect ──
+// ── Cash register "cha-ching" sound effect ──
+// Synthesised with Web Audio API (no audio file dependency) — three
+// rapid bell strikes harmonised on the 1st / 5th / octave so it
+// reads as a real cash-register ka-CHING, not a single "ding".
+// Falls back to /cash.wav if Web Audio is unavailable.
 var _cashAudio = null;
+var _tnAudioCtx = null;
 function _playCashRegister() {
-  // Play the cash register WAV file — preload on first call for instant replay
-  if (!_cashAudio) {
-    _cashAudio = new Audio('/cash.wav');
-    _cashAudio.volume = 0.8;
+  try {
+    if (!_tnAudioCtx) {
+      var Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) throw new Error('no AudioContext');
+      _tnAudioCtx = new Ctor();
+    }
+    var ctx = _tnAudioCtx;
+    if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    var t0 = ctx.currentTime;
+
+    function bell(start, freq, gainPeak, durSec) {
+      var osc1 = ctx.createOscillator();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(freq, start);
+      var osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(freq * 2.01, start);
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(gainPeak, start + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + durSec);
+      osc1.connect(g); osc2.connect(g); g.connect(ctx.destination);
+      osc1.start(start); osc2.start(start);
+      osc1.stop(start + durSec); osc2.stop(start + durSec);
+    }
+
+    // "Ka" — short low bell
+    bell(t0,        720,  0.32, 0.18);
+    // "ching" — two overlapping high bells, fifth + octave above
+    bell(t0 + 0.10, 1080, 0.42, 0.65);
+    bell(t0 + 0.12, 1440, 0.30, 0.55);
+  } catch (e) {
+    // Fallback to the WAV if Web Audio isn't available for any reason
+    if (!_cashAudio) {
+      _cashAudio = new Audio('/cash.wav');
+      _cashAudio.volume = 0.8;
+    }
+    _cashAudio.currentTime = 0;
+    _cashAudio.play().catch(function () {});
   }
-  _cashAudio.currentTime = 0;
-  _cashAudio.play().catch(function() {});
 }
 
 // ── Live callback detection — picks up new requests from other tabs instantly ──
