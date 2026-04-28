@@ -229,7 +229,7 @@
   .pin-wrap {
     position: absolute;
     top: 50%;
-    left: calc(50% - 25px);  /* shift left a bit for sidebar space */
+    left: 50%;
     transform: translate(-50%, -58%);
     display: flex;
     flex-direction: column;
@@ -298,33 +298,6 @@
     text-shadow: 2px 3px 12px rgba(0,0,0,0.3);
   }
 
-  /* Sidebar */
-  .cert-sidebar {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 36px;
-    background: #0D1B2A;
-    border-left: 2px solid #1AB8E8;
-    box-shadow: -2px 0 12px rgba(26,184,232,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-  }
-  .cert-sidebar span {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: #fff;
-    white-space: nowrap;
-    font-family: 'Work Sans', sans-serif;
-  }
-
   /* Info block */
   .cert-info {
     background: #fff;
@@ -364,17 +337,21 @@
   /* Footer */
   .cert-footer {
     background: #fff;
-    flex: 0 0 42px;
-    padding: 5px 14px;
+    flex: 0 0 56px;
+    padding: 8px 14px 10px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 3px;
+    gap: 5px;
   }
   .cert-footer .ftr-line {
-    font-size: 6.5px;
+    font-size: 7.5px;
     color: #1A3050;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* WWW bar */
@@ -496,10 +473,6 @@
           </div>
           <!-- Year -->
           <div class="cert-year" id="previewYear">2026</div>
-          <!-- Sidebar -->
-          <div class="cert-sidebar">
-            <span>Certificate of Compliance</span>
-          </div>
         </div>
 
         <!-- Info block -->
@@ -574,8 +547,7 @@ async function generatePDF(openInTab = false) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
 
     const PW = 595.28, PH = 841.89;
-    const SIDEBAR_W = 50;
-    const CW = PW - SIDEBAR_W;   // content width
+    const CW = PW;   // content width — sidebar removed
 
     // ── Dimensions ──
     const HDR_H  = 165;
@@ -598,26 +570,6 @@ async function generatePDF(openInTab = false) {
     const lerp = (a, b, t) => a + (b - a) * t;
     const OT = [26, 184, 232];  // cyan top (#1AB8E8)
     const OB = [13, 27, 42];    // navy bottom (#0D1B2A)
-
-    // ── 1. Right sidebar (full height) ──
-    doc.setFillColor(13, 27, 42);
-    doc.rect(CW, 0, SIDEBAR_W, PH, 'F');
-
-    // Cyan border line between content and sidebar
-    doc.setDrawColor(26, 184, 232);
-    doc.setLineWidth(2);
-    doc.line(CW, 0, CW, PH);
-
-    // "CERTIFICATE OF COMPLIANCE" rotated text on sidebar.
-    // jsPDF 2.5.1 dropped the saveGraphicsState/translate/rotate API — text
-    // rotation is now done via the angle option on doc.text() itself.
-    // We pass {angle: 270, align: 'center'} so the text reads bottom-up
-    // along the sidebar, anchored at the centre of the sidebar.
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    const sbText = 'CERTIFICATE OF COMPLIANCE';
-    doc.text(sbText, CW + SIDEBAR_W / 2 + 5, PH / 2, { angle: 270, align: 'center' });
 
     // ── 2. Header — white ──
     doc.setFillColor(255, 255, 255);
