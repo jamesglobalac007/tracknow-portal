@@ -3492,8 +3492,19 @@ function openProposalDoc(leadId) {
     extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td style="text-align:center">' + ex.qty + '</td><td style="text-align:right">' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
   });
 
+  // Banner shown above the proposal when the customer has clicked
+  // "Yes, Proceed to Formal Agreement" — makes the View Proposal button
+  // visibly reflect acceptance state instead of always rendering blank.
+  const _accepted = l.proposalAcceptedDate ? new Date(l.proposalAcceptedDate) : null;
+  const _acceptedBanner = _accepted ? (
+    '<div style="background:#0a4d2e;border:2px solid #00CC66;color:#fff;padding:14px 24px;margin-bottom:24px;text-align:center;font-family:Inter,sans-serif;border-radius:6px">' +
+      '<div style="font-size:11px;font-weight:700;color:#00CC66;letter-spacing:.4em;text-transform:uppercase;margin-bottom:4px">✓ ACCEPTED</div>' +
+      '<div style="font-size:13px;font-weight:600">' + (l.co || 'Customer') + ' clicked Proceed to Formal Agreement on ' + _accepted.toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'}) + '</div>' +
+    '</div>'
+  ) : '';
+
   const win = window.open('', '_blank', 'width=900,height=1100');
-  win.document.write(`<!DOCTYPE html><html><head><title>Proposal — ${l.co}</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>${l.proposalAcceptedDate ? 'Proposal — ACCEPTED — ' : 'Proposal — '}${l.co}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
@@ -3515,6 +3526,7 @@ function openProposalDoc(leadId) {
   .print-only{display:none}
   @media print{body{padding:20px}.no-print{display:none}.print-only{display:block !important}}
 </style></head><body>
+${_acceptedBanner}
 <div class="no-print" style="text-align:right;margin-bottom:20px">
   <button onclick="window.print()" style="padding:10px 24px;background:#0098d4;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Print / Save as PDF</button>
 </div>
@@ -4620,6 +4632,31 @@ function viewCustDealFile(custId, fileType) {
   if (!c) return;
   const f = (c.dealFiles || {})[fileType];
   if (!f) { showToast('No file uploaded yet', 'warn'); return; }
+  // For HTML files (proposal, agreement, fleet report, signed agreement) open
+  // the data URL inline in a new window so the customer card View button
+  // actually shows the document. Previously we used <a download> which
+  // triggered a silent download of an .html file in Chrome — making the
+  // signed agreement and proposal acceptance look "missing" even though
+  // they were saved.
+  const isHtml = (f.type === 'text/html') || (typeof f.data === 'string' && f.data.indexOf('data:text/html') === 0);
+  if (isHtml) {
+    const win = window.open('', '_blank', 'width=900,height=1100');
+    if (!win) return;
+    try {
+      const html = decodeURIComponent(f.data.substring(f.data.indexOf(',') + 1));
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      const titleLabel = (fileType === 'agreement_signed')
+        ? ('Agreement — SIGNED & EXECUTED — ' + (c.co || ''))
+        : (fileType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ' — ' + (c.co || ''));
+      try { win.document.title = titleLabel; } catch (e) {}
+      return;
+    } catch (e) {
+      try { win.close(); } catch (e2) {}
+    }
+  }
+  // Non-HTML files (PDF, image, etc) — keep the original download path.
   const a = document.createElement('a');
   a.href = f.data;
   a.download = f.name;
