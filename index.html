@@ -2718,6 +2718,10 @@ function _handleServerEvent(evt) {
         });
         if (_signedLead) {
           _signedLead.agreementSignedDate = evt.data.ts || new Date().toISOString();
+          // Persist the long agreement key on the lead so future View calls
+          // hit the right /api/agreement-signed?key=<long key> even after
+          // localStorage clears or sync from another machine.
+          if (evt.data.agreement) _signedLead.agreementKey = evt.data.agreement;
           saveData(); renderPipeline();
           // Fetch the fully signed agreement HTML from the server to save in dealFiles
           var _agrKey2 = evt.data.agreement || '';
@@ -3985,7 +3989,12 @@ function openAgreementDoc(leadId) {
 
   // 2) Server-side signed copy. Open placeholder window now, populate
   // when the fetch resolves.
-  var agrKey = 'TN-AGR-' + String(l.id).padStart(4, '0');
+  // Prefer the long key persisted at send time (lead.agreementKey =
+  // 'TN-AGR-XXXX-<base36ts><rand>'), since that's what the server has.
+  // Fall back to the legacy short form only for leads that pre-date the
+  // long-key fix — those won't resolve, but openBlankAgreementDoc will
+  // render the blank template as a graceful degrade.
+  var agrKey = l.agreementKey || ('TN-AGR-' + String(l.id).padStart(4, '0'));
   var win = window.open('', '_blank', 'width=900,height=1100');
   if (!win) return;
   try {
@@ -11731,16 +11740,30 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'agreement') {
-    // Store agreement HTML on SERVER so signing page can display it from any device
-    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0');
+    // Store agreement HTML on SERVER so signing page can display it from any device.
+    // Key MUST be at least 16 chars — server's POST /api/agreement rejects shorter
+    // keys with "Key too short." (silently swallowed by the .catch below, which is
+    // why this used to look like it was working). We append a base36 timestamp +
+    // 6 random chars so the key is ~25 chars, unique per send (so resending creates
+    // a new immutable record), and only contains URL-safe characters [a-z0-9-].
+    // The SAME _agrKey is then reused in the email's signing URL so the customer's
+    // link matches what's stored. (Reinstates the fix from commit 746a833 that was
+    // accidentally reverted by the sandbox→live flat copy in afa9a25.)
+    var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0') +
+                  '-' + Date.now().toString(36) +
+                  Math.random().toString(36).slice(2, 8);
     try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
-    try { fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) }).catch(function(){}); } catch(x2) {}
+    try {
+      fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) })
+        .then(function(r){ if (!r.ok) console.warn('[tracknow] /api/agreement save failed:', r.status); })
+        .catch(function(e){ console.warn('[tracknow] /api/agreement save threw:', e && e.message); });
+    } catch(x2) { console.warn('[tracknow] /api/agreement save outer throw:', x2 && x2.message); }
     var _agrSignUrl = window.location.origin + '/?agreement_sign=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '') +
-      '&agreement=' + encodeURIComponent('TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0'));
+      '&agreement=' + encodeURIComponent(_agrKey);
     var _cbUrlA = window.location.origin + '/?callback=1&source=agreement' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
@@ -11805,6 +11828,13 @@ function sendEmailFromPortal() {
               if (_sent.type === 'proposal' && !_autoLead.proposalSentDate) _autoLead.proposalSentDate = new Date().toISOString();
               if (_sent.type === 'agreement' && !_autoLead.agreementSentDate) _autoLead.agreementSentDate = new Date().toISOString();
               if (_sent.type === 'fleet' && !_autoLead.fleetReportDate) _autoLead.fleetReportDate = new Date().toISOString();
+              // Persist the long agreement key on the lead so "View Agreement" later
+              // can fetch the signed copy from /api/agreement-signed?key=<long key>.
+              // Without this the View button rebuilds the OLD short TN-AGR-XXXX
+              // form which the server doesn't have (server requires keys >= 16 chars).
+              if (_sent.type === 'agreement' && typeof _agrKey !== 'undefined' && _agrKey) {
+                _autoLead.agreementKey = _agrKey;
+              }
               saveData();
               renderPipeline();
             }
@@ -12922,7 +12952,11 @@ function submitAgreementSign() {
   // here was duplicating both emails (every signing triggered two
   // SIGNED & EXECUTED emails to sales@ and two "Your Signed Service
   // Agreement" emails to the customer).
-  try { fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) }).catch(function(){}); } catch(x) {}
+  try {
+    fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) })
+      .then(function(r){ if (!r.ok) console.warn('[tracknow] /api/agreement-signed save failed:', r.status, '— signed copy may not appear in portal until staff reload'); })
+      .catch(function(e){ console.warn('[tracknow] /api/agreement-signed save threw:', e && e.message); });
+  } catch(x) { console.warn('[tracknow] /api/agreement-signed save outer throw:', x && x.message); }
 
   // Show thank you
   document.getElementById('as_form').style.display = 'none';

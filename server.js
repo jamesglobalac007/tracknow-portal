@@ -33,6 +33,8 @@ const USERS_FILE     = path.join(DATA_DIR, 'users.json');
 const SESSIONS_FILE  = path.join(DATA_DIR, 'sessions.json');
 const AUDIT_FILE     = path.join(DATA_DIR, 'audit.json');
 const TRUST_FILE     = path.join(DATA_DIR, 'trustedDevices.json');
+const AGREEMENTS_FILE        = path.join(DATA_DIR, 'agreements.json');
+const AGREEMENTS_SIGNED_FILE = path.join(DATA_DIR, 'agreementsSigned.json');
 const BACKUPS_DIR    = path.join(DATA_DIR, 'backups');
 const SIGNOFF_DIR    = path.join(DATA_DIR, 'disclaimer-signoffs');
 const SIGNOFF_INDEX  = path.join(SIGNOFF_DIR, '_index.json');
@@ -2010,10 +2012,39 @@ app.get('/api/events', (req, res) => {
   res.json({ ok: true, events: newEvents, lastId: events.length > 0 ? events[events.length - 1].id : 0 });
 });
 
-// Agreement HTML — persisted in memory only (as before); could upgrade to
-// disk later. Keys are opaque from the client side.
-const agreementStore = {};
-const agreementSignedStore = {};
+// Agreement HTML — persisted to disk in DATA_DIR so signed contracts survive
+// Render restarts/redeploys. Keys are opaque (long random strings) from the
+// client; the disk files are JSON maps { [key]: <entry> }. Writes are
+// fire-and-forget but synchronous (writeFileSync) for simplicity — agreement
+// posts are rare enough that the I/O cost is irrelevant.
+let agreementStore = {};
+let agreementSignedStore = {};
+try {
+  if (fs.existsSync(AGREEMENTS_FILE)) {
+    agreementStore = JSON.parse(fs.readFileSync(AGREEMENTS_FILE, 'utf8')) || {};
+    console.log(`[tracknow] Loaded ${Object.keys(agreementStore).length} agreement(s) from disk`);
+  }
+} catch (e) {
+  console.warn('[tracknow] Failed to load agreements.json:', e && e.message);
+  agreementStore = {};
+}
+try {
+  if (fs.existsSync(AGREEMENTS_SIGNED_FILE)) {
+    agreementSignedStore = JSON.parse(fs.readFileSync(AGREEMENTS_SIGNED_FILE, 'utf8')) || {};
+    console.log(`[tracknow] Loaded ${Object.keys(agreementSignedStore).length} signed agreement(s) from disk`);
+  }
+} catch (e) {
+  console.warn('[tracknow] Failed to load agreementsSigned.json:', e && e.message);
+  agreementSignedStore = {};
+}
+function _persistAgreements() {
+  try { fs.writeFileSync(AGREEMENTS_FILE, JSON.stringify(agreementStore)); }
+  catch (e) { console.warn('[tracknow] Failed to persist agreements.json:', e && e.message); }
+}
+function _persistAgreementsSigned() {
+  try { fs.writeFileSync(AGREEMENTS_SIGNED_FILE, JSON.stringify(agreementSignedStore)); }
+  catch (e) { console.warn('[tracknow] Failed to persist agreementsSigned.json:', e && e.message); }
+}
 
 app.post('/api/agreement', (req, res) => {
   try {
@@ -2035,6 +2066,7 @@ app.post('/api/agreement', (req, res) => {
       return res.status(409).json({ ok: false, error: 'Agreement already posted for this key.' });
     }
     agreementStore[key] = html;
+    _persistAgreements();
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ ok: false, error: 'Server error' }); }
 });
@@ -2056,6 +2088,7 @@ app.post('/api/agreement-signed', (req, res) => {
       return res.status(409).json({ ok: false, error: 'Signed agreement already posted for this key.' });
     }
     agreementSignedStore[key] = { html, company: company || '', email: email || '', ts: Date.now() };
+    _persistAgreementsSigned();
     res.json({ ok: true });
 
     // Fire the receipt emails server-side so they don't depend on the
