@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TrackNow Certificate Generator</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -337,15 +337,20 @@
     z-index: 2;
   }
   .cert-info .info-row {
-    font-size: 7.5px;
+    font-size: 9.5px;
     color: #1a1a1a;
     letter-spacing: 0.03em;
     line-height: 1.5;
   }
   .cert-info .info-row.bold { font-weight: 700; }
+  .cert-info .info-row.bold:first-child,
+  .cert-info .info-row.bold:nth-child(2) {
+    font-size: 12px;
+  }
   .cert-info .info-value {
     color: #0E9AC7;
-    font-weight: 700;
+    font-weight: 800;
+    font-size: 1.05em;
   }
 
   /* Divider */
@@ -435,6 +440,11 @@
     </div>
 
     <div class="field-group">
+      <label>Customer Email <span style="color:#3A5A7A;font-weight:400;text-transform:none;letter-spacing:0">(for mailto)</span></label>
+      <input type="email" id="customerEmail" placeholder="e.g. accounts@acme.com.au">
+    </div>
+
+    <div class="field-group">
       <label>Asset ID</label>
       <input type="text" id="assetId" placeholder="e.g. VEH-00421" oninput="updatePreview()">
     </div>
@@ -460,7 +470,7 @@
     <hr class="divider">
 
     <button class="btn-download" onclick="generatePDF()">⬇ Download PDF Certificate</button>
-    <button class="btn-preview" onclick="generatePDF(true)">Open PDF in New Tab</button>
+    <button class="btn-preview" onclick="window._pendingPdfWindow=window.open('about:blank','_blank');generatePDF(true)">Open PDF in New Tab</button>
     <button class="btn-preview" onclick="resetForm()" style="margin-top:6px;color:#4A6A8A;border-color:#0D1B2A;">↺ Reset / New Certificate</button>
 
     <div class="status" id="status"></div>
@@ -712,40 +722,45 @@ async function generatePDF(openInTab = false) {
     doc.rect(0, INFO_Y, CW, INFO_H, 'F');
 
     const PAD = 16;
-    const INFO_SZ = 10.5;
+    const INFO_SZ = 10.5;        // smaller rows (asset list + certificate line)
+    const HEADER_SZ = 14.5;      // bigger rows (customer name + asset id) — per James
 
+    // Start ty using the HEADER_SZ since the top row is the bigger one
+    let ty = INFO_Y + INFO_H - PAD - HEADER_SZ;
+
+    // Row 1: CUSTOMER NAME — bigger so it's clearly visible
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(INFO_SZ);
+    doc.setFontSize(HEADER_SZ);
     doc.setTextColor(26, 26, 26);
-
-    let ty = INFO_Y + INFO_H - PAD - INFO_SZ;
-
-    // Row 1: CUSTOMER NAME
     doc.text('CUSTOMER NAME: ', PAD, ty);
     const cnW = doc.getTextWidth('CUSTOMER NAME: ');
     doc.setTextColor(26, 184, 232);
     doc.text(custName, PAD + cnW, ty);
     doc.setTextColor(26, 26, 26);
-    ty -= (INFO_SZ + 9);
+    ty -= (HEADER_SZ + 7);
 
-    // Row 2: ASSET ID
+    // Row 2: ASSET ID — bigger
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(HEADER_SZ);
     doc.text('ASSET ID: ', PAD, ty);
     const aiW = doc.getTextWidth('ASSET ID: ');
     doc.setTextColor(26, 184, 232);
     doc.text(assetId, PAD + aiW, ty);
     doc.setTextColor(26, 26, 26);
-    ty -= (INFO_SZ + 9);
+    ty -= (INFO_SZ + 11);
 
-    // Row 3: normal weight
+    // Row 3: normal weight (asset list line) — back to standard size
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(INFO_SZ);
     const assetListLine = assetDesc
       ? `Asset List as per TRACKNOW CORPORATE SYSTEM  |  ${assetDesc}`
       : 'Asset List as per TRACKNOW CORPORATE SYSTEM';
     doc.text(assetListLine, PAD, ty);
     ty -= (INFO_SZ + 7);
 
-    // Row 4: bold
+    // Row 4: bold (certificate line)
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(INFO_SZ);
     doc.text('CERTIFICATE of GPS Tracker Fitment & Speed Monitoring Technology', PAD, ty);
 
     // ── 5. Cyan divider ──
@@ -786,7 +801,24 @@ async function generatePDF(openInTab = false) {
     const filename = `TrackNow-Certificate-${custName.replace(/[^a-z0-9]/gi,'_')}-${year}.pdf`;
     if (openInTab) {
       const blob = doc.output('blob');
-      window.open(URL.createObjectURL(blob));
+      const url  = URL.createObjectURL(blob);
+      // The popup window must be opened during the original user-click
+      // gesture (see Open PDF button onclick handler) — by the time the
+      // async PDF generation finishes, opening a fresh window would be
+      // popup-blocked. We re-use the pre-opened window if it exists,
+      // otherwise fall back to a fresh window.open() and a same-tab
+      // redirect if the popup was blocked.
+      const w = window._pendingPdfWindow;
+      window._pendingPdfWindow = null;
+      if (w && !w.closed) {
+        w.location.href = url;
+      } else {
+        const fallback = window.open(url, '_blank');
+        if (!fallback) {
+          // popup blocked — open in same tab as last resort
+          window.location.href = url;
+        }
+      }
     } else {
       doc.save(filename);
     }
@@ -830,9 +862,14 @@ function showStatus(msg, type = '') {
         if (el) el.value = v;
       }
     });
-    // Stash the recipient email for the "Email to Customer" mailto button (added below).
+    // Populate the recipient email field if URL provided one. The mailto
+    // button below also reads from #customerEmail so staff can type it
+    // directly when launching the generator without URL prefill.
     const em = qp.get('email') || '';
-    if (em) window._prefillEmail = em;
+    if (em) {
+      const emEl = document.getElementById('customerEmail');
+      if (emEl) emEl.value = em;
+    }
   } catch(e) { /* no-op */ }
 })();
 
@@ -841,13 +878,19 @@ function showStatus(msg, type = '') {
 // pre-composes an email to the customer. They'll still need to attach the
 // downloaded PDF manually (mailto can't attach files — browser limitation).
 function emailToCustomer() {
-  const name = (document.getElementById('customerName') || {}).value || '';
-  const year = (document.getElementById('certYear')    || {}).value || (new Date().getFullYear());
-  const to   = window._prefillEmail || '';
+  const name  = (document.getElementById('customerName')  || {}).value || '';
+  const year  = (document.getElementById('certYear')      || {}).value || (new Date().getFullYear());
+  const emEl  = document.getElementById('customerEmail');
+  let   to    = (emEl && emEl.value || '').trim();
   if (!to) {
-    const t = prompt('Customer email address?');
-    if (!t) return;
-    window._prefillEmail = t;
+    // Fallback: prompt if the staff member hasn't filled in the email field
+    to = (prompt('Customer email address?') || '').trim();
+    if (!to) return;
+    if (emEl) emEl.value = to;
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+    showStatus('Invalid email address: ' + to);
+    return;
   }
   const subject = 'TrackNow — Certificate of Compliance ' + year;
   const body =
@@ -856,7 +899,7 @@ function emailToCustomer() {
     'Keep a copy on file for your records. Let me know if you have any questions.\n\n' +
     'Regards,\nTrackNow Team\nsales@tracknow.com.au\n\n' +
     '(ATTACH THE DOWNLOADED PDF BEFORE SENDING.)';
-  const href = 'mailto:' + encodeURIComponent(window._prefillEmail).replace(/%40/g,'@')
+  const href = 'mailto:' + encodeURIComponent(to).replace(/%40/g,'@')
              + '?subject=' + encodeURIComponent(subject)
              + '&body=' + encodeURIComponent(body);
   window.location.href = href;
