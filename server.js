@@ -2156,7 +2156,24 @@ app.post('/api/agreement-signed', (req, res) => {
 
 app.get('/api/agreement-signed', (req, res) => {
   const key = req.query.key || '';
-  const entry = agreementSignedStore[key];
+  let entry = agreementSignedStore[key];
+  // Prefix fallback — when the staff side asks for the legacy short key
+  // (TN-AGR-0001) but the customer signed under the new long key
+  // (TN-AGR-0001-<base36ts><rand>), match by prefix and return the most
+  // recently-signed copy that starts with the requested key. This keeps
+  // pre-fix leads viewable without needing a manual data backfill.
+  if (!entry && key) {
+    let bestKey = null;
+    let bestTs = -1;
+    const prefix = String(key) + '-';
+    for (const k of Object.keys(agreementSignedStore)) {
+      if (k.startsWith(prefix)) {
+        const ts = (agreementSignedStore[k] && agreementSignedStore[k].ts) || 0;
+        if (ts > bestTs) { bestTs = ts; bestKey = k; }
+      }
+    }
+    if (bestKey) entry = agreementSignedStore[bestKey];
+  }
   if (entry) res.json({ ok: true, html: entry.html, company: entry.company, email: entry.email, ts: entry.ts });
   else res.json({ ok: false, html: '' });
 });

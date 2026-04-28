@@ -3195,7 +3195,7 @@ var _html2pdfLoaded = false;
 function _loadHtml2Pdf(cb) {
   if (_html2pdfLoaded && typeof html2pdf !== 'undefined') { cb(); return; }
   var s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
   s.onload = function() { _html2pdfLoaded = true; cb(); };
   s.onerror = function() { console.warn('html2pdf failed to load'); cb(); };
   document.head.appendChild(s);
@@ -11753,6 +11753,14 @@ function sendEmailFromPortal() {
                   '-' + Date.now().toString(36) +
                   Math.random().toString(36).slice(2, 8);
     try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
+    // Persist the long key onto the lead so staff-side "View Agreement" later
+    // can look up the customer's signed copy by the SAME key the customer
+    // POSTed under. Without this, View Agreement falls back to the short
+    // 11-char key (TN-AGR-0001) which never matches what the customer signed.
+    try {
+      var _ldForKey = LEADS.find(function(x) { return x.id === _epPending.leadId; });
+      if (_ldForKey) { _ldForKey.agreementKey = _agrKey; saveData(); }
+    } catch(xk) {}
     try {
       fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) })
         .then(function(r){ if (!r.ok) console.warn('[tracknow] /api/agreement save failed:', r.status); })
