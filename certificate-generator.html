@@ -606,17 +606,16 @@ async function generatePDF(openInTab = false) {
     doc.setLineWidth(2);
     doc.line(CW, 0, CW, PH);
 
-    // "CERTIFICATE OF COMPLIANCE" rotated text on sidebar
+    // "CERTIFICATE OF COMPLIANCE" rotated text on sidebar.
+    // jsPDF 2.5.1 dropped the saveGraphicsState/translate/rotate API — text
+    // rotation is now done via the angle option on doc.text() itself.
+    // We pass {angle: 270, align: 'center'} so the text reads bottom-up
+    // along the sidebar, anchored at the centre of the sidebar.
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
-    doc.saveGraphicsState();
-    doc.translate(CW + SIDEBAR_W / 2, PH / 2);
-    doc.rotate(90);
     const sbText = 'CERTIFICATE OF COMPLIANCE';
-    const sbW = doc.getTextWidth(sbText);
-    doc.text(sbText, -sbW / 2, 5);
-    doc.restoreGraphicsState();
+    doc.text(sbText, CW + SIDEBAR_W / 2 + 5, PH / 2, { angle: 270, align: 'center' });
 
     // ── 2. Header — white ──
     doc.setFillColor(255, 255, 255);
