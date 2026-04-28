@@ -11542,7 +11542,7 @@ function sendEmailFromPortal() {
       '<p style="font-size:10px;color:#999;margin:10px 0 0">tracknow.com.au/demo</p>' +
       '</div>';
     // Pricing & Packages CTA with Request Callback
-    var _cbUrl = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=fleet_report' +
+    var _cbUrl = window.location.origin + '/?callback=1&source=fleet_report' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11558,7 +11558,7 @@ function sendEmailFromPortal() {
       '</div></div>';
   }
   if (_epPending.type === 'proposal') {
-    var _paUrl = 'https://tracknow-portal-sync.onrender.com/?proposal_accept=1' +
+    var _paUrl = window.location.origin + '/?proposal_accept=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
@@ -11580,13 +11580,13 @@ function sendEmailFromPortal() {
     var _agrKey = 'TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0');
     try { localStorage.setItem('tn_agr_html_' + _agrKey, _epPending.docHTML || ''); } catch(x) {}
     try { fetch('/api/agreement', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:_agrKey, html:_epPending.docHTML || ''}) }).catch(function(){}); } catch(x2) {}
-    var _agrSignUrl = 'https://tracknow-portal-sync.onrender.com/?agreement_sign=1' +
+    var _agrSignUrl = window.location.origin + '/?agreement_sign=1' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
       '&phone=' + encodeURIComponent(_epPending.phone || '') +
       '&agreement=' + encodeURIComponent('TN-AGR-' + String(_epPending.leadId || 0).toString().padStart(4, '0'));
-    var _cbUrlA = 'https://tracknow-portal-sync.onrender.com/?callback=1&source=agreement' +
+    var _cbUrlA = window.location.origin + '/?callback=1&source=agreement' +
       '&name=' + encodeURIComponent(_epPending.name) +
       '&company=' + encodeURIComponent(_epPending.company) +
       '&email=' + encodeURIComponent(_epPending.to) +
