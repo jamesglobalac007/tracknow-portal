@@ -2777,32 +2777,65 @@ function _handleServerEvent(evt) {
           // Fetch the fully signed agreement HTML from the server to save
           // in BOTH the lead's and the customer's dealFiles. The view UI
           // on each side reads from its own record's dealFiles.agreement_signed.
+          //
+          // Retry once after 2s if the first fetch returns ok:false. The
+          // customer-side fires /api/event (this notification) BEFORE the
+          // larger /api/agreement-signed POST completes — without a retry,
+          // the first GET races the still-in-flight HTML POST and loses,
+          // leaving the customer card stuck on "Attach".
           var _agrKey2 = evt.data.agreement || '';
-          fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKey2))
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-              if (d.ok && d.html) {
-                var _coName = (_signedLead && _signedLead.co) || (_signedCust && _signedCust.co) || '';
-                var _entry = {
-                  name: 'Agreement_Executed_' + _coName.replace(/[^a-zA-Z0-9]/g,'_') + '.html',
-                  type: 'text/html',
-                  data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
-                  uploadedAt: _signedTs
-                };
-                if (_signedLead) {
-                  if (!_signedLead.dealFiles) _signedLead.dealFiles = {};
-                  _signedLead.dealFiles['agreement_signed'] = _entry;
+          var _attemptSignedFetch = function(attempt) {
+            fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKey2))
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d && d.ok && d.html) {
+                  // RE-FIND live lead/customer — CUSTOMERS/LEADS may have
+                  // been reassigned by an intervening _syncPush response
+                  // while the fetch was in flight. Mutating the captured
+                  // refs would write to orphaned objects.
+                  var liveLead = (typeof LEADS !== 'undefined' && LEADS) ? LEADS.find(function(l) {
+                    if (evt.data.company && l.co && l.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+                    if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+                    return false;
+                  }) : null;
+                  var liveCust = (typeof CUSTOMERS !== 'undefined' && CUSTOMERS) ? CUSTOMERS.find(function(cu) {
+                    if (evt.data.company && cu.co && cu.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+                    if (evt.data.email && cu.email && cu.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+                    return false;
+                  }) : null;
+                  var _coName = (liveLead && liveLead.co) || (liveCust && liveCust.co) || '';
+                  var _entry = {
+                    name: 'Agreement_Executed_' + _coName.replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+                    type: 'text/html',
+                    data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
+                    uploadedAt: _signedTs
+                  };
+                  if (liveLead) {
+                    if (!liveLead.dealFiles) liveLead.dealFiles = {};
+                    liveLead.dealFiles['agreement_signed'] = _entry;
+                    if (evt.data.agreement) liveLead.agreementKey = evt.data.agreement;
+                    if (!liveLead.agreementSignedDate) liveLead.agreementSignedDate = _signedTs;
+                  }
+                  if (liveCust) {
+                    if (!liveCust.dealFiles) liveCust.dealFiles = {};
+                    liveCust.dealFiles['agreement_signed'] = _entry;
+                    if (evt.data.agreement) liveCust.agreementKey = evt.data.agreement;
+                    if (!liveCust.agreementSignedDate) liveCust.agreementSignedDate = _signedTs;
+                  }
+                  saveData(); renderPipeline();
+                  try { if (typeof renderCustomers === 'function') renderCustomers(); } catch(e) {}
+                } else if (attempt < 3) {
+                  // HTML POST may still be in flight. Back off and retry.
+                  setTimeout(function(){ _attemptSignedFetch(attempt + 1); }, 2000);
+                } else {
+                  console.warn('[tracknow] /api/agreement-signed GET returned no html after ' + attempt + ' attempts for key:', _agrKey2);
                 }
-                if (_signedCust) {
-                  if (!_signedCust.dealFiles) _signedCust.dealFiles = {};
-                  _signedCust.dealFiles['agreement_signed'] = _entry;
-                }
-                saveData(); renderPipeline();
-                try { if (typeof renderCustomers === 'function') renderCustomers(); } catch(e) {}
-              } else {
-                console.warn('[tracknow] /api/agreement-signed GET returned no html for key:', _agrKey2);
-              }
-            }).catch(function(e){ console.warn('[tracknow] /api/agreement-signed GET failed:', e && e.message); });
+              }).catch(function(e){
+                console.warn('[tracknow] /api/agreement-signed GET failed (attempt ' + attempt + '):', e && e.message);
+                if (attempt < 3) setTimeout(function(){ _attemptSignedFetch(attempt + 1); }, 2000);
+              });
+          };
+          _attemptSignedFetch(1);
         } else {
           console.warn('[tracknow] agreement_sign event — no matching lead or customer for', evt.data.company, evt.data.email);
         }
@@ -4836,6 +4869,7 @@ function refreshCustDealData(custId) {
   var c = CUSTOMERS.find(function(x){ return x.id === custId; });
   if (!c) return;
   var lead = _findLeadForCustomer(c);
+  var didLeadSync = false;
   // PART 1 — sync from the matching lead if one still exists (pre-conversion)
   if (lead) {
     if (lead.proposalSentDate && !c.proposalSentDate) c.proposalSentDate = lead.proposalSentDate;
@@ -4851,41 +4885,63 @@ function refreshCustDealData(custId) {
     if (lead.fleetSegments && lead.fleetSegments.length) c.fleetSegments = lead.fleetSegments;
     if (lead.lineItems && lead.lineItems.length) c.lineItems = lead.lineItems;
     if (lead.agreementKey && !c.agreementKey) c.agreementKey = lead.agreementKey;
+    didLeadSync = true;
   }
   // PART 2 — even if the lead is gone (post-conversion) we can still fetch
   // the executed agreement HTML directly from the server using the long
   // agreement key. This is the recovery path for the "shows Signed but
-  // button still says Attach" case caused by 502s during deploy windows
-  // (or any other reason the realtime fetch dropped).
+  // button still says Attach" case caused by race conditions during the
+  // realtime sign event (or 502s during deploy windows).
   var hasSignedFile = c.dealFiles && c.dealFiles.agreement_signed && c.dealFiles.agreement_signed.data;
   if (!hasSignedFile && c.agreementKey) {
-    fetch('/api/agreement-signed?key=' + encodeURIComponent(c.agreementKey))
+    var _agrKeyForFetch = c.agreementKey;
+    fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKeyForFetch))
       .then(function(r) { return r.json(); })
       .then(function(d) {
+        // RE-FIND the live customer. While the fetch was in flight, an
+        // intervening _syncPush response can reassign CUSTOMERS = d.customers,
+        // which orphans the captured `c` reference. Mutating the orphan
+        // would write to an object that's no longer in the live array,
+        // and the next render + click would see "no file uploaded yet".
+        var live = CUSTOMERS.find(function(x){ return x.id === custId; });
+        if (!live) return;
         if (d && d.ok && d.html) {
-          if (!c.dealFiles) c.dealFiles = {};
-          c.dealFiles.agreement_signed = {
-            name: 'Agreement_Executed_' + (c.co || '').replace(/[^a-zA-Z0-9]/g, '_') + '.html',
+          if (!live.dealFiles) live.dealFiles = {};
+          live.dealFiles.agreement_signed = {
+            name: 'Agreement_Executed_' + (live.co || '').replace(/[^a-zA-Z0-9]/g, '_') + '.html',
             type: 'text/html',
             data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
             uploadedAt: d.ts ? new Date(d.ts).toISOString() : new Date().toISOString()
           };
-          if (d.ts && !c.agreementSignedDate) c.agreementSignedDate = new Date(d.ts).toISOString();
+          if (d.ts && !live.agreementSignedDate) live.agreementSignedDate = new Date(d.ts).toISOString();
           saveData();
           renderCustomers();
-          showToast('Signed agreement recovered for ' + c.co, 'ok');
+          showToast('Signed agreement recovered for ' + live.co, 'ok');
+        } else if (didLeadSync) {
+          // Lead-sync path already mutated `c` synchronously. Push that.
+          saveData();
+          renderCustomers();
+          showToast('Deal data synced from pipeline for ' + live.co, 'ok');
         } else {
-          showToast('No signed agreement on server yet for ' + c.co + ' (key ' + String(c.agreementKey).slice(0,16) + '…)', 'warn');
+          showToast('No signed agreement on server yet for ' + live.co + ' (key ' + String(_agrKeyForFetch).slice(0,16) + '…)', 'warn');
         }
       })
       .catch(function(e) {
         console.warn('[tracknow] refreshCustDealData fetch failed:', e && e.message);
+        if (didLeadSync) { saveData(); renderCustomers(); }
         showToast('Could not reach server to recover signed agreement', 'warn');
       });
+    // CRITICAL — do NOT call saveData()/renderCustomers() here before the
+    // fetch resolves. The pre-fetch push would race with the post-fetch
+    // push, and a _syncPull between the two could overwrite our local
+    // state with the server's older version (no dealFiles), causing the
+    // "View briefly appears, then click says no file uploaded yet" bug.
+    return;
   }
+  // No fetch needed — push lead-sync results (or nothing) and toast.
   saveData();
   renderCustomers();
-  if (lead) showToast('Deal data synced from pipeline for ' + c.co, 'ok');
+  if (didLeadSync) showToast('Deal data synced from pipeline for ' + c.co, 'ok');
   else if (!c.agreementKey) showToast('No matching pipeline deal and no agreement key on file for ' + c.co, 'warn');
 }
 
@@ -12983,8 +13039,13 @@ function submitAgreementSign() {
   var agrNum = window._asAgreement || 'N/A';
   var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
 
-  // POST event to server — portal picks it up via polling (single notification, no duplicates)
-  // Do NOT also write to localStorage here — that would cause a duplicate alert via the storage listener
+  // Build the sign event payload now — but DO NOT fire it yet. We delay
+  // the /api/event POST until AFTER /api/agreement-signed has stored the
+  // executed HTML, so the portal's event handler never races a still-in-
+  // flight HTML upload. (When the event fired first, the portal would
+  // poll, see the event, immediately try to fetch the signed HTML, and
+  // get back ok:false because the bigger HTML POST hadn't landed yet.
+  // That's why the customer card was stuck on "Attach" until Refresh.)
   var signData = {
     id: Date.now(),
     name: cn,
@@ -12996,10 +13057,6 @@ function submitAgreementSign() {
     sigMethod: hasDrawn ? 'drawn' : 'typed',
     ts: new Date().toISOString()
   };
-  try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'agreement_sign',data:signData}) }).catch(function(){}); } catch(e){}
-
-  // Also store the signed agreement HTML on the server so portal can save it as the executed version
-  // (will be posted after fullSignedEmail is built, see below)
 
   // Build signed banner
   var signedBanner = '<div style="border:3px solid #00CC66;margin-bottom:30px;overflow:hidden">' +
@@ -13088,11 +13145,23 @@ function submitAgreementSign() {
   // here was duplicating both emails (every signing triggered two
   // SIGNED & EXECUTED emails to sales@ and two "Your Signed Service
   // Agreement" emails to the customer).
+  // Fire the sign-event POST only AFTER the HTML POST settles (success
+  // OR failure). Using .finally so even if the HTML save fails (network
+  // / 502 during deploy / server error) the staff portal still gets the
+  // realtime "agreement signed" notification — the realtime fetch will
+  // just retry up to 3 times and either succeed or log a clear warning.
+  function _fireSignEvent() {
+    try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'agreement_sign',data:signData}) }).catch(function(){}); } catch(e){}
+  }
   try {
     fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) })
       .then(function(r){ if (!r.ok) console.warn('[tracknow] /api/agreement-signed save failed:', r.status, '— signed copy may not appear in portal until staff reload'); })
-      .catch(function(e){ console.warn('[tracknow] /api/agreement-signed save threw:', e && e.message); });
-  } catch(x) { console.warn('[tracknow] /api/agreement-signed save outer throw:', x && x.message); }
+      .catch(function(e){ console.warn('[tracknow] /api/agreement-signed save threw:', e && e.message); })
+      .then(_fireSignEvent);  // .then on the catch return = .finally polyfill (Safari old/Brave)
+  } catch(x) {
+    console.warn('[tracknow] /api/agreement-signed save outer throw:', x && x.message);
+    _fireSignEvent();
+  }
 
   // Show thank you
   document.getElementById('as_form').style.display = 'none';
