@@ -3917,7 +3917,78 @@ function _renderPipelineArchive() {
   el.innerHTML = html;
 }
 
+// View Agreement — prefers the SIGNED & EXECUTED copy when it exists.
+//   1) Local cache on the lead (dealFiles.agreement_signed) — instant
+//   2) Server-side store at /api/agreement-signed?key=TN-AGR-<id> — caches
+//      back into the lead so the next open is instant
+//   3) Falls back to the fresh-blank template generator below
+// We open the window synchronously up-front to dodge popup blockers, then
+// either write the signed HTML to it or hand the same window off to the
+// blank generator (so a second window.open isn't needed after the fetch).
 function openAgreementDoc(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+
+  // 1) Local signed copy on the lead.
+  var ds = l.dealFiles && l.dealFiles.agreement_signed && l.dealFiles.agreement_signed.data;
+  if (ds) {
+    var winLocal = window.open('', '_blank', 'width=900,height=1100');
+    if (!winLocal) return;
+    try {
+      var signedHtml = decodeURIComponent(ds.substring(ds.indexOf(',') + 1));
+      winLocal.document.open();
+      winLocal.document.write(signedHtml);
+      winLocal.document.close();
+      try { winLocal.document.title = 'Agreement — SIGNED & EXECUTED — ' + (l.co || ''); } catch(e){}
+      try { showToast('Signed agreement opened for ' + l.co); } catch(e){}
+      return;
+    } catch (e) {
+      try { winLocal.close(); } catch (e2) {}
+    }
+  }
+
+  // 2) Server-side signed copy. Open placeholder window now, populate
+  // when the fetch resolves.
+  var agrKey = 'TN-AGR-' + String(l.id).padStart(4, '0');
+  var win = window.open('', '_blank', 'width=900,height=1100');
+  if (!win) return;
+  try {
+    win.document.write('<!DOCTYPE html><html><head><title>Loading…</title></head><body style="font-family:Inter,Arial,sans-serif;padding:60px;color:#888;text-align:center">Loading agreement…</body></html>');
+  } catch (e) {}
+  fetch('/api/agreement-signed?key=' + encodeURIComponent(agrKey))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.ok && d.html) {
+        // Cache back onto the lead so future opens are instant and the
+        // executed copy survives reloads via saveData().
+        try {
+          if (!l.dealFiles) l.dealFiles = {};
+          l.dealFiles.agreement_signed = {
+            name: 'Agreement_Executed_' + (l.co || '').replace(/[^a-zA-Z0-9]/g, '_') + '.html',
+            type: 'text/html',
+            data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
+            uploadedAt: d.ts ? new Date(d.ts).toISOString() : new Date().toISOString()
+          };
+          saveData(); renderPipeline();
+        } catch (e) {}
+        try {
+          win.document.open();
+          win.document.write(d.html);
+          win.document.close();
+          win.document.title = 'Agreement — SIGNED & EXECUTED — ' + (l.co || '');
+        } catch (e) {}
+        try { showToast('Signed agreement opened for ' + l.co); } catch(e){}
+      } else {
+        // 3) No signed copy yet — render the fresh blank into the same window.
+        _openBlankAgreementDoc(leadId, win);
+      }
+    })
+    .catch(function() {
+      _openBlankAgreementDoc(leadId, win);
+    });
+}
+
+function _openBlankAgreementDoc(leadId, reuseWin) {
   const l = LEADS.find(x => x.id === leadId);
   if (!l) return;
   _agreementLeadCache = l;
@@ -3933,7 +4004,9 @@ function openAgreementDoc(leadId) {
   const hwPerMonth = isSpread ? hwTotal / term : 0;
   const monthly = isSpread ? (monthlySubOnly + hwPerMonth) : monthlySubOnly;
 
-  const win = window.open('', '_blank', 'width=900,height=1100');
+  const win = reuseWin || window.open('', '_blank', 'width=900,height=1100');
+  if (!win) return;
+  if (reuseWin) { try { win.document.open(); } catch(e) {} }
   win.document.write(`<!DOCTYPE html><html><head><title>Agreement — ${l.co}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
