@@ -3874,6 +3874,9 @@ function _buildProposalEmailHTML(l) {
 
 function renderPipeline() {
   try { recalcAllMetrics(); } catch(e) {}
+  // Self-heal any lead missing the executed agreement HTML — fires a
+  // background fetch, re-renders on success.
+  try { if (typeof _autoRecoverSignedAgreements === 'function') _autoRecoverSignedAgreements(); } catch (e) {}
   // Update pipeline subtitle dynamically
   const pSub = document.getElementById('pipelineSubtitle');
   if (pSub) { const tv = LEADS.reduce((s,l) => s + (l.val||0), 0); pSub.innerHTML = LEADS.length + ' lead' + (LEADS.length!==1?'s':'') + ' &middot; $' + tv.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',') + ' total pipeline value'; }
@@ -9530,9 +9533,110 @@ function toggleCustSort(field) {
   renderCustomers();
 }
 
+// Self-healing recovery for the "Attach instead of View" race. The
+// realtime agreement_sign event handler is supposed to fetch and cache
+// the executed agreement HTML onto the matching customer record. If that
+// chain misses for ANY reason — staff portal closed at sign time, a
+// transient 502, the customer-side event POST landing before the HTML
+// POST settled, etc — the customer card stays on "Attach" until the
+// staff manually clicks Refresh. This loop re-runs whenever
+// renderCustomers fires, finds any customer that has a signed-date /
+// agreement key but no signed-file body, and fetches it from
+// /api/agreement-signed?key=<long key> in the background. On success
+// it sets dealFiles.agreement_signed and re-renders so the row flips
+// to View by itself. _agreementSignedRecoveryFired keeps a per-session
+// memo so we don't hammer the server on every render.
+var _agreementSignedRecoveryFired = (typeof _agreementSignedRecoveryFired !== 'undefined') ? _agreementSignedRecoveryFired : {};
+function _autoRecoverSignedAgreements() {
+  // Build a combined target list: every lead AND every customer that has
+  // an agreementKey but no signed file body. Same agreementKey can be on
+  // both a lead and a customer; the memo prevents double-fetching.
+  var targets = [];
+  if (typeof LEADS !== 'undefined' && LEADS) {
+    LEADS.forEach(function(l) {
+      if (!l || !l.id || !l.agreementKey) return;
+      var has = l.dealFiles && l.dealFiles.agreement_signed && l.dealFiles.agreement_signed.data;
+      if (!has) targets.push({ kind: 'lead', record: l });
+    });
+  }
+  if (typeof CUSTOMERS !== 'undefined' && CUSTOMERS) {
+    CUSTOMERS.forEach(function(c) {
+      if (!c || !c.id || !c.agreementKey) return;
+      var has = c.dealFiles && c.dealFiles.agreement_signed && c.dealFiles.agreement_signed.data;
+      if (!has) targets.push({ kind: 'customer', record: c });
+    });
+  }
+  targets.forEach(function(t) {
+    var rec = t.record;
+    if (_agreementSignedRecoveryFired[rec.agreementKey]) return;
+    _agreementSignedRecoveryFired[rec.agreementKey] = true;
+    var c = rec; // alias for code below (works for both lead and customer — shapes overlap on co/email/dealFiles)
+    fetch('/api/agreement-signed?key=' + encodeURIComponent(c.agreementKey))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d || !d.ok || !d.html) {
+          // No signed copy on server yet — clear the memo so a later
+          // render can retry once the customer-side POST has landed.
+          delete _agreementSignedRecoveryFired[c.agreementKey];
+          return;
+        }
+        // Re-find on BOTH sides — the matching record could be a lead,
+        // a customer, or both (sent as a lead, promoted to a customer
+        // mid-flow). Mutate every live record we can match.
+        var entryFromCo = (rec.co || '');
+        var entry = {
+          name: 'Agreement_Executed_' + entryFromCo.replace(/[^a-zA-Z0-9]/g, '_') + '.html',
+          type: 'text/html',
+          data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
+          uploadedAt: d.ts ? new Date(d.ts).toISOString() : new Date().toISOString()
+        };
+        var touched = false;
+        if (typeof LEADS !== 'undefined' && LEADS) {
+          LEADS.forEach(function(l) {
+            if (l.agreementKey === c.agreementKey
+                || (l.co && rec.co && l.co.toLowerCase() === rec.co.toLowerCase())
+                || (l.email && rec.email && l.email.toLowerCase() === rec.email.toLowerCase())) {
+              if (!l.dealFiles) l.dealFiles = {};
+              l.dealFiles.agreement_signed = entry;
+              if (d.ts && !l.agreementSignedDate) l.agreementSignedDate = new Date(d.ts).toISOString();
+              if (!l.agreementKey) l.agreementKey = c.agreementKey;
+              touched = true;
+            }
+          });
+        }
+        if (typeof CUSTOMERS !== 'undefined' && CUSTOMERS) {
+          CUSTOMERS.forEach(function(cu) {
+            if (cu.agreementKey === c.agreementKey
+                || (cu.co && rec.co && cu.co.toLowerCase() === rec.co.toLowerCase())
+                || (cu.email && rec.email && cu.email.toLowerCase() === rec.email.toLowerCase())) {
+              if (!cu.dealFiles) cu.dealFiles = {};
+              cu.dealFiles.agreement_signed = entry;
+              if (d.ts && !cu.agreementSignedDate) cu.agreementSignedDate = new Date(d.ts).toISOString();
+              if (!cu.agreementKey) cu.agreementKey = c.agreementKey;
+              touched = true;
+            }
+          });
+        }
+        if (touched) {
+          try { saveData(); } catch (e) {}
+          try { renderPipeline(); } catch (e) {}
+          try { renderCustomers(); } catch (e) {}
+          console.log('[tracknow] auto-recovered signed agreement for', rec.co);
+        }
+      })
+      .catch(function(e) {
+        console.warn('[tracknow] auto-recovery fetch failed for', c.co, ':', e && e.message);
+        delete _agreementSignedRecoveryFired[c.agreementKey];
+      });
+  });
+}
+
 function renderCustomers() {
   const el = document.getElementById('customersTable');
   if (!el) return;
+  // Kick off background recovery for any customer missing the signed
+  // agreement file. Fire-and-forget — re-renders itself when done.
+  try { _autoRecoverSignedAgreements(); } catch (e) {}
   const secF = (document.getElementById('cFilter-sector') || {}).value || '';
   const stF  = (document.getElementById('cFilter-status') || {}).value || '';
   const q    = ((document.getElementById('globalSearch') || {}).value || '').trim().toLowerCase();
