@@ -2946,25 +2946,6 @@ function _syncRefreshUI() {
   setInterval(function() { _syncPull(); }, 5000);
   // Poll for events (proposal accepts, etc.) — faster interval
   setInterval(function() { _pollEvents(); }, 3000);
-  // Auto-recover any signed agreements that haven't landed locally yet —
-  // runs on its own interval so it fires regardless of whether the UI is
-  // re-rendering. This is the catch-all that finally makes "no Refresh
-  // needed" actually true: every 4s it scans for customers/leads with an
-  // agreementKey but no signed-file body and pulls them in.
-  setInterval(function() {
-    try { if (typeof _autoRecoverSignedAgreements === 'function') _autoRecoverSignedAgreements(); } catch(e) {}
-  }, 4000);
-  // When the portal tab becomes visible after being hidden (browser
-  // throttles setInterval on hidden tabs, so polling slows way down),
-  // fire everything immediately so we catch up without waiting for the
-  // next interval tick.
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') {
-      try { _pollEvents(); } catch(e) {}
-      try { _syncPull(); } catch(e) {}
-      try { if (typeof _autoRecoverSignedAgreements === 'function') _autoRecoverSignedAgreements(); } catch(e) {}
-    }
-  });
 })();
 
 // ── Toast Notification ────────────────────────────────────────────────────
@@ -13196,48 +13177,11 @@ function submitAgreementSign() {
       '</table>' +
     '</div></div>';
 
-  // Get the full agreement HTML — three sources, in priority order:
-  //   1. The live DOM (#as_agreementBody) — guaranteed to match what
-  //      the customer actually read on screen, with CTAs already
-  //      stripped by _applyAgreementHTML.
-  //   2. localStorage (tn_agr_html_<key>) — original email-formatted
-  //      copy stashed when the page first loaded the agreement.
-  //   3. A re-fetch from /api/agreement?key=<long key> as a last resort.
-  // If all three return empty the agreement body never loaded — refuse
-  // to submit so we don't store a "signed" copy that's just a banner +
-  // signature block with no contract body. (This was the "View shows
-  // signed wrapper but the agreement body isn't there" bug.)
-  var _bodyEl = document.getElementById('as_agreementBody');
-  var _domHTML = _bodyEl ? (_bodyEl.innerHTML || '').trim() : '';
+  // Get the full agreement HTML from localStorage
   var storedAgrHTML = '';
   try { storedAgrHTML = localStorage.getItem('tn_agr_html_' + agrNum) || ''; } catch(x) {}
-  var sourceHTML = _domHTML || storedAgrHTML;
-  if (!sourceHTML || sourceHTML.length < 100) {
-    // Last-ditch synchronous-ish fetch via XHR. If THAT fails, abort.
-    try {
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', '/api/agreement?key=' + encodeURIComponent(agrNum), false); // sync — only on this rare fallback path
-      xhr.send(null);
-      if (xhr.status === 200) {
-        var resp = JSON.parse(xhr.responseText || '{}');
-        if (resp && resp.ok && resp.html) {
-          sourceHTML = resp.html;
-          try { localStorage.setItem('tn_agr_html_' + agrNum, resp.html); } catch(_e) {}
-        }
-      }
-    } catch (_e) { console.warn('[tracknow] last-ditch /api/agreement fetch failed:', _e && _e.message); }
-  }
-  if (!sourceHTML || sourceHTML.length < 100) {
-    console.warn('[tracknow] aborting sign — agreement body never loaded for key', agrNum);
-    try { showToast('Agreement still loading. Please wait a moment and try again.', 'warn'); } catch(_e) {}
-    // Re-enable the sign button so the customer can retry.
-    var _retryBtn = document.getElementById('as_acceptBtn') || document.getElementById('as_submitBtn') || document.querySelector('#as_form button[type="submit"]');
-    if (_retryBtn) { _retryBtn.disabled = false; }
-    return;
-  }
-  // Strip the email's CTA signing button section if present (DOM source
-  // already has these stripped — these regexes are no-ops on that path).
-  var cleanAgrHTML = sourceHTML.replace(/<br><div style="border:3px solid #FFA028[\s\S]*?SIGN[\s\S]*?ACCEPT AGREEMENT[\s\S]*?<\/div><\/div>[\s\S]*?(?=<div style="margin-top|$)/, '');
+  // Strip the email's CTA signing button section from stored HTML
+  var cleanAgrHTML = storedAgrHTML.replace(/<br><div style="border:3px solid #FFA028[\s\S]*?SIGN[\s\S]*?ACCEPT AGREEMENT[\s\S]*?<\/div><\/div>[\s\S]*?(?=<div style="margin-top|$)/, '');
   // Also strip callback button section
   cleanAgrHTML = cleanAgrHTML.replace(/<div style="text-align:center;margin:16px[\s\S]*?Request a Callback<\/a>\s*<\/div>/, '');
 
@@ -13313,40 +13257,15 @@ function submitAgreementSign() {
   function _fireSignEvent() {
     try { fetch('/api/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'agreement_sign',data:signData}) }).catch(function(){}); } catch(e){}
   }
-  // Retry the HTML upload up to 5 times with backoff. Without retries
-  // a single 502 (e.g. during a Render redeploy) means the server never
-  // gets the signed copy and the staff side has nothing to show — no
-  // amount of polling/recovery on the portal side can fix it because
-  // there's no data to recover. The receipt emails ALSO depend on this
-  // POST succeeding (server fires them in the same handler), so this
-  // retry buys both reliability for the customer card AND the email.
-  var _signedBody = JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''});
-  var _signedAttempt = 0;
-  function _attemptSignedUpload() {
-    _signedAttempt++;
-    fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:_signedBody })
-      .then(function(r){
-        if (r.ok) {
-          // Stored on server. Fire the notification event so the staff
-          // portal pulls it on the next poll.
-          _fireSignEvent();
-          return;
-        }
-        // 409 = already posted (idempotent — treat as success)
-        if (r.status === 409) { _fireSignEvent(); return; }
-        // Anything else: retry until we hit the cap.
-        console.warn('[tracknow] /api/agreement-signed POST failed (attempt ' + _signedAttempt + '/5):', r.status);
-        if (_signedAttempt < 5) setTimeout(_attemptSignedUpload, 1500 * _signedAttempt);
-        else { console.warn('[tracknow] giving up after 5 attempts; firing event anyway so staff sees a notification'); _fireSignEvent(); }
-      })
-      .catch(function(e){
-        console.warn('[tracknow] /api/agreement-signed POST threw (attempt ' + _signedAttempt + '/5):', e && e.message);
-        if (_signedAttempt < 5) setTimeout(_attemptSignedUpload, 1500 * _signedAttempt);
-        else { _fireSignEvent(); }
-      });
+  try {
+    fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) })
+      .then(function(r){ if (!r.ok) console.warn('[tracknow] /api/agreement-signed save failed:', r.status, '— signed copy may not appear in portal until staff reload'); })
+      .catch(function(e){ console.warn('[tracknow] /api/agreement-signed save threw:', e && e.message); })
+      .then(_fireSignEvent);  // .then on the catch return = .finally polyfill (Safari old/Brave)
+  } catch(x) {
+    console.warn('[tracknow] /api/agreement-signed save outer throw:', x && x.message);
+    _fireSignEvent();
   }
-  try { _attemptSignedUpload(); }
-  catch (x) { console.warn('[tracknow] outer throw:', x && x.message); _fireSignEvent(); }
 
   // Show thank you
   document.getElementById('as_form').style.display = 'none';
