@@ -3492,14 +3492,38 @@ function openProposalDoc(leadId) {
     extrasRows += '<tr><td style="font-weight:600">' + ex.name + '</td><td style="text-align:center">' + ex.qty + '</td><td style="text-align:right">' + fmt(ex.unitPrice) + ' ' + ex.unit + '</td><td style="text-align:right;font-weight:600">' + fmt(ex.total) + (ex.isMonthly ? '/mo' : '') + '</td></tr>';
   });
 
-  // Banner shown above the proposal when the customer has clicked
-  // "Yes, Proceed to Formal Agreement" — makes the View Proposal button
-  // visibly reflect acceptance state instead of always rendering blank.
-  const _accepted = l.proposalAcceptedDate ? new Date(l.proposalAcceptedDate) : null;
-  const _acceptedBanner = _accepted ? (
-    '<div style="background:#0a4d2e;border:2px solid #00CC66;color:#fff;padding:14px 24px;margin-bottom:24px;text-align:center;font-family:Inter,sans-serif;border-radius:6px">' +
-      '<div style="font-size:11px;font-weight:700;color:#00CC66;letter-spacing:.4em;text-transform:uppercase;margin-bottom:4px">✓ ACCEPTED</div>' +
-      '<div style="font-size:13px;font-weight:600">' + (l.co || 'Customer') + ' clicked Proceed to Formal Agreement on ' + _accepted.toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'}) + '</div>' +
+  // Detect proposal acceptance from any source the portal records it in.
+  // Original code only checked lead.proposalAcceptedDate, which is only set
+  // by the live event handler — admin had to be polling the moment the
+  // customer clicked Accept. If the admin missed the event window the flag
+  // never made it onto the lead even though the accept is sitting in
+  // localStorage (tn_proposal_accepts) AND the server (/api/events). Now
+  // we also check localStorage so the banner shows whenever an acceptance
+  // exists, and back-fill the lead so the next render is instant.
+  let _acceptInfo = null;
+  if (l.proposalAcceptedDate) {
+    _acceptInfo = { ts: l.proposalAcceptedDate, name: l.name || '', company: l.co || '' };
+  } else {
+    try {
+      const _accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+      const _match = _accepts.find(function(a) {
+        if (a.company && l.co && a.company.toLowerCase() === l.co.toLowerCase()) return true;
+        if (a.email && l.email && a.email.toLowerCase() === l.email.toLowerCase()) return true;
+        if (a.proposal && a.proposal === ('TN-' + String(l.id).padStart(4, '0'))) return true;
+        return false;
+      });
+      if (_match) {
+        _acceptInfo = { ts: _match.ts, name: _match.name || '', company: _match.company || '' };
+        l.proposalAcceptedDate = _match.ts;
+        try { saveData(); } catch (e) {}
+      }
+    } catch (e) {}
+  }
+  const _acceptedBanner = _acceptInfo ? (
+    '<div style="background:#0a4d2e;border:2px solid #00CC66;color:#fff;padding:18px 24px;margin-bottom:24px;font-family:Inter,sans-serif;border-radius:6px">' +
+      '<div style="font-size:11px;font-weight:700;color:#00CC66;letter-spacing:.4em;text-transform:uppercase;margin-bottom:8px;text-align:center">✓ ACCEPTED — CLIENT WANTS TO PROCEED</div>' +
+      '<div style="font-size:14px;font-weight:600;color:#fff;text-align:center;margin-bottom:6px">' + (_acceptInfo.name || 'Customer') + ' from ' + (_acceptInfo.company || l.co || 'Customer') + ' has clicked to proceed to formal agreement</div>' +
+      '<div style="font-size:12px;color:#a8e6c0;text-align:center">Accepted on ' + new Date(_acceptInfo.ts).toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'}) + ' &middot; Proposal #TN-' + String(l.id).padStart(4, '0') + '</div>' +
     '</div>'
   ) : '';
 
@@ -4677,14 +4701,27 @@ function _findLeadForCustomer(c) {
 }
 
 // View a document for a customer — opens the matching lead's document viewer
+// after copying any acceptance/signing state the customer has but the lead
+// is missing (so the smart renderers can stamp ACCEPTED/SIGNED on the doc
+// even when the lead lost those flags during the deal-to-customer transition).
 function viewCustDoc(custId, docType) {
   var c = CUSTOMERS.find(function(x){ return x.id === custId; });
   if (!c) return;
   var lead = _findLeadForCustomer(c);
   if (lead) {
+    if (c.proposalAcceptedDate && !lead.proposalAcceptedDate) lead.proposalAcceptedDate = c.proposalAcceptedDate;
+    if (c.agreementSignedDate && !lead.agreementSignedDate) lead.agreementSignedDate = c.agreementSignedDate;
+    if (c.proposalSentDate && !lead.proposalSentDate) lead.proposalSentDate = c.proposalSentDate;
+    if (c.agreementSentDate && !lead.agreementSentDate) lead.agreementSentDate = c.agreementSentDate;
+    if (c.dealFiles) {
+      if (!lead.dealFiles) lead.dealFiles = {};
+      if (c.dealFiles.agreement_signed && !lead.dealFiles.agreement_signed) {
+        lead.dealFiles.agreement_signed = c.dealFiles.agreement_signed;
+      }
+    }
     if (docType === 'fleet_report') viewLeadFleetReport(lead.id);
     else if (docType === 'proposal') openProposalDoc(lead.id);
-    else if (docType === 'agreement') openAgreementDoc(lead.id);
+    else if (docType === 'agreement' || docType === 'agreement_signed') openAgreementDoc(lead.id);
     return;
   }
   showToast('Could not find matching pipeline deal for ' + c.co, 'warn');
@@ -9490,7 +9527,15 @@ function renderCustomers() {
                 var sentStr = d.sentDate ? _fd(d.sentDate) : '—';
                 var acceptStr = d.acceptDate && d.acceptLabel ? '<span style="color:#00CC66;font-weight:600">' + d.acceptLabel + ' ' + _fd(d.acceptDate) + '</span>' : '';
                 var fileBtn = '';
-                if (d.file) {
+                // Proposal + Agreement: always go through viewCustDoc → smart
+                // renderer (openProposalDoc / openAgreementDoc). Those check
+                // acceptance / signed state and stamp the doc accordingly,
+                // whereas viewCustDealFile would just open the blank HTML
+                // that was cached at send-time.
+                var _smartKey = (d.key === 'proposal' || d.key === 'agreement' || d.key === 'agreement_signed');
+                if (_smartKey && d.canView) {
+                  fileBtn = '<button onclick="event.stopPropagation();viewCustDoc(' + c.id + ',\'' + d.key + '\')" style="font-size:9px;padding:2px 6px;background:rgba(0,152,212,.08);border:1px solid rgba(0,152,212,.25);color:#0098d4;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'#0098d4\'" onmouseout="this.style.borderColor=\'rgba(0,152,212,.25)\'">View</button>';
+                } else if (d.file) {
                   fileBtn = '<button onclick="event.stopPropagation();viewCustDealFile(' + c.id + ',\'' + d.key + '\')" style="font-size:9px;padding:2px 6px;background:rgba(0,152,212,.08);border:1px solid rgba(0,152,212,.25);color:#0098d4;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'#0098d4\'" onmouseout="this.style.borderColor=\'rgba(0,152,212,.25)\'">View</button>';
                 } else if (d.canView) {
                   fileBtn = '<button onclick="event.stopPropagation();viewCustDoc(' + c.id + ',\'' + d.key + '\')" style="font-size:9px;padding:2px 6px;background:transparent;border:1px solid #333;color:#888;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'#0098d4\';this.style.color=\'#0098d4\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">View</button>';
@@ -12870,49 +12915,14 @@ function submitAgreementSign() {
       'Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a>' +
     '</div></div>';
 
-  // Save the signed/executed agreement HTML on the server so portal can store it in dealFiles
+  // Save the signed/executed agreement HTML on the server. The server's
+  // POST /api/agreement-signed handler then fires both receipt emails
+  // (sales copy + customer copy) server-side via Brevo. Do NOT also send
+  // from here — the client-side emailjs.send block that used to live
+  // here was duplicating both emails (every signing triggered two
+  // SIGNED & EXECUTED emails to sales@ and two "Your Signed Service
+  // Agreement" emails to the customer).
   try { fetch('/api/agreement-signed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:agrNum, html:fullSignedEmail, company:window._asCompany||'', email:window._asEmail||''}) }).catch(function(){}); } catch(x) {}
-
-  // Send EmailJS to sales + customer
-  function loadAndSend() {
-    // To sales — full signed agreement
-    emailjs.send('service_5y35h2g', 'template_gwga9jo', {
-      to_email: 'sales@tracknow.com.au',
-      subject: 'SIGNED & EXECUTED: Service Agreement ' + agrNum + ' — ' + (window._asCompany || 'Unknown'),
-      from_name: cn,
-      message_html: fullSignedEmail
-    }).then(function(){}).catch(function(){});
-
-    // To customer — full signed agreement with intro
-    if (window._asEmail) {
-      var customerName = _titleCase((window._asName || cn || 'there').split(' ')[0]);
-      var customerEmail = '<div style="font-family:Inter,sans-serif;max-width:900px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
-        '<p style="font-size:14px;margin-bottom:10px">Hi ' + customerName + ',</p>' +
-        '<p style="font-size:14px;margin-bottom:10px">Thank you for signing your TrackNow GPS service agreement. Please find your fully executed agreement below for your records.</p>' +
-        '<p style="font-size:14px;margin-bottom:24px">Our team will be in touch shortly to schedule your installation. If you have any questions in the meantime, don\'t hesitate to reach out.</p>' +
-        signedBanner + cleanAgrHTML + sigBlock +
-        '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888">' +
-          '<p>Kind regards,</p>' +
-          '<p><strong style="color:#333">TrackNow GPS Sales Team</strong></p>' +
-          '<p>sales@tracknow.com.au &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a></p>' +
-        '</div></div>';
-      emailjs.send('service_5y35h2g', 'template_gwga9jo', {
-        to_email: window._asEmail,
-        subject: 'Your Signed Service Agreement — ' + agrNum + ' — TrackNow GPS',
-        from_name: 'TrackNow GPS',
-        message_html: customerEmail
-      }).then(function(){}).catch(function(){});
-    }
-  }
-
-  if (typeof emailjs !== 'undefined') {
-    loadAndSend();
-  } else {
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    s.onload = function() { emailjs.init('OoTzGVR6EezbqlWDx'); loadAndSend(); };
-    document.head.appendChild(s);
-  }
 
   // Show thank you
   document.getElementById('as_form').style.display = 'none';
