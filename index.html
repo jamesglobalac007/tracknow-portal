@@ -2683,6 +2683,21 @@ function _handleServerEvent(evt) {
           _acceptLead.proposalAcceptedDate = evt.data.ts || new Date().toISOString();
           saveData(); renderPipeline();
         }
+        // ALSO update the matching customer record (by company or email).
+        // Once a lead is promoted to a customer, the lead may be removed —
+        // updates to the lead alone don't reach the customer card. Mirror
+        // the change here so the customer's "Proposal" row flips to
+        // "Accepted" without needing the lead to still exist.
+        var _acceptCust = (typeof CUSTOMERS !== 'undefined' && CUSTOMERS) ? CUSTOMERS.find(function(cu) {
+          if (evt.data.company && cu.co && cu.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+          if (evt.data.email && cu.email && cu.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+          return false;
+        }) : null;
+        if (_acceptCust) {
+          _acceptCust.proposalAcceptedDate = evt.data.ts || new Date().toISOString();
+          try { saveData(); } catch(e) {}
+          try { if (typeof renderCustomers === 'function') renderCustomers(); } catch(e) {}
+        }
       } catch(e2) {}
       // Trigger UI notification — only on NEW events, not replays
       try { renderProposalAccepts(); } catch(e) {}
@@ -2716,31 +2731,64 @@ function _handleServerEvent(evt) {
           if (evt.data.email && l.email && l.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
           return false;
         });
-        if (_signedLead) {
-          _signedLead.agreementSignedDate = evt.data.ts || new Date().toISOString();
-          // Persist the long agreement key on the lead so future View calls
-          // hit the right /api/agreement-signed?key=<long key> even after
-          // localStorage clears or sync from another machine.
-          if (evt.data.agreement) _signedLead.agreementKey = evt.data.agreement;
+        // ALSO find a matching customer record. Once a lead is promoted
+        // to a customer, the lead may be gone — updates to the lead alone
+        // never reach the customer card (which is why the row was showing
+        // "Attach" instead of "View" after signing). Mirror every update
+        // onto the customer too.
+        var _signedCust = (typeof CUSTOMERS !== 'undefined' && CUSTOMERS) ? CUSTOMERS.find(function(cu) {
+          if (evt.data.company && cu.co && cu.co.toLowerCase() === evt.data.company.toLowerCase()) return true;
+          if (evt.data.email && cu.email && cu.email.toLowerCase() === evt.data.email.toLowerCase()) return true;
+          return false;
+        }) : null;
+        if (_signedLead || _signedCust) {
+          var _signedTs = evt.data.ts || new Date().toISOString();
+          if (_signedLead) {
+            _signedLead.agreementSignedDate = _signedTs;
+            // Persist the long agreement key on the lead so future View calls
+            // hit the right /api/agreement-signed?key=<long key> even after
+            // localStorage clears or sync from another machine.
+            if (evt.data.agreement) _signedLead.agreementKey = evt.data.agreement;
+          }
+          if (_signedCust) {
+            _signedCust.agreementSignedDate = _signedTs;
+            if (evt.data.agreement) _signedCust.agreementKey = evt.data.agreement;
+          }
           saveData(); renderPipeline();
-          // Fetch the fully signed agreement HTML from the server to save in dealFiles
+          try { if (typeof renderCustomers === 'function') renderCustomers(); } catch(e) {}
+          // Fetch the fully signed agreement HTML from the server to save
+          // in BOTH the lead's and the customer's dealFiles. The view UI
+          // on each side reads from its own record's dealFiles.agreement_signed.
           var _agrKey2 = evt.data.agreement || '';
           fetch('/api/agreement-signed?key=' + encodeURIComponent(_agrKey2))
             .then(function(r) { return r.json(); })
             .then(function(d) {
-              if (d.ok && d.html && _signedLead) {
-                if (!_signedLead.dealFiles) _signedLead.dealFiles = {};
-                _signedLead.dealFiles['agreement_signed'] = {
-                  name: 'Agreement_Executed_' + (_signedLead.co || '').replace(/[^a-zA-Z0-9]/g,'_') + '.html',
+              if (d.ok && d.html) {
+                var _coName = (_signedLead && _signedLead.co) || (_signedCust && _signedCust.co) || '';
+                var _entry = {
+                  name: 'Agreement_Executed_' + _coName.replace(/[^a-zA-Z0-9]/g,'_') + '.html',
                   type: 'text/html',
                   data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
-                  uploadedAt: evt.data.ts || new Date().toISOString()
+                  uploadedAt: _signedTs
                 };
+                if (_signedLead) {
+                  if (!_signedLead.dealFiles) _signedLead.dealFiles = {};
+                  _signedLead.dealFiles['agreement_signed'] = _entry;
+                }
+                if (_signedCust) {
+                  if (!_signedCust.dealFiles) _signedCust.dealFiles = {};
+                  _signedCust.dealFiles['agreement_signed'] = _entry;
+                }
                 saveData(); renderPipeline();
+                try { if (typeof renderCustomers === 'function') renderCustomers(); } catch(e) {}
+              } else {
+                console.warn('[tracknow] /api/agreement-signed GET returned no html for key:', _agrKey2);
               }
-            }).catch(function(){});
+            }).catch(function(e){ console.warn('[tracknow] /api/agreement-signed GET failed:', e && e.message); });
+        } else {
+          console.warn('[tracknow] agreement_sign event — no matching lead or customer for', evt.data.company, evt.data.email);
         }
-      } catch(e3) {}
+      } catch(e3) { console.warn('[tracknow] agreement_sign handler threw:', e3 && e3.message); }
       // Sound + toast + notification — only on NEW events, not replays
       try { renderAgreementSigns(); } catch(e) {}
       var label2 = (evt.data.name || 'A client') + (evt.data.company ? ' from ' + evt.data.company : '');
@@ -11843,6 +11891,30 @@ function sendEmailFromPortal() {
               if (_sent.type === 'agreement' && typeof _agrKey !== 'undefined' && _agrKey) {
                 _autoLead.agreementKey = _agrKey;
               }
+              // ALSO mirror onto the matching customer record (if one exists).
+              // After a lead is promoted to a customer, the customer card
+              // reads c.dealFiles / c.proposalSentDate / c.agreementSentDate
+              // directly — never from the lead. Without this mirror, the
+              // customer's "Agreement" row stays empty even though the lead
+              // has the file, which is exactly why the row was showing
+              // "Attach" instead of "View".
+              try {
+                var _autoCust = (typeof CUSTOMERS !== 'undefined' && CUSTOMERS) ? CUSTOMERS.find(function(cu) {
+                  if (cu.leadId && cu.leadId === _autoLead.id) return true;
+                  if (cu.co && _autoLead.co && cu.co.toLowerCase() === _autoLead.co.toLowerCase()) return true;
+                  if (cu.email && _autoLead.email && cu.email.toLowerCase() === _autoLead.email.toLowerCase()) return true;
+                  return false;
+                }) : null;
+                if (_autoCust) {
+                  if (!_autoCust.dealFiles) _autoCust.dealFiles = {};
+                  _autoCust.dealFiles[_fk] = _autoLead.dealFiles[_fk];
+                  if (_sent.type === 'proposal' && !_autoCust.proposalSentDate) _autoCust.proposalSentDate = _autoLead.proposalSentDate;
+                  if (_sent.type === 'agreement' && !_autoCust.agreementSentDate) _autoCust.agreementSentDate = _autoLead.agreementSentDate;
+                  if (_sent.type === 'fleet' && !_autoCust.fleetReportDate) _autoCust.fleetReportDate = _autoLead.fleetReportDate;
+                  if (_sent.type === 'agreement' && _autoLead.agreementKey) _autoCust.agreementKey = _autoLead.agreementKey;
+                  try { if (typeof renderCustomers === 'function') renderCustomers(); } catch(e) {}
+                }
+              } catch(e) { console.warn('[tracknow] customer mirror on send failed:', e && e.message); }
               saveData();
               renderPipeline();
             }
