@@ -11,6 +11,24 @@
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
+    // ── Customer-flow flash guard ─────────────────────────────────
+    // When a customer arrives via an email CTA (callback / proposal_accept
+    // / agreement_sign), they never log in — yet the page used to flash
+    // the dark login overlay for 200–500ms before the JS swapped it out
+    // for the customer overlay. Inject a style tag synchronously here,
+    // before any layout, so the login overlay + sidebar are hidden from
+    // the very first paint. The customer overlay code later reveals
+    // itself normally on top.
+    var _isCustomerFlow = (p.get('callback') === '1' || p.get('proposal_accept') === '1' || p.get('agreement_sign') === '1');
+    if (_isCustomerFlow) {
+      var _flashStyle = document.createElement('style');
+      _flashStyle.id = '_customerFlowFlashGuard';
+      _flashStyle.textContent =
+        '#loginOverlay,.sidebar,#topbar,.topbar,#sidebar,nav.sidebar{display:none!important;visibility:hidden!important}' +
+        'body{background:#fff!important}';
+      // head may not exist yet when this runs — fall back to documentElement.
+      (document.head || document.documentElement).appendChild(_flashStyle);
+    }
     // Callback request from email CTA
     if (p.get('callback') === '1') {
       window._showCallbackForm = true;
