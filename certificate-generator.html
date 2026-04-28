@@ -585,12 +585,14 @@ async function generatePDF(openInTab = false) {
     const FTR_H  = 58;
     const WWW_H  = 44;
 
-    const HDR_Y  = PH - HDR_H;
-    const HERO_Y = HDR_Y - HERO_H;
-    const INFO_Y = HERO_Y - INFO_H;
-    const DIV_Y  = INFO_Y - DIV_H;
-    const FTR_Y  = DIV_Y - FTR_H;
-    const WWW_Y  = 0;
+    // Top-down Y coordinates (jsPDF v2 convention — y=0 is top of page).
+    // Section order top→bottom: Header, Hero, Info, Divider, Footer, WWW bar.
+    const HDR_Y  = 0;
+    const HERO_Y = HDR_Y  + HDR_H;
+    const INFO_Y = HERO_Y + HERO_H;
+    const DIV_Y  = INFO_Y + INFO_H;
+    const FTR_Y  = DIV_Y  + DIV_H;
+    const WWW_Y  = FTR_Y  + FTR_H;
 
     // ── Helpers ──
     const lerp = (a, b, t) => a + (b - a) * t;
@@ -621,10 +623,10 @@ async function generatePDF(openInTab = false) {
     doc.setFillColor(255, 255, 255);
     doc.rect(0, HDR_Y, CW, HDR_H, 'F');
 
-    // Cyan top border
+    // Cyan top border — runs along the very top of the page
     doc.setDrawColor(26, 184, 232);
     doc.setLineWidth(3);
-    doc.line(0, PH - 2, CW, PH - 2);
+    doc.line(0, 2, CW, 2);
 
     // Logo — text-based matching website style
     const LOGO_FS = 52;
@@ -652,69 +654,89 @@ async function generatePDF(openInTab = false) {
     const subW = doc.getTextWidth(subTitle);
     doc.text(subTitle, (CW - subW) / 2, logo_text_y + 28);
 
-    // ── 3. Hero — gradient ──
+    // ── 3. Hero — gradient (cyan at top → navy at bottom) ──
+    // Stripes drawn top-down: i=0 stripe at HERO_Y (cyan), i=199 at bottom (navy).
     for (let i = 0; i < 200; i++) {
       const t = i / 200;
       const r = Math.round(lerp(OT[0], OB[0], t));
       const g = Math.round(lerp(OT[1], OB[1], t));
       const b = Math.round(lerp(OT[2], OB[2], t));
       doc.setFillColor(r, g, b);
-      const sy = HERO_Y + HERO_H - (i + 1) * (HERO_H / 200);
+      const sy = HERO_Y + i * (HERO_H / 200);
       doc.rect(0, sy, CW, HERO_H / 200 + 0.5, 'F');
     }
 
-    // GPS Pin icon
+    // GPS Pin icon — circle on top, triangle pointing DOWN below it
     const cx = CW / 2;
-    const icon_cy = HERO_Y + HERO_H * 0.62;
+    const icon_cy = HERO_Y + HERO_H * 0.42;   // circle slightly above hero centre
     const R_OUT = 86, R_IN = 52;
     const t_icon = 0.38;
     const ir = Math.round(lerp(OT[0], OB[0], t_icon));
     const ig = Math.round(lerp(OT[1], OB[1], t_icon));
     const ib = Math.round(lerp(OT[2], OB[2], t_icon));
 
-    // Drop shadow
+    // Pin tail (triangle) — sits BELOW the circle in top-down convention
+    // (TRI_TOP is the wide end attached to the circle; TRI_TIP_Y is the
+    // pointed end further down the page).
+    const TRI_TOP = icon_cy + R_OUT + 12;        // just below circle bottom
+    const TRI_TIP_Y = HERO_Y + HERO_H * 0.92;    // near the bottom of the hero
+    const TRI_W   = 108;
+    const NOTCH   = 22;
+
+    // Shadow (offset down + right)
+    doc.setFillColor(0, 0, 0);
+    doc.setGState(new doc.GState({ opacity: 0.12 }));
+    doc.triangle(
+      cx - TRI_W/2 + 4, TRI_TOP + 3,
+      cx + TRI_W/2 + 4, TRI_TOP + 3,
+      cx + 4,           TRI_TIP_Y - NOTCH + 3,
+      'F'
+    );
+    doc.setGState(new doc.GState({ opacity: 1 }));
+
+    // White tail — wide top, point at TRI_TIP_Y - NOTCH (notch tip extends below)
+    doc.setFillColor(255, 255, 255);
+    doc.triangle(
+      cx - TRI_W/2, TRI_TOP,
+      cx + TRI_W/2, TRI_TOP,
+      cx,           TRI_TIP_Y - NOTCH,
+      'F'
+    );
+
+    // Orange notch tip — small wedge at the very bottom of the pin
+    const t_bot = 0.92;
+    const br = Math.round(lerp(OT[0], OB[0], t_bot));
+    const bg_ = Math.round(lerp(OT[1], OB[1], t_bot));
+    const bb = Math.round(lerp(OT[2], OB[2], t_bot));
+    doc.setFillColor(br, bg_, bb);
+    doc.triangle(
+      cx - NOTCH, TRI_TIP_Y - NOTCH - 5,
+      cx + NOTCH, TRI_TIP_Y - NOTCH - 5,
+      cx,         TRI_TIP_Y,
+      'F'
+    );
+
+    // Circle drop shadow (drawn AFTER tail so the shadow sits behind both)
+    // — actually we want the shadow BEHIND the circle, so draw shadow + circle
+    //   on top of the pre-existing tail. Re-draw circle now.
     doc.setFillColor(0, 0, 0);
     doc.setGState(new doc.GState({ opacity: 0.15 }));
-    doc.circle(cx + 4, icon_cy - 6, R_OUT, 'F');
+    doc.circle(cx + 4, icon_cy + 6, R_OUT, 'F');
     doc.setGState(new doc.GState({ opacity: 1 }));
 
     // Outer white circle
     doc.setFillColor(255, 255, 255);
     doc.circle(cx, icon_cy, R_OUT, 'F');
 
-    // Inner orange circle
+    // Inner orange (mid-gradient) circle — the "hole" of the pin head
     doc.setFillColor(ir, ig, ib);
     doc.circle(cx, icon_cy, R_IN, 'F');
 
-    // Pin tail (triangle) — gap below ring
-    const TRI_TOP = icon_cy - R_OUT - 12;
-    const TRI_BOT = HERO_Y + HERO_H * 0.09;
-    const TRI_W   = 108;
-    const NOTCH   = 22;
-
-    // Shadow
-    doc.setFillColor(0, 0, 0);
-    doc.setGState(new doc.GState({ opacity: 0.12 }));
-    doc.triangle(cx - TRI_W/2 + 4, TRI_TOP - 3, cx + TRI_W/2 + 4, TRI_TOP - 3, cx + 4, TRI_BOT + NOTCH - 3, 'F');
-    doc.setGState(new doc.GState({ opacity: 1 }));
-
-    // White tail
-    doc.setFillColor(255, 255, 255);
-    doc.triangle(cx - TRI_W/2, TRI_TOP, cx + TRI_W/2, TRI_TOP, cx, TRI_BOT + NOTCH, 'F');
-
-    // Orange notch tip
-    const t_bot = 0.92;
-    const br = Math.round(lerp(OT[0], OB[0], t_bot));
-    const bg_ = Math.round(lerp(OT[1], OB[1], t_bot));
-    const bb = Math.round(lerp(OT[2], OB[2], t_bot));
-    doc.setFillColor(br, bg_, bb);
-    doc.triangle(cx - NOTCH, TRI_BOT + NOTCH + 5, cx + NOTCH, TRI_BOT + NOTCH + 5, cx, TRI_BOT, 'F');
-
-    // Year
+    // Year — anchored near bottom-left of the hero (matches preview)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(76);
     doc.setTextColor(255, 255, 255);
-    doc.text(year, 18, HERO_Y + HERO_H - 10);
+    doc.text(year, 18, HERO_Y + HERO_H - 18);
 
     // ── 4. Info block ──
     doc.setFillColor(255, 255, 255);
@@ -724,8 +746,13 @@ async function generatePDF(openInTab = false) {
     const INFO_SZ = 10.5;        // smaller rows (asset list + certificate line)
     const HEADER_SZ = 14.5;      // bigger rows (customer name + asset id) — per James
 
-    // Start ty using the HEADER_SZ since the top row is the bigger one
-    let ty = INFO_Y + INFO_H - PAD - HEADER_SZ;
+    // Top-down info layout — Row 1 sits at top of the section, subsequent
+    // rows flow downward. Order matches the on-screen preview:
+    //   1. CUSTOMER NAME (bigger)
+    //   2. ASSET ID      (bigger)
+    //   3. Asset List …  (smaller)
+    //   4. CERTIFICATE … (smaller, bold)
+    let ty = INFO_Y + PAD + HEADER_SZ;
 
     // Row 1: CUSTOMER NAME — bigger so it's clearly visible
     doc.setFont('helvetica', 'bold');
@@ -736,7 +763,7 @@ async function generatePDF(openInTab = false) {
     doc.setTextColor(26, 184, 232);
     doc.text(custName, PAD + cnW, ty);
     doc.setTextColor(26, 26, 26);
-    ty -= (HEADER_SZ + 7);
+    ty += (HEADER_SZ + 7);
 
     // Row 2: ASSET ID — bigger
     doc.setFont('helvetica', 'bold');
@@ -746,7 +773,7 @@ async function generatePDF(openInTab = false) {
     doc.setTextColor(26, 184, 232);
     doc.text(assetId, PAD + aiW, ty);
     doc.setTextColor(26, 26, 26);
-    ty -= (INFO_SZ + 11);
+    ty += (INFO_SZ + 11);
 
     // Row 3: normal weight (asset list line) — back to standard size
     doc.setFont('helvetica', 'normal');
@@ -755,7 +782,7 @@ async function generatePDF(openInTab = false) {
       ? `Asset List as per TRACKNOW CORPORATE SYSTEM  |  ${assetDesc}`
       : 'Asset List as per TRACKNOW CORPORATE SYSTEM';
     doc.text(assetListLine, PAD, ty);
-    ty -= (INFO_SZ + 7);
+    ty += (INFO_SZ + 7);
 
     // Row 4: bold (certificate line)
     doc.setFont('helvetica', 'bold');
@@ -776,25 +803,27 @@ async function generatePDF(openInTab = false) {
     doc.setFontSize(FTR_SZ);
     doc.setTextColor(50, 50, 50);
 
-    let fy = FTR_Y + FTR_H - PAD - FTR_SZ;
+    // Top-down: row 1 (Month/Year) at top of footer, row 2 (Valid 12 Months) below
+    let fy = FTR_Y + (FTR_H - 2 * FTR_SZ - 11) / 2 + FTR_SZ;
     doc.text(`Month of Compliance ${month} ${year}  —  TRACK NOW PROPRIETARY LIMITED  ACN: 634 559 970`, PAD, fy);
-    fy -= (FTR_SZ + 11);
+    fy += (FTR_SZ + 11);
     doc.text('Valid 12 Months  —  TRACK NOW PROPRIETARY LIMITED  ACN: 634 559 970', PAD, fy);
 
-    // ── 7. WWW bar ──
+    // ── 7. WWW bar — at the very bottom of the page ──
     doc.setFillColor(13, 27, 42);
     doc.rect(0, WWW_Y, PW, WWW_H, 'F');
 
+    // Cyan border just above the WWW bar (separates footer from URL bar)
     doc.setDrawColor(26, 184, 232);
     doc.setLineWidth(1.5);
-    doc.line(0, WWW_H, PW, WWW_H);
+    doc.line(0, WWW_Y, PW, WWW_Y);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     const wwwText = 'www.tracknow.com.au';
     const wwwW = doc.getTextWidth(wwwText);
-    doc.text(wwwText, (PW - wwwW) / 2, WWW_H / 2 + 6);
+    doc.text(wwwText, (PW - wwwW) / 2, WWW_Y + WWW_H / 2 + 7);
 
     // ── Save ──
     const filename = `TrackNow-Certificate-${custName.replace(/[^a-z0-9]/gi,'_')}-${year}.pdf`;
