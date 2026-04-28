@@ -9830,6 +9830,10 @@ function renderCustomers() {
     }).join('')}</tbody>
   </table></div>`;
   _updateCustTabCounts();
+  // Re-open any rows that were expanded before this re-render — without
+  // this, clicking Refresh on the deal-file row collapses the customer
+  // back to the top of the table and the user has to click in again.
+  try { _restoreExpandedCustRows(); } catch (e) {}
 }
 
 // ── Customer status dropdown ─────────────────────────────────────
@@ -9977,6 +9981,10 @@ function updateCustomerSim(custId, value) {
 }
 
 // ── Toggle customer device breakdown ─────────────────────────────
+// Track which customer rows are currently expanded so a re-render
+// (e.g. after clicking Refresh on the deal-file row) can re-open them
+// instead of collapsing the user back to the top of the table.
+var _expandedCustIds = (typeof _expandedCustIds !== 'undefined') ? _expandedCustIds : {};
 function toggleCustDevices(custId) {
   const row = document.getElementById('custDevices_' + custId);
   const chevron = document.getElementById('custChevron_' + custId);
@@ -9984,6 +9992,18 @@ function toggleCustDevices(custId) {
   const isOpen = row.style.display !== 'none';
   row.style.display = isOpen ? 'none' : 'table-row';
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(90deg)';
+  if (isOpen) delete _expandedCustIds[custId];
+  else _expandedCustIds[custId] = true;
+}
+// Called from renderCustomers right after innerHTML is set — re-opens
+// any rows the user had expanded before the re-render.
+function _restoreExpandedCustRows() {
+  Object.keys(_expandedCustIds).forEach(function(id) {
+    var row = document.getElementById('custDevices_' + id);
+    var chevron = document.getElementById('custChevron_' + id);
+    if (row) row.style.display = 'table-row';
+    if (chevron) chevron.style.transform = 'rotate(90deg)';
+  });
 }
 
 // ── CSV Import ──────────────────────────────────────────────────
@@ -12135,29 +12155,11 @@ function sendEmailFromPortal() {
             try { _recordFollowUpEmail(_sent.leadId, _sent._followUpStage); } catch(e) {}
           }
 
-          // Auto-download PDF if document content exists
-          if (_sent.docHTML) {
-            _loadHtml2Pdf(function() {
-              if (typeof html2pdf === 'undefined') return;
-              var container = document.createElement('div');
-              container.innerHTML = _sent.docHTML;
-              container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;color:#1a1a1a;font-family:Inter,sans-serif;padding:40px';
-              document.body.appendChild(container);
-              var filename = _sent.type === 'fleet' ? 'Fleet_Report' : _sent.type === 'proposal' ? 'Proposal' : 'Agreement';
-              filename += '_' + (_sent.subject || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50) + '.pdf';
-              html2pdf().set({
-                margin: [10, 10, 10, 10],
-                filename: filename,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-              }).from(container).save().then(function() {
-                document.body.removeChild(container);
-              }).catch(function() {
-                try { document.body.removeChild(container); } catch(e) {}
-              });
-            });
-          }
+          // (Auto-PDF download after send removed at user request — was
+          // popping a Proposal/Agreement PDF onto the staff user's machine
+          // every time they emailed a document. Document is already cached
+          // in the lead's dealFiles AND viewable from the customer card
+          // any time, so the auto-download was just clutter.)
         })
         .catch(function(err) {
           clearTimeout(_sendTimeout);
