@@ -612,12 +612,18 @@ async function generatePDF(openInTab = false) {
     doc.setLineWidth(2);
     doc.line(CW, HERO_Y, CW, HERO_Y + HERO_H);
 
-    // "CERTIFICATE OF COMPLIANCE" rotated text — vertically centred in hero
+    // "CERTIFICATE OF COMPLIANCE" rotated text — vertically centred in hero,
+    // reading bottom-to-top (like the on-screen preview).
+    // angle:90 rotates 90° counter-clockwise; we explicitly position the
+    // anchor at the bottom of the rotated text so it sits centred in the hero.
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
     const sbText = 'CERTIFICATE OF COMPLIANCE';
-    doc.text(sbText, CW + SIDEBAR_W / 2 + 5, HERO_Y + HERO_H / 2, { angle: 270, align: 'center' });
+    const sbTextW = doc.getTextWidth(sbText);
+    const sbX = CW + SIDEBAR_W / 2 + 6;          // slight offset for baseline
+    const sbY = HERO_Y + (HERO_H + sbTextW) / 2; // bottom of rotated text
+    doc.text(sbText, sbX, sbY, { angle: 90 });
 
     // ── 2. Header — white, full page width ──
     doc.setFillColor(255, 255, 255);
