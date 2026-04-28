@@ -603,30 +603,30 @@ async function generatePDF(openInTab = false) {
     const OT = [26, 184, 232];  // cyan top (#1AB8E8)
     const OB = [13, 27, 42];    // navy bottom (#0D1B2A)
 
-    // ── 1. Right sidebar (full height) ──
+    // ── 1. Right sidebar (HERO ONLY — matches preview) ──
     doc.setFillColor(13, 27, 42);
-    doc.rect(CW, 0, SIDEBAR_W, PH, 'F');
+    doc.rect(CW, HERO_Y, SIDEBAR_W, HERO_H, 'F');
 
-    // Cyan border line between content and sidebar
+    // Cyan border line between hero content and sidebar
     doc.setDrawColor(26, 184, 232);
     doc.setLineWidth(2);
-    doc.line(CW, 0, CW, PH);
+    doc.line(CW, HERO_Y, CW, HERO_Y + HERO_H);
 
-    // "CERTIFICATE OF COMPLIANCE" rotated text on sidebar.
+    // "CERTIFICATE OF COMPLIANCE" rotated text — vertically centred in hero
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
     const sbText = 'CERTIFICATE OF COMPLIANCE';
-    doc.text(sbText, CW + SIDEBAR_W / 2 + 5, PH / 2, { angle: 270, align: 'center' });
+    doc.text(sbText, CW + SIDEBAR_W / 2 + 5, HERO_Y + HERO_H / 2, { angle: 270, align: 'center' });
 
-    // ── 2. Header — white ──
+    // ── 2. Header — white, full page width ──
     doc.setFillColor(255, 255, 255);
-    doc.rect(0, HDR_Y, CW, HDR_H, 'F');
+    doc.rect(0, HDR_Y, PW, HDR_H, 'F');
 
     // Cyan top border — runs along the very top of the page
     doc.setDrawColor(26, 184, 232);
     doc.setLineWidth(3);
-    doc.line(0, 2, CW, 2);
+    doc.line(0, 2, PW, 2);
 
     // Logo — text-based matching website style
     const LOGO_FS = 52;
@@ -638,7 +638,7 @@ async function generatePDF(openInTab = false) {
     doc.setTextColor(26, 184, 232);
     const nowW = doc.getTextWidth('NOW');
     const totalLogoW = trackW + nowW;
-    const logo_x = (CW - totalLogoW) / 2;
+    const logo_x = (PW - totalLogoW) / 2;
     const logo_top_y = HDR_Y + 20;
     const logo_text_y = logo_top_y + LOGO_FS;
     doc.setTextColor(13, 27, 42);
@@ -652,7 +652,7 @@ async function generatePDF(openInTab = false) {
     doc.setTextColor(26, 26, 26);
     const subTitle = 'CERTIFICATE OF COMPLIANCE';
     const subW = doc.getTextWidth(subTitle);
-    doc.text(subTitle, (CW - subW) / 2, logo_text_y + 28);
+    doc.text(subTitle, (PW - subW) / 2, logo_text_y + 28);
 
     // ── 3. Hero — gradient (cyan at top → navy at bottom) ──
     // Stripes drawn top-down: i=0 stripe at HERO_Y (cyan), i=199 at bottom (navy).
@@ -738,9 +738,9 @@ async function generatePDF(openInTab = false) {
     doc.setTextColor(255, 255, 255);
     doc.text(year, 18, HERO_Y + HERO_H - 18);
 
-    // ── 4. Info block ──
+    // ── 4. Info block — full page width ──
     doc.setFillColor(255, 255, 255);
-    doc.rect(0, INFO_Y, CW, INFO_H, 'F');
+    doc.rect(0, INFO_Y, PW, INFO_H, 'F');
 
     const PAD = 16;
     const INFO_SZ = 10.5;        // smaller rows (asset list + certificate line)
@@ -789,14 +789,14 @@ async function generatePDF(openInTab = false) {
     doc.setFontSize(INFO_SZ);
     doc.text('CERTIFICATE of GPS Tracker Fitment & Speed Monitoring Technology', PAD, ty);
 
-    // ── 5. Cyan divider ──
+    // ── 5. Cyan divider — full width minus padding ──
     doc.setDrawColor(26, 184, 232);
     doc.setLineWidth(1);
-    doc.line(PAD, DIV_Y, CW - PAD, DIV_Y);
+    doc.line(PAD, DIV_Y, PW - PAD, DIV_Y);
 
-    // ── 6. Footer ──
+    // ── 6. Footer — full page width (white edge-to-edge) ──
     doc.setFillColor(255, 255, 255);
-    doc.rect(0, FTR_Y, CW, FTR_H, 'F');
+    doc.rect(0, FTR_Y, PW, FTR_H, 'F');
 
     const FTR_SZ = 8.5;
     doc.setFont('helvetica', 'normal');
