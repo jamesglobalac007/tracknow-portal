@@ -86,7 +86,7 @@ else:
     old_foot = '''    <div class="foot-bot">
       <div>© 2026 Track Now Proprietary Limited. Gold Coast, QLD 4217. ABN 12 634 559 970</div>'''
     new_foot = '''    <div style="text-align:center;padding:24px 0 20px;border-top:1px solid #1b2a3e;margin-bottom:20px">
-      <img src="https://tracknow-portal-sync.onrender.com/assets/supply-nation-registered.avif" alt="Supply Nation Registered" style="height:56px;margin-bottom:10px;display:inline-block">
+      <img src="/assets/supply-nation-registered.avif" alt="Supply Nation Registered" style="height:56px;margin-bottom:10px;display:inline-block">
       <div style="font-size:13px;color:#a3adbd;line-height:1.6">TrackNow is proud to be a certified<br><strong style="color:#FFA028">Supply Nation Indigenous Company</strong></div>
     </div>
     <div class="foot-bot">

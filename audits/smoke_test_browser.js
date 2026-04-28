@@ -128,7 +128,45 @@
   if (hasPricing) tally('pass', 'Pricing globals', `HW_PRICES=${Object.keys(window.HW_PRICES).length} · extras=${window.OPTIONAL_EXTRAS.length}`);
   else tally('warn', 'Pricing globals', 'HW_PRICES / OPTIONAL_EXTRAS not on window — variable scope check');
 
-  // 9. Console error count during the test
+  // 9. Customer-action links — proposal accept, agreement sign, fleet/agreement
+  // callback. These are the URLs the email builder embeds in outgoing emails;
+  // if they break, customers click an Accept/Sign link in their inbox and land
+  // on a 404 even though everything looks fine on the admin side. Two checks:
+  //   (a) source-scan — fail outright if the dead 'tracknow-portal-sync' host
+  //       has crept back into the bundled index.html via a regression
+  //       (e.g. a sandbox→live promote that stomped a previous fix).
+  //   (b) live-fetch — build the four URLs the way the email code does and
+  //       GET them; the signing/accept/callback landing pages are query-string
+  //       routes into index.html itself, so they always 200 on the same origin
+  //       when wired correctly.
+  try {
+    const indexSrc = await (await fetch('/index.html', { credentials: 'include' })).text();
+    const deadHosts = ['tracknow-portal-sync.onrender.com'];
+    const hits = deadHosts.filter(h => indexSrc.includes(h));
+    if (hits.length === 0) tally('pass', 'No dead host refs', 'index.html clean of retired services');
+    else tally('fail', 'Dead host refs', `regression — found: ${hits.join(', ')}`);
+  } catch (e) {
+    tally('warn', 'Dead host scan', 'could not fetch /index.html — ' + (e && e.message || e));
+  }
+
+  const customerLinks = [
+    { label: 'Proposal accept link',     path: '/?proposal_accept=1&name=Smoke&company=Test&proposal=TN-9999' },
+    { label: 'Agreement sign link',      path: '/?agreement_sign=1&name=Smoke&company=Test&agreement=TN-AGR-9999' },
+    { label: 'Callback (fleet report)',  path: '/?callback=1&source=fleet_report&name=Smoke&company=Test' },
+    { label: 'Callback (agreement)',     path: '/?callback=1&source=agreement&name=Smoke&company=Test' },
+  ];
+  for (const link of customerLinks) {
+    const url = window.location.origin + link.path;
+    try {
+      const r = await fetch(url, { method: 'GET', credentials: 'omit', redirect: 'follow' });
+      if (r.ok) tally('pass', link.label, `${r.status} · ${link.path}`);
+      else tally('fail', link.label, `${r.status} on ${url}`);
+    } catch (e) {
+      tally('fail', link.label, 'fetch threw — ' + (e && e.message || e));
+    }
+  }
+
+  // 10. Console error count during the test
   console.error = origErr;
   if (consoleErrors.length === 0) tally('pass', 'Console errors', '0 during tab walk');
   else tally('warn', 'Console errors', `${consoleErrors.length} captured (see Console)`);

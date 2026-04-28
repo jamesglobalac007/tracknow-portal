@@ -59,5 +59,5 @@ if not ok:
 
 print(f"\n\033[92m{'='*55}")
 print(f"  ✓ ALL DONE — Render will auto-deploy now")
-print(f"  https://tracknow-portal-sync.onrender.com")
+print(f"  https://tracknow-portal.onrender.com")
 print(f"{'='*55}\033[0m\n")
