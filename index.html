@@ -4836,25 +4836,57 @@ function refreshCustDealData(custId) {
   var c = CUSTOMERS.find(function(x){ return x.id === custId; });
   if (!c) return;
   var lead = _findLeadForCustomer(c);
-  if (!lead) { showToast('No matching pipeline deal found for ' + c.co, 'warn'); return; }
-  // Sync dates
-  if (lead.proposalSentDate && !c.proposalSentDate) c.proposalSentDate = lead.proposalSentDate;
-  if (lead.proposalAcceptedDate && !c.proposalAcceptedDate) c.proposalAcceptedDate = lead.proposalAcceptedDate;
-  if (lead.agreementSentDate && !c.agreementSentDate) c.agreementSentDate = lead.agreementSentDate;
-  if (lead.agreementSignedDate && !c.agreementSignedDate) c.agreementSignedDate = lead.agreementSignedDate;
-  if (lead.closedWonDate && !c.closedWonDate) c.closedWonDate = lead.closedWonDate;
-  // Sync deal files
-  if (lead.dealFiles && Object.keys(lead.dealFiles).length) {
-    if (!c.dealFiles) c.dealFiles = {};
-    Object.assign(c.dealFiles, lead.dealFiles);
+  // PART 1 — sync from the matching lead if one still exists (pre-conversion)
+  if (lead) {
+    if (lead.proposalSentDate && !c.proposalSentDate) c.proposalSentDate = lead.proposalSentDate;
+    if (lead.proposalAcceptedDate && !c.proposalAcceptedDate) c.proposalAcceptedDate = lead.proposalAcceptedDate;
+    if (lead.agreementSentDate && !c.agreementSentDate) c.agreementSentDate = lead.agreementSentDate;
+    if (lead.agreementSignedDate && !c.agreementSignedDate) c.agreementSignedDate = lead.agreementSignedDate;
+    if (lead.closedWonDate && !c.closedWonDate) c.closedWonDate = lead.closedWonDate;
+    if (lead.dealFiles && Object.keys(lead.dealFiles).length) {
+      if (!c.dealFiles) c.dealFiles = {};
+      Object.assign(c.dealFiles, lead.dealFiles);
+    }
+    c.leadId = lead.id;
+    if (lead.fleetSegments && lead.fleetSegments.length) c.fleetSegments = lead.fleetSegments;
+    if (lead.lineItems && lead.lineItems.length) c.lineItems = lead.lineItems;
+    if (lead.agreementKey && !c.agreementKey) c.agreementKey = lead.agreementKey;
   }
-  // Sync source data for document regeneration
-  c.leadId = lead.id;
-  if (lead.fleetSegments && lead.fleetSegments.length) c.fleetSegments = lead.fleetSegments;
-  if (lead.lineItems && lead.lineItems.length) c.lineItems = lead.lineItems;
+  // PART 2 — even if the lead is gone (post-conversion) we can still fetch
+  // the executed agreement HTML directly from the server using the long
+  // agreement key. This is the recovery path for the "shows Signed but
+  // button still says Attach" case caused by 502s during deploy windows
+  // (or any other reason the realtime fetch dropped).
+  var hasSignedFile = c.dealFiles && c.dealFiles.agreement_signed && c.dealFiles.agreement_signed.data;
+  if (!hasSignedFile && c.agreementKey) {
+    fetch('/api/agreement-signed?key=' + encodeURIComponent(c.agreementKey))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d.ok && d.html) {
+          if (!c.dealFiles) c.dealFiles = {};
+          c.dealFiles.agreement_signed = {
+            name: 'Agreement_Executed_' + (c.co || '').replace(/[^a-zA-Z0-9]/g, '_') + '.html',
+            type: 'text/html',
+            data: 'data:text/html;charset=utf-8,' + encodeURIComponent(d.html),
+            uploadedAt: d.ts ? new Date(d.ts).toISOString() : new Date().toISOString()
+          };
+          if (d.ts && !c.agreementSignedDate) c.agreementSignedDate = new Date(d.ts).toISOString();
+          saveData();
+          renderCustomers();
+          showToast('Signed agreement recovered for ' + c.co, 'ok');
+        } else {
+          showToast('No signed agreement on server yet for ' + c.co + ' (key ' + String(c.agreementKey).slice(0,16) + '…)', 'warn');
+        }
+      })
+      .catch(function(e) {
+        console.warn('[tracknow] refreshCustDealData fetch failed:', e && e.message);
+        showToast('Could not reach server to recover signed agreement', 'warn');
+      });
+  }
   saveData();
   renderCustomers();
-  showToast('Deal data synced from pipeline for ' + c.co, 'ok');
+  if (lead) showToast('Deal data synced from pipeline for ' + c.co, 'ok');
+  else if (!c.agreementKey) showToast('No matching pipeline deal and no agreement key on file for ' + c.co, 'warn');
 }
 
 // ── Lost Deals (Not Going Ahead) → moves to Prospects as "not-interested" ──
@@ -12521,7 +12553,11 @@ function autoPopulateCustomer(lead) {
     agreementSignedDate: lead.agreementSignedDate || null,
     closedWonDate: lead.closedWonDate || new Date().toISOString(),
     dealFiles: lead.dealFiles || {},
-    followUpLog: lead.followUpLog || []
+    followUpLog: lead.followUpLog || [],
+    // Long agreement key — needed to recover the executed copy from
+    // /api/agreement-signed?key=<long key> if the realtime fetch dropped
+    // (e.g. customer signed during a deploy window's 502s).
+    agreementKey: lead.agreementKey || null
   };
 
   if (existing) {
@@ -12537,6 +12573,7 @@ function autoPopulateCustomer(lead) {
     existing.closedWonDate = dealHistory.closedWonDate || existing.closedWonDate;
     if (!existing.dealFiles) existing.dealFiles = {};
     Object.assign(existing.dealFiles, dealHistory.dealFiles);
+    if (dealHistory.agreementKey && !existing.agreementKey) existing.agreementKey = dealHistory.agreementKey;
     existing.leadId = lead.id;
     if (dealHistory.followUpLog && dealHistory.followUpLog.length) existing.followUpLog = (existing.followUpLog || []).concat(dealHistory.followUpLog);
     if (lead.fleetSegments && lead.fleetSegments.length) existing.fleetSegments = lead.fleetSegments;
@@ -12575,6 +12612,7 @@ function autoPopulateCustomer(lead) {
       closedWonDate: dealHistory.closedWonDate,
       dealFiles: dealHistory.dealFiles,
       followUpLog: dealHistory.followUpLog,
+      agreementKey: dealHistory.agreementKey,
       // Source data for document regeneration
       leadId: lead.id,
       fleetSegments: lead.fleetSegments || [],
