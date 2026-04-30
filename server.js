@@ -1682,6 +1682,16 @@ app.post('/api/data', (req, res) => {
         delete incoming[k];
       }
     });
+    const hasClientVersion = Object.prototype.hasOwnProperty.call(incoming, '_clientVersion');
+    const clientVersion = Number(incoming._clientVersion || 0);
+    if (!hasClientVersion && (Array.isArray(incoming.leads) || Array.isArray(incoming.prospects) || Array.isArray(incoming.customers) || Array.isArray(incoming.contentLibrary))) {
+      console.warn(`[tracknow] unversioned sync refused — server v${STORE.version}, user=${req.user && req.user.email}`);
+      return res.json({ ok: true, stale: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary, pricing: STORE.pricing || null });
+    }
+    if (Number.isFinite(clientVersion) && clientVersion > 0 && clientVersion < STORE.version) {
+      console.warn(`[tracknow] stale sync refused — client v${clientVersion}, server v${STORE.version}, user=${req.user && req.user.email}`);
+      return res.json({ ok: true, stale: true, version: STORE.version, leads: STORE.leads, prospects: STORE.prospects, customers: STORE.customers, contentLibrary: STORE.contentLibrary, pricing: STORE.pricing || null });
+    }
     // ANTI-WIPE GUARD — applies to every array the client can write
     // through this endpoint. Refuses to replace a non-empty server array
     // with an empty / missing incoming one. Fixes the classic "fresh
@@ -1700,6 +1710,7 @@ app.post('/api/data', (req, res) => {
     // sets the flag. Without this fix the user's "delete the last
     // customer" action got silently reverted on next page load.
     const allowEmptySet = new Set(Array.isArray(incoming._allowEmpty) ? incoming._allowEmpty : []);
+    const allowShrinkSet = new Set(Array.isArray(incoming._allowShrink) ? incoming._allowShrink : []);
     const _applySyncField = (key, incomingVal) => {
       if (!Array.isArray(incomingVal)) return;
       const existing = STORE[key] || [];
@@ -1710,6 +1721,10 @@ app.post('/api/data', (req, res) => {
           return;
         }
         console.warn(`[tracknow] anti-wipe: refused to overwrite ${key} (had ${existing.length}) with empty array — user=${req.user && req.user.email}`);
+        return;
+      }
+      if (key === 'customers' && incomingVal.length < existing.length && !allowShrinkSet.has(key)) {
+        console.warn(`[tracknow] anti-shrink: refused to overwrite customers (had ${existing.length}, incoming ${incomingVal.length}) — user=${req.user && req.user.email}`);
         return;
       }
       STORE[key] = incomingVal;

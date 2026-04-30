@@ -2612,6 +2612,7 @@ function _syncPush() {
       leads: LEADS,
       prospects: PROSPECTS,
       customers: CUSTOMERS,
+      _clientVersion: _syncVersion,
       // Only push contentLibrary once we've hydrated from the server.
       // Protects against fresh-session empty-push wiping the server's data.
       contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined' && _contentLibraryHydrated) ? CONTENT_LIBRARY : undefined,
@@ -2941,8 +2942,9 @@ function _syncRefreshUI() {
 // Do NOT run sync on customer-facing landing pages (signing, callback, proposal accept)
 (function _initSync() {
   if (window._showAgreementSign || window._showProposalAccept || window._showCallbackForm || window._showLeadForm) return;
-  // Initial push on page load (uploads local data, gets merged back)
-  setTimeout(function() { _syncPush(); }, 1500);
+  // Initial pull on page load. Never push localStorage before hydration:
+  // an old browser tab can contain stale arrays and must not overwrite live.
+  setTimeout(function() { _syncPull(); }, 500);
   // Poll for data changes from other users
   setInterval(function() { _syncPull(); }, 5000);
   // Poll for events (proposal accepts, etc.) — faster interval
