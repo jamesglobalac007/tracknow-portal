@@ -1723,8 +1723,8 @@ app.post('/api/data', (req, res) => {
         console.warn(`[tracknow] anti-wipe: refused to overwrite ${key} (had ${existing.length}) with empty array — user=${req.user && req.user.email}`);
         return;
       }
-      if (key === 'customers' && incomingVal.length < existing.length && !allowShrinkSet.has(key)) {
-        console.warn(`[tracknow] anti-shrink: refused to overwrite customers (had ${existing.length}, incoming ${incomingVal.length}) — user=${req.user && req.user.email}`);
+      if ((key === 'customers' || key === 'prospects') && incomingVal.length < existing.length && !allowShrinkSet.has(key)) {
+        console.warn(`[tracknow] anti-shrink: refused to overwrite ${key} (had ${existing.length}, incoming ${incomingVal.length}) — user=${req.user && req.user.email}`);
         return;
       }
       STORE[key] = incomingVal;
