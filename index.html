@@ -85,6 +85,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>/* ═══════════ RESET & BASE ═══════════ */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -1281,14 +1282,14 @@ select option{background:#0a0a0a;color:#0098d4}
     <div class="modal-header"><h3 class="modal-title">Prospect Import — CSV</h3>
       <button class="modal-close" onclick="closeCsvImportModal()">&#10005;</button></div>
     <div class="modal-body">
-      <p style="font-size:12px;color:#999;margin-bottom:14px">Drag &amp; drop a CSV file or click to browse. Columns will be auto-mapped to prospect fields (Company, Contact, Phone, Email, Industry, Source, Fleet Size).</p>
+      <p style="font-size:12px;color:#999;margin-bottom:14px">Drag &amp; drop a spreadsheet or CSV file. Columns will be auto-mapped to prospect fields (Company, Contact, Phone, Email, Industry, Source, Fleet Size), and unknown columns will be ignored.</p>
 
       <!-- Drop Zone -->
       <div id="csvDropZone" onclick="document.getElementById('csvFileInput').click()"
         style="border:2px dashed #333;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:.2s;background:#080808;margin-bottom:16px">
         <svg width="36" height="36" fill="none" stroke="#555" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:10px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div style="font-size:13px;font-weight:600;color:#888" id="csvDropLabel">Drop CSV file here or click to browse</div>
-        <input type="file" id="csvFileInput" accept=".csv,.txt,.tsv" style="display:none" onchange="handleCsvFile(this.files[0])">
+        <div style="font-size:13px;font-weight:600;color:#888" id="csvDropLabel">Drop spreadsheet or CSV file here or click to browse</div>
+        <input type="file" id="csvFileInput" accept=".csv,.txt,.tsv,.xlsx,.xls" style="display:none" onchange="handleCsvFile(this.files[0])">
       </div>
 
       <!-- Preview area (hidden until file loaded) -->
@@ -10040,9 +10041,57 @@ function handleCsvFile(file) {
   if (!file) return;
   document.getElementById('csvDropLabel').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
   document.getElementById('csvDropZone').style.borderColor = '#0098d4';
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
   const reader = new FileReader();
-  reader.onload = function(e) { parseCsvText(e.target.result); };
-  reader.readAsText(file);
+  reader.onload = function(e) {
+    if (ext === 'xlsx' || ext === 'xls') {
+      parseSpreadsheetBuffer(e.target.result);
+    } else {
+      parseCsvText(e.target.result);
+    }
+  };
+  if (ext === 'xlsx' || ext === 'xls') {
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.readAsText(file);
+  }
+}
+
+function _csvNormHeader(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[_\-\/]+/g, ' ')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function _csvEscapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+
+function parseSpreadsheetBuffer(buffer) {
+  if (typeof XLSX === 'undefined') {
+    alert('Spreadsheet support did not load. Save the file as CSV and try again, or reload the portal.');
+    return;
+  }
+  try {
+    const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
+    const sheetName = workbook.SheetNames && workbook.SheetNames[0];
+    if (!sheetName) { alert('Spreadsheet has no sheets to import'); return; }
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      header: 1,
+      defval: '',
+      raw: false,
+      blankrows: false
+    });
+    parseCsvMatrix(rows, sheetName);
+  } catch (err) {
+    alert('Could not read spreadsheet: ' + (err && err.message ? err.message : err));
+  }
 }
 
 function parseCsvText(text) {
@@ -10064,55 +10113,69 @@ function parseCsvText(text) {
     return cols;
   }
 
-  _csvHeaders = splitRow(lines[0]);
-  _csvParsedRows = lines.slice(1).map(l => splitRow(l)).filter(r => r.some(c => c));
+  parseCsvMatrix(lines.map(l => splitRow(l)));
+}
+
+function parseCsvMatrix(rows, sheetName) {
+  rows = (rows || []).map(function(row) {
+    return (row || []).map(function(cell) { return String(cell == null ? '' : cell).trim(); });
+  }).filter(function(row) { return row.some(function(cell) { return cell; }); });
+
+  if (rows.length < 2) { alert('File needs a header row + at least 1 data row'); return; }
+
+  _csvHeaders = rows[0];
+  _csvParsedRows = rows.slice(1).filter(r => r.some(c => c));
 
   // Auto-map columns
   const FIELD_MAP = {
-    co: ['company','business','co','name','business name','company name','organisation','organization'],
-    name: ['contact','contact name','person','first name','full name','rep','contact person'],
-    phone: ['phone','mobile','tel','telephone','cell','phone number','mobile number'],
-    email: ['email','email address','e-mail','mail'],
-    ind: ['industry','sector','ind','type','business type','category'],
-    source: ['source','lead source','origin','channel','how found'],
-    fleet: ['fleet','fleet size','vehicles','units','no. of vehicles','truck','trucks','assets']
+    co: ['company','business','co','business name','company name','organisation','organization','customer','customer name','client','client name','account','account name','trading name','entity','name of business'],
+    name: ['contact','contact name','person','first name','full name','rep','contact person','primary contact','decision maker','owner','manager','name'],
+    phone: ['phone','mobile','tel','telephone','cell','phone number','mobile number','contact number','business phone','work phone'],
+    email: ['email','email address','e-mail','mail','contact email','business email'],
+    ind: ['industry','sector','ind','type','business type','category','segment','vertical'],
+    source: ['source','lead source','origin','channel','how found','list source'],
+    fleet: ['fleet','fleet size','vehicles','units','no of vehicles','no vehicles','number of vehicles','vehicle count','truck','trucks','assets','asset count','number of assets']
   };
 
   _csvColMap = {};
   // Pass 1: exact matches only (prevents "contact" stealing "co" via substring)
   _csvHeaders.forEach((h, i) => {
-    const hLow = h.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const hLow = _csvNormHeader(h);
     for (const [field, aliases] of Object.entries(FIELD_MAP)) {
-      if (!_csvColMap[field] && aliases.some(a => hLow === a)) {
+      if (_csvColMap[field] === undefined && aliases.some(a => hLow === _csvNormHeader(a))) {
         _csvColMap[field] = i;
       }
     }
   });
   // Pass 2: substring matches for remaining unmapped fields (only aliases 4+ chars)
   _csvHeaders.forEach((h, i) => {
-    const hLow = h.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const hLow = _csvNormHeader(h);
     for (const [field, aliases] of Object.entries(FIELD_MAP)) {
-      if (!_csvColMap[field] && aliases.some(a => a.length >= 4 && hLow.includes(a))) {
+      if (_csvColMap[field] === undefined && aliases.some(a => {
+        const normAlias = _csvNormHeader(a);
+        return normAlias.length >= 4 && hLow.includes(normAlias);
+      })) {
         _csvColMap[field] = i;
       }
     }
   });
 
-  renderCsvPreview();
+  renderCsvPreview(sheetName);
 }
 
-function renderCsvPreview() {
+function renderCsvPreview(sheetName) {
   const prev = document.getElementById('csvPreview');
   prev.style.display = 'block';
   document.getElementById('csvImportBtn').style.display = '';
-  document.getElementById('csvRowCount').textContent = _csvParsedRows.length + ' rows found';
+  const mappedCount = Object.keys(_csvColMap).length;
+  document.getElementById('csvRowCount').textContent = _csvParsedRows.length + ' rows found' + (sheetName ? ' · Sheet: ' + sheetName : '') + ' · ' + mappedCount + ' fields mapped';
 
   // Preview table (first 5 rows)
   const show = _csvParsedRows.slice(0, 5);
   let html = '<table style="width:100%;border-collapse:collapse;font-size:11px">';
-  html += '<thead><tr style="background:#111">' + _csvHeaders.map(h => '<th style="padding:6px 8px;text-align:left;color:#0098d4;font-weight:600;border-bottom:1px solid #222">' + h + '</th>').join('') + '</tr></thead><tbody>';
+  html += '<thead><tr style="background:#111">' + _csvHeaders.map(h => '<th style="padding:6px 8px;text-align:left;color:#0098d4;font-weight:600;border-bottom:1px solid #222">' + _csvEscapeHtml(h) + '</th>').join('') + '</tr></thead><tbody>';
   show.forEach(r => {
-    html += '<tr>' + r.map(c => '<td style="padding:5px 8px;color:#ccc;border-bottom:1px solid #111">' + (c || '—') + '</td>').join('') + '</tr>';
+    html += '<tr>' + _csvHeaders.map((h, i) => '<td style="padding:5px 8px;color:#ccc;border-bottom:1px solid #111">' + _csvEscapeHtml(r[i] || '—') + '</td>').join('') + '</tr>';
   });
   if (_csvParsedRows.length > 5) html += '<tr><td colspan="' + _csvHeaders.length + '" style="padding:6px 8px;color:#666;font-style:italic;text-align:center">... and ' + (_csvParsedRows.length - 5) + ' more rows</td></tr>';
   html += '</tbody></table>';
@@ -10126,7 +10189,7 @@ function renderCsvPreview() {
     const colName = mapped ? _csvHeaders[_csvColMap[field]] : '—';
     const clr = mapped ? '#00CC66' : '#FF4444';
     const icon = mapped ? '✓' : '✗';
-    mapHtml += '<div style="display:flex;align-items:center;gap:6px"><span style="color:' + clr + ';font-weight:700">' + icon + '</span><span style="color:#999">' + label + '</span><span style="color:#0098d4;margin-left:auto">' + colName + '</span></div>';
+    mapHtml += '<div style="display:flex;align-items:center;gap:6px"><span style="color:' + clr + ';font-weight:700">' + icon + '</span><span style="color:#999">' + label + '</span><span style="color:#0098d4;margin-left:auto">' + _csvEscapeHtml(colName) + '</span></div>';
   }
   document.getElementById('csvColumnMap').innerHTML = mapHtml;
 }
