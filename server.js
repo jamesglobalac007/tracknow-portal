@@ -456,6 +456,9 @@ app.use((req, res, next) => {
 const ALLOWED_ORIGINS = [
   process.env.CORS_ORIGIN,
   'https://tracknow-portal.onrender.com',
+  'https://tracknow-site.onrender.com',
+  'https://www.tracknow.com.au',
+  'https://tracknow.com.au',
   'http://localhost:10000',
   'http://localhost:3000'
 ].filter(Boolean);
@@ -792,6 +795,7 @@ const AUTH_EXEMPT = new Set([
   '/api/agreement-signed',       // GET + POST: customer uploads signed copy
   '/api/event',                  // POST: customer pushes proposal/agreement-accepted event
   '/api/status',                 // POST: customer dismisses a callback
+  '/api/public-prospect',        // POST: website/social forms create a prospect
   '/api/send-email',             // gated inside the handler — customers get a restricted path
   '/api/self-test-status',       // has its own SELFTEST_TOKEN guard
   '/api/reset-password',         // token-gated; user hasn't logged in yet
@@ -1989,7 +1993,7 @@ app.get('/api/admin/content-library-verify', requireAdmin, (req, res) => {
 });
 
 // Per-IP rate limit for public write endpoints (/api/event, /api/status,
-// /api/agreement*). 30 writes per 15-min window is generous for normal
+// /api/agreement*, /api/public-prospect). 30 writes per 15-min window is generous for normal
 // customer activity but shuts down runaway automation/DoS.
 const _publicWriteRl = new Map();
 function _rateLimitPublic(ip) {
@@ -1999,6 +2003,114 @@ function _rateLimitPublic(ip) {
   _publicWriteRl.set(ip, rec);
   return rec.count <= 30;
 }
+
+function _cleanPublicLeadValue(value, maxLen) {
+  return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+function _auDateShort(ts) {
+  const dt = new Date(ts || Date.now());
+  const dd = String(dt.getDate()).padStart(2, '0');
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const yy = String(dt.getFullYear()).slice(-2);
+  return `${dd}/${mm}/${yy}`;
+}
+function _nextPublicProspectId() {
+  return (STORE.prospects || []).reduce((mx, p) => Math.max(mx, Number(p.id) || 0), 0) + 1;
+}
+function _appendProspectNote(existing, note) {
+  if (!note) return existing || '';
+  const current = String(existing || '').trim();
+  return current ? `${current}\n${note}` : note;
+}
+
+app.post('/api/public-prospect', (req, res) => {
+  try {
+    if (!_rateLimitPublic(clientIp(req))) {
+      return res.status(429).json({ ok: false, error: 'Too many submissions from this IP, try again later.' });
+    }
+
+    const incoming = req.body || {};
+    const name = _cleanPublicLeadValue(incoming.name, 120);
+    const company = _cleanPublicLeadValue(incoming.company, 160);
+    const email = _cleanPublicLeadValue(incoming.email, 160).toLowerCase();
+    const mobile = _cleanPublicLeadValue(incoming.mobile || incoming.phone, 60);
+    const sourceRaw = _cleanPublicLeadValue(incoming.source, 40).toLowerCase();
+    const type = _cleanPublicLeadValue(incoming.type || 'demo', 60);
+    const product = _cleanPublicLeadValue(incoming.product, 160);
+    const page = _cleanPublicLeadValue(incoming.page, 160);
+    const referrer = _cleanPublicLeadValue(incoming.referrer, 200);
+    const fleet = parseInt(incoming.fleet, 10);
+
+    if (!name && !company) return res.status(400).json({ ok: false, error: 'Name or company is required.' });
+    if (!email && !mobile) return res.status(400).json({ ok: false, error: 'Email or mobile is required.' });
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ ok: false, error: 'Valid email is required.' });
+
+    const source = sourceRaw === 'referral' ? 'referral'
+      : (sourceRaw === 'social' || sourceRaw === 'linkedin' || sourceRaw === 'facebook' || sourceRaw === 'instagram') ? 'social'
+      : 'website';
+    const sourceLabel = source === 'social' ? 'social media' : source;
+    const platformLabel = (sourceRaw === 'linkedin' || sourceRaw === 'facebook' || sourceRaw === 'instagram') ? sourceRaw : '';
+    const nowTs = Date.now();
+    const requestLabel = type === 'quote' ? 'Quote request' : type === 'fleet-report' ? 'Fleet report request' : 'Demo request';
+    let noteText = `${requestLabel} via ${sourceLabel}.`;
+    if (platformLabel) noteText += ` Platform: ${platformLabel}.`;
+    if (product) noteText += ` Product interest: ${product}.`;
+    if (page) noteText += ` Page: ${page}.`;
+    if (referrer && referrer !== 'direct') noteText += ` Referrer: ${referrer}.`;
+
+    STORE.prospects = Array.isArray(STORE.prospects) ? STORE.prospects : [];
+    const emailKey = email.toLowerCase();
+    const phoneKey = mobile.replace(/\D/g, '');
+    const existing = STORE.prospects.find(p => {
+      const pEmail = String(p.email || '').toLowerCase();
+      const pPhone = String(p.phone || '').replace(/\D/g, '');
+      return (emailKey && pEmail === emailKey) || (phoneKey && pPhone && pPhone === phoneKey);
+    });
+
+    if (existing) {
+      if (!existing.name && name) existing.name = name;
+      if (!existing.co && (company || name)) existing.co = company || name;
+      if (!existing.email && email) existing.email = email;
+      if (!existing.phone && mobile) existing.phone = mobile;
+      if (!existing.source) existing.source = source;
+      if (!existing.addedAt) existing.addedAt = nowTs;
+      existing.notes = _appendProspectNote(existing.notes, `[${_auDateShort(nowTs)}] ${noteText}`);
+      STORE.version++;
+      STORE.lastUpdate = nowTs;
+      saveStore();
+      pushAudit({ email: '(public)', ip: clientIp(req), success: true, reason: 'public_prospect_updated' });
+      return res.json({ ok: true, duplicate: true, id: existing.id, version: STORE.version });
+    }
+
+    const prospect = {
+      id: _nextPublicProspectId(),
+      co: company || name,
+      name,
+      phone: mobile,
+      email,
+      ind: '',
+      source,
+      fleet: Number.isFinite(fleet) && fleet > 0 ? fleet : 0,
+      trackers: 0,
+      subPrice: 0,
+      added: _auDateShort(nowTs),
+      addedAt: nowTs,
+      status: 'new',
+      callbackDate: '',
+      callbackTime: '',
+      notes: noteText
+    };
+    STORE.prospects.push(prospect);
+    STORE.version++;
+    STORE.lastUpdate = nowTs;
+    saveStore();
+    pushAudit({ email: '(public)', ip: clientIp(req), success: true, reason: 'public_prospect_created' });
+    res.json({ ok: true, id: prospect.id, version: STORE.version });
+  } catch (err) {
+    console.error('POST /api/public-prospect error:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
 
 app.post('/api/event', (req, res) => {
   try {

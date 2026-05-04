@@ -7,7 +7,12 @@
     var name = p.get('name') || '';
     var email = p.get('email') || '';
     if (!name && !email) { window.close(); return; }
-    var lead = { name:name, email:email, mobile:p.get('mobile')||'', company:p.get('company')||'', type:p.get('type')||'demo', product:p.get('product')||'', ts:new Date().toISOString() };
+    var lead = { name:name, email:email, mobile:p.get('mobile')||'', company:p.get('company')||'', source:p.get('source')||'website', type:p.get('type')||'demo', product:p.get('product')||'', ts:new Date().toISOString() };
+    fetch('/api/public-prospect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(lead)
+    }).catch(function(){});
     var queue = JSON.parse(localStorage.getItem('tn_website_leads') || '[]');
     if (!queue.some(function(q){ return q.email && email && q.email.toLowerCase() === email.toLowerCase(); })) {
       queue.push(lead);

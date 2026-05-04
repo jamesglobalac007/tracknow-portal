@@ -74,6 +74,11 @@
         queue.push(lead);
         localStorage.setItem('tn_website_leads', JSON.stringify(queue));
       }
+      fetch('/api/public-prospect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(lead)
+      }).catch(function(){});
       window.history.replaceState({}, '', window.location.pathname);
     } else {
       // No params — show landing page form (social media CTA)
@@ -12906,7 +12911,7 @@ function _importQueuedWebLeads() {
         phone: lead.mobile,
         email: lead.email,
         ind: '',
-        source: 'Website',
+        source: 'website',
         fleet: 0,
         trackers: 0,
         subPrice: 0,
@@ -14015,6 +14020,13 @@ function submitLeadForm() {
     queue.push(lead);
     localStorage.setItem('tn_website_leads', JSON.stringify(queue));
   }
+  fetch('/api/public-prospect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(Object.assign({}, lead, { fleet: fleet }))
+  }).catch(function(err) {
+    console.warn('Lead portal save failed; local queue retained:', err);
+  });
 
   // Send notification email via EmailJS
   function sendNotify() {
