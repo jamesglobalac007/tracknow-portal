@@ -1017,6 +1017,7 @@ select option{background:#0a0a0a;color:#0098d4}
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
       <select id="pFilter-source" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
         <option value="">All Sources</option>
+        <option value="cold-call">Cold Call</option>
         <option value="social">Social Media</option>
         <option value="website">Website Enquiry</option>
         <option value="referral">Referral</option>
@@ -1094,6 +1095,7 @@ select option{background:#0a0a0a;color:#0098d4}
           </select></div>
         <div><label class="form-label">Lead Source *</label>
           <select id="pm_source" class="form-input">
+            <option value="cold-call">Cold Call</option>
             <option value="social">Social Media</option>
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
             <option value="database">Database</option><option value="walk-in">Walk-In</option>
@@ -1135,6 +1137,7 @@ select option{background:#0a0a0a;color:#0098d4}
           </select></div>
         <div><label class="form-label">Lead Source</label>
           <select id="ep_source" class="form-input">
+            <option value="cold-call">Cold Call</option>
             <option value="social">Social Media</option>
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
             <option value="database">Database</option><option value="walk-in">Walk-In</option>
@@ -9013,6 +9016,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══════════════════════════════════════════════════════════════════
 
 const SOURCE_META = {
+  'cold-call':    {label:'Cold Call',    color:'#F26522', bg:'rgba(242,101,34,.12)'},
   'social':       {label:'Social Media', color:'#7c3aed', bg:'rgba(124,58,237,.1)'},
   'website':      {label:'Website',      color:'#00CC66', bg:'rgba(0,204,102,.12)'},
   'referral':     {label:'Referral',     color:'#0098d4', bg:'rgba(0,152,212,.12)'},
