@@ -3942,6 +3942,14 @@ function renderPipeline() {
             <div onclick="event.stopPropagation();openEditLead(${l.id})" style="font-size:10px;color:#0098d4;margin-bottom:2px;cursor:pointer;text-decoration:underline;text-decoration-color:#222;text-underline-offset:2px" onmouseover="this.style.textDecorationColor='#0098d4'" onmouseout="this.style.textDecorationColor='#222'" title="Click to edit contact details">✏ ${l.name} · ${l.city}, ${l.st}</div>
             ${l.email?'<div style="font-size:9px;color:#666;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✉ '+l.email+'</div>':''}
             ${l.phone?'<div style="font-size:9px;color:#666;margin-bottom:4px">📞 '+l.phone+'</div>':''}
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px" onclick="event.stopPropagation()">
+              <span style="font-size:9px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Owner:</span>
+              <select onchange="updateLeadOwner(${l.id},this.value)" style="font-size:9px;padding:2px 4px;background:#111;border:1px solid #333;color:#0098d4;font-family:inherit;cursor:pointer">
+                <option value=""${!l.owner?' selected':''}>—</option>
+                <option value="James"${l.owner==='James'?' selected':''}>James</option>
+                <option value="Mark"${l.owner==='Mark'?' selected':''}>Mark</option>
+              </select>
+            </div>
 
             ${hasProducts && l.lineItems && l.lineItems.length ? '<div style="margin-bottom:5px">' + l.lineItems.map(li => '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #111"><span style="font-size:9px;color:#CCC">' + (li.qty||0) + 'x ' + li.type + (li.asset?' <span style=color:#555>(' + li.asset + ')</span>':'') + '</span><span style="font-size:9px;font-weight:600;color:#0098d4">$' + ((li.qty||0)*(li.sub||0)).toFixed(2) + '/mo</span></div>').join('') + '</div>' : ''}
             ${l.stage!=='agreement'?'<button onclick="event.stopPropagation();openDealProducts('+l.id+')" style="width:100%;padding:5px;background:#080808;border:1px solid #332200;color:#0098d4;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor=\'#0098d4\';this.style.background=\'#111\'" onmouseout="this.style.borderColor=\'#332200\';this.style.background=\'#080808\'">EDIT PRODUCTS & PRICING</button>':''}
@@ -3977,7 +3985,7 @@ function renderPipeline() {
     document.getElementById('boardView').style.display = 'none';
     document.getElementById('tableView').style.display = 'block';
     document.getElementById('tableView').innerHTML = `<div class="card" style="padding:0;overflow:hidden"><table>
-      <thead><tr><th>Company</th><th>Score</th><th>Products</th><th>Stage</th><th>Units</th><th>MRR</th><th>Annual</th><th>Term</th><th></th></tr></thead>
+      <thead><tr><th>Company</th><th>Score</th><th>Products</th><th>Stage</th><th>Owner</th><th>Units</th><th>MRR</th><th>Annual</th><th>Term</th><th></th></tr></thead>
       <tbody>${fl.map(l => { const s = STAGES.find(x => x.id === l.stage); const sg = getScoreGrade(scoreLeadRank(l)); const hp = l._productsSet; const mrr = hp && l.lineItems ? l.lineItems.reduce((s,li) => s + (li.qty||0)*(li.sub||0), 0) : 0; const prodSummary = hp && l.lineItems ? l.lineItems.map(li => (li.qty||0)+'x '+li.type).join(', ') : ''; return `<tr style="cursor:pointer" onclick="openDealProducts(${l.id})">
         <td><div style="display:flex;align-items:center;gap:8px">
           ${l.star ? '<svg width="12" height="12" fill="#f59e0b" stroke="#f59e0b" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' : ''}
@@ -3985,6 +3993,7 @@ function renderPipeline() {
         <td><span style="font-size:11px;font-weight:800;color:${sg.color};background:${sg.bg};padding:3px 7px;border-radius:5px">${sg.grade}</span></td>
         <td style="font-size:11px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${hp?'color:#CCC':'color:#444;font-style:italic'}">${hp ? prodSummary : 'Not set'}</td>
         <td><span class="badge" style="background:${s.bg};color:${s.color}">${s.label}</span></td>
+        <td onclick="event.stopPropagation()"><select onchange="updateLeadOwner(${l.id},this.value)" style="font-size:11px;padding:3px 6px;background:#111;border:1px solid #333;color:#0098d4;font-family:inherit;cursor:pointer"><option value=""${!l.owner?' selected':''}>—</option><option value="James"${l.owner==='James'?' selected':''}>James</option><option value="Mark"${l.owner==='Mark'?' selected':''}>Mark</option></select></td>
         <td style="font-weight:600;${hp?'':'color:#333'}">${hp ? l.v : '—'}</td>
         <td style="font-weight:700;${hp?'color:#0098d4':'color:#333'}">${hp ? '$'+mrr.toFixed(2) : '—'}</td>
         <td style="font-weight:600;${hp?'color:#999':'color:#333'}">${hp ? '$'+l.val.toLocaleString() : '—'}</td>
@@ -4024,7 +4033,8 @@ function _restoreArchivedDeal(prospectId) {
     _productsSet: !!(p.lineItems && p.lineItems.length),
     fleetSegments: p.fleetSegments || null,
     dealFiles: p.dealFiles || {},
-    fleetReportDate: p.fleetReportDate || null
+    fleetReportDate: p.fleetReportDate || null,
+    owner: p.owner || ''
   });
   var idx = PROSPECTS.findIndex(function(x){ return x.id === prospectId; });
   if (idx > -1) PROSPECTS.splice(idx, 1);
@@ -10011,6 +10021,14 @@ function updateCustomerOwner(custId, value) {
   saveData();
 }
 
+function updateLeadOwner(leadId, value) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  l.owner = value;
+  saveData();
+  renderPipeline();
+}
+
 function updateCustomerSim(custId, value) {
   const c = CUSTOMERS.find(x => x.id === custId);
   if (c) {
@@ -10715,7 +10733,8 @@ function moveProspectToPipeline(id) {
     _productsSet: !!(p.lineItems && p.lineItems.length),
     fleetSegments: p.fleetSegments || null,
     dealFiles: p.dealFiles || {},
-    fleetReportDate: p.fleetReportDate || null
+    fleetReportDate: p.fleetReportDate || null,
+    owner: p.owner || ''
   });
   const i = PROSPECTS.findIndex(x => x.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
@@ -10746,7 +10765,8 @@ function moveCustomerToPipeline(id) {
     city: '', st: '', stage: 'proposal', val: annualVal, notes: c.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: c.trackers, subPrice: c.subPrice, term: c.term != null ? c.term : 24, sim: '',
-    lineItems: custLines
+    lineItems: custLines,
+    owner: c.owner || ''
   });
   saveData(); renderCustomers(); renderCustStats(); renderPipeline();
   showToast(c.co + ' added to Pipeline — Fleet Optimisation Report Sent. ' + c.trackers + ' trackers @ $' + c.subPrice.toFixed(2) + '/mo');
@@ -12880,7 +12900,8 @@ function autoPopulateCustomer(lead) {
       // Source data for document regeneration
       leadId: lead.id,
       fleetSegments: lead.fleetSegments || [],
-      lineItems: lead.lineItems || []
+      lineItems: lead.lineItems || [],
+      owner: lead.owner || ''
     };
     CUSTOMERS.push(newCust);
     // NOTE: Do NOT call saveData() here — the caller (moveLeadStage / handleDrop)
