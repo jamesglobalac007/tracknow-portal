@@ -1005,6 +1005,10 @@ select option{background:#0a0a0a;color:#0098d4}
       style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#0098d4;color:#000;transition:.15s;font-family:inherit">
       PROSPECTS
     </button>
+    <button id="custTabBtn-james" onclick="showCustTab('james')"
+      style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#111;color:#666;transition:.15s;font-family:inherit">
+      JAMES
+    </button>
     <button id="custTabBtn-customers" onclick="showCustTab('customers')"
       style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#111;color:#666;transition:.15s;font-family:inherit">
       LIVE CUSTOMERS
@@ -9044,21 +9048,28 @@ const PROSPECT_STATUS = {
 };
 
 let _custTab = 'prospects';
+let _prospOwnerFilter = '';
 
 function _updateCustTabCounts() {
   var pBtn = document.getElementById('custTabBtn-prospects');
+  var jBtn = document.getElementById('custTabBtn-james');
   var cBtn = document.getElementById('custTabBtn-customers');
-  var activeProspects = PROSPECTS.filter(function(p){ return p.status !== 'not-ready' && p.status !== 'not-interested'; }).length;
-  var archivedProspects = PROSPECTS.filter(function(p){ return p.status === 'not-ready' || p.status === 'not-interested'; }).length;
   var totalProspects = PROSPECTS.length;
+  var jamesCount = PROSPECTS.filter(function(p){ return p.owner === 'James'; }).length;
   var totalCustomers = CUSTOMERS.length;
   if (pBtn) pBtn.innerHTML = 'PROSPECTS \u00A0<span style="opacity:.7;font-size:11px">(' + totalProspects + ')</span>';
+  if (jBtn) jBtn.innerHTML = 'JAMES \u00A0<span style="opacity:.7;font-size:11px">(' + jamesCount + ')</span>';
   if (cBtn) cBtn.innerHTML = 'LIVE CUSTOMERS \u00A0<span style="opacity:.7;font-size:11px">(' + totalCustomers + ')</span>';
 }
 function showCustTab(tab) {
   _custTab = tab;
+  // James tab = prospects view filtered by owner; clear filter on other tabs.
+  _prospOwnerFilter = (tab === 'james') ? 'James' : '';
+  const viewTab = (tab === 'james') ? 'prospects' : tab;
   ['prospects','customers'].forEach(t => {
-    document.getElementById('custView-' + t).style.display = t === tab ? '' : 'none';
+    document.getElementById('custView-' + t).style.display = t === viewTab ? '' : 'none';
+  });
+  ['prospects','james','customers'].forEach(t => {
     const btn = document.getElementById('custTabBtn-' + t);
     if (btn) {
       btn.style.background = t === tab ? '#0098d4' : '#111';
@@ -9070,12 +9081,13 @@ function showCustTab(tab) {
   const csvBtn = document.getElementById('btnImportCsv');
   const prospBtn = document.getElementById('btnNewProspect');
   const custBtn = document.getElementById('btnAddCustomer');
-  if (csvBtn) csvBtn.style.display = tab === 'prospects' ? 'inline-flex' : 'none';
-  if (prospBtn) prospBtn.style.display = tab === 'prospects' ? '' : 'none';
+  const onProspectView = (tab === 'prospects' || tab === 'james');
+  if (csvBtn) csvBtn.style.display = onProspectView ? 'inline-flex' : 'none';
+  if (prospBtn) prospBtn.style.display = onProspectView ? '' : 'none';
   if (custBtn) custBtn.style.display = tab === 'customers' ? '' : 'none';
   var sfBtn = document.getElementById('btnImportSalesFee');
   if (sfBtn) sfBtn.style.display = tab === 'customers' ? 'inline-flex' : 'none';
-  if (tab === 'prospects') renderProspects();
+  if (onProspectView) renderProspects();
   else renderCustomers();
   renderCustStats();
 }
@@ -9336,6 +9348,7 @@ function renderProspects() {
     (!srcF || p.source === srcF) &&
     (!indF || p.ind === indF) &&
     (!stF  || p.status === stF) &&
+    (!_prospOwnerFilter || p.owner === _prospOwnerFilter) &&
     matchQ(p)
   );
 
@@ -10393,6 +10406,7 @@ function saveProspect() {
     status: document.getElementById('pm_status').value,
     callbackDate: '', callbackTime: '',
     notes: document.getElementById('pm_notes').value.trim(),
+    owner: _prospOwnerFilter || '',
   });
   closeProspectModal();
   renderProspects();
