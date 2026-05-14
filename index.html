@@ -9634,14 +9634,14 @@ function renderProspects() {
       <thead><tr style="background:#111;border-bottom:1px solid #222">
         <th style="${thStyle}">State</th>
         <th style="${thStyle}">Suburb</th>
-        <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#0098d4':'#666'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
+        <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#0098d4':'#fff'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Source</th>
-        <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
+        <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#fff'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Status</th>
         <th style="${thStyle};text-align:center">Qty</th>
         <th style="${thStyle}">Notes</th>
         <th style="${thStyle}">Owner</th>
-        <th onclick="toggleProspSort('added')" style="${thStyle};cursor:pointer;user-select:none;white-space:nowrap;min-width:80px;color:${_prospSortField==='added'?'#0098d4':'#666'}">Added ${_prospSortField==='added'?(_prospSortDir===1?'▲':'▼'):''}</th>
+        <th onclick="toggleProspSort('added')" style="${thStyle};cursor:pointer;user-select:none;white-space:nowrap;min-width:80px;color:${_prospSortField==='added'?'#0098d4':'#fff'}">Added ${_prospSortField==='added'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Actions</th>
       </tr></thead>
       <tbody>${active.map((p, i) => buildRow(p, i)).join('')}</tbody>
