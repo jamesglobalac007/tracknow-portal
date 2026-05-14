@@ -11558,15 +11558,19 @@ function saveDealProducts() {
 }
 
 // ── Fleet Profile Report Generator ─────────────────────────────
+// appliesSlip / appliesIdle / appliesAH = whether each loss CATEGORY is real
+// for this asset type. Drives the per-section chip filter so the UI only
+// offers applicable assets and the calculation only includes them. Per-segment
+// seg.calcSlip / seg.calcIdle / seg.calcAH are user-toggles seeded from these.
 const FLEET_BENCHMARKS = {
-  trucks:     { label:'Trucks / Heavy Vehicles',   km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8 },
-  vans:       { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8, idleHrsDay: 1.5, afterHrsPct: 10 },
-  utes:       { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8, idleHrsDay: 1.5, afterHrsPct: 0, calcAH: false },
-  equipment:  { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6, idleHrsDay: 3.0, afterHrsPct: 0, calcAH: false },
-  cars:       { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8, idleHrsDay: 1.0, afterHrsPct: 15 },
-  excavators: { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6, idleHrsDay: 3.5, afterHrsPct: 0, calcAH: false },
-  trailers:   { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0, idleHrsDay: 0, afterHrsPct: 0, calcAH: false },
-  refrigerated:{ label:'Refrigerated Vehicles',     km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0, calcAH: false }
+  trucks:      { label:'Trucks / Heavy Vehicles',    km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  notApplicableReason: '' },
+  vans:        { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 10, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  notApplicableReason: '' },
+  utes:        { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  notApplicableReason: '' },
+  equipment:   { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, notApplicableReason: 'stays on site after hours' },
+  cars:        { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8,  idleHrsDay: 1.0, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  notApplicableReason: '' },
+  excavators:  { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, notApplicableReason: 'stays on site after hours' },
+  trailers:    { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0,  idleHrsDay: 0,   afterHrsPct: 0,  appliesSlip: false, appliesIdle: false, appliesAH: false, notApplicableReason: 'no engine — unpowered asset' },
+  refrigerated:{ label:'Refrigerated Vehicles',      km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, notApplicableReason: 'stays parked after hours' }
 };
 let _fpSegments = [];
 let _fpSegId = 0;
@@ -11578,7 +11582,7 @@ function _autoRecalcProspectCosts() {
 function addFleetSegment(type) {
   type = type || 'trucks';
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, calcAH: b.calcAH !== undefined ? b.calcAH : true, selected: true };
+  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, calcSlip: b.appliesSlip !== false, calcIdle: b.appliesIdle !== false, calcAH: b.appliesAH !== false, selected: true };
   _fpSegments.push(seg);
   renderFleetSegments();
   renderCalcAssetChips();
@@ -11594,7 +11598,7 @@ function updateFleetSegType(id, type) {
   const seg = _fpSegments.find(s => s.id === id);
   if (!seg) return;
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8; seg.calcAH = b.calcAH !== undefined ? b.calcAH : true;
+  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8; seg.calcSlip = b.appliesSlip !== false; seg.calcIdle = b.appliesIdle !== false; seg.calcAH = b.appliesAH !== false;
   renderFleetSegments();
   renderCalcAssetChips();
   _autoRecalcProspectCosts();
@@ -11621,100 +11625,97 @@ function toggleCalcAsset(calcKey, segId) {
 function renderCalcAssetChips() {
   var selectedSegs = _fpSegments.filter(function(s) { return s.selected !== false; });
 
-  // ── Slippage: asset rows with editable working hours per asset ──
-  var slipContainer = document.getElementById('pfp_slipAssets');
-  if (slipContainer) {
-    if (_fpSegments.length === 0) { slipContainer.innerHTML = ''; }
-    else if (selectedSegs.length === 0) { slipContainer.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; }
-    else {
-      var shtml = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select assets &amp; set working hours per type:</div>';
-      selectedSegs.forEach(function(seg) {
-        var active = seg.calcSlip !== false;
-        var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
-        var shortLabel = label.split('/')[0].trim();
-        var wh = seg.workHrs != null ? seg.workHrs : 8;
-        shtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
-          '<button onclick="toggleCalcAsset(\'calcSlip\',' + seg.id + ')" style="' +
-            'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
-            'border:1px solid ' + (active ? '#0098d4' : '#333') + ';' +
-            'color:' + (active ? '#0098d4' : '#555') + ';' +
-            'background:' + (active ? 'rgba(0,152,212,.1)' : '#111') + ';' +
-            'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
-          '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
-          (active ? '<span style="font-size:8px;color:#0098d4">Hrs/Day:</span>' +
-            '<input type="number" value="' + wh + '" min="0" max="24" step="0.5" ' +
-            'onchange="updateSegWorkHrs(' + seg.id + ',this.value)" ' +
-            'oninput="updateSegWorkHrs(' + seg.id + ',this.value)" ' +
-            'style="width:50px;padding:3px;background:#111;border:1px solid #0098d4;color:#0098d4;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
-          '</div>';
-      });
-      slipContainer.innerHTML = shtml;
-    }
+  // Build a "not applicable for: …" hint string listing categories present
+  // in the fleet that don't qualify for this loss type, with the reason.
+  // Used by all three sections so the user can see WHY assets are excluded.
+  function _excludedHint(appliesKey) {
+    var seen = {};
+    var excluded = [];
+    selectedSegs.forEach(function(s) {
+      var b = FLEET_BENCHMARKS[s.type] || {};
+      if (b[appliesKey] !== false) return;
+      if (seen[s.type]) return;
+      seen[s.type] = true;
+      var lbl = (b.label || s.type).split('/')[0].trim();
+      var reason = b.notApplicableReason || '';
+      excluded.push(reason ? lbl + ' (' + reason + ')' : lbl);
+    });
+    return excluded.length
+      ? '<div style="font-size:8px;color:#666;margin-top:6px;font-style:italic">Not applicable for: ' + excluded.join(' · ') + '</div>'
+      : '';
   }
 
-  // ── Idle Time: asset rows with editable idle hrs/day per asset ──
-  var idleContainer = document.getElementById('pfp_idleAssets');
-  if (idleContainer) {
-    if (_fpSegments.length === 0) { idleContainer.innerHTML = ''; }
-    else if (selectedSegs.length === 0) { idleContainer.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; }
-    else {
-      var ihtml = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select assets &amp; set idle hours per type:</div>';
-      selectedSegs.forEach(function(seg) {
-        var active = seg.calcIdle !== false;
-        var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
-        var shortLabel = label.split('/')[0].trim();
-        var ih = seg.idleHrsDay != null ? seg.idleHrsDay : 1.5;
-        ihtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
-          '<button onclick="toggleCalcAsset(\'calcIdle\',' + seg.id + ')" style="' +
-            'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
-            'border:1px solid ' + (active ? '#d97706' : '#333') + ';' +
-            'color:' + (active ? '#d97706' : '#555') + ';' +
-            'background:' + (active ? 'rgba(217,119,6,.1)' : '#111') + ';' +
-            'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
-          '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
-          (active ? '<span style="font-size:8px;color:#d97706">Idle Hrs/Day:</span>' +
-            '<input type="number" value="' + ih + '" min="0" max="10" step="0.5" ' +
-            'onchange="updateSegIdleHrs(' + seg.id + ',this.value)" ' +
-            'oninput="updateSegIdleHrs(' + seg.id + ',this.value)" ' +
-            'style="width:50px;padding:3px;background:#111;border:1px solid #d97706;color:#d97706;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
-          '</div>';
+  function _renderSection(opts) {
+    // opts: { containerId, appliesKey, calcKey, color, label, valueKey, defaultValue, updateFn, min, max, step }
+    var container = document.getElementById(opts.containerId);
+    if (!container) return;
+    if (_fpSegments.length === 0) { container.innerHTML = ''; return; }
+    if (selectedSegs.length === 0) { container.innerHTML = '<span style="font-size:9px;color:#555">No segments selected above</span>'; return; }
+    var eligible = selectedSegs.filter(function(s) {
+      var b = FLEET_BENCHMARKS[s.type] || {};
+      return b[opts.appliesKey] !== false;
+    });
+    if (eligible.length === 0) {
+      // Whole section non-applicable for this fleet — single grey line.
+      var allReasons = {};
+      selectedSegs.forEach(function(s) {
+        var b = FLEET_BENCHMARKS[s.type] || {};
+        var lbl = (b.label || s.type).split('/')[0].trim();
+        var reason = b.notApplicableReason || 'unpowered';
+        allReasons[lbl] = reason;
       });
-      idleContainer.innerHTML = ihtml;
+      var parts = Object.keys(allReasons).map(function(k){ return k + ' (' + allReasons[k] + ')'; });
+      container.innerHTML = '<div style="font-size:10px;color:#666;font-style:italic;padding:4px 0">Not applicable for this fleet — ' + parts.join(' · ') + '</div>';
+      return;
     }
+    var html = '<div style="font-size:8px;color:#666;margin-bottom:4px">' + opts.label + '</div>';
+    eligible.forEach(function(seg) {
+      var active = seg[opts.calcKey] !== false;
+      var lbl = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
+      var shortLabel = lbl.split('/')[0].trim();
+      var v = seg[opts.valueKey] != null ? seg[opts.valueKey] : opts.defaultValue;
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
+        '<button onclick="toggleCalcAsset(\'' + opts.calcKey + '\',' + seg.id + ')" style="' +
+          'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
+          'border:1px solid ' + (active ? opts.color : '#333') + ';' +
+          'color:' + (active ? opts.color : '#555') + ';' +
+          'background:' + (active ? opts.colorBg : '#111') + ';' +
+          'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
+        '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
+        (active ? '<span style="font-size:8px;color:' + opts.color + '">' + opts.unitLabel + '</span>' +
+          '<input type="number" value="' + v + '" min="' + opts.min + '" max="' + opts.max + '" step="' + opts.step + '" ' +
+          'onchange="' + opts.updateFn + '(' + seg.id + ',this.value)" ' +
+          'oninput="' + opts.updateFn + '(' + seg.id + ',this.value)" ' +
+          'style="width:50px;padding:3px;background:#111;border:1px solid ' + opts.color + ';color:' + opts.color + ';font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
+        '</div>';
+    });
+    html += _excludedHint(opts.appliesKey);
+    container.innerHTML = html;
   }
 
-  // ── After-Hours: only trucks, cars, vans ──
-  var ahContainer = document.getElementById('pfp_ahAssets');
-  if (ahContainer) {
-    var ahTypes = ['trucks','cars','vans'];
-    var ahSegs = selectedSegs.filter(function(s) { return ahTypes.indexOf(s.type) !== -1; });
-    if (_fpSegments.length === 0) { ahContainer.innerHTML = ''; }
-    else if (ahSegs.length === 0) { ahContainer.innerHTML = '<span style="font-size:9px;color:#555">No trucks, cars or vans in fleet</span>'; }
-    else {
-      var ahtml = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select assets &amp; set after-hours % per type:</div>';
-      ahSegs.forEach(function(seg) {
-        var active = seg.calcAH !== false;
-        var label = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
-        var shortLabel = label.split('/')[0].trim();
-        var ap = seg.afterHrsPct != null ? seg.afterHrsPct : 8;
-        ahtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;width:100%">' +
-          '<button onclick="toggleCalcAsset(\'calcAH\',' + seg.id + ')" style="' +
-            'padding:2px 8px;font-size:9px;font-weight:' + (active ? '700' : '400') + ';' +
-            'border:1px solid ' + (active ? '#dc2626' : '#333') + ';' +
-            'color:' + (active ? '#dc2626' : '#555') + ';' +
-            'background:' + (active ? 'rgba(220,38,38,.1)' : '#111') + ';' +
-            'cursor:pointer;font-family:inherit;min-width:120px;text-align:left' +
-          '">' + shortLabel + ' (' + (seg.qty||0) + ')' + (active ? ' ✓' : '') + '</button>' +
-          (active ? '<span style="font-size:8px;color:#dc2626">After-Hrs %:</span>' +
-            '<input type="number" value="' + ap + '" min="0" max="50" step="1" ' +
-            'onchange="updateSegAfterHrsPct(' + seg.id + ',this.value)" ' +
-            'oninput="updateSegAfterHrsPct(' + seg.id + ',this.value)" ' +
-            'style="width:50px;padding:3px;background:#111;border:1px solid #dc2626;color:#dc2626;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' : '') +
-          '</div>';
-      });
-      ahContainer.innerHTML = ahtml;
-    }
-  }
+  _renderSection({
+    containerId: 'pfp_slipAssets', appliesKey: 'appliesSlip', calcKey: 'calcSlip',
+    color: '#0098d4', colorBg: 'rgba(0,152,212,.1)',
+    label: 'Select assets &amp; set working hours per type:',
+    valueKey: 'workHrs', defaultValue: 8, updateFn: 'updateSegWorkHrs',
+    unitLabel: 'Hrs/Day:', min: 0, max: 24, step: 0.5
+  });
+
+  _renderSection({
+    containerId: 'pfp_idleAssets', appliesKey: 'appliesIdle', calcKey: 'calcIdle',
+    color: '#d97706', colorBg: 'rgba(217,119,6,.1)',
+    label: 'Select assets &amp; set idle hours per type:',
+    valueKey: 'idleHrsDay', defaultValue: 1.5, updateFn: 'updateSegIdleHrs',
+    unitLabel: 'Idle Hrs/Day:', min: 0, max: 10, step: 0.5
+  });
+
+  _renderSection({
+    containerId: 'pfp_ahAssets', appliesKey: 'appliesAH', calcKey: 'calcAH',
+    color: '#dc2626', colorBg: 'rgba(220,38,38,.1)',
+    label: 'Select assets &amp; set after-hours % per type:',
+    valueKey: 'afterHrsPct', defaultValue: 8, updateFn: 'updateSegAfterHrsPct',
+    unitLabel: 'After-Hrs %:', min: 0, max: 50, step: 1
+  });
 }
 function updateSegWorkHrs(segId, val) {
   var seg = _fpSegments.find(function(s) { return s.id === segId; });
