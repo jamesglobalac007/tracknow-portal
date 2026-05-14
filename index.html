@@ -1133,6 +1133,7 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="VIC">VIC</option><option value="WA">WA</option>
             <option value="SA">SA</option><option value="TAS">TAS</option>
           </select></div>
+        <div><label class="form-label">Suburb</label><input id="pm_suburb" class="form-input" placeholder="Brisbane"></div>
         <div><label class="form-label">Quantity (units to track)</label>
           <input id="pm_qty" type="number" min="0" value="0" class="form-input" placeholder="0"></div>
         <div><label class="form-label">Lead Source *</label>
@@ -1188,6 +1189,7 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="VIC">VIC</option><option value="WA">WA</option>
             <option value="SA">SA</option><option value="TAS">TAS</option>
           </select></div>
+        <div><label class="form-label">Suburb</label><input id="ep_suburb" class="form-input" placeholder="Brisbane"></div>
         <div><label class="form-label">Quantity (units to track)</label>
           <input id="ep_qty" type="number" min="0" value="0" class="form-input" placeholder="0"></div>
         <div><label class="form-label">Lead Source</label>
@@ -4096,7 +4098,7 @@ function _restoreArchivedDeal(prospectId) {
   LEADS.push({
     id: Date.now(), co: p.co, name: p.name || '', email: p.email || '',
     phone: p.phone || '', ind: p.ind || '', v: units,
-    city: '', st: p.state || '', stage: 'proposal', val: annualVal, notes: p.notes || '',
+    city: p.suburb || '', st: p.state || '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
     lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:(HW_PRICES['OBD2 Plug-In Device']||199), hwInstall:(HW_INSTALL_DEFAULT['OBD2 Plug-In Device']||0)}],
@@ -9522,6 +9524,9 @@ function renderProspects() {
           <option value="TAS"${p.state==='TAS'?' selected':''}>TAS</option>
         </select>
       </td>
+      <td style="padding:9px 12px">
+        <input type="text" value="${(p.suburb||'').replace(/"/g,'&quot;')}" placeholder="—" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateProspectField(${p.id},'suburb',this.value.trim())" style="font-size:12px;padding:3px 6px;border:1px solid #222;border-radius:0;background:#111;color:#fff;font-family:inherit;outline:none;width:110px">
+      </td>
       <td style="padding:9px 12px;max-width:200px">
         <div onclick="toggleProspectNotes(${p.id})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
           <svg id="prospChevron_${p.id}" width="10" height="10" fill="none" stroke="#666" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
@@ -9571,7 +9576,7 @@ function renderProspects() {
       </td>
     </tr>
     <tr id="notesRow-${p.id}" style="display:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td colspan="10" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
+      <td colspan="11" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
         <div style="background:#050505;border:1px solid #1a1a1a;border-left:3px solid #0098d4;padding:12px 16px">
 
           <!-- Header strip: status / source / industry / fleet shortcut -->
@@ -9628,6 +9633,7 @@ function renderProspects() {
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="background:#111;border-bottom:1px solid #222">
         <th style="${thStyle}">State</th>
+        <th style="${thStyle}">Suburb</th>
         <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#0098d4':'#666'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Source</th>
         <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
@@ -9660,6 +9666,7 @@ function renderProspects() {
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#080808;border-bottom:1px solid #1a1a1a">
             <th style="${thStyle}">State</th>
+            <th style="${thStyle}">Suburb</th>
             <th style="${thStyle}">Company</th>
             <th style="${thStyle}">Source</th>
             <th style="${thStyle}">Industry</th>
@@ -10585,6 +10592,7 @@ function saveProspect() {
     website: document.getElementById('pm_website').value.trim(),
     ind: document.getElementById('pm_ind').value,
     state: document.getElementById('pm_state').value,
+    suburb: document.getElementById('pm_suburb').value.trim(),
     source: document.getElementById('pm_source').value,
     fleet: parseInt(document.getElementById('pm_qty').value) || 0,
     trackers: parseInt(document.getElementById('pm_qty').value) || 0,
@@ -10600,7 +10608,7 @@ function saveProspect() {
   renderProspects();
   renderCustStats();
   // clear form
-  ['pm_co','pm_name','pm_phone','pm_email','pm_website','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
+  ['pm_co','pm_name','pm_phone','pm_email','pm_website','pm_suburb','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('pm_qty').value = '0';
 }
 
@@ -10616,6 +10624,7 @@ function openEditProspect(id) {
   document.getElementById('ep_website').value = p.website || '';
   document.getElementById('ep_ind').value = p.ind || 'Transport';
   document.getElementById('ep_state').value = p.state || '';
+  document.getElementById('ep_suburb').value = p.suburb || '';
   document.getElementById('ep_qty').value = p.trackers || p.fleet || 0;
   document.getElementById('ep_source').value = p.source || 'social';
   document.getElementById('ep_notes').value = p.notes || '';
@@ -10637,6 +10646,7 @@ function saveEditProspect() {
   p.website = document.getElementById('ep_website').value.trim();
   p.ind = document.getElementById('ep_ind').value;
   p.state = document.getElementById('ep_state').value;
+  p.suburb = document.getElementById('ep_suburb').value.trim();
   p.trackers = parseInt(document.getElementById('ep_qty').value) || 0;
   p.fleet = p.trackers;
   p.source = document.getElementById('ep_source').value;
@@ -10938,7 +10948,7 @@ function moveProspectToPipeline(id) {
   LEADS.push({
     id: Date.now(), co: p.co, name: p.name || '', email: p.email || '',
     phone: p.phone || '', ind: p.ind || '', v: units,
-    city: '', st: p.state || '', stage: 'proposal', val: annualVal, notes: p.notes || '',
+    city: p.suburb || '', st: p.state || '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
     lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:(HW_PRICES['OBD2 Plug-In Device']||199), hwInstall:(HW_INSTALL_DEFAULT['OBD2 Plug-In Device']||0)}],
@@ -13115,7 +13125,8 @@ function autoPopulateCustomer(lead) {
       fleetSegments: lead.fleetSegments || [],
       lineItems: lead.lineItems || [],
       owner: lead.owner || '',
-      state: lead.st || ''
+      state: lead.st || '',
+      suburb: lead.city || ''
     };
     CUSTOMERS.push(newCust);
     // NOTE: Do NOT call saveData() here — the caller (moveLeadStage / handleDrop)
