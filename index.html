@@ -1117,6 +1117,7 @@ select option{background:#0a0a0a;color:#0098d4}
         <div><label class="form-label">Contact Name</label><input id="pm_name" class="form-input" placeholder="Dave Brooks"></div>
         <div><label class="form-label">Phone</label><input id="pm_phone" class="form-input" placeholder="0412 345 678"></div>
         <div><label class="form-label">Email</label><input id="pm_email" class="form-input" placeholder="dave@example.com.au"></div>
+        <div style="grid-column:1/-1"><label class="form-label">Website</label><input id="pm_website" class="form-input" placeholder="www.example.com.au"></div>
         <div><label class="form-label">Industry</label>
           <select id="pm_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
@@ -1171,6 +1172,7 @@ select option{background:#0a0a0a;color:#0098d4}
         <div><label class="form-label">Contact Name</label><input id="ep_name" class="form-input"></div>
         <div><label class="form-label">Phone</label><input id="ep_phone" class="form-input"></div>
         <div><label class="form-label">Email</label><input id="ep_email" class="form-input"></div>
+        <div style="grid-column:1/-1"><label class="form-label">Website</label><input id="ep_website" class="form-input" placeholder="www.example.com.au"></div>
         <div><label class="form-label">Industry</label>
           <select id="ep_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
@@ -9581,10 +9583,11 @@ function renderProspects() {
             ${p.callbackDate ? '<div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Follow-up</span><div style="font-size:12px;font-weight:600;color:#0098d4">'+auDate(p.callbackDate)+(p.callbackTime?' @ '+p.callbackTime:'')+'</div></div>' : ''}
           </div>
 
-          <!-- Contact strip: phone · email · Edit (Edit sits right of the email) -->
-          ${(p.phone || p.email || p.name) ? '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #1a1a1a">' +
+          <!-- Contact strip: phone · email · website · Edit (Edit sits right) -->
+          ${(p.phone || p.email || p.website || p.name) ? '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #1a1a1a">' +
             (p.phone ? '<a href="tel:'+phoneClean+'" style="font-size:13px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a>' : '') +
             (p.email ? '<a href="mailto:'+p.email+'" style="font-size:14px;font-weight:700;color:#00CC66;text-decoration:none">'+p.email+'</a>' : '') +
+            (p.website ? '<a href="'+(/^https?:\/\//i.test(p.website)?p.website:'https://'+p.website)+'" target="_blank" rel="noopener" title="Open '+p.website+' in a new tab" style="font-size:12px;font-weight:600;color:#0098d4;text-decoration:none">🌐 '+p.website.replace(/^https?:\/\//i,'')+'</a>' : '') +
             '<button onclick="openEditProspect('+p.id+')" title="Edit prospect details" style="font-size:11px;padding:5px 12px;border:1px solid #0098d4;color:#0098d4;background:#0a0a0a;border-radius:0;cursor:pointer;font-weight:600">Edit</button>' +
           '</div>' : ''}
 
@@ -10579,6 +10582,7 @@ function saveProspect() {
     co, name: document.getElementById('pm_name').value.trim(),
     phone: document.getElementById('pm_phone').value.trim(),
     email: document.getElementById('pm_email').value.trim(),
+    website: document.getElementById('pm_website').value.trim(),
     ind: document.getElementById('pm_ind').value,
     state: document.getElementById('pm_state').value,
     source: document.getElementById('pm_source').value,
@@ -10596,7 +10600,7 @@ function saveProspect() {
   renderProspects();
   renderCustStats();
   // clear form
-  ['pm_co','pm_name','pm_phone','pm_email','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
+  ['pm_co','pm_name','pm_phone','pm_email','pm_website','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('pm_qty').value = '0';
 }
 
@@ -10609,6 +10613,7 @@ function openEditProspect(id) {
   document.getElementById('ep_name').value = p.name || '';
   document.getElementById('ep_phone').value = p.phone || '';
   document.getElementById('ep_email').value = p.email || '';
+  document.getElementById('ep_website').value = p.website || '';
   document.getElementById('ep_ind').value = p.ind || 'Transport';
   document.getElementById('ep_state').value = p.state || '';
   document.getElementById('ep_qty').value = p.trackers || p.fleet || 0;
@@ -10629,6 +10634,7 @@ function saveEditProspect() {
   p.name = document.getElementById('ep_name').value.trim();
   p.phone = document.getElementById('ep_phone').value.trim();
   p.email = document.getElementById('ep_email').value.trim();
+  p.website = document.getElementById('ep_website').value.trim();
   p.ind = document.getElementById('ep_ind').value;
   p.state = document.getElementById('ep_state').value;
   p.trackers = parseInt(document.getElementById('ep_qty').value) || 0;
