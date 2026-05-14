@@ -1056,7 +1056,7 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="website">Website Enquiry</option>
         <option value="referral">Referral</option>
         <option value="database">Database</option>
-        <option value="walk-in">Walk-In</option>
+        <option value="internet-scrape">Internet Scrape</option>
       </select>
       <!-- spacer pushes the action buttons to the right edge -->
       <div style="flex:1 1 auto"></div>
@@ -1141,7 +1141,7 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="cold-call">Cold Call</option>
             <option value="social">Social Media</option>
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
-            <option value="database">Database</option><option value="walk-in">Walk-In</option>
+            <option value="database">Database</option><option value="internet-scrape">Internet Scrape</option>
           </select></div>
         <div><label class="form-label">Status</label>
           <select id="pm_status" class="form-input">
@@ -1197,7 +1197,7 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="cold-call">Cold Call</option>
             <option value="social">Social Media</option>
             <option value="website">Website Enquiry</option><option value="referral">Referral</option>
-            <option value="database">Database</option><option value="walk-in">Walk-In</option>
+            <option value="database">Database</option><option value="internet-scrape">Internet Scrape</option>
           </select></div>
       </div>
       <div style="margin-top:12px"><label class="form-label">Notes</label>
@@ -9147,12 +9147,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══════════════════════════════════════════════════════════════════
 
 const SOURCE_META = {
-  'cold-call':    {label:'Cold Call',    color:'#F26522', bg:'rgba(242,101,34,.12)'},
-  'social':       {label:'Social Media', color:'#7c3aed', bg:'rgba(124,58,237,.1)'},
-  'website':      {label:'Website',      color:'#00CC66', bg:'rgba(0,204,102,.12)'},
-  'referral':     {label:'Referral',     color:'#0098d4', bg:'rgba(0,152,212,.12)'},
-  'database':     {label:'Database',     color:'#666', bg:'#111'},
-  'walk-in':      {label:'Walk-In',      color:'#0891b2', bg:'rgba(8,145,178,.12)'},
+  'cold-call':       {label:'Cold Call',       color:'#F26522', bg:'rgba(242,101,34,.12)'},
+  'social':          {label:'Social Media',    color:'#7c3aed', bg:'rgba(124,58,237,.1)'},
+  'website':         {label:'Website',         color:'#00CC66', bg:'rgba(0,204,102,.12)'},
+  'referral':        {label:'Referral',        color:'#0098d4', bg:'rgba(0,152,212,.12)'},
+  'database':        {label:'Database',        color:'#666', bg:'#111'},
+  'internet-scrape': {label:'Internet Scrape', color:'#f59e0b', bg:'rgba(245,158,11,.12)'},
+  // legacy — kept so historical records still render their badge correctly
+  'walk-in':         {label:'Walk-In',         color:'#0891b2', bg:'rgba(8,145,178,.12)'},
 };
 
 const PROSPECT_STATUS = {
