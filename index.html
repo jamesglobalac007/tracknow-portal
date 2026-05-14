@@ -2648,11 +2648,20 @@ var _lastEventId = 0;      // Last event ID processed
 var _syncBusy = false;     // Prevent concurrent syncs
 var _syncEnabled = true;   // Master switch
 var _syncInitDone = false; // First sync completed?
+// One-shot signal to the server: the next /api/data push intentionally
+// shrinks these arrays (delete / move-to-pipeline), so the server's
+// anti-shrink guard should allow it. Cleared after the next push fires.
+var _pendingAllowShrink = [];
+function _markAllowShrink(key) {
+  if (_pendingAllowShrink.indexOf(key) === -1) _pendingAllowShrink.push(key);
+}
 
 // Push local data to server, receive merged result
 function _syncPush() {
   if (_syncBusy || !_syncEnabled) return;
   _syncBusy = true;
+  var allowShrink = _pendingAllowShrink.slice();
+  _pendingAllowShrink = [];
   fetch('/api/data', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2661,6 +2670,7 @@ function _syncPush() {
       prospects: PROSPECTS,
       customers: CUSTOMERS,
       _clientVersion: _syncVersion,
+      _allowShrink: allowShrink.length ? allowShrink : undefined,
       // Only push contentLibrary once we've hydrated from the server.
       // Protects against fresh-session empty-push wiping the server's data.
       contentLibrary: (typeof CONTENT_LIBRARY !== 'undefined' && _contentLibraryHydrated) ? CONTENT_LIBRARY : undefined,
@@ -4074,6 +4084,7 @@ function _restoreArchivedDeal(prospectId) {
   });
   var idx = PROSPECTS.findIndex(function(x){ return x.id === prospectId; });
   if (idx > -1) PROSPECTS.splice(idx, 1);
+  _markAllowShrink('prospects');
   saveData();
   renderPipeline(); renderProspects(); renderCustStats();
   showToast(p.co + ' restored to Pipeline');
@@ -10787,6 +10798,7 @@ function deleteProspect(id) {
   if (!confirm('Remove this prospect?')) return;
   const i = PROSPECTS.findIndex(p => p.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
+  _markAllowShrink('prospects');
   saveData();
   renderProspects(); renderCustStats();
 }
@@ -10794,6 +10806,7 @@ function deleteCustomer(id) {
   if (!confirm('Remove this customer?')) return;
   const i = CUSTOMERS.findIndex(c => c.id === id);
   if (i > -1) CUSTOMERS.splice(i, 1);
+  _markAllowShrink('customers');
   saveData();
   renderCustomers(); renderCustStats();
 }
@@ -10823,6 +10836,7 @@ function moveProspectToPipeline(id) {
   });
   const i = PROSPECTS.findIndex(x => x.id === id);
   if (i > -1) PROSPECTS.splice(i, 1);
+  _markAllowShrink('prospects');
   saveData();
   showToast(p.co + ' moved to Pipeline — Proposal Stage');
   // Defer heavy renders so the toast + UI responds instantly
