@@ -9506,21 +9506,9 @@ function renderProspects() {
     const sm = SOURCE_META[p.source] || {label:p.source,color:'#666',bg:'#111'};
     const notesCount = p.notes ? p.notes.split('\n').filter(n=>n.trim()).length || 1 : 0;
     const phoneClean = p.phone ? p.phone.replace(/\s/g,'') : '';
+    const _noteFirstLine = p.notes ? p.notes.split('\n').find(n => n.trim()) || '' : '';
+    const _noteTitle = p.notes ? p.notes.replace(/"/g,'&quot;') : '';
     return `<tr data-id="${p.id}" style="border-bottom:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td style="padding:9px 12px">
-        <div onclick="toggleProspectNotes(${p.id})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
-          <svg id="prospChevron_${p.id}" width="10" height="10" fill="none" stroke="#666" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-          <div>
-            <div style="font-weight:600;color:#0098d4;font-size:13px">${p.co}</div>
-            ${notesCount ? '<div style="font-size:10px;color:#666">'+notesCount+' note'+(notesCount>1?'s':'')+'</div>' : ''}
-          </div>
-        </div>
-      </td>
-      <td style="padding:9px 12px;white-space:nowrap">
-        ${p.name ? '<div onclick="event.stopPropagation();openEditProspect('+p.id+')" style="font-size:13px;color:#0098d4;cursor:pointer" title="Click to edit">'+p.name+'</div>' : ''}
-        ${p.phone ? '<div style="margin-top:'+(p.name?'2px':'0')+'"><a href="tel:'+phoneClean+'" onclick="event.stopPropagation()" title="Call '+p.phone+'" style="font-size:11px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a></div>' : ''}
-      </td>
-      <td style="padding:9px 12px;font-size:12px;color:#0098d4">${p.ind}</td>
       <td style="padding:9px 12px">
         <select onchange="event.stopPropagation();updateProspectField(${p.id},'state',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
           <option value=""${!p.state?' selected':''}>—</option>
@@ -9532,10 +9520,19 @@ function renderProspects() {
           <option value="TAS"${p.state==='TAS'?' selected':''}>TAS</option>
         </select>
       </td>
-      <td style="padding:9px 12px;text-align:center">
-        <input type="number" min="0" value="${p.trackers||p.fleet||0}" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateProspectField(${p.id},'trackers',this.value);updateProspectField(${p.id},'fleet',this.value)" style="${inputStyle}">
+      <td style="padding:9px 12px;white-space:nowrap">
+        <div onclick="toggleProspectNotes(${p.id})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
+          <svg id="prospChevron_${p.id}" width="10" height="10" fill="none" stroke="#666" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+          <div>
+            <div style="font-weight:600;color:#0098d4;font-size:13px">${p.co}</div>
+            ${p.name ? '<div onclick="event.stopPropagation();openEditProspect('+p.id+')" style="font-size:11px;color:#0098d4;cursor:pointer;margin-top:2px" title="Click to edit">'+p.name+'</div>' : ''}
+            ${p.phone ? '<div style="margin-top:2px"><a href="tel:'+phoneClean+'" onclick="event.stopPropagation()" title="Call '+p.phone+'" style="font-size:11px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a></div>' : ''}
+            ${notesCount ? '<div style="font-size:10px;color:#666;margin-top:2px">'+notesCount+' note'+(notesCount>1?'s':'')+'</div>' : ''}
+          </div>
+        </div>
       </td>
       <td style="padding:9px 12px"><span style="font-size:10px;font-weight:700;color:${sm.color};background:${sm.bg};padding:2px 7px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
+      <td style="padding:9px 12px;font-size:12px;color:#0098d4">${p.ind || ''}</td>
       <td style="padding:9px 12px">
         <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
           ${statusOptions.replace('value="'+p.status+'"', 'value="'+p.status+'" selected')}
@@ -9548,6 +9545,12 @@ function renderProspects() {
             (p.callbackDate ? '<span style="font-size:10px;font-weight:800;color:'+u.color+';background:'+u.bg+';padding:2px 6px;border-radius:0;text-align:center;'+(u.urgent?'animation:pulse 1.5s infinite':'')+'">'+u.label+(p.callbackTime?' @ '+p.callbackTime:'')+'</span>' : '') +
           '</div>';
         })() : ''}
+      </td>
+      <td style="padding:9px 12px;font-size:11px;color:#999;max-width:220px">
+        ${p.notes ? '<div onclick="event.stopPropagation();toggleProspectNotes('+p.id+')" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" title="'+_noteTitle+'">'+_noteFirstLine+'</div>' : '<span style="color:#444;font-style:italic">—</span>'}
+      </td>
+      <td style="padding:9px 12px;text-align:center">
+        <input type="number" min="0" value="${p.trackers||p.fleet||0}" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateProspectField(${p.id},'trackers',this.value);updateProspectField(${p.id},'fleet',this.value)" style="${inputStyle}">
       </td>
       <td style="padding:9px 12px">
         <select onchange="event.stopPropagation();updateProspectField(${p.id},'owner',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
@@ -9622,13 +9625,13 @@ function renderProspects() {
     el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="background:#111;border-bottom:1px solid #222">
-        <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#0098d4':'#666'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
-        <th style="${thStyle}">Contact</th>
-        <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">State</th>
-        <th style="${thStyle};text-align:center">Qty</th>
+        <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#0098d4':'#666'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Source</th>
+        <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Status</th>
+        <th style="${thStyle}">Notes</th>
+        <th style="${thStyle};text-align:center">Qty</th>
         <th style="${thStyle}">Owner</th>
         <th onclick="toggleProspSort('added')" style="${thStyle};cursor:pointer;user-select:none;white-space:nowrap;min-width:80px;color:${_prospSortField==='added'?'#0098d4':'#666'}">Added ${_prospSortField==='added'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Actions</th>
@@ -9654,13 +9657,13 @@ function renderProspects() {
         <div class="card" style="padding:0;overflow:hidden;border-left:3px solid #333;border-top:none">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#080808;border-bottom:1px solid #1a1a1a">
-            <th style="${thStyle}">Company</th>
-            <th style="${thStyle}">Contact</th>
-            <th style="${thStyle}">Industry</th>
             <th style="${thStyle}">State</th>
-            <th style="${thStyle};text-align:center">Qty</th>
+            <th style="${thStyle}">Company</th>
             <th style="${thStyle}">Source</th>
+            <th style="${thStyle}">Industry</th>
             <th style="${thStyle}">Status</th>
+            <th style="${thStyle}">Notes</th>
+            <th style="${thStyle};text-align:center">Qty</th>
             <th style="${thStyle}">Owner</th>
             <th style="${thStyle}">Added</th>
             <th style="${thStyle}">Actions</th>
