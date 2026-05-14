@@ -1097,6 +1097,13 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
             <option value="Equipment Hire">Equipment Hire</option><option value="Other">Other</option>
           </select></div>
+        <div><label class="form-label">State</label>
+          <select id="pm_state" class="form-input">
+            <option value="">—</option>
+            <option value="NSW">NSW</option><option value="QLD">QLD</option>
+            <option value="VIC">VIC</option><option value="WA">WA</option>
+            <option value="SA">SA</option><option value="TAS">TAS</option>
+          </select></div>
         <div><label class="form-label">Lead Source *</label>
           <select id="pm_source" class="form-input">
             <option value="cold-call">Cold Call</option>
@@ -1138,6 +1145,13 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
             <option value="Equipment Hire">Equipment Hire</option><option value="Other">Other</option>
+          </select></div>
+        <div><label class="form-label">State</label>
+          <select id="ep_state" class="form-input">
+            <option value="">—</option>
+            <option value="NSW">NSW</option><option value="QLD">QLD</option>
+            <option value="VIC">VIC</option><option value="WA">WA</option>
+            <option value="SA">SA</option><option value="TAS">TAS</option>
           </select></div>
         <div><label class="form-label">Lead Source</label>
           <select id="ep_source" class="form-input">
@@ -4030,7 +4044,7 @@ function _restoreArchivedDeal(prospectId) {
   LEADS.push({
     id: Date.now(), co: p.co, name: p.name || '', email: p.email || '',
     phone: p.phone || '', ind: p.ind || '', v: units,
-    city: '', st: '', stage: 'proposal', val: annualVal, notes: p.notes || '',
+    city: '', st: p.state || '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
     lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:(HW_PRICES['OBD2 Plug-In Device']||199), hwInstall:(HW_INSTALL_DEFAULT['OBD2 Plug-In Device']||0)}],
@@ -9405,6 +9419,17 @@ function renderProspects() {
         ${p.phone ? '<div style="margin-top:'+(p.name?'2px':'0')+'"><a href="tel:'+phoneClean+'" onclick="event.stopPropagation()" title="Call '+p.phone+'" style="font-size:11px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a></div>' : ''}
       </td>
       <td style="padding:9px 12px;font-size:12px;color:#0098d4">${p.ind}</td>
+      <td style="padding:9px 12px">
+        <select onchange="event.stopPropagation();updateProspectField(${p.id},'state',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
+          <option value=""${!p.state?' selected':''}>—</option>
+          <option value="NSW"${p.state==='NSW'?' selected':''}>NSW</option>
+          <option value="QLD"${p.state==='QLD'?' selected':''}>QLD</option>
+          <option value="VIC"${p.state==='VIC'?' selected':''}>VIC</option>
+          <option value="WA"${p.state==='WA'?' selected':''}>WA</option>
+          <option value="SA"${p.state==='SA'?' selected':''}>SA</option>
+          <option value="TAS"${p.state==='TAS'?' selected':''}>TAS</option>
+        </select>
+      </td>
       <td style="padding:9px 12px"><span style="font-size:10px;font-weight:700;color:${sm.color};background:${sm.bg};padding:2px 7px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
       <td style="padding:9px 12px">
         <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
@@ -9437,7 +9462,7 @@ function renderProspects() {
       </td>
     </tr>
     <tr id="notesRow-${p.id}" style="display:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td colspan="8" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
+      <td colspan="9" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
         <div style="background:#050505;border:1px solid #1a1a1a;border-left:3px solid #0098d4;padding:12px 16px">
 
           <!-- Header strip: status / source / industry / fleet shortcut -->
@@ -9495,6 +9520,7 @@ function renderProspects() {
         <th onclick="toggleProspSort('company')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='company'?'#0098d4':'#666'}">Company ${_prospSortField==='company'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">Contact</th>
         <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
+        <th style="${thStyle}">State</th>
         <th style="${thStyle}">Source</th>
         <th style="${thStyle}">Status</th>
         <th style="${thStyle}">Owner</th>
@@ -9525,6 +9551,7 @@ function renderProspects() {
             <th style="${thStyle}">Company</th>
             <th style="${thStyle}">Contact</th>
             <th style="${thStyle}">Industry</th>
+            <th style="${thStyle}">State</th>
             <th style="${thStyle}">Source</th>
             <th style="${thStyle}">Status</th>
             <th style="${thStyle}">Owner</th>
@@ -9730,6 +9757,7 @@ function renderCustomers() {
       <th onclick="toggleCustSort('company')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='company'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Company ${_custSortField==='company'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th onclick="toggleCustSort('trackers')" style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:${_custSortField==='trackers'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Trackers ${_custSortField==='trackers'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Sector</th>
+      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">State</th>
       <th onclick="toggleCustSort('subscription')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='subscription'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Subscription ${_custSortField==='subscription'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th onclick="toggleCustSort('date')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='date'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Contract ${_custSortField==='date'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Outstanding</th>
@@ -9772,6 +9800,17 @@ function renderCustomers() {
         </td>
         <td style="padding:12px 14px;font-size:13px;color:#0098d4">${c.sector}</td>
         <td style="padding:12px 14px">
+          <select onchange="updateCustomerState(${c.id},this.value)" style="font-size:11px;padding:3px 8px;border:1px solid #222;background:#111;color:#0098d4;border-radius:0;cursor:pointer;font-family:inherit">
+            <option value=""${!c.state?' selected':''}>—</option>
+            <option value="NSW"${c.state==='NSW'?' selected':''}>NSW</option>
+            <option value="QLD"${c.state==='QLD'?' selected':''}>QLD</option>
+            <option value="VIC"${c.state==='VIC'?' selected':''}>VIC</option>
+            <option value="WA"${c.state==='WA'?' selected':''}>WA</option>
+            <option value="SA"${c.state==='SA'?' selected':''}>SA</option>
+            <option value="TAS"${c.state==='TAS'?' selected':''}>TAS</option>
+          </select>
+        </td>
+        <td style="padding:12px 14px">
           <div style="font-size:14px;font-weight:700;color:#0098d4">$${actualMRev.toFixed(2)}<span style="font-size:11px;font-weight:400;color:#666">/mo</span></div>
         </td>
         <td style="padding:12px 14px">
@@ -9806,7 +9845,7 @@ function renderCustomers() {
         </td>
       </tr>
       <tr id="custDevices_${c.id}" style="display:none;background:${rowBg}">
-        <td colspan="9" style="padding:0 14px 14px 30px">
+        <td colspan="10" style="padding:0 14px 14px 30px">
           <div style="background:#050505;border:1px solid #1a1a1a;border-radius:0;padding:12px 16px">
             <div style="display:flex;gap:20px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1a1a1a;flex-wrap:wrap">
               <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Subscription</span><div style="font-size:13px;font-weight:700;color:#0098d4">$${actualMRev.toFixed(2)}/mo</div><div style="font-size:10px;color:#666">${devs.length ? devs.length + ' product line' + (devs.length>1?'s':'') : '$' + c.subPrice.toFixed(2) + ' x ' + c.trackers}</div></div>
@@ -10031,6 +10070,13 @@ function updateCustomerOwner(custId, value) {
   const c = CUSTOMERS.find(x => x.id === custId);
   if (!c) return;
   c.owner = value;
+  saveData();
+}
+
+function updateCustomerState(custId, value) {
+  const c = CUSTOMERS.find(x => x.id === custId);
+  if (!c) return;
+  c.state = value;
   saveData();
 }
 
@@ -10397,6 +10443,7 @@ function saveProspect() {
     phone: document.getElementById('pm_phone').value.trim(),
     email: document.getElementById('pm_email').value.trim(),
     ind: document.getElementById('pm_ind').value,
+    state: document.getElementById('pm_state').value,
     source: document.getElementById('pm_source').value,
     fleet: 0,
     trackers: 0,
@@ -10425,6 +10472,7 @@ function openEditProspect(id) {
   document.getElementById('ep_phone').value = p.phone || '';
   document.getElementById('ep_email').value = p.email || '';
   document.getElementById('ep_ind').value = p.ind || 'Transport';
+  document.getElementById('ep_state').value = p.state || '';
   document.getElementById('ep_source').value = p.source || 'social';
   document.getElementById('ep_notes').value = p.notes || '';
   document.getElementById('editProspectModal').style.display = 'flex';
@@ -10443,6 +10491,7 @@ function saveEditProspect() {
   p.phone = document.getElementById('ep_phone').value.trim();
   p.email = document.getElementById('ep_email').value.trim();
   p.ind = document.getElementById('ep_ind').value;
+  p.state = document.getElementById('ep_state').value;
   p.source = document.getElementById('ep_source').value;
   p.notes = document.getElementById('ep_notes').value.trim();
   saveData();
@@ -10740,7 +10789,7 @@ function moveProspectToPipeline(id) {
   LEADS.push({
     id: Date.now(), co: p.co, name: p.name || '', email: p.email || '',
     phone: p.phone || '', ind: p.ind || '', v: units,
-    city: '', st: '', stage: 'proposal', val: annualVal, notes: p.notes || '',
+    city: '', st: p.state || '', stage: 'proposal', val: annualVal, notes: p.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: units, subPrice: sub, term: 24, sim: '',
     lineItems: p.lineItems || [{type:'OBD2 Plug-In', qty:units, sub:sub, asset:'', hwType:'OBD2 Plug-In Device', hwPrice:(HW_PRICES['OBD2 Plug-In Device']||199), hwInstall:(HW_INSTALL_DEFAULT['OBD2 Plug-In Device']||0)}],
@@ -10776,7 +10825,7 @@ function moveCustomerToPipeline(id) {
   LEADS.push({
     id: Date.now(), co: c.co, name: c.contact || '', email: c.email || '',
     phone: c.phone || '', ind: c.sector || '', v: c.trackers,
-    city: '', st: '', stage: 'proposal', val: annualVal, notes: c.notes || '',
+    city: '', st: c.state || '', stage: 'proposal', val: annualVal, notes: c.notes || '',
     star: false, last: new Date().toLocaleDateString('en-AU'), lastTs: Date.now(),
     trackers: c.trackers, subPrice: c.subPrice, term: c.term != null ? c.term : 24, sim: '',
     lineItems: custLines,
@@ -12915,7 +12964,8 @@ function autoPopulateCustomer(lead) {
       leadId: lead.id,
       fleetSegments: lead.fleetSegments || [],
       lineItems: lead.lineItems || [],
-      owner: lead.owner || ''
+      owner: lead.owner || '',
+      state: lead.st || ''
     };
     CUSTOMERS.push(newCust);
     // NOTE: Do NOT call saveData() here — the caller (moveLeadStage / handleDrop)
