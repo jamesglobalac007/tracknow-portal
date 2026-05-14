@@ -1045,6 +1045,15 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="not-ready">Not Ready</option>
         <option value="not-interested">Not Interested</option>
       </select>
+      <select id="pFilter-state" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
+        <option value="">All States</option>
+        <option value="NSW">NSW</option>
+        <option value="QLD">QLD</option>
+        <option value="VIC">VIC</option>
+        <option value="WA">WA</option>
+        <option value="SA">SA</option>
+        <option value="TAS">TAS</option>
+      </select>
       <!-- spacer pushes the action buttons to the right edge -->
       <div style="flex:1 1 auto"></div>
       <button id="btnNewProspect" class="btn btn-sm" onclick="openProspectModal()" style="background:#0098d4;color:#000;font-weight:700;border:none;padding:7px 14px;font-size:13px">+ New Prospect</button>
@@ -1073,6 +1082,15 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="active">Active</option>
         <option value="renewal-due">Renewal Due</option>
         <option value="payment-overdue">Payment Overdue</option>
+      </select>
+      <select id="cFilter-state" onchange="renderCustomers()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
+        <option value="">All States</option>
+        <option value="NSW">NSW</option>
+        <option value="QLD">QLD</option>
+        <option value="VIC">VIC</option>
+        <option value="WA">WA</option>
+        <option value="SA">SA</option>
+        <option value="TAS">TAS</option>
       </select>
     </div>
     <div id="customersTable"></div>
@@ -9354,6 +9372,7 @@ function renderProspects() {
   const srcF = (document.getElementById('pFilter-source') || {}).value || '';
   const indF = (document.getElementById('pFilter-ind') || {}).value || '';
   const stF  = (document.getElementById('pFilter-status') || {}).value || '';
+  const stateF = (document.getElementById('pFilter-state') || {}).value || '';
   const q    = ((document.getElementById('globalSearch') || {}).value || '').trim().toLowerCase();
   const matchQ = (p) => !q || [p.co, p.name, p.phone, p.email, p.ind, p.source, p.notes]
     .some(v => String(v||'').toLowerCase().includes(q));
@@ -9362,6 +9381,7 @@ function renderProspects() {
     (!srcF || p.source === srcF) &&
     (!indF || p.ind === indF) &&
     (!stF  || p.status === stF) &&
+    (!stateF || p.state === stateF) &&
     (!_prospOwnerFilter || p.owner === _prospOwnerFilter) &&
     matchQ(p)
   );
@@ -9714,6 +9734,7 @@ function renderCustomers() {
   try { _autoRecoverSignedAgreements(); } catch (e) {}
   const secF = (document.getElementById('cFilter-sector') || {}).value || '';
   const stF  = (document.getElementById('cFilter-status') || {}).value || '';
+  const stateF = (document.getElementById('cFilter-state') || {}).value || '';
   const q    = ((document.getElementById('globalSearch') || {}).value || '').trim().toLowerCase();
   const matchQ = (c) => !q || [c.co, c.name, c.phone, c.email, c.sector, c.notes, c.contactName, c.contactEmail, c.contactPhone]
     .some(v => String(v||'').toLowerCase().includes(q));
@@ -9721,6 +9742,7 @@ function renderCustomers() {
   let list = CUSTOMERS.filter(c =>
     (!secF || c.sector === secF) &&
     (!stF  || c.status === stF) &&
+    (!stateF || c.state === stateF) &&
     matchQ(c)
   );
 
