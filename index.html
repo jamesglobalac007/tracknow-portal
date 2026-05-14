@@ -1064,6 +1064,7 @@ select option{background:#0a0a0a;color:#0098d4}
     </div>
     <div id="prospectsTable"></div>
     <div id="parkedProspectsSection" style="margin-top:28px"></div>
+    <div id="prospectsTally" style="margin-top:24px"></div>
   </div>
 
   <!-- ── LIVE CUSTOMERS VIEW ────────────────────────────── -->
@@ -9650,6 +9651,32 @@ function renderProspects() {
           <tbody>${parked.map((p, i) => buildRow(p, i)).join('')}</tbody>
         </table></div>`;
       }
+    }
+  }
+  // James working-tally — only visible on the JAMES tab. Reflects the
+  // currently-filtered set so other filters (state / status / search)
+  // narrow the totals too; clear them to see the grand total.
+  const tallyEl = document.getElementById('prospectsTally');
+  if (tallyEl) {
+    if (_prospOwnerFilter === 'James') {
+      const activeQty = active.reduce((s, p) => s + (parseInt(p.trackers) || 0), 0);
+      const parkedQty = parked.reduce((s, p) => s + (parseInt(p.trackers) || 0), 0);
+      tallyEl.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid #222;background:#0a0a0a;border-left:3px solid #0098d4;flex-wrap:wrap;gap:12px">' +
+          '<div style="font-size:11px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.6px">James — Working Tally</div>' +
+          '<div style="display:flex;gap:32px;align-items:center;flex-wrap:wrap">' +
+            '<div style="text-align:right">' +
+              '<div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.4px">Active</div>' +
+              '<div style="font-size:14px;color:#CCC"><span style="font-weight:800;color:#0098d4;font-size:18px">' + active.length + '</span> prospects · <span style="font-weight:800;color:#00CC66;font-size:18px">' + activeQty + '</span> units</div>' +
+            '</div>' +
+            (parked.length ? '<div style="text-align:right;opacity:.7">' +
+              '<div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.4px">Archived</div>' +
+              '<div style="font-size:13px;color:#888">' + parked.length + ' prospects · ' + parkedQty + ' units</div>' +
+            '</div>' : '') +
+          '</div>' +
+        '</div>';
+    } else {
+      tallyEl.innerHTML = '';
     }
   }
   _updateCustTabCounts();
