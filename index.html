@@ -9520,13 +9520,12 @@ function renderProspects() {
           <option value="TAS"${p.state==='TAS'?' selected':''}>TAS</option>
         </select>
       </td>
-      <td style="padding:9px 12px;white-space:nowrap">
+      <td style="padding:9px 12px;max-width:200px">
         <div onclick="toggleProspectNotes(${p.id})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
           <svg id="prospChevron_${p.id}" width="10" height="10" fill="none" stroke="#666" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .2s;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-          <div>
-            <div style="font-weight:600;color:#0098d4;font-size:13px">${p.co}</div>
-            ${p.name ? '<div onclick="event.stopPropagation();openEditProspect('+p.id+')" style="font-size:11px;color:#0098d4;cursor:pointer;margin-top:2px" title="Click to edit">'+p.name+'</div>' : ''}
-            ${p.phone ? '<div style="margin-top:2px"><a href="tel:'+phoneClean+'" onclick="event.stopPropagation()" title="Call '+p.phone+'" style="font-size:11px;font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a></div>' : ''}
+          <div style="min-width:0;overflow:hidden">
+            <div style="font-weight:600;color:#0098d4;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(p.co||'').replace(/"/g,'&quot;')}">${p.co}</div>
+            ${(p.name || p.phone) ? '<div style="font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (p.name ? '<span onclick="event.stopPropagation();openEditProspect('+p.id+')" style="color:#0098d4;cursor:pointer" title="Click to edit">'+p.name+'</span>' : '') + (p.name && p.phone ? '<span style="color:#444"> · </span>' : '') + (p.phone ? '<a href="tel:'+phoneClean+'" onclick="event.stopPropagation()" title="Call '+p.phone+'" style="font-weight:600;color:#00CC66;text-decoration:none">'+p.phone+'</a>' : '') + '</div>' : ''}
             ${notesCount ? '<div style="font-size:10px;color:#666;margin-top:2px">'+notesCount+' note'+(notesCount>1?'s':'')+'</div>' : ''}
           </div>
         </div>
