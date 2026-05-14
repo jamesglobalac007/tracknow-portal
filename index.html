@@ -1019,22 +1019,14 @@ select option{background:#0a0a0a;color:#0098d4}
   <div id="custView-prospects">
     <!-- filters + inline action buttons (right side, just above the table) -->
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-      <select id="pFilter-source" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
-        <option value="">All Sources</option>
-        <option value="cold-call">Cold Call</option>
-        <option value="social">Social Media</option>
-        <option value="website">Website Enquiry</option>
-        <option value="referral">Referral</option>
-        <option value="database">Database</option>
-        <option value="walk-in">Walk-In</option>
-      </select>
-      <select id="pFilter-ind" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
-        <option value="">All Industries</option>
-        <option value="Transport">Transport</option>
-        <option value="Civil">Civil</option>
-        <option value="Mining">Mining</option>
-        <option value="Agriculture">Agriculture</option>
-        <option value="Other">Other</option>
+      <select id="pFilter-state" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
+        <option value="">All States</option>
+        <option value="NSW">NSW</option>
+        <option value="QLD">QLD</option>
+        <option value="VIC">VIC</option>
+        <option value="WA">WA</option>
+        <option value="SA">SA</option>
+        <option value="TAS">TAS</option>
       </select>
       <select id="pFilter-status" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
         <option value="">All Statuses</option>
@@ -1046,14 +1038,22 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="not-ready">Not Ready</option>
         <option value="not-interested">Not Interested</option>
       </select>
-      <select id="pFilter-state" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
-        <option value="">All States</option>
-        <option value="NSW">NSW</option>
-        <option value="QLD">QLD</option>
-        <option value="VIC">VIC</option>
-        <option value="WA">WA</option>
-        <option value="SA">SA</option>
-        <option value="TAS">TAS</option>
+      <select id="pFilter-ind" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
+        <option value="">All Industries</option>
+        <option value="Transport">Transport</option>
+        <option value="Civil">Civil</option>
+        <option value="Mining">Mining</option>
+        <option value="Agriculture">Agriculture</option>
+        <option value="Other">Other</option>
+      </select>
+      <select id="pFilter-source" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
+        <option value="">All Sources</option>
+        <option value="cold-call">Cold Call</option>
+        <option value="social">Social Media</option>
+        <option value="website">Website Enquiry</option>
+        <option value="referral">Referral</option>
+        <option value="database">Database</option>
+        <option value="walk-in">Walk-In</option>
       </select>
       <!-- spacer pushes the action buttons to the right edge -->
       <div style="flex:1 1 auto"></div>
