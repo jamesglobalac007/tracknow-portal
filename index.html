@@ -9550,7 +9550,7 @@ function renderProspects() {
       <td style="padding:9px 12px;text-align:center">
         <input type="number" min="0" value="${p.trackers||p.fleet||0}" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateProspectField(${p.id},'trackers',this.value);updateProspectField(${p.id},'fleet',this.value)" style="${inputStyle}">
       </td>
-      <td style="padding:9px 12px;font-size:11px;color:#999;max-width:220px">
+      <td style="padding:9px 12px;font-size:11px;color:#fff;max-width:220px">
         ${p.notes ? '<div onclick="event.stopPropagation();toggleProspectNotes('+p.id+')" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" title="'+_noteTitle+'">'+_noteFirstLine+'</div>' : '<span style="color:#444;font-style:italic">—</span>'}
       </td>
       <td style="padding:9px 12px">
