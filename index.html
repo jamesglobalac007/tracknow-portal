@@ -10399,7 +10399,10 @@ function parseCsvMatrix(rows, sheetName) {
     email: ['email','email address','e-mail','mail','contact email','business email'],
     ind: ['industry','sector','ind','type','business type','category','segment','vertical'],
     source: ['source','lead source','origin','channel','how found','list source'],
-    fleet: ['fleet','fleet size','vehicles','units','no of vehicles','no vehicles','number of vehicles','vehicle count','truck','trucks','assets','asset count','number of assets']
+    state: ['state','st','region','province'],
+    suburb: ['suburb','city','town','locality','area','location'],
+    website: ['website','web','url','site','homepage','web site'],
+    fleet: ['fleet','fleet size','vehicles','units','no of vehicles','no vehicles','number of vehicles','vehicle count','truck','trucks','assets','asset count','number of assets','qty','quantity']
   };
 
   _csvColMap = {};
@@ -10447,7 +10450,7 @@ function renderCsvPreview(sheetName) {
   document.getElementById('csvPreviewTable').innerHTML = html;
 
   // Column mapping display
-  const FIELD_LABELS = {co:'Company', name:'Contact', phone:'Phone', email:'Email', ind:'Industry', source:'Source', fleet:'Fleet Size'};
+  const FIELD_LABELS = {co:'Company', name:'Contact', phone:'Phone', email:'Email', ind:'Industry', source:'Source', state:'State', suburb:'Suburb', website:'Website', fleet:'Fleet Size'};
   let mapHtml = '';
   for (const [field, label] of Object.entries(FIELD_LABELS)) {
     const mapped = _csvColMap[field] !== undefined;
@@ -10469,6 +10472,8 @@ function importCsvProspects() {
     'website':'website','web':'website','online':'website','enquiry':'website',
     'referral':'referral','ref':'referral','word of mouth':'referral',
     'database':'database','db':'database','list':'database','csv':'database',
+    'cold call':'cold-call','coldcall':'cold-call','cold':'cold-call',
+    'internet scrape':'internet-scrape','internetscrape':'internet-scrape','scrape':'internet-scrape','internet':'internet-scrape',
     'walk-in':'walk-in','walkin':'walk-in','walk in':'walk-in'};
 
   let imported = 0, dupCount = 0, emptyCount = 0;
@@ -10490,21 +10495,35 @@ function importCsvProspects() {
     // Stagger addedAt by import order so the row order matches CSV order
     // when sorted by 'added' (ms-precision timestamp, newest first).
     const nowTs = Date.now() + imported;
+    const fleetQty = parseInt(getVal(row, 'fleet')) || 0;
+    // Normalise state to AU 2-3 letter code if user typed the full name
+    const STATE_FULL = {'new south wales':'NSW','queensland':'QLD','victoria':'VIC','western australia':'WA','south australia':'SA','tasmania':'TAS','northern territory':'NT','australian capital territory':'ACT'};
+    let stateVal = getVal(row, 'state');
+    if (stateVal) {
+      const stLow = stateVal.toLowerCase().trim();
+      stateVal = STATE_FULL[stLow] || stateVal.toUpperCase().slice(0,3);
+    }
     PROSPECTS.push({
       id: nowTs,
       co: co,
       name: getVal(row, 'name'),
       phone: getVal(row, 'phone'),
       email: getVal(row, 'email'),
+      website: getVal(row, 'website'),
       ind: getVal(row, 'ind') || '',
+      state: stateVal,
+      suburb: getVal(row, 'suburb'),
       source: source,
-      fleet: parseInt(getVal(row, 'fleet')) || 0,
+      fleet: fleetQty,
+      trackers: fleetQty,
+      subPrice: 29.95,
       added: auDate(nowTs),
       addedAt: nowTs,
       status: 'new',
       callbackDate: '',
       callbackTime: '',
-      notes: 'Imported from CSV'
+      notes: 'Imported from CSV',
+      owner: _prospOwnerFilter || ''
     });
     imported++;
   });
