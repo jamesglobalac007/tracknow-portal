@@ -1122,6 +1122,8 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="VIC">VIC</option><option value="WA">WA</option>
             <option value="SA">SA</option><option value="TAS">TAS</option>
           </select></div>
+        <div><label class="form-label">Quantity (units to track)</label>
+          <input id="pm_qty" type="number" min="0" value="0" class="form-input" placeholder="0"></div>
         <div><label class="form-label">Lead Source *</label>
           <select id="pm_source" class="form-input">
             <option value="cold-call">Cold Call</option>
@@ -1171,6 +1173,8 @@ select option{background:#0a0a0a;color:#0098d4}
             <option value="VIC">VIC</option><option value="WA">WA</option>
             <option value="SA">SA</option><option value="TAS">TAS</option>
           </select></div>
+        <div><label class="form-label">Quantity (units to track)</label>
+          <input id="ep_qty" type="number" min="0" value="0" class="form-input" placeholder="0"></div>
         <div><label class="form-label">Lead Source</label>
           <select id="ep_source" class="form-input">
             <option value="cold-call">Cold Call</option>
@@ -9510,6 +9514,9 @@ function renderProspects() {
           <option value="TAS"${p.state==='TAS'?' selected':''}>TAS</option>
         </select>
       </td>
+      <td style="padding:9px 12px;text-align:center">
+        <input type="number" min="0" value="${p.trackers||p.fleet||0}" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateProspectField(${p.id},'trackers',this.value);updateProspectField(${p.id},'fleet',this.value)" style="${inputStyle}">
+      </td>
       <td style="padding:9px 12px"><span style="font-size:10px;font-weight:700;color:${sm.color};background:${sm.bg};padding:2px 7px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
       <td style="padding:9px 12px">
         <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
@@ -9542,7 +9549,7 @@ function renderProspects() {
       </td>
     </tr>
     <tr id="notesRow-${p.id}" style="display:none;${i%2===0?'background:#0a0a0a':'background:#0f0f0f'}">
-      <td colspan="9" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
+      <td colspan="10" style="padding:0 14px 14px 30px;border-bottom:1px solid #222">
         <div style="background:#050505;border:1px solid #1a1a1a;border-left:3px solid #0098d4;padding:12px 16px">
 
           <!-- Header strip: status / source / industry / fleet shortcut -->
@@ -9601,6 +9608,7 @@ function renderProspects() {
         <th style="${thStyle}">Contact</th>
         <th onclick="toggleProspSort('industry')" style="${thStyle};cursor:pointer;user-select:none;color:${_prospSortField==='industry'?'#0098d4':'#666'}">Industry ${_prospSortField==='industry'?(_prospSortDir===1?'▲':'▼'):''}</th>
         <th style="${thStyle}">State</th>
+        <th style="${thStyle};text-align:center">Qty</th>
         <th style="${thStyle}">Source</th>
         <th style="${thStyle}">Status</th>
         <th style="${thStyle}">Owner</th>
@@ -9632,6 +9640,7 @@ function renderProspects() {
             <th style="${thStyle}">Contact</th>
             <th style="${thStyle}">Industry</th>
             <th style="${thStyle}">State</th>
+            <th style="${thStyle};text-align:center">Qty</th>
             <th style="${thStyle}">Source</th>
             <th style="${thStyle}">Status</th>
             <th style="${thStyle}">Owner</th>
@@ -10527,8 +10536,8 @@ function saveProspect() {
     ind: document.getElementById('pm_ind').value,
     state: document.getElementById('pm_state').value,
     source: document.getElementById('pm_source').value,
-    fleet: 0,
-    trackers: 0,
+    fleet: parseInt(document.getElementById('pm_qty').value) || 0,
+    trackers: parseInt(document.getElementById('pm_qty').value) || 0,
     subPrice: 29.95,
     added: auDate(nowTs),
     addedAt: nowTs,
@@ -10542,6 +10551,7 @@ function saveProspect() {
   renderCustStats();
   // clear form
   ['pm_co','pm_name','pm_phone','pm_email','pm_notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('pm_qty').value = '0';
 }
 
 // ── Edit Prospect ───────────────────────────────────────────────
@@ -10555,6 +10565,7 @@ function openEditProspect(id) {
   document.getElementById('ep_email').value = p.email || '';
   document.getElementById('ep_ind').value = p.ind || 'Transport';
   document.getElementById('ep_state').value = p.state || '';
+  document.getElementById('ep_qty').value = p.trackers || p.fleet || 0;
   document.getElementById('ep_source').value = p.source || 'social';
   document.getElementById('ep_notes').value = p.notes || '';
   document.getElementById('editProspectModal').style.display = 'flex';
@@ -10574,6 +10585,8 @@ function saveEditProspect() {
   p.email = document.getElementById('ep_email').value.trim();
   p.ind = document.getElementById('ep_ind').value;
   p.state = document.getElementById('ep_state').value;
+  p.trackers = parseInt(document.getElementById('ep_qty').value) || 0;
+  p.fleet = p.trackers;
   p.source = document.getElementById('ep_source').value;
   p.notes = document.getElementById('ep_notes').value.trim();
   saveData();
