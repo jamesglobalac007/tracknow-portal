@@ -9901,16 +9901,16 @@ function renderCustomers() {
   el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
   <table style="width:100%;border-collapse:collapse">
     <thead><tr style="background:#111;border-bottom:1px solid #222">
-      <th onclick="toggleCustSort('company')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='company'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Company ${_custSortField==='company'?(_custSortDir===1?'▲':'▼'):''}</th>
-      <th onclick="toggleCustSort('trackers')" style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:${_custSortField==='trackers'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Trackers ${_custSortField==='trackers'?(_custSortDir===1?'▲':'▼'):''}</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Sector</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">State</th>
-      <th onclick="toggleCustSort('subscription')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='subscription'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Subscription ${_custSortField==='subscription'?(_custSortDir===1?'▲':'▼'):''}</th>
-      <th onclick="toggleCustSort('date')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='date'?'#0098d4':'#666'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Contract ${_custSortField==='date'?(_custSortDir===1?'▲':'▼'):''}</th>
-      <th style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Outstanding</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Status</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px">Owner</th>
-      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px"></th>
+      <th onclick="toggleCustSort('company')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='company'?'#0098d4':'#fff'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Company ${_custSortField==='company'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th onclick="toggleCustSort('trackers')" style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:${_custSortField==='trackers'?'#0098d4':'#fff'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Trackers ${_custSortField==='trackers'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px">Sector</th>
+      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px">State</th>
+      <th onclick="toggleCustSort('subscription')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='subscription'?'#0098d4':'#fff'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Subscription ${_custSortField==='subscription'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th onclick="toggleCustSort('date')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='date'?'#0098d4':'#fff'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Contract ${_custSortField==='date'?(_custSortDir===1?'▲':'▼'):''}</th>
+      <th style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px">Outstanding</th>
+      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px">Status</th>
+      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px">Owner</th>
+      <th style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px"></th>
     </tr></thead>
     <tbody>${list.map((c, i) => {
       const st = CSTATUS[c.status] || CSTATUS['active'];
