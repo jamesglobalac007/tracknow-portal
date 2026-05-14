@@ -1001,13 +1001,13 @@ select option{background:#0a0a0a;color:#0098d4}
 
   <!-- ── TAB TOGGLE ─────────────────────────────────────── -->
   <div style="display:flex;gap:0;margin-bottom:20px;border:1px solid #222;border-radius:9px;overflow:hidden;width:fit-content">
-    <button id="custTabBtn-prospects" onclick="showCustTab('prospects')"
-      style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#0098d4;color:#000;transition:.15s;font-family:inherit">
-      PROSPECTS
-    </button>
     <button id="custTabBtn-james" onclick="showCustTab('james')"
       style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#111;color:#666;transition:.15s;font-family:inherit">
       JAMES
+    </button>
+    <button id="custTabBtn-prospects" onclick="showCustTab('prospects')"
+      style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#0098d4;color:#000;transition:.15s;font-family:inherit">
+      PROSPECTS
     </button>
     <button id="custTabBtn-customers" onclick="showCustTab('customers')"
       style="padding:9px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#111;color:#666;transition:.15s;font-family:inherit">
@@ -1044,6 +1044,9 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="Civil">Civil</option>
         <option value="Mining">Mining</option>
         <option value="Agriculture">Agriculture</option>
+        <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+        <option value="Demolition">Demolition</option>
+        <option value="Caravan">Caravan</option>
         <option value="Other">Other</option>
       </select>
       <select id="pFilter-source" onchange="renderProspects()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
@@ -1077,6 +1080,9 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="Civil">Civil</option>
         <option value="Mining">Mining</option>
         <option value="Agriculture">Agriculture</option>
+        <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+        <option value="Demolition">Demolition</option>
+        <option value="Caravan">Caravan</option>
         <option value="Other">Other</option>
       </select>
       <select id="cFilter-status" onchange="renderCustomers()" style="padding:7px 11px;border:1px solid #222;border-radius:0;font-size:13px;color:#0098d4">
@@ -1115,7 +1121,9 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="pm_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Equipment Hire">Equipment Hire</option><option value="Other">Other</option>
+            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
+            <option value="Other">Other</option>
           </select></div>
         <div><label class="form-label">State</label>
           <select id="pm_state" class="form-input">
@@ -1167,7 +1175,9 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="ep_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Equipment Hire">Equipment Hire</option><option value="Other">Other</option>
+            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
+            <option value="Other">Other</option>
           </select></div>
         <div><label class="form-label">State</label>
           <select id="ep_state" class="form-input">
@@ -1220,7 +1230,9 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="el_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Equipment Hire">Equipment Hire</option><option value="Other">Other</option>
+            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
+            <option value="Other">Other</option>
           </select></div>
         <div><label class="form-label">Website</label><input id="el_web" class="form-input" placeholder="www.example.com.au"></div>
       </div>
@@ -1248,7 +1260,9 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="cm_sector" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Equipment Hire">Equipment Hire</option><option value="Other">Other</option>
+            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
+            <option value="Other">Other</option>
           </select></div>
         <div><label class="form-label">No. of Trackers *</label><input id="cm_trackers" class="form-input" type="number" placeholder="8"></div>
         <div><label class="form-label">Tracker Cost ($/unit)</label><input id="cm_hwcost" class="form-input" type="number" placeholder="299" value="299"></div>
