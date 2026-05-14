@@ -10484,10 +10484,11 @@ function importCsvProspects() {
     if (!co) co = getVal(row, 'name');
     if (!co) { emptyCount++; return; }
 
-    // Check for duplicate across PROSPECTS and LEADS (pipeline)
-    const normCo = co.toLowerCase().trim();
-    if (PROSPECTS.some(p => (p.co || '').toLowerCase().trim() === normCo) ||
-        LEADS.some(l => (l.co || '').toLowerCase().trim() === normCo)) { dupCount++; return; }
+    // Check for duplicate across PROSPECTS / LEADS / CUSTOMERS by
+    // company, email, or phone (uses the same helper as manual Add Prospect)
+    const phoneCheck = getVal(row, 'phone');
+    const emailCheck = getVal(row, 'email');
+    if (_findDuplicateContact({ co, phone: phoneCheck, email: emailCheck }).dup) { dupCount++; return; }
 
     const rawSource = getVal(row, 'source').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
     const source = SOURCE_MAP[rawSource] || 'database';
@@ -10601,9 +10602,42 @@ function auTime(d) {
   return h + ':' + m + ampm;
 }
 
+// Shared duplicate-contact check used by manual Add Prospect and the
+// CSV/XLSX importer. A new contact is a duplicate if company / phone /
+// email matches an existing PROSPECT, LEAD, or CUSTOMER (case-insensitive,
+// whitespace-trimmed, phone digits-only). Returns { dup: true, on, field }
+// when a match is found, or { dup: false } otherwise.
+function _findDuplicateContact(c) {
+  const norm = s => String(s||'').toLowerCase().trim();
+  const digits = s => String(s||'').replace(/\D+/g,'');
+  const newCo    = norm(c.co);
+  const newEmail = norm(c.email);
+  const newPhone = digits(c.phone);
+  const scan = (list, kind, coKey, emailKey, phoneKey) => {
+    for (const r of list) {
+      if (newCo && norm(r[coKey]) === newCo) return { dup: true, on: kind, field: 'company', value: r[coKey] };
+      if (newEmail && norm(r[emailKey]) === newEmail) return { dup: true, on: kind, field: 'email', value: r[emailKey] };
+      if (newPhone && newPhone.length >= 6 && digits(r[phoneKey]) === newPhone) return { dup: true, on: kind, field: 'phone', value: r[phoneKey] };
+    }
+    return null;
+  };
+  return scan(PROSPECTS, 'prospect', 'co', 'email', 'phone')
+      || scan(LEADS,     'pipeline lead', 'co', 'email', 'phone')
+      || scan(CUSTOMERS, 'live customer', 'co', 'email', 'phone')
+      || { dup: false };
+}
+
 function saveProspect() {
   const co = document.getElementById('pm_co').value.trim();
   if (!co) { alert('Company name is required'); return; }
+  // Block duplicates across prospects + pipeline + live customers
+  const phone = document.getElementById('pm_phone').value.trim();
+  const email = document.getElementById('pm_email').value.trim();
+  const dup = _findDuplicateContact({ co, phone, email });
+  if (dup.dup) {
+    alert('Cannot add — this contact already exists as a ' + dup.on + '.\n\nMatched on ' + dup.field + ': "' + (dup.value || '') + '"');
+    return;
+  }
   const nowTs = Date.now();
   PROSPECTS.push({
     id: _nextProspectId++,
