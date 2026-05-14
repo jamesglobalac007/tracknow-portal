@@ -9533,7 +9533,7 @@ function renderProspects() {
       <td style="padding:9px 12px"><span style="font-size:10px;font-weight:700;color:${sm.color};background:${sm.bg};padding:2px 7px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
       <td style="padding:9px 12px;font-size:12px;color:#0098d4">${p.ind || ''}</td>
       <td style="padding:9px 12px">
-        <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle}">
+        <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle};color:#00CC66;font-weight:700">
           ${statusOptions.replace('value="'+p.status+'"', 'value="'+p.status+'" selected')}
         </select>
         ${p.status === 'callback' ? (function(){
