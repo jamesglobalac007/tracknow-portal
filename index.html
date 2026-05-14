@@ -4016,6 +4016,7 @@ function renderPipeline() {
               ${si>0?'<button onclick="event.stopPropagation();moveLeadStage('+l.id+',-1)" style="flex:1;padding:3px;background:#111;border:1px solid #333;color:#888;font-size:9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#0098d4\';this.style.color=\'#0098d4\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">◀ Back</button>':''}
               ${si<STAGES.length-1?'<button onclick="event.stopPropagation();moveLeadStage('+l.id+',1)" style="flex:1;padding:3px;background:#111;border:1px solid #333;color:#888;font-size:9px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor=\'#00CC66\';this.style.color=\'#00CC66\'" onmouseout="this.style.borderColor=\'#333\';this.style.color=\'#888\'">Next ▶</button>':''}
             </div>
+            <button onclick="event.stopPropagation();sendLeadBackToProspects(${l.id})" title="Undo Qualified — send this deal back to Prospects" style="width:100%;padding:4px;background:#111;border:1px solid #333;color:#888;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .15s;letter-spacing:.3px" onmouseover="this.style.borderColor='#f59e0b';this.style.color='#f59e0b'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">↩ Back to Prospects</button>
             <select onchange="event.stopPropagation();if(this.value){archiveDeal(${l.id},this.value);this.value='';}" style="width:100%;padding:4px;background:#111;border:1px solid #333;color:#666;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .15s;letter-spacing:.3px;appearance:auto">
               <option value="">Archive ▾</option>
               <option value="not-ready">Not Ready</option>
@@ -5064,6 +5065,8 @@ function archiveDeal(leadId, reason) {
     phone: lead.phone || '',
     email: lead.email || '',
     ind: lead.ind || '',
+    state: lead.st || '',
+    owner: lead.owner || '',
     source: 'referral',
     fleet: lead.v || 0,
     trackers: lead.v || 0,
@@ -5085,6 +5088,52 @@ function archiveDeal(leadId, reason) {
   renderProspects();
   renderCustStats();
   showStageNotification(lead.co, stageLabel, reasonLabel);
+}
+
+// Send a lead back to the active Prospects list — undo for an
+// accidental Qualified click (or any pipeline mis-stage). Mirrors
+// archiveDeal but lands the record back as an active prospect
+// (status 'new') instead of archived. Carries over Owner, State,
+// deal files etc. so nothing is lost. addedAt is reset to "now" so it
+// sorts to the top of the Prospects table where the user will see it.
+function sendLeadBackToProspects(leadId) {
+  const idx = LEADS.findIndex(l => l.id === leadId);
+  if (idx === -1) return;
+  const lead = LEADS[idx];
+  if (!confirm('Send "' + lead.co + '" back to Prospects? It will be removed from the pipeline (deal files are preserved).')) return;
+  const stageLabel = (STAGES.find(s => s.id === lead.stage) || {}).label || lead.stage;
+  const nowTs = Date.now();
+  const newProspect = {
+    id: nowTs,
+    co: lead.co,
+    name: lead.name || '',
+    phone: lead.phone || '',
+    email: lead.email || '',
+    ind: lead.ind || '',
+    state: lead.st || '',
+    owner: lead.owner || '',
+    source: lead.source || 'database',
+    fleet: lead.v || 0,
+    trackers: lead.v || 0,
+    subPrice: lead.subPrice || 29.95,
+    added: auDate(nowTs),
+    addedAt: nowTs,
+    status: 'new',
+    callbackDate: '', callbackTime: '',
+    notes: 'Returned from pipeline (was at "' + stageLabel + '" stage). ' + (lead.notes || ''),
+    lineItems: lead.lineItems || [],
+    fleetSegments: lead.fleetSegments || null,
+    dealFiles: lead.dealFiles || {},
+    fleetReportDate: lead.fleetReportDate || null,
+    _productsSet: lead._productsSet || false
+  };
+  PROSPECTS.push(newProspect);
+  LEADS.splice(idx, 1);
+  saveData();
+  renderPipeline();
+  renderProspects();
+  renderCustStats();
+  showStageNotification(lead.co, stageLabel, 'Returned to Prospects');
 }
 
 // Brief on-screen notification when a card is moved
