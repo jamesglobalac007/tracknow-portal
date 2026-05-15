@@ -815,6 +815,10 @@ select option{background:#0a0a0a;color:#0098d4}
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
       Customers
     </button>
+    <button class="nav-btn" onclick="showPage('quickquote',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+      Quick Quote
+    </button>
     <button class="nav-btn" onclick="showPage('revenue',this)">
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Revenue &amp; Commission
@@ -2550,6 +2554,141 @@ select option{background:#0a0a0a;color:#0098d4}
   </div><!-- end revenue page -->
 
   <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- QUICK QUOTE — Price comparison vs prospect's current GPS      -->
+  <!-- Side-by-side calculator + email-ready output. Standalone tool,-->
+  <!-- works without a prospect record but auto-fills if you pick one-->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-quickquote">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h1 class="page-title">Quick Quote</h1>
+        <p class="page-desc">Side-by-side price comparison vs prospect's current GPS provider — generates email-ready output</p>
+      </div>
+      <div>
+        <button onclick="qqResetForm()" style="padding:8px 14px;border:1px solid #333;color:#888;background:transparent;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.3px">↻ Reset</button>
+      </div>
+    </div>
+
+    <!-- ── Load from prospect (optional) ── -->
+    <div class="card" style="margin-bottom:16px;padding:14px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px;font-weight:700">Load from prospect:</span>
+        <select id="qq_prospect" onchange="qqLoadFromProspect(this.value)" style="flex:1;min-width:240px;padding:7px 10px;background:#111;border:1px solid #222;color:#0098d4;font-family:inherit;font-size:13px">
+          <option value="">— Manual entry (or pick a prospect) —</option>
+        </select>
+        <span style="font-size:10px;color:#555;font-style:italic">Pre-fills company, contact, fleet count</span>
+      </div>
+    </div>
+
+    <!-- ── TWO COLUMNS: Their current vs Our offer ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+      <!-- ── THEIR CURRENT GPS ── -->
+      <div class="card" style="padding:18px;border:1px solid rgba(220,38,38,.25)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">Their current GPS</div>
+        </div>
+
+        <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Customer / Company *</label>
+        <input type="text" id="qq_companyName" placeholder="e.g. AJ Mini Excavator Hire" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+
+        <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contact name (for the email greeting)</label>
+        <input type="text" id="qq_contactName" placeholder="e.g. Dave" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+
+        <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Current GPS provider</label>
+        <input type="text" id="qq_currentProvider" placeholder="e.g. Teletrac Navman / Geotab / Linxio" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Number of units</label>
+            <input type="number" id="qq_currentUnits" value="10" min="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">$/unit/month (current)</label>
+            <input type="number" id="qq_currentCostPerUnit" value="35" min="0" step="0.5" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          </div>
+        </div>
+
+        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:10px;text-align:center;border-radius:0">
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Their monthly</div>
+          <div id="qq_currentMonthly" style="font-size:18px;font-weight:800;color:#dc2626">$0</div>
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-top:8px;margin-bottom:4px">Their annual</div>
+          <div id="qq_currentAnnual" style="font-size:18px;font-weight:800;color:#dc2626">$0</div>
+        </div>
+      </div>
+
+      <!-- ── TRACKNOW OFFER ── -->
+      <div class="card" style="padding:18px;border:1px solid rgba(0,204,102,.25)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <svg width="14" height="14" fill="none" stroke="#00CC66" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <div style="font-size:11px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px">TrackNow offer</div>
+        </div>
+
+        <!-- Device picker — 4 cards -->
+        <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Device</label>
+        <div id="qq_deviceList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Units</label>
+            <input type="number" id="qq_ourUnits" value="10" min="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Install $/unit</label>
+            <input type="number" id="qq_installPerUnit" value="88" min="0" step="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#CCC;cursor:pointer"><input type="checkbox" id="qq_installFree" onchange="qqRecalc()"> Install FREE</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#CCC;cursor:pointer"><input type="checkbox" id="qq_selfInstall" onchange="qqRecalc()"> Self-install (customer fits)</label>
+        </div>
+
+        <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Amortise install over (months)</label>
+        <select id="qq_amortMonths" onchange="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:12px">
+          <option value="0">Upfront (paid Day 1)</option>
+          <option value="3">3 months</option>
+          <option value="12" selected>12 months</option>
+          <option value="24">24 months</option>
+        </select>
+
+        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:10px;text-align:center;border-radius:0">
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Year 1 — monthly / annual</div>
+          <div><span id="qq_ourY1Monthly" style="font-size:16px;font-weight:800;color:#00CC66">$0</span> <span style="color:#555">/</span> <span id="qq_ourY1Annual" style="font-size:16px;font-weight:800;color:#00CC66">$0</span></div>
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-top:8px;margin-bottom:4px">Year 2+ — monthly / annual</div>
+          <div><span id="qq_ourY2Monthly" style="font-size:16px;font-weight:800;color:#00CC66">$0</span> <span style="color:#555">/</span> <span id="qq_ourY2Annual" style="font-size:16px;font-weight:800;color:#00CC66">$0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BOTTOM-LINE SAVING + GENERATE EMAIL ── -->
+    <div class="card" style="padding:18px;border:2px solid #FFA028;background:rgba(255,160,40,.05)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <svg width="14" height="14" fill="none" stroke="#FFA028" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <div style="font-size:11px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">Bottom line</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px" id="qq_resultGrid">
+        <div style="text-align:center;padding:14px;background:#0a0a0a;border:1px solid #1a1a1a">
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Saving Year 1</div>
+          <div id="qq_savingY1" style="font-size:22px;font-weight:800;color:#00CC66">$0</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#0a0a0a;border:1px solid #1a1a1a">
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Saving Year 2+ /yr</div>
+          <div id="qq_savingY2" style="font-size:22px;font-weight:800;color:#00CC66">$0</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#0a0a0a;border:1px solid #1a1a1a">
+          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">3-year saving</div>
+          <div id="qq_saving3yr" style="font-size:22px;font-weight:800;color:#00CC66">$0</div>
+        </div>
+      </div>
+      <button onclick="qqGenerateEmail()" class="btn btn-primary" style="width:100%;padding:14px;font-size:13px;font-weight:700;letter-spacing:.5px">
+        ✉ GENERATE EMAIL HTML (opens in new tab — copy &amp; paste into Outlook)
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
   <!-- RESOURCES                                                     -->
   <!-- ══════════════════════════════════════════════════════════════ -->
   <div class="page" id="page-resources">
@@ -3102,6 +3241,236 @@ function showPage(id, btn) {
   if (id === 'tools') { calcCommission(); setTimeout(renderCallScript, 50); }
   if (id === 'analytics' && !window.analyticsInit) { initAnalytics(); window.analyticsInit = true; }
   if (id === 'marketing' && !window.marketingInit) { initMarketing(); window.marketingInit = true; }
+  if (id === 'quickquote') initQuickQuote();
+}
+
+// ═══════════ QUICK QUOTE — Price Comparison Tool ═══════════
+// Side-by-side vs prospect's current GPS provider. All 4 TrackNow devices
+// (defaults editable per quote). Generates email-ready HTML opening in a
+// new browser tab — copy from there, paste into Outlook.
+const QQ_DEVICES = [
+  { key: 'tk56l',  label: 'TK56L — 4G OBD Plug-In',           hardware: 149, software: 18 },
+  { key: 'tk900',  label: 'TK900 — 4G Hardwired',             hardware: 200, software: 18 },
+  { key: 'tk18p',  label: 'TK18P — 3CH Dashcam',              hardware: 499, software: 35 },
+  { key: 'tks20',  label: 'TKS20 Pro — Asset / Battery',      hardware: 249, software: 22 }
+];
+let _qqSelectedDevice = 'tk900';
+let _qqHardwareFree = { tk56l:false, tk900:true, tk18p:false, tks20:false };
+let _qqHardwareOverride = {}; // per-device price overrides this session
+let _qqSoftwareOverride = {}; // per-device monthly overrides this session
+
+function initQuickQuote() {
+  // Populate prospect dropdown — sorted by company name
+  const sel = document.getElementById('qq_prospect');
+  if (sel) {
+    const sorted = (PROSPECTS || []).slice().sort((a,b) => (a.co||'').localeCompare(b.co||''));
+    sel.innerHTML = '<option value="">— Manual entry (or pick a prospect) —</option>' +
+      sorted.map(p => '<option value="' + p.id + '">' + (p.co || '(no name)') + (p.state ? ' · ' + p.state : '') + '</option>').join('');
+  }
+  // Render the 4 device cards
+  _qqRenderDeviceList();
+  qqRecalc();
+}
+
+function _qqRenderDeviceList() {
+  const wrap = document.getElementById('qq_deviceList');
+  if (!wrap) return;
+  wrap.innerHTML = QQ_DEVICES.map(function(d) {
+    const sel = _qqSelectedDevice === d.key;
+    const hw = _qqHardwareOverride[d.key] != null ? _qqHardwareOverride[d.key] : d.hardware;
+    const sw = _qqSoftwareOverride[d.key] != null ? _qqSoftwareOverride[d.key] : d.software;
+    const hwFree = !!_qqHardwareFree[d.key];
+    return '<div onclick="_qqPickDevice(\'' + d.key + '\')" style="padding:10px;border:2px solid ' + (sel ? '#00CC66' : '#222') + ';background:' + (sel ? 'rgba(0,204,102,.06)' : '#0a0a0a') + ';cursor:pointer;border-radius:0">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<div style="font-size:12px;font-weight:700;color:' + (sel ? '#00CC66' : '#CCC') + '">' + (sel ? '◉ ' : '○ ') + d.label + '</div>' +
+      '</div>' +
+      (sel ? '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#999" onclick="event.stopPropagation()">' +
+        '<label style="display:flex;align-items:center;gap:4px">Hardware $: <input type="number" value="' + hw + '" min="0" step="1" onchange="_qqSetHardware(\'' + d.key + '\',this.value)" oninput="_qqSetHardware(\'' + d.key + '\',this.value)" style="width:70px;padding:3px 6px;background:#111;border:1px solid #333;color:#00CC66;font-family:inherit;font-size:11px;font-weight:700"></label>' +
+        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" ' + (hwFree?'checked':'') + ' onchange="_qqSetHardwareFree(\'' + d.key + '\',this.checked)"> FREE</label>' +
+        '<label style="display:flex;align-items:center;gap:4px">Software $/mo: <input type="number" value="' + sw + '" min="0" step="0.5" onchange="_qqSetSoftware(\'' + d.key + '\',this.value)" oninput="_qqSetSoftware(\'' + d.key + '\',this.value)" style="width:70px;padding:3px 6px;background:#111;border:1px solid #333;color:#00CC66;font-family:inherit;font-size:11px;font-weight:700"></label>' +
+      '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+function _qqPickDevice(key) { _qqSelectedDevice = key; _qqRenderDeviceList(); qqRecalc(); }
+function _qqSetHardware(key, v) { _qqHardwareOverride[key] = parseFloat(v) || 0; qqRecalc(); }
+function _qqSetHardwareFree(key, on) { _qqHardwareFree[key] = !!on; qqRecalc(); }
+function _qqSetSoftware(key, v) { _qqSoftwareOverride[key] = parseFloat(v) || 0; qqRecalc(); }
+
+function qqLoadFromProspect(prospectId) {
+  if (!prospectId) return;
+  const p = (PROSPECTS || []).find(function(x) { return String(x.id) === String(prospectId); });
+  if (!p) return;
+  document.getElementById('qq_companyName').value = p.co || '';
+  document.getElementById('qq_contactName').value = p.name || '';
+  const count = parseInt(p.trackers) || parseInt(p.fleet) || 0;
+  if (count > 0) {
+    document.getElementById('qq_currentUnits').value = count;
+    document.getElementById('qq_ourUnits').value = count;
+  }
+  qqRecalc();
+}
+
+function qqResetForm() {
+  ['qq_companyName','qq_contactName','qq_currentProvider'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('qq_currentUnits').value = '10';
+  document.getElementById('qq_currentCostPerUnit').value = '35';
+  document.getElementById('qq_ourUnits').value = '10';
+  document.getElementById('qq_installPerUnit').value = '88';
+  document.getElementById('qq_installFree').checked = false;
+  document.getElementById('qq_selfInstall').checked = false;
+  document.getElementById('qq_amortMonths').value = '12';
+  document.getElementById('qq_prospect').value = '';
+  _qqSelectedDevice = 'tk900';
+  _qqHardwareFree = { tk56l:false, tk900:true, tk18p:false, tks20:false };
+  _qqHardwareOverride = {};
+  _qqSoftwareOverride = {};
+  _qqRenderDeviceList();
+  qqRecalc();
+}
+
+function qqRecalc() {
+  const fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-AU'); };
+  const fmt2 = function(n) { return '$' + n.toFixed(2); };
+
+  // Their current
+  const curUnits = parseInt(document.getElementById('qq_currentUnits').value) || 0;
+  const curPer = parseFloat(document.getElementById('qq_currentCostPerUnit').value) || 0;
+  const curMonthly = curUnits * curPer;
+  const curAnnual = curMonthly * 12;
+  document.getElementById('qq_currentMonthly').textContent = fmt(curMonthly);
+  document.getElementById('qq_currentAnnual').textContent = fmt(curAnnual);
+
+  // Our offer
+  const dev = QQ_DEVICES.find(function(d) { return d.key === _qqSelectedDevice; }) || QQ_DEVICES[1];
+  const swCost = _qqSoftwareOverride[dev.key] != null ? _qqSoftwareOverride[dev.key] : dev.software;
+  const ourUnits = parseInt(document.getElementById('qq_ourUnits').value) || 0;
+  const selfInstall = document.getElementById('qq_selfInstall').checked;
+  const installFree = document.getElementById('qq_installFree').checked;
+  let installPer = parseFloat(document.getElementById('qq_installPerUnit').value) || 0;
+  if (selfInstall || installFree) installPer = 0;
+  const amortMonths = parseInt(document.getElementById('qq_amortMonths').value) || 0;
+  const installTotal = ourUnits * installPer;
+  // Year 1 monthly: subscription + install spread (if amortising)
+  const swMonthlyFleet = ourUnits * swCost;
+  let y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet;
+  if (installPer === 0) {
+    // No install
+    y1MonthlyFleet = swMonthlyFleet;
+    y1AnnualFleet = swMonthlyFleet * 12;
+  } else if (amortMonths === 0) {
+    // Install paid upfront — Y1 monthly = subscription only, but Y1 annual = subscription + install upfront
+    y1MonthlyFleet = swMonthlyFleet;
+    y1AnnualFleet = swMonthlyFleet * 12 + installTotal;
+  } else if (amortMonths === 12) {
+    // Spread into Year 1
+    y1MonthlyFleet = swMonthlyFleet + (installTotal / 12);
+    y1AnnualFleet = y1MonthlyFleet * 12;
+  } else if (amortMonths === 24) {
+    // Spread over 24 months — Year 1 monthly slightly lower
+    y1MonthlyFleet = swMonthlyFleet + (installTotal / 24);
+    y1AnnualFleet = y1MonthlyFleet * 12;
+  } else {
+    // 3-month amortisation
+    y1MonthlyFleet = swMonthlyFleet + (installTotal / 3);
+    y1AnnualFleet = swMonthlyFleet * 12 + installTotal;
+  }
+  // Year 2+ — always subscription only (install paid off by then for any amortisation ≤ 12 months;
+  // for 24-month amortisation, Y2 is half the install still amortising — simplification: show full)
+  y2MonthlyFleet = swMonthlyFleet;
+  y2AnnualFleet = swMonthlyFleet * 12;
+  if (amortMonths === 24 && installPer > 0) {
+    // For 24-month amortisation, Year 2 still has install spread
+    y2MonthlyFleet = swMonthlyFleet + (installTotal / 24);
+    y2AnnualFleet = y2MonthlyFleet * 12;
+  }
+
+  document.getElementById('qq_ourY1Monthly').textContent = fmt(y1MonthlyFleet);
+  document.getElementById('qq_ourY1Annual').textContent = fmt(y1AnnualFleet);
+  document.getElementById('qq_ourY2Monthly').textContent = fmt(y2MonthlyFleet);
+  document.getElementById('qq_ourY2Annual').textContent = fmt(y2AnnualFleet);
+
+  // Savings
+  const savingY1 = curAnnual - y1AnnualFleet;
+  const savingY2 = curAnnual - y2AnnualFleet;
+  const saving3yr = savingY1 + (savingY2 * 2);
+  const sY1 = document.getElementById('qq_savingY1');
+  const sY2 = document.getElementById('qq_savingY2');
+  const s3y = document.getElementById('qq_saving3yr');
+  sY1.textContent = (savingY1 >= 0 ? '' : '-') + fmt(Math.abs(savingY1));
+  sY1.style.color = savingY1 >= 0 ? '#00CC66' : '#dc2626';
+  sY2.textContent = (savingY2 >= 0 ? '' : '-') + fmt(Math.abs(savingY2));
+  sY2.style.color = savingY2 >= 0 ? '#00CC66' : '#dc2626';
+  s3y.textContent = (saving3yr >= 0 ? '' : '-') + fmt(Math.abs(saving3yr));
+  s3y.style.color = saving3yr >= 0 ? '#00CC66' : '#dc2626';
+
+  // Stash for email generator
+  window._qqCalc = {
+    company: document.getElementById('qq_companyName').value.trim(),
+    contact: document.getElementById('qq_contactName').value.trim(),
+    provider: document.getElementById('qq_currentProvider').value.trim(),
+    curUnits, curPer, curMonthly, curAnnual,
+    device: dev,
+    swCost, ourUnits, installPer, installTotal, amortMonths, selfInstall, installFree,
+    y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet,
+    savingY1, savingY2, saving3yr
+  };
+}
+
+function qqGenerateEmail() {
+  qqRecalc();
+  const q = window._qqCalc || {};
+  const fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-AU'); };
+  const company = q.company || '[Customer]';
+  const contact = q.contact || '[Name]';
+  const provider = q.provider || 'your current provider';
+  const greeting = contact ? 'Hi ' + contact + ',' : 'Hi,';
+  const installLine = q.selfInstall ? 'Self-install (your workshop fits)' : (q.installFree ? 'FREE install' : (q.installPer > 0 ? '$' + q.installPer + '/unit' + (q.amortMonths > 0 ? ' (amortised over ' + q.amortMonths + ' months)' : ' (upfront)') : 'No install fee'));
+  const hwFree = !!_qqHardwareFree[q.device.key];
+  const hwLine = hwFree ? 'FREE ($' + ((q.device.hardware) * q.ourUnits).toLocaleString('en-AU') + ' value)' : ('$' + q.device.hardware + '/unit');
+  const sav1Pos = q.savingY1 >= 0;
+  const sav2Pos = q.savingY2 >= 0;
+  const sav3Pos = q.saving3yr >= 0;
+  const sav1Color = sav1Pos ? '#059669' : '#dc2626';
+  const sav2Color = sav2Pos ? '#059669' : '#dc2626';
+  const sav3Color = sav3Pos ? '#059669' : '#dc2626';
+  const html = '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>TrackNow Quote — ' + company + '</title>\n<style>body{font-family:Calibri,Arial,sans-serif;font-size:14px;color:#222;max-width:820px;margin:30px auto;padding:20px;line-height:1.5}.instructions{background:#fff4d6;border:1px solid #d97706;padding:14px 18px;margin-bottom:30px;border-radius:4px}.instructions h2{margin:0 0 8px 0;font-size:14px;color:#d97706}.instructions ol{margin:6px 0 0 18px;padding:0;font-size:13px}.instructions li{margin-bottom:3px}hr.email-divider{border:none;border-top:2px dashed #aaa;margin:30px 0}</style></head><body>\n' +
+    '<div class="instructions"><h2>👇 INSTRUCTIONS — copy everything BELOW this yellow box</h2><ol><li>Click anywhere in the email body below (under the dashed line)</li><li><b>Cmd+A</b> to Select All</li><li><b>Cmd+C</b> to Copy</li><li>Switch to Outlook → <b>New Email</b></li><li>Click into the body and press <b>Cmd+V</b> to paste</li><li>The whole thing — table, formatting, colours — pastes as-is.</li></ol></div>\n' +
+    '<hr class="email-divider">\n' +
+    '<div class="email-content">\n' +
+    '<p>' + greeting + '</p>\n' +
+    '<p>Quick side-by-side on what TrackNow GPS would cost vs ' + provider + ' across your ' + q.curUnits + ' units:</p>\n' +
+    '<table border="1" cellpadding="10" cellspacing="0" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:13px;color:#222;width:100%;margin:14px 0">\n' +
+    '  <thead><tr style="background:#0a1726;color:#fff;text-align:center;font-weight:bold">\n' +
+    '    <th style="padding:12px"></th>\n' +
+    '    <th style="padding:12px">YOUR CURRENT<br><span style="font-weight:normal;font-size:11px">' + provider + '</span></th>\n' +
+    '    <th style="padding:12px">TRACKNOW — YEAR 1<br><span style="font-weight:normal;font-size:11px">' + q.device.label + '</span></th>\n' +
+    '    <th style="padding:12px;background:#059669">TRACKNOW — YEAR 2+<br><span style="font-weight:normal;font-size:11px">(install paid off)</span></th>\n' +
+    '  </tr></thead>\n' +
+    '  <tbody>\n' +
+    '    <tr><td style="background:#f0f0f0;font-weight:bold;padding:10px">Hardware</td><td style="text-align:center">(included in current plan)</td><td style="text-align:center">' + hwLine + '</td><td style="text-align:center;background:#e8f5e9">' + hwLine + '</td></tr>\n' +
+    '    <tr><td style="background:#f0f0f0;font-weight:bold;padding:10px">Install</td><td style="text-align:center">—</td><td style="text-align:center">' + installLine + '</td><td style="text-align:center;background:#e8f5e9">' + (q.installPer > 0 && q.amortMonths !== 24 ? 'Paid off' : (q.installPer > 0 ? 'Still amortising' : 'N/A')) + '</td></tr>\n' +
+    '    <tr><td style="background:#f0f0f0;font-weight:bold;padding:10px">Monthly cost</td><td style="text-align:center;background:#fef2f2;color:#dc2626;font-weight:bold">' + fmt(q.curMonthly) + '</td><td style="text-align:center">' + fmt(q.y1MonthlyFleet) + '</td><td style="text-align:center;background:#e8f5e9;color:#059669;font-weight:bold">' + fmt(q.y2MonthlyFleet) + '</td></tr>\n' +
+    '    <tr><td style="background:#f0f0f0;font-weight:bold;padding:10px">Annual cost</td><td style="text-align:center;background:#fef2f2;color:#dc2626;font-weight:bold">' + fmt(q.curAnnual) + '</td><td style="text-align:center">' + fmt(q.y1AnnualFleet) + '</td><td style="text-align:center;background:#e8f5e9;color:#059669;font-weight:bold">' + fmt(q.y2AnnualFleet) + '</td></tr>\n' +
+    '  </tbody>\n' +
+    '</table>\n' +
+    '<div style="background:#d1fae5;border-left:4px solid #059669;padding:14px 18px;margin:14px 0;font-size:14px;color:#0a1726">\n' +
+    '  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:center">\n' +
+    '    <div><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">Saving Year 1</div><div style="font-size:18px;font-weight:bold;color:' + sav1Color + '">' + (sav1Pos ? '+' : '−') + fmt(Math.abs(q.savingY1)) + '</div></div>\n' +
+    '    <div><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">Saving Year 2+ /yr</div><div style="font-size:18px;font-weight:bold;color:' + sav2Color + '">' + (sav2Pos ? '+' : '−') + fmt(Math.abs(q.savingY2)) + '</div></div>\n' +
+    '    <div><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">3-Year Saving</div><div style="font-size:20px;font-weight:bold;color:' + sav3Color + '">' + (sav3Pos ? '+' : '−') + fmt(Math.abs(q.saving3yr)) + '</div></div>\n' +
+    '  </div>\n' +
+    '</div>\n' +
+    '<p>That\'s direct cost comparison — same hardware coverage, better data feed, less per month.</p>\n' +
+    '<p>Reply and I\'ll send the formal agreement.</p>\n' +
+    '<p>Cheers,<br><b>James</b><br>TrackNow GPS<br>sales@tracknow.com.au<br>www.tracknow.com.au</p>\n' +
+    '</div></body></html>';
+  // Open in a new tab via blob URL so the user can copy from a clean rendered view.
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 }
 
 // ═══════════ DASHBOARD ═══════════
