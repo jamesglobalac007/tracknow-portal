@@ -2629,11 +2629,15 @@ select option{background:#0a0a0a;color:#0098d4}
           </div>
         </div>
 
-        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:10px;text-align:center;border-radius:0">
-          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Their monthly</div>
-          <div id="qq_currentMonthly" style="font-size:18px;font-weight:800;color:#dc2626">$0</div>
-          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-top:8px;margin-bottom:4px">Their annual</div>
-          <div id="qq_currentAnnual" style="font-size:18px;font-weight:800;color:#dc2626">$0</div>
+        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline">
+          <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-start">
+            <span style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Monthly</span>
+            <span id="qq_currentMonthly" style="font-size:18px;font-weight:800;color:#dc2626">$0</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-end">
+            <span style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Annually</span>
+            <span id="qq_currentAnnual" style="font-size:18px;font-weight:800;color:#dc2626">$0</span>
+          </div>
         </div>
       </div>
 
@@ -2691,11 +2695,15 @@ select option{background:#0a0a0a;color:#0098d4}
           <option value="24">24 months</option>
         </select>
 
-        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:10px;text-align:center;border-radius:0">
-          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Year 1 — monthly / annual</div>
-          <div><span id="qq_ourY1Monthly" style="font-size:16px;font-weight:800;color:#00CC66">$0</span> <span style="color:#555">/</span> <span id="qq_ourY1Annual" style="font-size:16px;font-weight:800;color:#00CC66">$0</span></div>
-          <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-top:8px;margin-bottom:4px">Year 2+ — monthly / annual</div>
-          <div><span id="qq_ourY2Monthly" style="font-size:16px;font-weight:800;color:#00CC66">$0</span> <span style="color:#555">/</span> <span id="qq_ourY2Annual" style="font-size:16px;font-weight:800;color:#00CC66">$0</span></div>
+        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline">
+          <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-start">
+            <span style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Monthly</span>
+            <span id="qq_ourY1Monthly" style="font-size:18px;font-weight:800;color:#00CC66">$0</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-end">
+            <span style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Annually</span>
+            <span id="qq_ourY1Annual" style="font-size:18px;font-weight:800;color:#00CC66">$0</span>
+          </div>
         </div>
       </div>
     </div>
@@ -3533,8 +3541,13 @@ function qqRecalc() {
 
   document.getElementById('qq_ourY1Monthly').textContent = fmt(y1MonthlyFleet);
   document.getElementById('qq_ourY1Annual').textContent = fmt(y1AnnualFleet);
-  document.getElementById('qq_ourY2Monthly').textContent = fmt(y2MonthlyFleet);
-  document.getElementById('qq_ourY2Annual').textContent = fmt(y2AnnualFleet);
+  // Y2 cells removed from the panel (simplified to Y1 only). Keep the variables
+  // in scope — the "Saving Y2+ / 3-year saving" cards below still use them, and
+  // they ship through to the email generator via window._qqCalc.
+  var y2mEl = document.getElementById('qq_ourY2Monthly');
+  var y2aEl = document.getElementById('qq_ourY2Annual');
+  if (y2mEl) y2mEl.textContent = fmt(y2MonthlyFleet);
+  if (y2aEl) y2aEl.textContent = fmt(y2AnnualFleet);
 
   // Savings
   const savingY1 = curAnnual - y1AnnualFleet;
