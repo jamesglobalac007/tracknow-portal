@@ -1408,14 +1408,26 @@ select option{background:#0a0a0a;color:#0098d4}
           <div><label class="form-label">Asset / Vehicle Type</label>
             <select id="au_asset" class="form-input">
               <option value="">— Select Asset —</option>
-              <option value="Trucks / Heavy Vehicles">Trucks / Heavy Vehicles</option>
-              <option value="Vans / Light Commercial">Vans / Light Commercial</option>
-              <option value="Utes / Dual Cab">Utes / Dual Cab</option>
-              <option value="Plant / Equipment">Plant / Equipment</option>
-              <option value="Cars / Service Vehicles">Cars / Service Vehicles</option>
-              <option value="Excavators / Earthmoving">Excavators / Earthmoving</option>
-              <option value="Trailers / Unpowered Assets">Trailers / Unpowered Assets</option>
-              <option value="Refrigerated Vehicles">Refrigerated Vehicles</option>
+              <optgroup label="Transport / Logistics">
+                <option value="Prime Mover / B-Double">Prime Mover / B-Double</option>
+                <option value="Rigid Truck">Rigid Truck</option>
+                <option value="Refrigerated Vehicles">Refrigerated Vehicles</option>
+              </optgroup>
+              <optgroup label="Service / Owned Fleet">
+                <option value="Vans / Light Commercial">Vans / Light Commercial</option>
+                <option value="Utes / Dual Cab">Utes / Dual Cab</option>
+                <option value="Cars / Service Vehicles">Cars / Service Vehicles</option>
+              </optgroup>
+              <optgroup label="Plant & Hire / Earthmoving">
+                <option value="Excavators / Earthmoving">Excavators / Earthmoving</option>
+                <option value="Skid Steer / Bobcat">Skid Steer / Bobcat</option>
+                <option value="Wheel Loader / Backhoe">Wheel Loader / Backhoe</option>
+                <option value="Telehandler / EWP / Forklift">Telehandler / EWP / Forklift</option>
+                <option value="Plant / Equipment (other)">Plant / Equipment (other)</option>
+              </optgroup>
+              <optgroup label="Other">
+                <option value="Trailers / Unpowered Assets">Trailers / Unpowered Assets</option>
+              </optgroup>
             </select></div>
           <div><label class="form-label">No. of Software Units</label>
             <input id="au_qty" class="form-input" type="number" placeholder="e.g. 5"></div>
@@ -11563,14 +11575,22 @@ function saveDealProducts() {
 // offers applicable assets and the calculation only includes them. Per-segment
 // seg.calcSlip / seg.calcIdle / seg.calcAH are user-toggles seeded from these.
 const FLEET_BENCHMARKS = {
-  trucks:      { label:'Trucks / Heavy Vehicles',    km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: '' },
+  // ── Transport / Logistics ──
+  primeMover:  { label:'Prime Mover / B-Double',     km: 2500, consumption: 55, insurance: 12000, slippage: 15, idle: 3.0, fraud: 5, workHrs: 12, idleHrsDay: 2.5, afterHrsPct: 5,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: '' },
+  trucks:      { label:'Rigid Truck',                km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: '' },
+  refrigerated:{ label:'Refrigerated Vehicles',      km: 900,  consumption: 22, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: 'stays parked after hours' },
+  // ── Service / Owned Fleet ──
   vans:        { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 10, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: '' },
   utes:        { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: '' },
-  equipment:   { label:'Plant / Equipment',          km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  extraHrsDay: 3, hireRate: 120, notApplicableReason: 'stays on site after hours' },
   cars:        { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8,  idleHrsDay: 1.0, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: '' },
+  // ── Plant & Hire / Earthmoving ──
   excavators:  { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  extraHrsDay: 5, hireRate: 180, notApplicableReason: 'stays on site after hours' },
-  trailers:    { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0,  idleHrsDay: 0,   afterHrsPct: 0,  appliesSlip: false, appliesIdle: false, appliesAH: false, appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: 'no engine — unpowered asset' },
-  refrigerated:{ label:'Refrigerated Vehicles',      km: 900,  consumption: 20, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: 'stays parked after hours' }
+  skidSteer:   { label:'Skid Steer / Bobcat',        km: 50,   consumption: 25, insurance: 3000, slippage: 18, idle: 3.0, fraud: 4, workHrs: 6,  idleHrsDay: 2.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  extraHrsDay: 2, hireRate: 70,  notApplicableReason: 'stays on site after hours' },
+  wheelLoader: { label:'Wheel Loader / Backhoe',     km: 100,  consumption: 38, insurance: 6000, slippage: 20, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  extraHrsDay: 3, hireRate: 180, notApplicableReason: 'stays on site after hours' },
+  telehandler: { label:'Telehandler / EWP / Forklift',km: 80,  consumption: 18, insurance: 4000, slippage: 15, idle: 2.5, fraud: 3, workHrs: 8,  idleHrsDay: 2.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  extraHrsDay: 2, hireRate: 90,  notApplicableReason: 'stays on site after hours' },
+  equipment:   { label:'Plant / Equipment (other)',  km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  extraHrsDay: 3, hireRate: 120, notApplicableReason: 'stays on site after hours' },
+  // ── Other ──
+  trailers:    { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0,  idleHrsDay: 0,   afterHrsPct: 0,  appliesSlip: false, appliesIdle: false, appliesAH: false, appliesHire: false, extraHrsDay: 0, hireRate: 0,   notApplicableReason: 'no engine — unpowered asset' }
 };
 let _fpSegments = [];
 let _fpSegId = 0;
@@ -11844,7 +11864,20 @@ function renderFleetSegments() {
   if (!c) return;
   // Also render into the prospect fleet modal if open
   const c2 = document.getElementById('pfp_segments');
-  const typeOpts = Object.entries(FLEET_BENCHMARKS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+  // Grouped category dropdown — 12 categories grouped by business segment so
+  // the dropdown stays scannable. Order inside each group matches the order
+  // in FLEET_BENCHMARKS for predictability.
+  const _typeGroups = [
+    { label: 'Transport / Logistics',     keys: ['primeMover','trucks','refrigerated'] },
+    { label: 'Service / Owned Fleet',     keys: ['vans','utes','cars'] },
+    { label: 'Plant & Hire / Earthmoving',keys: ['excavators','skidSteer','wheelLoader','telehandler','equipment'] },
+    { label: 'Other',                     keys: ['trailers'] }
+  ];
+  const typeOpts = _typeGroups.map(g =>
+    '<optgroup label="' + g.label + '">' +
+    g.keys.filter(k => FLEET_BENCHMARKS[k]).map(k => `<option value="${k}">${FLEET_BENCHMARKS[k].label}</option>`).join('') +
+    '</optgroup>'
+  ).join('');
   const html = _fpSegments.map(seg => {
     const opts = typeOpts.replace(`value="${seg.type}"`, `value="${seg.type}" selected`);
     const isSelected = seg.selected !== false;
