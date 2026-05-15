@@ -2664,13 +2664,17 @@ select option{background:#0a0a0a;color:#0098d4}
 
         <button onclick="_qqAddLine()" style="width:100%;padding:8px;background:#0a1a0a;border:1px dashed #1a3a1a;color:#00CC66;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:.5px;margin-bottom:14px">+ ADD DEVICE LINE</button>
 
-        <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Amortise install over (months)</label>
-        <select id="qq_amortMonths" onchange="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:12px">
-          <option value="0">Upfront (paid Day 1)</option>
-          <option value="3">3 months</option>
-          <option value="12" selected>12 months</option>
-          <option value="24">24 months</option>
-        </select>
+        <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contract term</label>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <select id="qq_amortMonths" onchange="_qqOnAmortChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <option value="0">MTM (Month-to-month, no lock-in)</option>
+            <option value="12" selected>12 months</option>
+            <option value="24">24 months</option>
+            <option value="36">36 months</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <input type="number" id="qq_amortMonthsCustom" value="18" min="1" max="120" step="1" placeholder="months" onfocus="this.select()" oninput="qqRecalc()" style="display:none;width:110px;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;text-align:right">
+        </div>
 
         <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline">
           <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-start">
@@ -3454,6 +3458,17 @@ function _qqLineFreeToggle(id) {
   qqRecalc();
 }
 
+// Contract term dropdown change — reveals the Custom months input when "Custom"
+// is selected, hides it otherwise. Then triggers a recalc.
+function _qqOnAmortChange() {
+  const sel = document.getElementById('qq_amortMonths');
+  const custom = document.getElementById('qq_amortMonthsCustom');
+  if (sel && custom) {
+    custom.style.display = (sel.value === 'custom') ? '' : 'none';
+  }
+  qqRecalc();
+}
+
 function _qqAddLine(deviceKey, opts) {
   deviceKey = deviceKey || 'tk900';
   opts = opts || {};
@@ -3583,6 +3598,8 @@ function qqResetForm() {
   document.getElementById('qq_currentUnits').value = '10';
   document.getElementById('qq_currentCostPerUnit').value = '35';
   document.getElementById('qq_amortMonths').value = '12';
+  var customAmort = document.getElementById('qq_amortMonthsCustom');
+  if (customAmort) { customAmort.value = '18'; customAmort.style.display = 'none'; }
   document.getElementById('qq_prospect').value = '';
   var dt = document.getElementById('qq_currentDeviceType'); if (dt) dt.value = '';
   var ct = document.getElementById('qq_currentContractTerm'); if (ct) ct.value = '';
@@ -3660,7 +3677,16 @@ function qqRecalc() {
 
   // Combined capex pool: hardware + install across all lines. Drives Y1/Y2 amortisation.
   const capexTotal = hwTotal + installTotal;
-  const amortMonths = parseInt(document.getElementById('qq_amortMonths').value) || 0;
+  // Contract term — MTM=0, fixed 12/24/36, or Custom (free-form months input).
+  const amortSel = document.getElementById('qq_amortMonths');
+  let amortMonths = 0;
+  if (amortSel) {
+    if (amortSel.value === 'custom') {
+      amortMonths = parseInt((document.getElementById('qq_amortMonthsCustom') || {}).value) || 0;
+    } else {
+      amortMonths = parseInt(amortSel.value) || 0;
+    }
+  }
   // Legacy single-device aliases (used by email generator + Deal P&L plumbing).
   // Reflect the FIRST device line — the "primary" device for downstream tools.
   const dev = primaryDev || QQ_DEVICES[1];
@@ -3677,28 +3703,21 @@ function qqRecalc() {
     y1MonthlyFleet = swMonthlyFleet;
     y1AnnualFleet = swMonthlyFleet * 12;
   } else if (amortMonths === 0) {
-    // Capex paid upfront — Y1 monthly = subscription only, Y1 annual = subscription + capex upfront
+    // MTM — capex paid upfront. Y1 monthly = subscription only, Y1 annual = sub + capex.
     y1MonthlyFleet = swMonthlyFleet;
     y1AnnualFleet = swMonthlyFleet * 12 + capexTotal;
-  } else if (amortMonths === 12) {
-    // Spread across Year 1
-    y1MonthlyFleet = swMonthlyFleet + (capexTotal / 12);
-    y1AnnualFleet = y1MonthlyFleet * 12;
-  } else if (amortMonths === 24) {
-    // Spread over 24 months — Year 1 monthly half-rate
-    y1MonthlyFleet = swMonthlyFleet + (capexTotal / 24);
-    y1AnnualFleet = y1MonthlyFleet * 12;
   } else {
-    // 3-month amortisation
-    y1MonthlyFleet = swMonthlyFleet + (capexTotal / 3);
-    y1AnnualFleet = swMonthlyFleet * 12 + capexTotal;
+    // Spread capex evenly across the contract term.
+    y1MonthlyFleet = swMonthlyFleet + (capexTotal / amortMonths);
+    // Y1 annual = 12 monthlies for a 12+mo term; shorter terms show all capex in Y1
+    y1AnnualFleet = (amortMonths >= 12) ? y1MonthlyFleet * 12 : (swMonthlyFleet * 12 + capexTotal);
   }
-  // Year 2+ — software only for upfront / 3-mo / 12-mo amortisation (capex paid off).
-  // 24-month amortisation still has capex spreading through Y2.
+  // Year 2+ — software only when the term is 12 or less (capex paid off by Y2).
+  // 24/36/custom terms beyond 12 months continue spreading capex through Y2.
   y2MonthlyFleet = swMonthlyFleet;
   y2AnnualFleet = swMonthlyFleet * 12;
-  if (amortMonths === 24 && capexTotal > 0) {
-    y2MonthlyFleet = swMonthlyFleet + (capexTotal / 24);
+  if (amortMonths > 12 && capexTotal > 0) {
+    y2MonthlyFleet = swMonthlyFleet + (capexTotal / amortMonths);
     y2AnnualFleet = y2MonthlyFleet * 12;
   }
 
