@@ -2591,13 +2591,13 @@ select option{background:#0a0a0a;color:#0098d4}
         </div>
 
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Customer / Company *</label>
-        <input type="text" id="qq_companyName" placeholder="e.g. AJ Mini Excavator Hire" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+        <input type="text" id="qq_companyName" placeholder="e.g. AJ Mini Excavator Hire" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
 
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contact name (for the email greeting)</label>
-        <input type="text" id="qq_contactName" placeholder="e.g. Dave" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+        <input type="text" id="qq_contactName" placeholder="e.g. Dave" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
 
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Current GPS provider</label>
-        <input type="text" id="qq_currentProvider" placeholder="e.g. Teletrac Navman / Geotab / Linxio" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+        <input type="text" id="qq_currentProvider" placeholder="e.g. Teletrac Navman / Geotab / Linxio" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
 
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Device type</label>
         <select id="qq_currentDeviceType" onchange="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
@@ -2621,11 +2621,11 @@ select option{background:#0a0a0a;color:#0098d4}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Number of units</label>
-            <input type="number" id="qq_currentUnits" value="10" min="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <input type="number" id="qq_currentUnits" value="10" min="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
           </div>
           <div>
             <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">$/unit/month (current)</label>
-            <input type="number" id="qq_currentCostPerUnit" value="35" min="0" step="0.5" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <input type="number" id="qq_currentCostPerUnit" value="35" min="0" step="0.5" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
           </div>
         </div>
 
@@ -2657,11 +2657,11 @@ select option{background:#0a0a0a;color:#0098d4}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Units</label>
-            <input type="number" id="qq_ourUnits" value="10" min="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <input type="number" id="qq_ourUnits" value="10" min="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
           </div>
           <div>
             <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">$/unit/month software</label>
-            <input type="number" id="qq_swPerUnit" value="18" min="0" step="0.5" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <input type="number" id="qq_swPerUnit" value="18" min="0" step="0.5" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
           </div>
         </div>
 
@@ -2669,11 +2669,11 @@ select option{background:#0a0a0a;color:#0098d4}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Hardware $/unit</label>
-            <input type="number" id="qq_hwPerUnit" value="200" min="0" step="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <input type="number" id="qq_hwPerUnit" value="200" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
           </div>
           <div>
             <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Install $/unit</label>
-            <input type="number" id="qq_installPerUnit" value="88" min="0" step="1" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+            <input type="number" id="qq_installPerUnit" value="88" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
           </div>
         </div>
 
@@ -2747,19 +2747,19 @@ select option{background:#0a0a0a;color:#0098d4}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
         <div>
           <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Your HW cost / unit</label>
-          <input type="number" id="qqdp_hwCost" value="25" min="0" step="0.5" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          <input type="number" id="qqdp_hwCost" value="25" min="0" step="0.5" onfocus="this.select()" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
         </div>
         <div>
           <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Your sub cost / unit / mo</label>
-          <input type="number" id="qqdp_subCost" value="4.5" min="0" step="0.5" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          <input type="number" id="qqdp_subCost" value="4.5" min="0" step="0.5" onfocus="this.select()" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
         </div>
         <div>
           <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Your install cost / unit</label>
-          <input type="number" id="qqdp_installCost" value="40" min="0" step="1" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          <input type="number" id="qqdp_installCost" value="40" min="0" step="1" onfocus="this.select()" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
         </div>
         <div>
           <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contract term (months)</label>
-          <input type="number" id="qqdp_term" value="12" min="1" max="60" step="1" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
+          <input type="number" id="qqdp_term" value="12" min="1" max="60" step="1" onfocus="this.select()" oninput="qqCalcDealPL()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
         </div>
       </div>
 
