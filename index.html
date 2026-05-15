@@ -2599,6 +2599,15 @@ select option{background:#0a0a0a;color:#0098d4}
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Current GPS provider</label>
         <input type="text" id="qq_currentProvider" placeholder="e.g. Teletrac Navman / Geotab / Linxio" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
 
+        <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Device type</label>
+        <select id="qq_currentDeviceType" onchange="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+          <option value="">— Pick device type —</option>
+          <option value="OBD / Plug-In">OBD / Plug-In Device</option>
+          <option value="Hardwired">Hardwired</option>
+          <option value="Battery / Asset">Battery / Asset Tracker</option>
+          <option value="Camera / Dashcam">Camera / Dashcam</option>
+        </select>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Number of units</label>
@@ -3323,6 +3332,7 @@ function qqResetForm() {
   document.getElementById('qq_selfInstall').checked = false;
   document.getElementById('qq_amortMonths').value = '12';
   document.getElementById('qq_prospect').value = '';
+  var dt = document.getElementById('qq_currentDeviceType'); if (dt) dt.value = '';
   _qqSelectedDevice = 'tk900';
   _qqHardwareFree = { tk56l:false, tk900:true, tk18p:false, tks20:false };
   _qqHardwareOverride = {};
@@ -3411,6 +3421,7 @@ function qqRecalc() {
     company: document.getElementById('qq_companyName').value.trim(),
     contact: document.getElementById('qq_contactName').value.trim(),
     provider: document.getElementById('qq_currentProvider').value.trim(),
+    currentDeviceType: (document.getElementById('qq_currentDeviceType') || {}).value || '',
     curUnits, curPer, curMonthly, curAnnual,
     device: dev,
     swCost, ourUnits, installPer, installTotal, amortMonths, selfInstall, installFree,
@@ -3445,7 +3456,7 @@ function qqGenerateEmail() {
     '<table border="1" cellpadding="10" cellspacing="0" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:13px;color:#222;width:100%;margin:14px 0">\n' +
     '  <thead><tr style="background:#0a1726;color:#fff;text-align:center;font-weight:bold">\n' +
     '    <th style="padding:12px"></th>\n' +
-    '    <th style="padding:12px">YOUR CURRENT<br><span style="font-weight:normal;font-size:11px">' + provider + '</span></th>\n' +
+    '    <th style="padding:12px">YOUR CURRENT' + (q.currentDeviceType ? ' &mdash; ' + q.currentDeviceType : '') + '<br><span style="font-weight:normal;font-size:11px">' + provider + '</span></th>\n' +
     '    <th style="padding:12px">TRACKNOW — YEAR 1<br><span style="font-weight:normal;font-size:11px">' + q.device.label + '</span></th>\n' +
     '    <th style="padding:12px;background:#059669">TRACKNOW — YEAR 2+<br><span style="font-weight:normal;font-size:11px">(install paid off)</span></th>\n' +
     '  </tr></thead>\n' +
