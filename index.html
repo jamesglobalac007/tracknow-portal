@@ -2664,16 +2664,49 @@ select option{background:#0a0a0a;color:#0098d4}
 
         <button onclick="_qqAddLine()" style="width:100%;padding:8px;background:#0a1a0a;border:1px dashed #1a3a1a;color:#00CC66;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:.5px;margin-bottom:14px">+ ADD DEVICE LINE</button>
 
-        <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contract term</label>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <select id="qq_amortMonths" onchange="_qqOnAmortChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
-            <option value="0">MTM (Month-to-month, no lock-in)</option>
-            <option value="12" selected>12 months</option>
-            <option value="24">24 months</option>
-            <option value="36">36 months</option>
-            <option value="custom">Custom…</option>
-          </select>
-          <input type="number" id="qq_amortMonthsCustom" value="18" min="1" max="120" step="1" placeholder="months" onfocus="this.select()" oninput="qqRecalc()" style="display:none;width:110px;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;text-align:right">
+        <!-- Contract term + payment treatment for hardware + install.
+             Hardware/Install Payment dropdowns: Upfront = pay Day 1 lump sum,
+             "Amortise N mo" = spread across N months (raises the monthly figure). -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contract term</label>
+            <div style="display:flex;gap:6px">
+              <select id="qq_amortMonths" onchange="_qqOnAmortChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+                <option value="0">MTM (no lock-in)</option>
+                <option value="12" selected>12 months</option>
+                <option value="24">24 months</option>
+                <option value="36">36 months</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input type="number" id="qq_amortMonthsCustom" value="18" min="1" max="120" step="1" placeholder="mo" onfocus="this.select()" oninput="qqRecalc()" style="display:none;width:55px;padding:7px 8px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;text-align:right">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Hardware payment</label>
+            <div style="display:flex;gap:6px">
+              <select id="qq_hwPayment" onchange="_qqOnHwPaymentChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+                <option value="upfront">Upfront (Day 1)</option>
+                <option value="12" selected>Amortise 12 mo</option>
+                <option value="24">Amortise 24 mo</option>
+                <option value="36">Amortise 36 mo</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input type="number" id="qq_hwPaymentCustom" value="18" min="1" max="120" step="1" placeholder="mo" onfocus="this.select()" oninput="qqRecalc()" style="display:none;width:55px;padding:7px 8px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;text-align:right">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Install payment</label>
+            <div style="display:flex;gap:6px">
+              <select id="qq_installPayment" onchange="_qqOnInstallPaymentChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+                <option value="upfront">Upfront (Day 1)</option>
+                <option value="12" selected>Amortise 12 mo</option>
+                <option value="24">Amortise 24 mo</option>
+                <option value="36">Amortise 36 mo</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input type="number" id="qq_installPaymentCustom" value="18" min="1" max="120" step="1" placeholder="mo" onfocus="this.select()" oninput="qqRecalc()" style="display:none;width:55px;padding:7px 8px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;text-align:right">
+            </div>
+          </div>
         </div>
 
         <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline">
@@ -3458,15 +3491,35 @@ function _qqLineFreeToggle(id) {
   qqRecalc();
 }
 
-// Contract term dropdown change — reveals the Custom months input when "Custom"
-// is selected, hides it otherwise. Then triggers a recalc.
-function _qqOnAmortChange() {
-  const sel = document.getElementById('qq_amortMonths');
-  const custom = document.getElementById('qq_amortMonthsCustom');
+// Generic "show/hide the Custom N-months input" handler — used by all 3 dropdowns.
+function _qqToggleCustomMonths(selectId, customId) {
+  const sel = document.getElementById(selectId);
+  const custom = document.getElementById(customId);
   if (sel && custom) {
     custom.style.display = (sel.value === 'custom') ? '' : 'none';
   }
+}
+function _qqOnAmortChange() {
+  _qqToggleCustomMonths('qq_amortMonths', 'qq_amortMonthsCustom');
   qqRecalc();
+}
+function _qqOnHwPaymentChange() {
+  _qqToggleCustomMonths('qq_hwPayment', 'qq_hwPaymentCustom');
+  qqRecalc();
+}
+function _qqOnInstallPaymentChange() {
+  _qqToggleCustomMonths('qq_installPayment', 'qq_installPaymentCustom');
+  qqRecalc();
+}
+
+// Read a "payment treatment" dropdown — returns the number of amortise months,
+// or 0 for "upfront" (paid Day 1 as a lump sum, not spread monthly).
+function _qqReadPaymentMonths(selectId, customId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return 0;
+  if (sel.value === 'upfront') return 0;
+  if (sel.value === 'custom') return parseInt((document.getElementById(customId) || {}).value) || 0;
+  return parseInt(sel.value) || 0;
 }
 
 function _qqAddLine(deviceKey, opts) {
@@ -3600,6 +3653,14 @@ function qqResetForm() {
   document.getElementById('qq_amortMonths').value = '12';
   var customAmort = document.getElementById('qq_amortMonthsCustom');
   if (customAmort) { customAmort.value = '18'; customAmort.style.display = 'none'; }
+  var hwPay = document.getElementById('qq_hwPayment');
+  if (hwPay) hwPay.value = '12';
+  var hwPayC = document.getElementById('qq_hwPaymentCustom');
+  if (hwPayC) { hwPayC.value = '18'; hwPayC.style.display = 'none'; }
+  var instPay = document.getElementById('qq_installPayment');
+  if (instPay) instPay.value = '12';
+  var instPayC = document.getElementById('qq_installPaymentCustom');
+  if (instPayC) { instPayC.value = '18'; instPayC.style.display = 'none'; }
   document.getElementById('qq_prospect').value = '';
   var dt = document.getElementById('qq_currentDeviceType'); if (dt) dt.value = '';
   var ct = document.getElementById('qq_currentContractTerm'); if (ct) ct.value = '';
@@ -3675,18 +3736,22 @@ function qqRecalc() {
     });
   });
 
-  // Combined capex pool: hardware + install across all lines. Drives Y1/Y2 amortisation.
+  // Combined capex pool: hardware + install across all lines.
   const capexTotal = hwTotal + installTotal;
-  // Contract term — MTM=0, fixed 12/24/36, or Custom (free-form months input).
-  const amortSel = document.getElementById('qq_amortMonths');
-  let amortMonths = 0;
-  if (amortSel) {
-    if (amortSel.value === 'custom') {
-      amortMonths = parseInt((document.getElementById('qq_amortMonthsCustom') || {}).value) || 0;
-    } else {
-      amortMonths = parseInt(amortSel.value) || 0;
-    }
-  }
+  // Contract term — MTM=0, fixed 12/24/36, or Custom. Used as metadata + Y2 context.
+  const contractMonths = _qqReadPaymentMonths('qq_amortMonths', 'qq_amortMonthsCustom');
+  // Independent payment treatment for hardware and install:
+  //   0 = paid upfront (lump sum, no monthly portion)
+  //   N>0 = amortised across N months (lifts monthly by total/N)
+  const hwAmortMonths = _qqReadPaymentMonths('qq_hwPayment', 'qq_hwPaymentCustom');
+  const installAmortMonths = _qqReadPaymentMonths('qq_installPayment', 'qq_installPaymentCustom');
+  // Legacy alias (back-compat with email generator). Reflects contract term.
+  const amortMonths = contractMonths;
+  // Per-cost-bucket upfront vs monthly split
+  const hwUpfrontTotal = hwAmortMonths > 0 ? 0 : hwTotal;
+  const hwMonthlyAmort = hwAmortMonths > 0 ? hwTotal / hwAmortMonths : 0;
+  const installUpfrontTotal = installAmortMonths > 0 ? 0 : installTotal;
+  const installMonthlyAmort = installAmortMonths > 0 ? installTotal / installAmortMonths : 0;
   // Legacy single-device aliases (used by email generator + Deal P&L plumbing).
   // Reflect the FIRST device line — the "primary" device for downstream tools.
   const dev = primaryDev || QQ_DEVICES[1];
@@ -3697,29 +3762,16 @@ function qqRecalc() {
   const installPer = firstLineInstallPer;
   const installFree = allInstallFree;
   const selfInstall = allSelfInstall;
-  let y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet;
-  if (capexTotal === 0) {
-    // No hardware or install cost — software-only
-    y1MonthlyFleet = swMonthlyFleet;
-    y1AnnualFleet = swMonthlyFleet * 12;
-  } else if (amortMonths === 0) {
-    // MTM — capex paid upfront. Y1 monthly = subscription only, Y1 annual = sub + capex.
-    y1MonthlyFleet = swMonthlyFleet;
-    y1AnnualFleet = swMonthlyFleet * 12 + capexTotal;
-  } else {
-    // Spread capex evenly across the contract term.
-    y1MonthlyFleet = swMonthlyFleet + (capexTotal / amortMonths);
-    // Y1 annual = 12 monthlies for a 12+mo term; shorter terms show all capex in Y1
-    y1AnnualFleet = (amortMonths >= 12) ? y1MonthlyFleet * 12 : (swMonthlyFleet * 12 + capexTotal);
-  }
-  // Year 2+ — software only when the term is 12 or less (capex paid off by Y2).
-  // 24/36/custom terms beyond 12 months continue spreading capex through Y2.
-  y2MonthlyFleet = swMonthlyFleet;
-  y2AnnualFleet = swMonthlyFleet * 12;
-  if (amortMonths > 12 && capexTotal > 0) {
-    y2MonthlyFleet = swMonthlyFleet + (capexTotal / amortMonths);
-    y2AnnualFleet = y2MonthlyFleet * 12;
-  }
+  // Year 1: monthly = software + (any) amortised hw + (any) amortised install.
+  // Annual = 12 × monthly + any upfront lump sums (hardware Day 1 + install Day 1).
+  const y1MonthlyFleet = swMonthlyFleet + hwMonthlyAmort + installMonthlyAmort;
+  const y1AnnualFleet = (y1MonthlyFleet * 12) + hwUpfrontTotal + installUpfrontTotal;
+  // Year 2+: software-only baseline. Any cost bucket whose amortisation term
+  // extends BEYOND 12 months continues lifting the monthly figure through Y2.
+  const y2HwLeft = (hwAmortMonths > 12) ? hwTotal / hwAmortMonths : 0;
+  const y2InstallLeft = (installAmortMonths > 12) ? installTotal / installAmortMonths : 0;
+  const y2MonthlyFleet = swMonthlyFleet + y2HwLeft + y2InstallLeft;
+  const y2AnnualFleet = y2MonthlyFleet * 12;
 
   document.getElementById('qq_ourY1Monthly').textContent = fmt(y1MonthlyFleet);
   document.getElementById('qq_ourY1Annual').textContent = fmt(y1AnnualFleet);
@@ -3757,6 +3809,8 @@ function qqRecalc() {
     swCost, ourUnits, installPer, installTotal, amortMonths, selfInstall, installFree,
     hwUnit, hwFree, hwPerEff, hwTotal, capexTotal,
     swMonthlyFleet,
+    contractMonths, hwAmortMonths, installAmortMonths,
+    hwUpfrontTotal, installUpfrontTotal, hwMonthlyAmort, installMonthlyAmort,
     lines: linesSnapshot,
     y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet,
     savingY1, savingY2, saving3yr
