@@ -2648,44 +2648,21 @@ select option{background:#0a0a0a;color:#0098d4}
           <div style="font-size:11px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px">TrackNow offer</div>
         </div>
 
-        <!-- Device dropdown — picks default hardware/software prices; all 3 editable below -->
-        <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Device</label>
-        <select id="qq_ourDevice" onchange="_qqOnDeviceChange()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
-          <option value="tk56l">TK56L — 4G OBD Plug-In</option>
-          <option value="tk900" selected>TK900 — 4G Hardwired</option>
-          <option value="tk18p">TK18P — 3CH Dashcam</option>
-          <option value="tks20">TKS20 Pro — Asset / Battery</option>
-        </select>
-
-        <!-- Units | Software $/unit/month  (mirrors Their Current GPS layout) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Units</label>
-            <input type="number" id="qq_ourUnits" value="10" min="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">$/unit/month software</label>
-            <input type="number" id="qq_swPerUnit" value="18" min="0" step="0.5" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
-          </div>
+        <!-- Multi-line device picker — each row = one batch of identical devices.
+             + Add device appends another row. × removes that row. Summary at the
+             bottom aggregates across all rows. -->
+        <!-- Header row (column labels — shown once) -->
+        <div style="display:grid;grid-template-columns:1.55fr 0.55fr 0.85fr 0.75fr 0.85fr 28px;gap:6px;padding:0 4px;margin-bottom:4px">
+          <div style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px">Device</div>
+          <div style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px">Units</div>
+          <div style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px">HW $/u</div>
+          <div style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px">SW $/u/mo</div>
+          <div style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px">Install $/u</div>
+          <div></div>
         </div>
+        <div id="qq_linesContainer" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
 
-        <!-- Hardware $/unit | Install $/unit -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Hardware $/unit</label>
-            <input type="number" id="qq_hwPerUnit" value="200" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Install $/unit</label>
-            <input type="number" id="qq_installPerUnit" value="88" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit">
-          </div>
-        </div>
-
-        <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#CCC;cursor:pointer"><input type="checkbox" id="qq_hardwareFree" checked onchange="qqRecalc()"> Hardware FREE</label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#CCC;cursor:pointer"><input type="checkbox" id="qq_installFree" onchange="qqRecalc()"> Install FREE</label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#CCC;cursor:pointer"><input type="checkbox" id="qq_selfInstall" onchange="qqRecalc()"> Self-install (customer fits)</label>
-        </div>
+        <button onclick="_qqAddLine()" style="width:100%;padding:8px;background:#0a1a0a;border:1px dashed #1a3a1a;color:#00CC66;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:.5px;margin-bottom:14px">+ ADD DEVICE LINE</button>
 
         <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Amortise install over (months)</label>
         <select id="qq_amortMonths" onchange="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:12px">
@@ -3384,10 +3361,131 @@ const QQ_DEVICES = [
   { key: 'tk18p',  label: 'TK18P — 3CH Dashcam',          hardware: 499, software: 35, hwCostInternal: 180, swCostInternal: 21  },
   { key: 'tks20',  label: 'TKS20 Pro — Asset / Battery',  hardware: 249, software: 22, hwCostInternal: 120, swCostInternal: 4.5 }
 ];
+// _qqLines = array of line IDs (strings). The DOM inputs hold the truth for
+// each line; this array is just the ordering + existence record.
+// The FIRST line's device is mirrored to _qqSelectedDevice so Deal P&L
+// internal-cost auto-fill still works (uses the primary device).
+let _qqLines = [];
 let _qqSelectedDevice = 'tk900';
 // Default state of the "Hardware FREE" checkbox per device (TK900 = the promo
 // device that ships free; others sold at hardware cost by default).
 const _qqHardwareFreeDefault = { tk56l:false, tk900:true, tk18p:false, tks20:false };
+
+function _qqNewLineId() {
+  return 'L' + Math.floor(Math.random() * 1e9).toString(36) + Date.now().toString(36).slice(-4);
+}
+
+function _qqDeviceOptionsHTML(selectedKey) {
+  return QQ_DEVICES.map(function(d) {
+    return '<option value="' + d.key + '"' + (selectedKey === d.key ? ' selected' : '') + '>' + d.label + '</option>';
+  }).join('');
+}
+
+// Render ONE device-line row. Inputs hold their own value (no re-render on
+// each keystroke — focus stays put). Re-rendering only happens on add/remove.
+function _qqLineHTML(id, line) {
+  const cellInput = 'width:100%;padding:6px 8px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;text-align:right';
+  const cellInputLeft = 'width:100%;padding:6px 8px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit';
+  const cellSelect = 'width:100%;padding:6px 8px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit';
+  const chkLbl = 'display:inline-flex;align-items:center;gap:3px;font-size:9px;color:#888;cursor:pointer;margin-top:3px';
+  const xBtn = 'background:#1a0a0a;border:1px solid #3a1a1a;color:#dc2626;cursor:pointer;font-size:14px;font-family:inherit;line-height:1;padding:0;height:32px;width:28px;display:flex;align-items:center;justify-content:center';
+  return [
+    '<div data-qqline="' + id + '" style="display:grid;grid-template-columns:1.55fr 0.55fr 0.85fr 0.75fr 0.85fr 28px;gap:6px;align-items:start;padding:8px;border:1px solid #1a3a1a;background:#080808">',
+      // Device dropdown
+      '<select id="qql_' + id + '_device" onchange="_qqLineOnDeviceChange(\'' + id + '\')" style="' + cellSelect + '">' + _qqDeviceOptionsHTML(line.device) + '</select>',
+      // Units
+      '<input type="number" id="qql_' + id + '_units" value="' + line.units + '" min="1" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
+      // Hardware $/u + FREE checkbox underneath
+      '<div>',
+        '<input type="number" id="qql_' + id + '_hwPerUnit" value="' + line.hwPerUnit + '" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
+        '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_hwFree"' + (line.hwFree ? ' checked' : '') + ' onchange="qqRecalc()"> FREE</label>',
+      '</div>',
+      // Software $/u/mo
+      '<input type="number" id="qql_' + id + '_swPerUnit" value="' + line.swPerUnit + '" min="0" step="0.5" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
+      // Install $/u + FREE + Self checkboxes
+      '<div>',
+        '<input type="number" id="qql_' + id + '_installPerUnit" value="' + line.installPerUnit + '" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">',
+          '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_installFree"' + (line.installFree ? ' checked' : '') + ' onchange="qqRecalc()"> FREE</label>',
+          '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_selfInstall"' + (line.selfInstall ? ' checked' : '') + ' onchange="qqRecalc()"> Self</label>',
+        '</div>',
+      '</div>',
+      // Delete row
+      '<button onclick="_qqRemoveLine(\'' + id + '\')" title="Remove device line" style="' + xBtn + '">×</button>',
+    '</div>'
+  ].join('');
+}
+
+function _qqAddLine(deviceKey, opts) {
+  deviceKey = deviceKey || 'tk900';
+  opts = opts || {};
+  const dev = QQ_DEVICES.find(function(d) { return d.key === deviceKey; }) || QQ_DEVICES[1];
+  const id = _qqNewLineId();
+  _qqLines.push(id);
+  const line = {
+    device: deviceKey,
+    units: opts.units != null ? opts.units : 10,
+    hwPerUnit: opts.hwPerUnit != null ? opts.hwPerUnit : dev.hardware,
+    swPerUnit: opts.swPerUnit != null ? opts.swPerUnit : dev.software,
+    installPerUnit: opts.installPerUnit != null ? opts.installPerUnit : 88,
+    hwFree: opts.hwFree != null ? opts.hwFree : !!_qqHardwareFreeDefault[deviceKey],
+    installFree: !!opts.installFree,
+    selfInstall: !!opts.selfInstall
+  };
+  const container = document.getElementById('qq_linesContainer');
+  if (container) container.insertAdjacentHTML('beforeend', _qqLineHTML(id, line));
+  // Mirror the FIRST line's device to global for Deal P&L cost defaults
+  if (_qqLines.length === 1) {
+    _qqSelectedDevice = deviceKey;
+    _qqApplyDeviceInternalCosts();
+  }
+  qqRecalc();
+}
+
+function _qqRemoveLine(id) {
+  const idx = _qqLines.indexOf(id);
+  if (idx === -1) return;
+  // Always keep at least one line — if removing the last one, replace with a default
+  if (_qqLines.length === 1) {
+    _qqLines.splice(idx, 1);
+    const card = document.querySelector('[data-qqline="' + id + '"]');
+    if (card) card.remove();
+    _qqAddLine('tk900');
+    return;
+  }
+  _qqLines.splice(idx, 1);
+  const card = document.querySelector('[data-qqline="' + id + '"]');
+  if (card) card.remove();
+  // If we removed the first line, the new first line's device becomes the primary
+  if (_qqLines.length > 0) {
+    const firstId = _qqLines[0];
+    const sel = document.getElementById('qql_' + firstId + '_device');
+    if (sel) _qqSelectedDevice = sel.value;
+    _qqApplyDeviceInternalCosts();
+  }
+  qqRecalc();
+}
+
+function _qqLineOnDeviceChange(id) {
+  const sel = document.getElementById('qql_' + id + '_device');
+  if (!sel) return;
+  const key = sel.value;
+  const dev = QQ_DEVICES.find(function(d) { return d.key === key; });
+  if (!dev) return;
+  // Auto-populate this line's sell-side fields from the new device's defaults
+  const hwIn = document.getElementById('qql_' + id + '_hwPerUnit');
+  const swIn = document.getElementById('qql_' + id + '_swPerUnit');
+  const hwFreeBox = document.getElementById('qql_' + id + '_hwFree');
+  if (hwIn) hwIn.value = dev.hardware;
+  if (swIn) swIn.value = dev.software;
+  if (hwFreeBox) hwFreeBox.checked = !!_qqHardwareFreeDefault[key];
+  // If this is the FIRST line, mirror to global so Deal P&L uses its internal costs
+  if (_qqLines[0] === id) {
+    _qqSelectedDevice = key;
+    _qqApplyDeviceInternalCosts();
+  }
+  qqRecalc();
+}
 
 function initQuickQuote() {
   const sel = document.getElementById('qq_prospect');
@@ -3396,17 +3494,15 @@ function initQuickQuote() {
     sel.innerHTML = '<option value="">— Manual entry (or pick a prospect) —</option>' +
       sorted.map(p => '<option value="' + p.id + '">' + (p.co || '(no name)') + (p.state ? ' · ' + p.state : '') + '</option>').join('');
   }
-  // Seed the device dropdown + dependent fields from the default (TK900)
-  _qqSelectedDevice = 'tk900';
-  const devSel = document.getElementById('qq_ourDevice');
-  if (devSel) devSel.value = 'tk900';
-  _qqApplyDeviceDefaults('tk900');
-  qqRecalc();
+  // Wipe any existing lines + seed one default (TK900, 10 units, hardware FREE)
+  _qqLines = [];
+  const container = document.getElementById('qq_linesContainer');
+  if (container) container.innerHTML = '';
+  _qqAddLine('tk900');
 }
 
 // Push the selected device's hwCostInternal + swCostInternal into the
-// Deal P&L cost-side inputs so the P&L reflects the right product. Called
-// every time the user switches device.
+// Deal P&L cost-side inputs. Called whenever the FIRST device line changes.
 function _qqApplyDeviceInternalCosts() {
   const dev = QQ_DEVICES.find(function(d) { return d.key === _qqSelectedDevice; });
   if (!dev) return;
@@ -3414,29 +3510,6 @@ function _qqApplyDeviceInternalCosts() {
   const swEl = document.getElementById('qqdp_subCost');
   if (hwEl) hwEl.value = dev.hwCostInternal;
   if (swEl) swEl.value = dev.swCostInternal;
-}
-
-// Populate the sell-side fields (hardware $, software $/mo, FREE checkbox)
-// from the chosen device's defaults, plus apply internal costs to Deal P&L.
-function _qqApplyDeviceDefaults(key) {
-  const dev = QQ_DEVICES.find(function(d) { return d.key === key; });
-  if (!dev) return;
-  const hwIn = document.getElementById('qq_hwPerUnit');
-  const swIn = document.getElementById('qq_swPerUnit');
-  const hwFreeBox = document.getElementById('qq_hardwareFree');
-  if (hwIn) hwIn.value = dev.hardware;
-  if (swIn) swIn.value = dev.software;
-  if (hwFreeBox) hwFreeBox.checked = !!_qqHardwareFreeDefault[key];
-  _qqApplyDeviceInternalCosts();
-}
-
-// Triggered when the user picks a different device from the dropdown.
-function _qqOnDeviceChange() {
-  const devSel = document.getElementById('qq_ourDevice');
-  if (!devSel) return;
-  _qqSelectedDevice = devSel.value;
-  _qqApplyDeviceDefaults(_qqSelectedDevice);
-  qqRecalc();
 }
 
 function qqLoadFromProspect(prospectId) {
@@ -3448,7 +3521,11 @@ function qqLoadFromProspect(prospectId) {
   const count = parseInt(p.trackers) || parseInt(p.fleet) || 0;
   if (count > 0) {
     document.getElementById('qq_currentUnits').value = count;
-    document.getElementById('qq_ourUnits').value = count;
+    // Push the count onto the FIRST device line's units field
+    if (_qqLines.length > 0) {
+      const firstUnits = document.getElementById('qql_' + _qqLines[0] + '_units');
+      if (firstUnits) firstUnits.value = count;
+    }
   }
   qqRecalc();
 }
@@ -3459,18 +3536,15 @@ function qqResetForm() {
   });
   document.getElementById('qq_currentUnits').value = '10';
   document.getElementById('qq_currentCostPerUnit').value = '35';
-  document.getElementById('qq_ourUnits').value = '10';
-  document.getElementById('qq_installPerUnit').value = '88';
-  document.getElementById('qq_installFree').checked = false;
-  document.getElementById('qq_selfInstall').checked = false;
   document.getElementById('qq_amortMonths').value = '12';
   document.getElementById('qq_prospect').value = '';
   var dt = document.getElementById('qq_currentDeviceType'); if (dt) dt.value = '';
   var ct = document.getElementById('qq_currentContractTerm'); if (ct) ct.value = '';
+  _qqLines = [];
   _qqSelectedDevice = 'tk900';
-  var devSel = document.getElementById('qq_ourDevice'); if (devSel) devSel.value = 'tk900';
-  _qqApplyDeviceDefaults('tk900');
-  qqRecalc();
+  var container = document.getElementById('qq_linesContainer');
+  if (container) container.innerHTML = '';
+  _qqAddLine('tk900');
 }
 
 function qqRecalc() {
@@ -3485,29 +3559,72 @@ function qqRecalc() {
   document.getElementById('qq_currentMonthly').textContent = fmt(curMonthly);
   document.getElementById('qq_currentAnnual').textContent = fmt(curAnnual);
 
-  // Our offer — all values read from the form inputs (dropdown picks device,
-  // then per-unit hw/sw $ and FREE checkboxes drive the maths).
-  const ourDeviceKey = (document.getElementById('qq_ourDevice') || {}).value || 'tk900';
-  _qqSelectedDevice = ourDeviceKey;
-  const dev = QQ_DEVICES.find(function(d) { return d.key === ourDeviceKey; }) || QQ_DEVICES[1];
-  const swCost = parseFloat((document.getElementById('qq_swPerUnit') || {}).value) || 0;
-  const ourUnits = parseInt(document.getElementById('qq_ourUnits').value) || 0;
-  const selfInstall = document.getElementById('qq_selfInstall').checked;
-  const installFree = document.getElementById('qq_installFree').checked;
-  let installPer = parseFloat(document.getElementById('qq_installPerUnit').value) || 0;
-  if (selfInstall || installFree) installPer = 0;
-  const amortMonths = parseInt(document.getElementById('qq_amortMonths').value) || 0;
-  const installTotal = ourUnits * installPer;
-  // Hardware — per-unit sell price from its dedicated input, respecting FREE checkbox.
-  // Treated as capex alongside install: either upfront (amortMonths=0) or amortised.
-  const hwUnit = parseFloat((document.getElementById('qq_hwPerUnit') || {}).value) || 0;
-  const hwFree = !!(document.getElementById('qq_hardwareFree') || {}).checked;
-  const hwPerEff = hwFree ? 0 : hwUnit;
-  const hwTotal = ourUnits * hwPerEff;
-  // Combined capex pool: hardware + install. Drives the Y1/Y2 amortisation maths.
+  // Our offer — aggregate across every device line. Each line is a batch of
+  // identical devices (e.g. 20× TK900 + 5× TK18P dashcams). Fields read straight
+  // from each line's DOM inputs; _qqLines holds line IDs only.
+  let swMonthlyFleet = 0;
+  let hwTotal = 0;
+  let installTotal = 0;
+  let ourUnits = 0;
+  let allSelfInstall = _qqLines.length > 0;
+  let allInstallFree = _qqLines.length > 0;
+  const linesSnapshot = [];
+  let primaryDev = null;
+  let firstLineHw = 0;
+  let firstLineHwFree = false;
+  let firstLineSw = 0;
+  let firstLineInstallPer = 0;
+
+  _qqLines.forEach(function(lineId, idx) {
+    const u = parseInt((document.getElementById('qql_' + lineId + '_units') || {}).value) || 0;
+    const swP = parseFloat((document.getElementById('qql_' + lineId + '_swPerUnit') || {}).value) || 0;
+    const hwP = parseFloat((document.getElementById('qql_' + lineId + '_hwPerUnit') || {}).value) || 0;
+    const insP = parseFloat((document.getElementById('qql_' + lineId + '_installPerUnit') || {}).value) || 0;
+    const hwFreeFlag = !!(document.getElementById('qql_' + lineId + '_hwFree') || {}).checked;
+    const insFreeFlag = !!(document.getElementById('qql_' + lineId + '_installFree') || {}).checked;
+    const selfInsFlag = !!(document.getElementById('qql_' + lineId + '_selfInstall') || {}).checked;
+    const devKey = ((document.getElementById('qql_' + lineId + '_device') || {}).value) || 'tk900';
+    const devObj = QQ_DEVICES.find(function(d) { return d.key === devKey; }) || QQ_DEVICES[1];
+    const insEff = (insFreeFlag || selfInsFlag) ? 0 : insP;
+
+    ourUnits += u;
+    swMonthlyFleet += u * swP;
+    if (!hwFreeFlag) hwTotal += u * hwP;
+    installTotal += u * insEff;
+    if (!selfInsFlag) allSelfInstall = false;
+    if (!insFreeFlag) allInstallFree = false;
+    if (!primaryDev) primaryDev = devObj;
+    if (idx === 0) {
+      firstLineHw = hwP;
+      firstLineHwFree = hwFreeFlag;
+      firstLineSw = swP;
+      firstLineInstallPer = insP;
+    }
+
+    linesSnapshot.push({
+      id: lineId, device: devObj, deviceKey: devKey, units: u,
+      swPerUnit: swP, hwPerUnit: hwP, installPerUnit: insP,
+      hwFree: hwFreeFlag, installFree: insFreeFlag, selfInstall: selfInsFlag,
+      insEff: insEff,
+      lineSwMonthly: u * swP,
+      lineHwTotal: hwFreeFlag ? 0 : u * hwP,
+      lineInstallTotal: u * insEff
+    });
+  });
+
+  // Combined capex pool: hardware + install across all lines. Drives Y1/Y2 amortisation.
   const capexTotal = hwTotal + installTotal;
-  // Year 1 monthly: subscription + capex spread (if amortising)
-  const swMonthlyFleet = ourUnits * swCost;
+  const amortMonths = parseInt(document.getElementById('qq_amortMonths').value) || 0;
+  // Legacy single-device aliases (used by email generator + Deal P&L plumbing).
+  // Reflect the FIRST device line — the "primary" device for downstream tools.
+  const dev = primaryDev || QQ_DEVICES[1];
+  const swCost = firstLineSw;
+  const hwUnit = firstLineHw;
+  const hwFree = firstLineHwFree;
+  const hwPerEff = hwFree ? 0 : hwUnit;
+  const installPer = firstLineInstallPer;
+  const installFree = allInstallFree;
+  const selfInstall = allSelfInstall;
   let y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet;
   if (capexTotal === 0) {
     // No hardware or install cost — software-only
@@ -3574,6 +3691,8 @@ function qqRecalc() {
     device: dev,
     swCost, ourUnits, installPer, installTotal, amortMonths, selfInstall, installFree,
     hwUnit, hwFree, hwPerEff, hwTotal, capexTotal,
+    swMonthlyFleet,
+    lines: linesSnapshot,
     y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet,
     savingY1, savingY2, saving3yr
   };
