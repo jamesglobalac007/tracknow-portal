@@ -11776,6 +11776,10 @@ function renderCalcAssetChips() {
       hireContainer.innerHTML = hh;
     }
   }
+
+  // Reorder loss sections so Hire goes to top when relevant (hire-first
+  // framing for plant / excavator calls).
+  _reorderLossSections();
 }
 function updateSegExtraHrs(segId, val) {
   var seg = _fpSegments.find(function(s) { return s.id === segId; });
@@ -11786,6 +11790,34 @@ function updateSegHireRate(segId, val) {
   var seg = _fpSegments.find(function(s) { return s.id === segId; });
   if (seg) seg.hireRate = parseFloat(val) || 0;
   _autoRecalcProspectCosts();
+}
+
+// When the fleet contains a hire-eligible category (Plant / Excavators) the
+// Hire Time section is the biggest dollar lever on the call. Move it to the
+// top of the loss stack so it leads the conversation. Numbers in the section
+// titles (1./2./3./4.) re-sequence automatically based on visible order.
+function _reorderLossSections() {
+  var slipSec = document.getElementById('pfp_slipSection');
+  var idleSec = document.getElementById('pfp_idleSection');
+  var ahSec   = document.getElementById('pfp_ahSection');
+  var hireSec = document.getElementById('pfp_hireSection');
+  var anchor  = document.getElementById('pfp_summarySection');
+  if (!slipSec || !idleSec || !ahSec || !hireSec || !anchor || !anchor.parentNode) return false;
+  var selectedSegs = _fpSegments.filter(function(s) { return s.selected !== false; });
+  var hireEligibleAny = selectedSegs.some(function(s) { return (FLEET_BENCHMARKS[s.type] || {}).appliesHire === true; });
+  // Desired DOM order (top-to-bottom). Hire jumps to position 1 when in play.
+  var order = hireEligibleAny ? [hireSec, slipSec, idleSec, ahSec] : [slipSec, idleSec, ahSec, hireSec];
+  var parent = anchor.parentNode;
+  order.forEach(function(sec) { parent.insertBefore(sec, anchor); });
+  // Re-number visible section titles (skip hidden hire when not in play).
+  var pos = 1;
+  order.forEach(function(sec) {
+    if (sec.style.display === 'none') return;
+    var num = sec.querySelector('.pfp-num');
+    if (num) num.textContent = String(pos);
+    pos++;
+  });
+  return hireEligibleAny;
 }
 function updateSegWorkHrs(segId, val) {
   var seg = _fpSegments.find(function(s) { return s.id === segId; });
@@ -13036,23 +13068,42 @@ function recalcProspectCosts() {
   var selLabel = selCount === totalCount ? (totalCount + ' categor' + (totalCount===1?'y':'ies')) : (selCount + ' of ' + totalCount + ' selected');
   var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:10px;color:#666">' + totalUnits + ' vehicles across ' + selLabel + '</div><div style="font-size:10px;color:#5a6675">Annual fuel spend: <b style="color:#FFA028">' + fmt(totalAnnualFuelSpend) + '</b></div></div>';
 
-  // Fleet Losses — 3 calculators
+  // Build loss entries in display order. When the fleet has hire-eligible
+  // categories (Plant / Excavators), Hire jumps to position 1 — matches the
+  // re-ordered modal sections above. Numbers re-sequence automatically.
+  var _hireEligibleAny = _selectedSegments.some(function(s) { return (FLEET_BENCHMARKS[s.type] || {}).appliesHire === true; });
+  var _lossEntries = [
+    { key: 'slip', label: 'Fuel Slippage — ' + slipPct + '% slippage (per-asset hrs)',                      value: annualSlippage,   savingRate: 0.60, savingLabel: 'Fuel Slippage Recovery (60%)' },
+    { key: 'idle', label: 'Idle Time — per-asset idle hrs @ ' + idleBurnRate + ' L/hr',                     value: annualIdleWaste,  savingRate: 0.50, savingLabel: 'Idle Time Reduction (50%)' },
+    { key: 'ah',   label: 'After-Hours Use — per-asset %',                                                  value: afterHoursCost,   savingRate: 0.90, savingLabel: 'After-Hours Eliminated (90%)' },
+    { key: 'hire', label: 'Hire Time Under-reporting — ' + fmtN(totalHireHrsDay,1) + ' extra hrs/day',      value: annualHireLoss,   savingRate: 0.95, savingLabel: 'Hire Time Captured (95%)' }
+  ];
+  if (_hireEligibleAny) {
+    // Move hire to the front.
+    _lossEntries = _lossEntries.filter(function(e){return e.key==='hire';}).concat(_lossEntries.filter(function(e){return e.key!=='hire';}));
+  }
+
+  // Fleet Losses
   html += '<div style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fleet Losses (Annual)</div>';
-  html += row('1. Fuel Slippage — ' + slipPct + '% slippage (per-asset hrs)', annualSlippage, '#dc2626');
-  html += row('2. Idle Time — per-asset idle hrs @ ' + idleBurnRate + ' L/hr', annualIdleWaste, '#dc2626');
-  html += row('3. After-Hours Use — per-asset %', afterHoursCost, '#dc2626');
-  if (annualHireLoss > 0) html += row('4. Hire Time Under-reporting — ' + fmtN(totalHireHrsDay,1) + ' extra hrs/day', annualHireLoss, '#dc2626');
+  var _visN = 0;
+  _lossEntries.forEach(function(e) {
+    if (e.key === 'hire' && e.value === 0) return; // hide hire row when nothing
+    _visN++;
+    html += row(_visN + '. ' + e.label, e.value, '#dc2626');
+  });
   html += row('Excess Wear & Maintenance ($' + wearCostKm.toFixed(2) + '/km)', annualWear, '#dc2626');
 
   // TOTAL
   html += '<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid #dc2626"><span style="font-size:13px;font-weight:800;color:#dc2626">TOTAL ANNUAL LOSS</span><span style="font-size:15px;font-weight:800;color:#dc2626">' + fmt(totalAnnualLoss) + '</span></div>';
 
-  // GPS Recovery
+  // GPS Recovery — same display order as losses
   html += '<div style="font-size:9px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">GPS Recovery (Annual Savings)</div>';
-  html += row('1. Fuel Slippage Recovery (60%)', annualSlippage * 0.60, '#FFA028');
-  html += row('2. Idle Time Reduction (50%)', annualIdleWaste * 0.50, '#FFA028');
-  html += row('3. After-Hours Eliminated (90%)', afterHoursCost * 0.90, '#FFA028');
-  if (annualHireLoss > 0) html += row('4. Hire Time Captured (95%)', annualHireLoss * 0.95, '#FFA028');
+  _visN = 0;
+  _lossEntries.forEach(function(e) {
+    if (e.key === 'hire' && e.value === 0) return;
+    _visN++;
+    html += row(_visN + '. ' + e.savingLabel, e.value * e.savingRate, '#FFA028');
+  });
   html += row('Reduced Wear & Maintenance (50%)', annualWear * 0.50, '#FFA028');
   html += '<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px;border-top:2px solid #FFA028"><span style="font-size:13px;font-weight:800;color:#FFA028">TOTAL ANNUAL SAVING</span><span style="font-size:15px;font-weight:800;color:#FFA028">' + fmt(totalAnnualSaving) + '</span></div>';
 
@@ -15362,10 +15413,10 @@ window.doLogout = doLogout;
       </button>
 
       <!-- ── 2A. FUEL SLIPPAGE CALCULATOR (Working Hours Model) ── -->
-      <div style="background:#080808;border:1px solid rgba(255,160,40,.25);padding:14px;margin-bottom:12px">
+      <div id="pfp_slipSection" data-loss-key="slip" style="background:#080808;border:1px solid rgba(255,160,40,.25);padding:14px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg width="12" height="12" fill="none" stroke="#FFA028" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
-          <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">1. Fuel Slippage — Working Hours</div>
+          <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">1</span>. Fuel Slippage — Working Hours</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">How many hours per day is each asset running? Slippage % shows how much of that time is wasted — unnecessary detours, extended routes, unauthorised use.</div>
         <div id="pfp_slipAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
@@ -15389,10 +15440,10 @@ window.doLogout = doLogout;
       </div>
 
       <!-- ── 2B. IDLE TIME CALCULATOR ── -->
-      <div style="background:#080808;border:1px solid rgba(217,119,6,.25);padding:14px;margin-bottom:12px">
+      <div id="pfp_idleSection" data-loss-key="idle" style="background:#080808;border:1px solid rgba(217,119,6,.25);padding:14px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg width="12" height="12" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6"/></svg>
-          <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px">2. Idle Time — Engine Running, Not Working</div>
+          <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">2</span>. Idle Time — Engine Running, Not Working</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Time spent with the engine running but not moving — waiting, breaks, left running. Burns fuel and adds engine hours for nothing.</div>
         <div id="pfp_idleAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
@@ -15412,10 +15463,10 @@ window.doLogout = doLogout;
       </div>
 
       <!-- ── 2C. AFTER-HOURS USE CALCULATOR ── -->
-      <div style="background:#080808;border:1px solid rgba(220,38,38,.25);padding:14px;margin-bottom:12px">
+      <div id="pfp_ahSection" data-loss-key="ah" style="background:#080808;border:1px solid rgba(220,38,38,.25);padding:14px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg width="12" height="12" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
-          <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">3. After-Hours / Unauthorised Use</div>
+          <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">3</span>. After-Hours / Unauthorised Use</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Trucks, cars and vans used outside business hours — personal trips, unauthorised jobs, weekend use. Adds fuel, wear and insurance risk.</div>
         <div id="pfp_ahAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
@@ -15435,10 +15486,10 @@ window.doLogout = doLogout;
       </div>
 
       <!-- ── 2D. HIRE TIME UNDER-REPORTING (Plant / Equipment / Excavators only) ── -->
-      <div id="pfp_hireSection" style="background:#080808;border:1px solid rgba(168,85,247,.25);padding:14px;margin-bottom:12px">
+      <div id="pfp_hireSection" data-loss-key="hire" style="background:#080808;border:1px solid rgba(168,85,247,.25);padding:14px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg width="12" height="12" fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <div style="font-size:10px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:.5px">4. Hire Time Under-reporting</div>
+          <div style="font-size:10px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">4</span>. Hire Time Under-reporting</div>
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Hire customer books 8&nbsp;hrs but actually runs the machine 13&nbsp;hrs — GPS catches the gap. Extra hours × hire rate × working days = unbilled revenue you're leaking. Applies to plant / equipment / excavators hired by the hour.</div>
         <div id="pfp_hireAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
@@ -15458,7 +15509,7 @@ window.doLogout = doLogout;
       </div>
 
       <!-- ── FLEET COSTS SUMMARY (auto-calculated) ── -->
-      <div style="background:#080808;border:1px solid rgba(255,160,40,.25);padding:14px;margin-bottom:14px">
+      <div id="pfp_summarySection" style="background:#080808;border:1px solid rgba(255,160,40,.25);padding:14px;margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px">
             <svg width="12" height="12" fill="none" stroke="#FFA028" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:4px"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
