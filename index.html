@@ -3398,7 +3398,7 @@ function _qqLineHTML(id, line) {
       // Hardware $/u + FREE checkbox underneath
       '<div>',
         '<input type="number" id="qql_' + id + '_hwPerUnit" value="' + line.hwPerUnit + '" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
-        '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_hwFree"' + (line.hwFree ? ' checked' : '') + ' onchange="qqRecalc()"> FREE</label>',
+        '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_hwFree"' + (line.hwFree ? ' checked' : '') + ' onchange="_qqLineFreeToggle(\'' + id + '\')"> FREE</label>',
       '</div>',
       // Software $/u/mo
       '<input type="number" id="qql_' + id + '_swPerUnit" value="' + line.swPerUnit + '" min="0" step="0.5" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
@@ -3406,14 +3406,52 @@ function _qqLineHTML(id, line) {
       '<div>',
         '<input type="number" id="qql_' + id + '_installPerUnit" value="' + line.installPerUnit + '" min="0" step="1" onfocus="this.select()" oninput="qqRecalc()" style="' + cellInput + '">',
         '<div style="display:flex;gap:6px;flex-wrap:wrap">',
-          '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_installFree"' + (line.installFree ? ' checked' : '') + ' onchange="qqRecalc()"> FREE</label>',
-          '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_selfInstall"' + (line.selfInstall ? ' checked' : '') + ' onchange="qqRecalc()"> Self</label>',
+          '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_installFree"' + (line.installFree ? ' checked' : '') + ' onchange="_qqLineFreeToggle(\'' + id + '\')"> FREE</label>',
+          '<label style="' + chkLbl + '"><input type="checkbox" id="qql_' + id + '_selfInstall"' + (line.selfInstall ? ' checked' : '') + ' onchange="_qqLineFreeToggle(\'' + id + '\')"> Self</label>',
         '</div>',
       '</div>',
       // Delete row
       '<button onclick="_qqRemoveLine(\'' + id + '\')" title="Remove device line" style="' + xBtn + '">×</button>',
     '</div>'
   ].join('');
+}
+
+// When a FREE/Self checkbox toggles, visually blank the matching $ input (and
+// disable + dim it) so the user can SEE the cell is "not counted." Untick to
+// restore the previous number. Install $ is blanked when either FREE or Self
+// is ticked (they both make install effectively free).
+function _qqApplyLineBlanks(id) {
+  function blankIf(inputId, condition) {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    if (condition) {
+      // Save the current value the first time we blank it
+      if (el.dataset.savedValue == null) el.dataset.savedValue = el.value;
+      el.value = '';
+      el.disabled = true;
+      el.style.opacity = '0.35';
+      el.style.cursor = 'not-allowed';
+    } else {
+      // Restore the previously-saved value
+      if (el.dataset.savedValue != null) {
+        el.value = el.dataset.savedValue;
+        delete el.dataset.savedValue;
+      }
+      el.disabled = false;
+      el.style.opacity = '';
+      el.style.cursor = '';
+    }
+  }
+  const hwFree = !!(document.getElementById('qql_' + id + '_hwFree') || {}).checked;
+  blankIf('qql_' + id + '_hwPerUnit', hwFree);
+  const insFree = !!(document.getElementById('qql_' + id + '_installFree') || {}).checked;
+  const selfIns = !!(document.getElementById('qql_' + id + '_selfInstall') || {}).checked;
+  blankIf('qql_' + id + '_installPerUnit', insFree || selfIns);
+}
+
+function _qqLineFreeToggle(id) {
+  _qqApplyLineBlanks(id);
+  qqRecalc();
 }
 
 function _qqAddLine(deviceKey, opts) {
@@ -3434,6 +3472,8 @@ function _qqAddLine(deviceKey, opts) {
   };
   const container = document.getElementById('qq_linesContainer');
   if (container) container.insertAdjacentHTML('beforeend', _qqLineHTML(id, line));
+  // Apply visual blanks if this line starts with hardware or install FREE
+  _qqApplyLineBlanks(id);
   // Mirror the FIRST line's device to global for Deal P&L cost defaults
   if (_qqLines.length === 1) {
     _qqSelectedDevice = deviceKey;
@@ -3476,9 +3516,15 @@ function _qqLineOnDeviceChange(id) {
   const hwIn = document.getElementById('qql_' + id + '_hwPerUnit');
   const swIn = document.getElementById('qql_' + id + '_swPerUnit');
   const hwFreeBox = document.getElementById('qql_' + id + '_hwFree');
-  if (hwIn) hwIn.value = dev.hardware;
+  if (hwIn) {
+    hwIn.value = dev.hardware;
+    // Device change discards any prior typed value the user had saved here
+    delete hwIn.dataset.savedValue;
+  }
   if (swIn) swIn.value = dev.software;
   if (hwFreeBox) hwFreeBox.checked = !!_qqHardwareFreeDefault[key];
+  // Re-apply visual blanks for the new FREE state (hardware may now be FREE/not)
+  _qqApplyLineBlanks(id);
   // If this is the FIRST line, mirror to global so Deal P&L uses its internal costs
   if (_qqLines[0] === id) {
     _qqSelectedDevice = key;
