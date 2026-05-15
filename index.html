@@ -3476,37 +3476,44 @@ function qqRecalc() {
   if (selfInstall || installFree) installPer = 0;
   const amortMonths = parseInt(document.getElementById('qq_amortMonths').value) || 0;
   const installTotal = ourUnits * installPer;
-  // Year 1 monthly: subscription + install spread (if amortising)
+  // Hardware — per-unit sell price from device card, respecting FREE checkbox.
+  // Treated as capex alongside install: either upfront (amortMonths=0) or amortised.
+  const hwUnit = _qqHardwareOverride[dev.key] != null ? _qqHardwareOverride[dev.key] : dev.hardware;
+  const hwFree = !!_qqHardwareFree[dev.key];
+  const hwPerEff = hwFree ? 0 : hwUnit;
+  const hwTotal = ourUnits * hwPerEff;
+  // Combined capex pool: hardware + install. Drives the Y1/Y2 amortisation maths.
+  const capexTotal = hwTotal + installTotal;
+  // Year 1 monthly: subscription + capex spread (if amortising)
   const swMonthlyFleet = ourUnits * swCost;
   let y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet;
-  if (installPer === 0) {
-    // No install
+  if (capexTotal === 0) {
+    // No hardware or install cost — software-only
     y1MonthlyFleet = swMonthlyFleet;
     y1AnnualFleet = swMonthlyFleet * 12;
   } else if (amortMonths === 0) {
-    // Install paid upfront — Y1 monthly = subscription only, but Y1 annual = subscription + install upfront
+    // Capex paid upfront — Y1 monthly = subscription only, Y1 annual = subscription + capex upfront
     y1MonthlyFleet = swMonthlyFleet;
-    y1AnnualFleet = swMonthlyFleet * 12 + installTotal;
+    y1AnnualFleet = swMonthlyFleet * 12 + capexTotal;
   } else if (amortMonths === 12) {
-    // Spread into Year 1
-    y1MonthlyFleet = swMonthlyFleet + (installTotal / 12);
+    // Spread across Year 1
+    y1MonthlyFleet = swMonthlyFleet + (capexTotal / 12);
     y1AnnualFleet = y1MonthlyFleet * 12;
   } else if (amortMonths === 24) {
-    // Spread over 24 months — Year 1 monthly slightly lower
-    y1MonthlyFleet = swMonthlyFleet + (installTotal / 24);
+    // Spread over 24 months — Year 1 monthly half-rate
+    y1MonthlyFleet = swMonthlyFleet + (capexTotal / 24);
     y1AnnualFleet = y1MonthlyFleet * 12;
   } else {
     // 3-month amortisation
-    y1MonthlyFleet = swMonthlyFleet + (installTotal / 3);
-    y1AnnualFleet = swMonthlyFleet * 12 + installTotal;
+    y1MonthlyFleet = swMonthlyFleet + (capexTotal / 3);
+    y1AnnualFleet = swMonthlyFleet * 12 + capexTotal;
   }
-  // Year 2+ — always subscription only (install paid off by then for any amortisation ≤ 12 months;
-  // for 24-month amortisation, Y2 is half the install still amortising — simplification: show full)
+  // Year 2+ — software only for upfront / 3-mo / 12-mo amortisation (capex paid off).
+  // 24-month amortisation still has capex spreading through Y2.
   y2MonthlyFleet = swMonthlyFleet;
   y2AnnualFleet = swMonthlyFleet * 12;
-  if (amortMonths === 24 && installPer > 0) {
-    // For 24-month amortisation, Year 2 still has install spread
-    y2MonthlyFleet = swMonthlyFleet + (installTotal / 24);
+  if (amortMonths === 24 && capexTotal > 0) {
+    y2MonthlyFleet = swMonthlyFleet + (capexTotal / 24);
     y2AnnualFleet = y2MonthlyFleet * 12;
   }
 
@@ -3539,6 +3546,7 @@ function qqRecalc() {
     curUnits, curPer, curMonthly, curAnnual,
     device: dev,
     swCost, ourUnits, installPer, installTotal, amortMonths, selfInstall, installFree,
+    hwUnit, hwFree, hwPerEff, hwTotal, capexTotal,
     y1MonthlyFleet, y1AnnualFleet, y2MonthlyFleet, y2AnnualFleet,
     savingY1, savingY2, saving3yr
   };
