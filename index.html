@@ -2608,6 +2608,16 @@ select option{background:#0a0a0a;color:#0098d4}
           <option value="Camera / Dashcam">Camera / Dashcam</option>
         </select>
 
+        <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contract term they're on</label>
+        <select id="qq_currentContractTerm" onchange="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+          <option value="">— Pick contract term —</option>
+          <option value="12 months">12 months</option>
+          <option value="24 months">24 months</option>
+          <option value="36 months">36 months</option>
+          <option value="Month-to-month">Month-to-month / No lock-in</option>
+          <option value="Unknown">Don't know yet</option>
+        </select>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Number of units</label>
@@ -3434,6 +3444,7 @@ function qqResetForm() {
   document.getElementById('qq_amortMonths').value = '12';
   document.getElementById('qq_prospect').value = '';
   var dt = document.getElementById('qq_currentDeviceType'); if (dt) dt.value = '';
+  var ct = document.getElementById('qq_currentContractTerm'); if (ct) ct.value = '';
   _qqSelectedDevice = 'tk900';
   _qqHardwareFree = { tk56l:false, tk900:true, tk18p:false, tks20:false };
   _qqHardwareOverride = {};
@@ -3524,6 +3535,7 @@ function qqRecalc() {
     contact: document.getElementById('qq_contactName').value.trim(),
     provider: document.getElementById('qq_currentProvider').value.trim(),
     currentDeviceType: (document.getElementById('qq_currentDeviceType') || {}).value || '',
+    currentContractTerm: (document.getElementById('qq_currentContractTerm') || {}).value || '',
     curUnits, curPer, curMonthly, curAnnual,
     device: dev,
     swCost, ourUnits, installPer, installTotal, amortMonths, selfInstall, installFree,
