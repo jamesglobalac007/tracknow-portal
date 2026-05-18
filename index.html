@@ -662,7 +662,7 @@ select option{background:#0a0a0a;color:#0098d4}
     </div>
 
     <div style="margin-top:30px;padding-top:16px;border-top:2px solid #FFA028;display:flex;justify-content:space-between;font-size:10px;color:#888">
-      <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a></div>
+      <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a></div>
     </div>
   </div>
 
@@ -4714,10 +4714,30 @@ function _doOpenProposalDoc(leadId) {
   // Per-lineItem flags (set in Deal Products) take precedence over the
   // lead-level toggles from the proposal config modal — that way Deal Products
   // is the source of truth and the modal is a per-deal override.
+  //
+  // Row formatting:
+  //   - Unit price column: catalog rate, normal weight (always correct, so no
+  //     strikethrough confusion)
+  //   - Total column: $0.00 when waived, with a small inline tag + tiny "value"
+  //     line below showing what's been saved. Customer-paid lines show normally.
   let hwRows = '';
   let hwNetTotal = 0;
+  let hwSavingsTotal = 0;
   let _anyHwFree = false;
   let _anyInstWaived = false;
+  function _hwRow(label, q, grossUnit, grossLine, tag, tagColor, tagBg) {
+    return '<tr>' +
+      '<td style="font-weight:600">' + label + '</td>' +
+      '<td style="text-align:center">' + q + '</td>' +
+      '<td style="text-align:right">' + fmt(grossUnit) + '</td>' +
+      '<td style="text-align:right;font-weight:700"><span style="color:#00802b">$0.00</span>' +
+        '<div style="font-size:9px;color:#888;font-weight:500;margin-top:2px;letter-spacing:.2px">' +
+          '<span style="background:' + tagBg + ';color:' + tagColor + ';font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:6px">' + tag + '</span>' +
+          'value <span style="text-decoration:line-through">' + fmt(grossLine) + '</span> &mdash; saved' +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }
   if (l.lineItems) {
     l.lineItems.forEach(function(li) {
       const q = li.qty || 0;
@@ -4728,9 +4748,8 @@ function _doOpenProposalDoc(leadId) {
       const _hwLabel = li.hwType || (li.type + ' Device');
       const _liHwFree = (li.hwFree === true) || _hwFree;
       if (_liHwFree && _hwGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td>' +
-                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_hwGrossUnit) + '</span></td>' +
-                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_hwLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+        hwRows += _hwRow(_hwLabel, q, _hwGrossUnit, _hwLineGross, 'INCLUDED FREE', '#00802b', '#e6f7ee');
+        hwSavingsTotal += _hwLineGross;
         _anyHwFree = true;
       } else if (_hwGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
@@ -4739,27 +4758,24 @@ function _doOpenProposalDoc(leadId) {
       const _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
       const _instLineGross = q * _instGrossUnit;
       const _liInstFree = (li.installFree === true) || _instType === 'we-install-free';
+      const _instLabel = 'Installation &mdash; ' + li.type;
       if (_instType === 'not-required') {
         // skip — Agreement Details handles framing
       } else if (_instType === 'self-install' && _instGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
-                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
-                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#fff4e6;color:#b45309;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">SELF-INSTALL</span></td></tr>';
+        hwRows += _hwRow(_instLabel, q, _instGrossUnit, _instLineGross, 'SELF-INSTALL', '#b45309', '#fff4e6');
+        hwSavingsTotal += _instLineGross;
         _anyInstWaived = true;
       } else if (_liInstFree && _instGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
-                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
-                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+        hwRows += _hwRow(_instLabel, q, _instGrossUnit, _instLineGross, 'INCLUDED FREE', '#00802b', '#e6f7ee');
+        hwSavingsTotal += _instLineGross;
         _anyInstWaived = true;
       } else if (_instGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
+        hwRows += '<tr><td style="font-weight:600">' + _instLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
         hwNetTotal += _instLineGross;
       }
     });
   }
   const _hwSectionShown = hwRows.length > 0;
-  // Effective flags for downstream callouts / Agreement Details: any FREE seen
-  // either at line-item level or lead level counts.
   const _hwFreeEff   = _hwFree || _anyHwFree;
   const _instWaivedEff = _instWaived || _anyInstWaived;
 
@@ -4852,7 +4868,7 @@ ${_acceptedBanner}
 </div>
 
 <h2>Scope of Service</h2>
-<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will supply, install, and maintain GPS tracking devices across your fleet of <strong>${totalUnits} vehicles/assets</strong>. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>
+<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will ${(_instType==='self-install'||_instType==='not-required') ? 'supply and maintain' : 'supply, install, and maintain'} GPS tracking devices across your fleet of <strong>${totalUnits} assets</strong>${_instType==='self-install' ? ' &mdash; devices ship plug-ready for client installation' : (_instType==='not-required' ? ' &mdash; plug-and-play, no fitting required' : '')}. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>
 
 <h2>Pricing Schedule</h2>
 
@@ -4862,10 +4878,10 @@ ${_hwSectionShown ? `<h3>Hardware &amp; Installation</h3>
   <tbody>
     ${hwRows}
     <tr class="subtotal"><td colspan="3">Hardware &amp; Installation Total</td><td style="text-align:right">${fmt(hwNetTotal)}</td></tr>
+    ${hwSavingsTotal > 0 ? '<tr><td colspan="3" style="font-weight:700;color:#00802b;background:#e6f7ee;border-top:1px solid #00CC66">Total Upfront Saving</td><td style="text-align:right;font-weight:800;color:#00802b;background:#e6f7ee;border-top:1px solid #00CC66">' + fmt(hwSavingsTotal) + '</td></tr>' : ''}
   </tbody>
 </table>
-${hwNetTotal > 0 && isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : ''}
-${(_hwFreeEff || _instWaivedEff) ? '<div class="callout" style="background:#e6f7ee;border-color:#00CC66"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFreeEff ? 'Hardware' : '') + (_hwFreeEff && _instWaivedEff ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instWaivedEff ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>' : ''}` : ''}
+${hwNetTotal > 0 && isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : ''}` : ''}
 
 <h3>Software Subscription</h3>
 <table>
@@ -4918,7 +4934,7 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
   <p style="font-size:13px;font-weight:700;color:#333">sales@tracknow.com.au &nbsp;&middot;&nbsp; 1300 TRACK NOW</p>
 </div>
 
-<div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div><div>Confidential &mdash; prepared for ${l.co}</div></div>
+<div class="footer"><div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div><div>Confidential &mdash; prepared for ${l.co}</div></div>
 </body></html>`);
   win.document.close();
 
@@ -4969,8 +4985,23 @@ function _buildProposalEmailHTML(l) {
 
   var hwRows = '';
   var hwNetTotal = 0;
+  var hwSavingsTotal = 0;
   var _anyHwFree = false;
   var _anyInstWaived = false;
+  function _hwRowEmail(label, q, grossUnit, grossLine, tag, tagColor, tagBg) {
+    return '<tr>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;font-weight:600">' + label + '</td>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(grossUnit) + '</td>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right;font-weight:700">' +
+        '<span style="color:#00802b">$0.00</span>' +
+        '<div style="font-size:9px;color:#888;font-weight:500;margin-top:2px;letter-spacing:.2px">' +
+          '<span style="background:' + tagBg + ';color:' + tagColor + ';font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:6px">' + tag + '</span>' +
+          'value <span style="text-decoration:line-through">' + fmt(grossLine) + '</span> &mdash; saved' +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }
   if (l.lineItems) {
     l.lineItems.forEach(function(li) {
       var q = li.qty || 0;
@@ -4981,31 +5012,29 @@ function _buildProposalEmailHTML(l) {
       var _hwLabel = li.hwType || (li.type + ' Device');
       var _liHwFree = (li.hwFree === true) || _hwFree;
       if (_liHwFree && _hwGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td>' +
-                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_hwGrossUnit) + '</span></td>' +
-                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_hwLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+        hwRows += _hwRowEmail(_hwLabel, q, _hwGrossUnit, _hwLineGross, 'INCLUDED FREE', '#00802b', '#e6f7ee');
+        hwSavingsTotal += _hwLineGross;
         _anyHwFree = true;
       } else if (_hwGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
+        hwRows += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;font-weight:600">' + _hwLabel + '</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
         hwNetTotal += _hwLineGross;
       }
       var _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
       var _instLineGross = q * _instGrossUnit;
       var _liInstFree = (li.installFree === true) || _instType === 'we-install-free';
+      var _instLabel = 'Installation &mdash; ' + li.type;
       if (_instType === 'not-required') {
         // skip
       } else if (_instType === 'self-install' && _instGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
-                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
-                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#fff4e6;color:#b45309;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">SELF-INSTALL</span></td></tr>';
+        hwRows += _hwRowEmail(_instLabel, q, _instGrossUnit, _instLineGross, 'SELF-INSTALL', '#b45309', '#fff4e6');
+        hwSavingsTotal += _instLineGross;
         _anyInstWaived = true;
       } else if (_liInstFree && _instGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
-                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
-                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+        hwRows += _hwRowEmail(_instLabel, q, _instGrossUnit, _instLineGross, 'INCLUDED FREE', '#00802b', '#e6f7ee');
+        hwSavingsTotal += _instLineGross;
         _anyInstWaived = true;
       } else if (_instGrossUnit > 0) {
-        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
+        hwRows += '<tr><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;font-weight:600">' + _instLabel + '</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_instGrossUnit) + '</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
         hwNetTotal += _instLineGross;
       }
     });
@@ -5040,7 +5069,7 @@ function _buildProposalEmailHTML(l) {
   html += '</div>';
 
   html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Scope of Service</h2>';
-  html += '<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will supply, install, and maintain GPS tracking devices across your fleet of <strong>' + totalUnits + ' vehicles/assets</strong>. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>';
+  html += '<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will ' + ((_instType==='self-install'||_instType==='not-required') ? 'supply and maintain' : 'supply, install, and maintain') + ' GPS tracking devices across your fleet of <strong>' + totalUnits + ' assets</strong>' + (_instType==='self-install' ? ' &mdash; devices ship plug-ready for client installation' : (_instType==='not-required' ? ' &mdash; plug-and-play, no fitting required' : '')) + '. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>';
 
   html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Pricing Schedule</h2>';
 
@@ -5051,12 +5080,12 @@ function _buildProposalEmailHTML(l) {
     html += '<tbody>';
     html += hwRows;
     html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Hardware &amp; Installation Total</td><td style="text-align:right;padding:10px 12px">' + fmt(hwNetTotal) + '</td></tr>';
+    if (hwSavingsTotal > 0) {
+      html += '<tr style="border-top:1px solid #00CC66;background:#e6f7ee"><td colspan="3" style="padding:10px 12px;font-weight:700;color:#00802b;font-size:12px">Total Upfront Saving</td><td style="text-align:right;padding:10px 12px;font-weight:800;color:#00802b;font-size:13px">' + fmt(hwSavingsTotal) + '</td></tr>';
+    }
     html += '</tbody></table>';
     if (hwNetTotal > 0 && isMTM) {
       html += '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>';
-    }
-    if (_hwFreeEff || _instWaivedEff) {
-      html += '<div style="background:#e6f7ee;border:1px solid #00CC66;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFreeEff ? 'Hardware' : '') + (_hwFreeEff && _instWaivedEff ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instWaivedEff ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>';
     }
   }
 
@@ -5094,7 +5123,7 @@ function _buildProposalEmailHTML(l) {
   html += '</tbody></table>';
 
   html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
-  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '<div>Confidential — prepared for ' + l.co + '</div>';
   html += '</div>';
   html += '</div>';
@@ -5587,7 +5616,7 @@ function _openBlankAgreementDoc(leadId, reuseWin) {
 </div>
 
 <div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">
-  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
+  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   <div>Confidential &mdash; prepared for ${l.co}</div>
 </div>
 
@@ -5668,7 +5697,7 @@ function _buildAgreementEmailHTML(l) {
   html += '</div>';
 
   html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
-  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '<div>Confidential — prepared for ' + l.co + '</div>';
   html += '</div>';
   html += '</div>';
@@ -13410,7 +13439,7 @@ function generateFleetReport() {
 </div>
 
 <div class="footer">
-  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
+  <div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   <div>Confidential &mdash; prepared for ${l.co}</div>
 </div>
 <div class="disclaimer">
@@ -13566,7 +13595,7 @@ function _buildFleetEmailHTML(p) {
   html += '</div>';
 
   html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
-  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
+  html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '<div>Confidential — prepared for ' + p.co + '</div>';
   html += '</div>';
   html += '</div>';
@@ -15146,7 +15175,7 @@ function submitAgreementSign() {
   var fullSignedEmail = '<div style="font-family:Inter,sans-serif;max-width:900px;font-size:13px;line-height:1.6;color:#1a1a1a">' +
     signedBanner + cleanAgrHTML + sigBlock +
     '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #FFA028;font-size:10px;color:#888;text-align:center">' +
-      'Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a>' +
+      'Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#FFA028;text-decoration:none">www.tracknow.com.au</a>' +
     '</div></div>';
 
   // Save the signed/executed agreement HTML on the server. The server's
