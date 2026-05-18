@@ -15511,6 +15511,7 @@ function renderProposalAccepts() {
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px">' +
         '<button onclick="goToDealInPipeline(\'' + (a.company || '').replace(/'/g, "\\'") + '\',\'' + (a.name || '').replace(/'/g, "\\'") + '\',\'' + (a.email || '').replace(/'/g, "\\'") + '\')" style="padding:6px 14px;background:rgba(255,160,40,.1);border:1px solid #FFA028;color:#FFA028;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background=\'#FFA028\';this.style.color=\'#000\'" onmouseout="this.style.background=\'rgba(255,160,40,.1)\';this.style.color=\'#FFA028\'">View Deal</button>' +
+        '<button onclick="undoProposalAccept(' + a.id + ')" style="padding:6px 14px;background:rgba(220,38,38,.1);border:1px solid #dc2626;color:#dc2626;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background=\'#dc2626\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(220,38,38,.1)\';this.style.color=\'#dc2626\'" title="Roll back the acceptance — clears the banner and the flag on the lead/customer">Undo</button>' +
         '<button onclick="dismissProposalAccept(' + a.id + ')" style="padding:6px 14px;background:#333;color:#999;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:inherit">Dismiss</button>' +
       '</div>';
     list.appendChild(row);
@@ -15592,6 +15593,69 @@ function dismissProposalAccept(id) {
     try { fetch('/api/status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({itemType:'proposal_accept', id:id, status:'dismissed'}) }).catch(function(){}); } catch(e){}
   }
   renderProposalAccepts();
+}
+
+// Full rollback: drops the accept entry entirely AND clears the
+// proposalAcceptedDate / proposalAcceptedBy flags on the matching lead and
+// customer record so the green "ACCEPTED" banner disappears from the proposal
+// preview. Use this when the proceed button was hit by accident (e.g. while
+// previewing) and the proposal still needs to go out cleanly.
+function undoProposalAccept(id) {
+  var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+  var a = accepts.find(function(x) { return x.id === id; });
+  if (!a) { renderProposalAccepts(); return; }
+  if (!confirm('Undo the acceptance for "' + (a.company || 'this proposal') + '"?\n\nThis clears the green ACCEPTED banner so the proposal can be re-sent. The server event log is not modified.')) return;
+
+  // 1. Remove the entry from localStorage
+  accepts = accepts.filter(function(x) { return x.id !== id; });
+  localStorage.setItem('tn_proposal_accepts', JSON.stringify(accepts));
+
+  // 2. Clear the accepted flag on any matching lead
+  var matchedAny = false;
+  function _matches(rec) {
+    if (!rec) return false;
+    if (a.company && rec.co && rec.co.toLowerCase() === String(a.company).toLowerCase()) return true;
+    if (a.email && rec.email && rec.email.toLowerCase() === String(a.email).toLowerCase()) return true;
+    return false;
+  }
+  if (window.LEADS) {
+    LEADS.forEach(function(l) {
+      if (_matches(l)) {
+        delete l.proposalAcceptedDate;
+        delete l.proposalAcceptedBy;
+        matchedAny = true;
+      }
+    });
+    if (typeof _saveLeads === 'function') _saveLeads();
+  }
+
+  // 3. Same on the customer record if it got synced
+  if (window.CUSTOMERS) {
+    CUSTOMERS.forEach(function(c) {
+      if (_matches(c)) {
+        delete c.proposalAcceptedDate;
+        matchedAny = true;
+      }
+    });
+    if (typeof _saveCustomers === 'function') _saveCustomers();
+  }
+
+  // 4. Tell the server to mark the event undone so other browsers / refresh
+  // don't re-create the accept entry. Server is append-only for audit but a
+  // status:'undone' update keeps the UI clean across sessions.
+  try {
+    fetch('/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemType: 'proposal_accept', id: id, status: 'undone' })
+    }).catch(function(){});
+  } catch (e) {}
+
+  // 5. Re-render every relevant view
+  if (typeof renderProposalAccepts === 'function') renderProposalAccepts();
+  if (typeof renderPipeline === 'function') renderPipeline();
+  if (typeof renderProspects === 'function') renderProspects();
+  if (typeof showToast === 'function') showToast('Acceptance undone' + (matchedAny ? ' for ' + (a.company || 'lead') : ''));
 }
 
 // Render on load and refresh every 15 seconds
