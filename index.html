@@ -2584,7 +2584,7 @@ select option{background:#0a0a0a;color:#0098d4}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 
       <!-- ── THEIR CURRENT GPS ── -->
-      <div class="card" style="padding:18px;border:1px solid rgba(220,38,38,.25)">
+      <div class="card" style="padding:18px;border:1px solid rgba(220,38,38,.25);display:flex;flex-direction:column">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
           <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           <div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">Their current GPS</div>
@@ -2629,7 +2629,7 @@ select option{background:#0a0a0a;color:#0098d4}
           </div>
         </div>
 
-        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline">
+        <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline;margin-top:auto">
           <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-start">
             <span style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Monthly</span>
             <span id="qq_currentMonthly" style="font-size:18px;font-weight:800;color:#dc2626">$0</span>
@@ -2642,7 +2642,7 @@ select option{background:#0a0a0a;color:#0098d4}
       </div>
 
       <!-- ── TRACKNOW OFFER ── -->
-      <div class="card" style="padding:18px;border:1px solid rgba(0,204,102,.25)">
+      <div class="card" style="padding:18px;border:1px solid rgba(0,204,102,.25);display:flex;flex-direction:column">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
           <svg width="14" height="14" fill="none" stroke="#00CC66" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           <div style="font-size:11px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px">TrackNow offer</div>
@@ -2708,6 +2708,13 @@ select option{background:#0a0a0a;color:#0098d4}
             </div>
           </div>
         </div>
+
+        <!-- Hardware + Install upfront breakdown — auto-populated by qqRecalc.
+             Shows per-line qty × $/unit = subtotal so the customer can SEE what
+             "we'll give you that for free" or "self-install saves you $X" is
+             worth in dollar terms. Sits above the Monthly/Annual block which is
+             pinned to the bottom of the card. -->
+        <div id="qq_hwInstallBreakdown" style="margin-top:auto;margin-bottom:10px;background:#0a0a0a;border:1px solid #1a1a1a;padding:10px 12px;font-size:11px;color:#CCC;line-height:1.55;display:none"></div>
 
         <div style="background:#0a0a0a;border:1px solid #1a1a1a;padding:12px 14px;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:baseline">
           <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-start">
@@ -3775,6 +3782,53 @@ function qqRecalc() {
 
   document.getElementById('qq_ourY1Monthly').textContent = fmt(y1MonthlyFleet);
   document.getElementById('qq_ourY1Annual').textContent = fmt(y1AnnualFleet);
+
+  // Hardware + Install breakdown — shows per-line qty × $/unit subtotals so
+  // the customer can SEE what "free hardware" / "self-install" is worth in $.
+  // Strike through and flag savings when a line is marked free or self-install.
+  (function _qqRenderHwInstallBreakdown() {
+    var bd = document.getElementById('qq_hwInstallBreakdown');
+    if (!bd) return;
+    var anyUnits = linesSnapshot.some(function(L) { return L.units > 0; });
+    if (!anyUnits) { bd.style.display = 'none'; bd.innerHTML = ''; return; }
+    var hwGross = 0, installGross = 0, hwSaved = 0, installSaved = 0;
+    var hwRows = '';
+    var installRows = '';
+    linesSnapshot.forEach(function(L) {
+      if (L.units <= 0) return;
+      var devLbl = (L.device && L.device.label) ? L.device.label.split('—')[0].trim() : 'Device';
+      var hwLineGross = L.units * L.hwPerUnit;
+      var insLineGross = L.units * L.installPerUnit;
+      hwGross += hwLineGross;
+      installGross += insLineGross;
+      if (L.hwFree) hwSaved += hwLineGross;
+      if (L.installFree || L.selfInstall) installSaved += insLineGross;
+      // Hardware row
+      var hwTag = L.hwFree ? ' <span style="color:#00CC66;font-weight:700">FREE — saves ' + fmt(hwLineGross) + '</span>' : '';
+      var hwSubStyle = L.hwFree ? 'text-decoration:line-through;color:#666' : 'color:#CCC';
+      hwRows += '<div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#888">' + devLbl + ': ' + L.units + ' × ' + fmt(L.hwPerUnit) + '</span><span style="' + hwSubStyle + ';font-weight:600">' + fmt(hwLineGross) + '</span>' + (hwTag ? '<span>' + hwTag + '</span>' : '') + '</div>';
+      // Install row
+      var insTag = L.installFree
+        ? ' <span style="color:#00CC66;font-weight:700">FREE — saves ' + fmt(insLineGross) + '</span>'
+        : (L.selfInstall ? ' <span style="color:#FFA028;font-weight:700">Self-install — saves ' + fmt(insLineGross) + '</span>' : '');
+      var insSubStyle = (L.installFree || L.selfInstall) ? 'text-decoration:line-through;color:#666' : 'color:#CCC';
+      installRows += '<div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#888">' + devLbl + ': ' + L.units + ' × ' + fmt(L.installPerUnit) + '</span><span style="' + insSubStyle + ';font-weight:600">' + fmt(insLineGross) + '</span>' + (insTag ? '<span>' + insTag + '</span>' : '') + '</div>';
+    });
+    var hwNet = hwGross - hwSaved;
+    var installNet = installGross - installSaved;
+    var totalGross = hwGross + installGross;
+    var totalNet = hwNet + installNet;
+    bd.innerHTML =
+      '<div style="font-size:9px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Hardware &amp; Install — upfront breakdown</div>' +
+      '<div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Hardware</div>' +
+      hwRows +
+      '<div style="display:flex;justify-content:space-between;border-top:1px solid #222;margin-top:4px;padding-top:4px"><span style="color:#888">Hardware subtotal</span><span style="color:' + (hwSaved>0?'#00CC66':'#CCC') + ';font-weight:700">' + fmt(hwNet) + (hwSaved>0 ? ' <span style="color:#666;font-weight:400;font-size:10px">(' + fmt(hwGross) + ' value, ' + fmt(hwSaved) + ' saved)</span>' : '') + '</span></div>' +
+      '<div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px;margin:8px 0 3px">Install</div>' +
+      installRows +
+      '<div style="display:flex;justify-content:space-between;border-top:1px solid #222;margin-top:4px;padding-top:4px"><span style="color:#888">Install subtotal</span><span style="color:' + (installSaved>0?'#00CC66':'#CCC') + ';font-weight:700">' + fmt(installNet) + (installSaved>0 ? ' <span style="color:#666;font-weight:400;font-size:10px">(' + fmt(installGross) + ' value, ' + fmt(installSaved) + ' saved)</span>' : '') + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;border-top:1px solid #333;margin-top:8px;padding-top:6px;font-size:12px"><span style="color:#CCC;font-weight:700">Total upfront capex</span><span style="color:#00CC66;font-weight:800">' + fmt(totalNet) + (totalGross !== totalNet ? ' <span style="color:#666;font-weight:400;font-size:10px">(' + fmt(totalGross) + ' value, ' + fmt(totalGross - totalNet) + ' saved)</span>' : '') + '</span></div>';
+    bd.style.display = '';
+  })();
   // Y2 cells removed from the panel (simplified to Y1 only). Keep the variables
   // in scope — the "Saving Y2+ / 3-year saving" cards below still use them, and
   // they ship through to the email generator via window._qqCalc.
