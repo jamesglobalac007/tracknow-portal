@@ -4572,7 +4572,74 @@ function _sendAgreementNotify(btn) {
   }
 }
 
+// ── Proposal pricing-config modal ────────────────────────────────────────
+// Toggles asked every time before generating a proposal: is the hardware
+// being given free, and how's installation being handled. Flags persist on
+// the lead so re-generating remembers the previous choice.
 function openProposalDoc(leadId) {
+  const l = LEADS.find(x => x.id === leadId);
+  if (!l) return;
+  const hwFree   = !!l.proposalHwFree;
+  const instType = l.proposalInstallType || 'we-install';
+  // Build overlay
+  let overlay = document.getElementById('proposalConfigOverlay');
+  if (overlay) overlay.remove();
+  overlay = document.createElement('div');
+  overlay.id = 'proposalConfigOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit';
+  overlay.innerHTML =
+    '<div style="background:#111;border:1px solid #333;width:480px;max-width:94vw;padding:24px;color:#CCC">' +
+      '<div style="font-size:13px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Proposal — Pricing Configuration</div>' +
+      '<div style="font-size:11px;color:#888;margin-bottom:18px;line-height:1.5">How are we handling hardware and installation for ' + l.co + '? These appear in the Pricing Schedule so the customer sees the value of anything being included free.</div>' +
+      '<div style="margin-bottom:16px">' +
+        '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Hardware</div>' +
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (!hwFree?'#0098d4':'#333') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
+          '<input type="radio" name="pcHw" value="charge" ' + (!hwFree?'checked':'') + ' style="accent-color:#0098d4"> Customer pays for hardware' +
+        '</label>' +
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (hwFree?'#00CC66':'#333') + ';cursor:pointer;font-size:12px">' +
+          '<input type="radio" name="pcHw" value="free" ' + (hwFree?'checked':'') + ' style="accent-color:#00CC66"> Hardware provided FREE — show the value being given away' +
+        '</label>' +
+      '</div>' +
+      '<div style="margin-bottom:20px">' +
+        '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Installation</div>' +
+        ['we-install','we-install-free','self-install','not-required'].map(function(opt){
+          var labels = {
+            'we-install':       ['We install (customer pays)', '#0098d4'],
+            'we-install-free':  ['We install FREE (no charge)', '#00CC66'],
+            'self-install':     ['Self-install — customer fits the device', '#FFA028'],
+            'not-required':     ['Not required — plug-and-play device', '#888']
+          };
+          var pair = labels[opt];
+          var on = instType === opt;
+          return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (on?pair[1]:'#333') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
+            '<input type="radio" name="pcInst" value="' + opt + '" ' + (on?'checked':'') + ' style="accent-color:' + pair[1] + '"> ' + pair[0] +
+          '</label>';
+        }).join('') +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+        '<button type="button" onclick="document.getElementById(\'proposalConfigOverlay\').remove()" style="padding:8px 16px;background:#222;border:1px solid #333;color:#888;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>' +
+        '<button type="button" onclick="_confirmProposalConfig(' + leadId + ')" style="padding:8px 20px;background:#0098d4;border:1px solid #0098d4;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px">Generate Proposal</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function _confirmProposalConfig(leadId) {
+  const overlay = document.getElementById('proposalConfigOverlay');
+  if (!overlay) return;
+  const hwSel   = overlay.querySelector('input[name="pcHw"]:checked');
+  const instSel = overlay.querySelector('input[name="pcInst"]:checked');
+  const l = LEADS.find(x => x.id === leadId);
+  if (l) {
+    l.proposalHwFree = hwSel && hwSel.value === 'free';
+    l.proposalInstallType = (instSel && instSel.value) || 'we-install';
+    if (typeof _saveLeads === 'function') _saveLeads();
+  }
+  overlay.remove();
+  _doOpenProposalDoc(leadId);
+}
+
+function _doOpenProposalDoc(leadId) {
   const l = LEADS.find(x => x.id === leadId);
   _proposalLeadCache = l;
   if (!l) return;
@@ -4614,17 +4681,57 @@ function openProposalDoc(leadId) {
   const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
 
-  // Build hardware rows
+  // Pricing-config flags driven by the modal that opens before the proposal.
+  const _hwFree         = !!l.proposalHwFree;
+  const _instType       = l.proposalInstallType || 'we-install';   // we-install | we-install-free | self-install | not-required
+  const _instCustomerPays = _instType === 'we-install';
+  const _instWaived       = _instType === 'we-install-free' || _instType === 'self-install';
+
+  // Build hardware rows — always render when there are line items so the
+  // customer sees what's being included free (not just whatever is billable).
   let hwRows = '';
+  let hwNetTotal = 0;
   if (l.lineItems) {
     l.lineItems.forEach(function(li) {
       const q = li.qty || 0;
-      const devPrice = li.hwPrice || 0;
-      const instPrice = li.hwInstall || 0;
-      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
-      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
+      if (q <= 0) return;
+      // Gross unit price for hardware: prefer the stored value, fall back to
+      // the HW_PRICES catalog so a FREE giveaway still shows what it's worth.
+      const _hwTypeKey = li.hwType || HW_MAP[li.type] || 'Hardwired Device';
+      const _hwGrossUnit = (li.hwPrice && li.hwPrice > 0) ? li.hwPrice : (HW_PRICES[_hwTypeKey] || 0);
+      const _hwLineGross = q * _hwGrossUnit;
+      const _hwLabel = li.hwType || (li.type + ' Device');
+      if (_hwFree && _hwGrossUnit > 0) {
+        // Struck-through gross + FREE badge.
+        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td>' +
+                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_hwGrossUnit) + '</span></td>' +
+                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_hwLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+      } else if (_hwGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
+        hwNetTotal += _hwLineGross;
+      }
+      // Install row.
+      const _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
+      const _instLineGross = q * _instGrossUnit;
+      if (_instType === 'not-required') {
+        // Don't show install row at all — Agreement Details handles the framing.
+      } else if (_instType === 'self-install' && _instGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
+                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
+                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#fff4e6;color:#b45309;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">SELF-INSTALL</span></td></tr>';
+      } else if (_instType === 'we-install-free' && _instGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
+                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
+                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+      } else if (_instCustomerPays && _instGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
+        hwNetTotal += _instLineGross;
+      }
     });
   }
+  // Override the auto-derived hwTotal with the renderer's net so the subtotal
+  // line matches what the customer actually owes (zero when everything's free).
+  const _hwSectionShown = hwRows.length > 0;
 
   // Build software rows
   let swRows = '';
@@ -4719,15 +4826,16 @@ ${_acceptedBanner}
 
 <h2>Pricing Schedule</h2>
 
-${hwTotal > 0 ? `<h3>Hardware &amp; Installation</h3>
+${_hwSectionShown ? `<h3>Hardware &amp; Installation</h3>
 <table>
   <thead><tr><th style="width:45%">Item</th><th style="width:10%;text-align:center">Qty</th><th style="width:22%;text-align:right">Unit Price</th><th style="width:23%;text-align:right">Total</th></tr></thead>
   <tbody>
     ${hwRows}
-    <tr class="subtotal"><td colspan="3">Hardware &amp; Installation Total</td><td style="text-align:right">${fmt(hwTotal)}</td></tr>
+    <tr class="subtotal"><td colspan="3">Hardware &amp; Installation Total</td><td style="text-align:right">${fmt(hwNetTotal)}</td></tr>
   </tbody>
 </table>
-${isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : ''}` : ''}
+${hwNetTotal > 0 && isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : ''}
+${(_hwFree || _instWaived) ? '<div class="callout" style="background:#e6f7ee;border-color:#00CC66"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFree ? 'Hardware' : '') + (_hwFree && _instWaived ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instType === 'we-install-free' ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>' : ''}` : ''}
 
 <h3>Software Subscription</h3>
 <table>
@@ -4753,8 +4861,8 @@ ${allExtras.length > 0 ? `<h3>Optional Extras</h3>
 <table>
   <tbody>
     <tr><td style="font-weight:600;width:40%">Term</td><td>${isMTM ? 'Month-to-Month — cancel any time with 30 days notice' : term + ' months'}</td></tr>
-    <tr><td style="font-weight:600">Payment</td><td>${isMTM ? 'Hardware ' + fmt(hwTotal) + ' upfront + ' + fmt(totalMonthly) + '/mo subscription' : fmt(totalMonthly) + '/mo — all-inclusive monthly payment'}</td></tr>
-    <tr><td style="font-weight:600">Installation</td><td>Included — scheduled at your convenience</td></tr>
+    <tr><td style="font-weight:600">Payment</td><td>${isMTM ? (hwNetTotal > 0 ? 'Hardware ' + fmt(hwNetTotal) + ' upfront + ' : '') + fmt(totalMonthly) + '/mo subscription' : fmt(totalMonthly) + '/mo — all-inclusive monthly payment'}</td></tr>
+    <tr><td style="font-weight:600">Installation</td><td>${_instType === 'we-install' ? 'Included — scheduled at your convenience' : (_instType === 'we-install-free' ? 'Included at no charge — scheduled at your convenience' : (_instType === 'self-install' ? 'Self-install by client — devices ship plug-ready with fitting guide' : 'Not required — plug-and-play device, no fitting needed'))}</td></tr>
     <tr><td style="font-weight:600">Support</td><td>24/7 Australian-based support</td></tr>
     <tr><td style="font-weight:600">Billing</td><td>Monthly in advance via direct debit</td></tr>
   </tbody>
@@ -4823,16 +4931,49 @@ function _buildProposalEmailHTML(l) {
   var fmt = function(n) { return '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2}); };
   var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
 
+  // Pricing-config flags (same shape as _doOpenProposalDoc).
+  var _hwFree         = !!l.proposalHwFree;
+  var _instType       = l.proposalInstallType || 'we-install';
+  var _instCustomerPays = _instType === 'we-install';
+  var _instWaived       = _instType === 'we-install-free' || _instType === 'self-install';
+
   var hwRows = '';
+  var hwNetTotal = 0;
   if (l.lineItems) {
     l.lineItems.forEach(function(li) {
       var q = li.qty || 0;
-      var devPrice = li.hwPrice || 0;
-      var instPrice = li.hwInstall || 0;
-      if (devPrice > 0) hwRows += '<tr><td style="font-weight:600">' + (li.hwType || li.type + ' Device') + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(devPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * devPrice) + '</td></tr>';
-      if (instPrice > 0) hwRows += '<tr><td style="font-weight:600">Installation — ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(instPrice) + '</td><td style="text-align:right;font-weight:600">' + fmt(q * instPrice) + '</td></tr>';
+      if (q <= 0) return;
+      var _hwTypeKey = li.hwType || HW_MAP[li.type] || 'Hardwired Device';
+      var _hwGrossUnit = (li.hwPrice && li.hwPrice > 0) ? li.hwPrice : (HW_PRICES[_hwTypeKey] || 0);
+      var _hwLineGross = q * _hwGrossUnit;
+      var _hwLabel = li.hwType || (li.type + ' Device');
+      if (_hwFree && _hwGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td>' +
+                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_hwGrossUnit) + '</span></td>' +
+                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_hwLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+      } else if (_hwGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
+        hwNetTotal += _hwLineGross;
+      }
+      var _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
+      var _instLineGross = q * _instGrossUnit;
+      if (_instType === 'not-required') {
+        // skip
+      } else if (_instType === 'self-install' && _instGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
+                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
+                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#fff4e6;color:#b45309;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">SELF-INSTALL</span></td></tr>';
+      } else if (_instType === 'we-install-free' && _instGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
+                  '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
+                  '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+      } else if (_instCustomerPays && _instGrossUnit > 0) {
+        hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
+        hwNetTotal += _instLineGross;
+      }
     });
   }
+  var _hwSectionShown = hwRows.length > 0;
 
   var swRows = '';
   if (l.lineItems) {
@@ -4864,16 +5005,19 @@ function _buildProposalEmailHTML(l) {
 
   html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Pricing Schedule</h2>';
 
-  if (hwTotal > 0) {
+  if (_hwSectionShown) {
     html += '<h3 style="font-size:12px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Hardware &amp; Installation</h3>';
     html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
     html += '<thead><tr><th style="width:45%;text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Item</th><th style="width:10%;text-align:center;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Qty</th><th style="width:22%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Unit Price</th><th style="width:23%;text-align:right;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid #eee">Total</th></tr></thead>';
     html += '<tbody>';
     html += hwRows;
-    html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Hardware &amp; Installation Total</td><td style="text-align:right;padding:10px 12px">' + fmt(hwTotal) + '</td></tr>';
+    html += '<tr style="border-top:1px solid #ccc;font-weight:700;font-size:12px;color:#333"><td colspan="3" style="padding:10px 12px">Hardware &amp; Installation Total</td><td style="text-align:right;padding:10px 12px">' + fmt(hwNetTotal) + '</td></tr>';
     html += '</tbody></table>';
-    if (isMTM) {
-      html += '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>';
+    if (hwNetTotal > 0 && isMTM) {
+      html += '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>';
+    }
+    if (_hwFree || _instWaived) {
+      html += '<div style="background:#e6f7ee;border:1px solid #00CC66;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFree ? 'Hardware' : '') + (_hwFree && _instWaived ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instType === 'we-install-free' ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>';
     }
   }
 
@@ -4904,8 +5048,8 @@ function _buildProposalEmailHTML(l) {
   html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
   html += '<tbody>';
   html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Term</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (isMTM ? 'Month-to-Month — cancel any time with 30 days notice' : term + ' months') + '</td></tr>';
-  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Payment</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (isMTM ? 'Hardware ' + fmt(hwTotal) + ' upfront + ' + fmt(totalMonthly) + '/mo subscription' : fmt(totalMonthly) + '/mo — all-inclusive monthly payment') + '</td></tr>';
-  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Installation</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Included — scheduled at your convenience</td></tr>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Payment</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (isMTM ? ((hwNetTotal > 0 ? 'Hardware ' + fmt(hwNetTotal) + ' upfront + ' : '') + fmt(totalMonthly) + '/mo subscription') : (fmt(totalMonthly) + '/mo — all-inclusive monthly payment')) + '</td></tr>';
+  html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Installation</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (_instType === 'we-install' ? 'Included — scheduled at your convenience' : (_instType === 'we-install-free' ? 'Included at no charge — scheduled at your convenience' : (_instType === 'self-install' ? 'Self-install by client — devices ship plug-ready with fitting guide' : 'Not required — plug-and-play device, no fitting needed'))) + '</td></tr>';
   html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Support</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">24/7 Australian-based support</td></tr>';
   html += '<tr><td style="font-weight:600;width:40%;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Billing</td><td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Monthly in advance via direct debit</td></tr>';
   html += '</tbody></table>';
