@@ -4598,11 +4598,11 @@ function openProposalDoc(leadId) {
       '<div style="font-size:11px;color:#888;margin-bottom:18px;line-height:1.5">How are we handling hardware and installation for ' + l.co + '? These appear in the Pricing Schedule so the customer sees the value of anything being included free.</div>' +
       '<div style="margin-bottom:16px">' +
         '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Hardware</div>' +
-        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (!hwFree?'#0098d4':'#333') + ';background:' + (!hwFree?'rgba(0,152,212,.08)':'transparent') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
-          '<input type="radio" name="pcHw" value="charge" ' + (!hwFree?'checked':'') + ' style="accent-color:#0098d4"> Customer pays for hardware' +
+        '<label class="pcOpt" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (!hwFree?'#0098d4':'#333') + ';background:' + (!hwFree?'rgba(0,152,212,.08)':'transparent') + ';margin-bottom:4px;cursor:pointer;font-size:12px;transition:all .12s">' +
+          '<input type="radio" name="pcHw" value="charge" ' + (!hwFree?'checked':'') + ' onchange="_pcSyncSelected(this)" style="accent-color:#0098d4"> Customer pays for hardware' +
         '</label>' +
-        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (hwFree?'#0098d4':'#333') + ';background:' + (hwFree?'rgba(0,152,212,.08)':'transparent') + ';cursor:pointer;font-size:12px">' +
-          '<input type="radio" name="pcHw" value="free" ' + (hwFree?'checked':'') + ' style="accent-color:#0098d4"> Hardware provided FREE — show the value being given away' +
+        '<label class="pcOpt" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (hwFree?'#0098d4':'#333') + ';background:' + (hwFree?'rgba(0,152,212,.08)':'transparent') + ';cursor:pointer;font-size:12px;transition:all .12s">' +
+          '<input type="radio" name="pcHw" value="free" ' + (hwFree?'checked':'') + ' onchange="_pcSyncSelected(this)" style="accent-color:#0098d4"> Hardware provided FREE — show the value being given away' +
         '</label>' +
       '</div>' +
       '<div style="margin-bottom:20px">' +
@@ -4615,8 +4615,8 @@ function openProposalDoc(leadId) {
             'not-required':     'Not required — plug-and-play device'
           };
           var on = instType === opt;
-          return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (on?'#0098d4':'#333') + ';background:' + (on?'rgba(0,152,212,.08)':'transparent') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
-            '<input type="radio" name="pcInst" value="' + opt + '" ' + (on?'checked':'') + ' style="accent-color:#0098d4"> ' + labels[opt] +
+          return '<label class="pcOpt" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (on?'#0098d4':'#333') + ';background:' + (on?'rgba(0,152,212,.08)':'transparent') + ';margin-bottom:4px;cursor:pointer;font-size:12px;transition:all .12s">' +
+            '<input type="radio" name="pcInst" value="' + opt + '" ' + (on?'checked':'') + ' onchange="_pcSyncSelected(this)" style="accent-color:#0098d4"> ' + labels[opt] +
           '</label>';
         }).join('') +
       '</div>' +
@@ -4626,6 +4626,24 @@ function openProposalDoc(leadId) {
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);
+}
+
+// When a radio in the proposal config modal changes, sync the blue border /
+// background tint across the whole group so the selection follows the click.
+function _pcSyncSelected(input) {
+  if (!input || !input.name) return;
+  var group = document.querySelectorAll('input[name="' + input.name + '"]');
+  group.forEach(function(r) {
+    var label = r.closest('label.pcOpt');
+    if (!label) return;
+    if (r.checked) {
+      label.style.borderColor = '#0098d4';
+      label.style.background = 'rgba(0,152,212,.08)';
+    } else {
+      label.style.borderColor = '#333';
+      label.style.background = 'transparent';
+    }
+  });
 }
 
 function _confirmProposalConfig(leadId) {
