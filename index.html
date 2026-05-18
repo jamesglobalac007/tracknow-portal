@@ -4827,6 +4827,10 @@ function _doOpenProposalDoc(leadId) {
       '<div style="font-size:11px;font-weight:700;color:#00CC66;letter-spacing:.4em;text-transform:uppercase;margin-bottom:8px;text-align:center">✓ ACCEPTED — CLIENT WANTS TO PROCEED</div>' +
       '<div style="font-size:14px;font-weight:600;color:#fff;text-align:center;margin-bottom:6px">' + (_acceptInfo.name || 'Customer') + ' from ' + (_acceptInfo.company || l.co || 'Customer') + ' has clicked to proceed to formal agreement</div>' +
       '<div style="font-size:12px;color:#a8e6c0;text-align:center">Accepted on ' + new Date(_acceptInfo.ts).toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'}) + ' &middot; Proposal #TN-' + String(l.id).padStart(4, '0') + '</div>' +
+      '<div class="no-print" style="text-align:center;margin-top:12px">' +
+        '<button onclick="if (window.opener && window.opener.undoProposalAcceptByLead) { if (window.opener.undoProposalAcceptByLead(' + l.id + ')) { setTimeout(function(){ window.location.reload(); }, 200); } }" style="padding:8px 18px;background:rgba(255,255,255,.12);border:1px solid #fff;color:#fff;font-size:11px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit;text-transform:uppercase">↶ Undo Acceptance</button>' +
+        '<div style="font-size:10px;color:#a8e6c0;margin-top:6px">Clicked Proceed by accident? Rolls back the banner so the proposal can be re-sent.</div>' +
+      '</div>' +
     '</div>'
   ) : '';
 
@@ -15593,6 +15597,51 @@ function dismissProposalAccept(id) {
     try { fetch('/api/status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({itemType:'proposal_accept', id:id, status:'dismissed'}) }).catch(function(){}); } catch(e){}
   }
   renderProposalAccepts();
+}
+
+// Called from the proposal window itself (the green ACCEPTED banner button).
+// Looks up the matching accept entry by the lead's id / company / email and
+// delegates to undoProposalAccept. Returns true if a matching entry was found
+// AND the user confirmed the undo, so the proposal window can reload itself.
+function undoProposalAcceptByLead(leadId) {
+  var l = (window.LEADS || []).find(function(x) { return x.id === leadId; });
+  if (!l) {
+    if (typeof showToast === 'function') showToast('Lead not found');
+    return false;
+  }
+  var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
+  var match = accepts.find(function(a) {
+    if (a.company && l.co && a.company.toLowerCase() === l.co.toLowerCase()) return true;
+    if (a.email && l.email && a.email.toLowerCase() === l.email.toLowerCase()) return true;
+    if (a.proposal && a.proposal === ('TN-' + String(l.id).padStart(4, '0'))) return true;
+    return false;
+  });
+  // Even if no localStorage entry (e.g. it was dismissed earlier), still clear
+  // the flag on the lead/customer so the banner goes away.
+  if (!match) {
+    if (!confirm('Undo the acceptance for "' + (l.co || 'this lead') + '"?\n\nThis clears the green ACCEPTED banner so the proposal can be re-sent.')) return false;
+    delete l.proposalAcceptedDate;
+    delete l.proposalAcceptedBy;
+    if (typeof _saveLeads === 'function') _saveLeads();
+    if (window.CUSTOMERS) {
+      CUSTOMERS.forEach(function(c) {
+        if (c && c.co && l.co && c.co.toLowerCase() === l.co.toLowerCase()) {
+          delete c.proposalAcceptedDate;
+        }
+      });
+      if (typeof _saveCustomers === 'function') _saveCustomers();
+    }
+    if (typeof renderProposalAccepts === 'function') renderProposalAccepts();
+    if (typeof renderPipeline === 'function') renderPipeline();
+    if (typeof renderProspects === 'function') renderProspects();
+    if (typeof showToast === 'function') showToast('Acceptance flag cleared for ' + (l.co || 'lead'));
+    return true;
+  }
+  // Delegate to the standard undo path — it'll show its own confirm dialog.
+  undoProposalAccept(match.id);
+  // undoProposalAccept doesn't return a value so check whether the flag is
+  // actually gone before telling the proposal window to reload.
+  return !l.proposalAcceptedDate;
 }
 
 // Full rollback: drops the accept entry entirely AND clears the
