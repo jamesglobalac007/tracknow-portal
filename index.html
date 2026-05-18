@@ -3525,12 +3525,24 @@ function _qqToggleCustomMonths(selectId, customId) {
 // shorter contract so the ask doesn't scare the customer; large fleets get
 // 36mo because the savings narrative carries the longer commitment.
 function qqApplyRecommended() {
-  // Total units across all currently-active device lines.
+  // Total units across all currently-active device lines. _qqLines is
+  // declared with `let` so it's in module scope, not on window — reference
+  // it directly. Also fall back to scanning the DOM in case _qqLines is
+  // empty for any reason (defensive against ordering issues).
   var totalUnits = 0;
-  (window._qqLines || []).forEach(function(lineId) {
-    var u = parseInt((document.getElementById('qql_' + lineId + '_units') || {}).value, 10) || 0;
-    totalUnits += u;
-  });
+  try {
+    (typeof _qqLines !== 'undefined' && _qqLines ? _qqLines : []).forEach(function(lineId) {
+      var u = parseInt((document.getElementById('qql_' + lineId + '_units') || {}).value, 10) || 0;
+      totalUnits += u;
+    });
+  } catch (e) {}
+  // Fallback: DOM scan for any unit inputs if the list above produced 0.
+  if (totalUnits === 0) {
+    var inputs = document.querySelectorAll('[id^="qql_"][id$="_units"]');
+    for (var i = 0; i < inputs.length; i++) {
+      totalUnits += parseInt(inputs[i].value, 10) || 0;
+    }
+  }
   // Deal-size buckets (units):
   //   < 5    -> 12 month contract (small fleet, keep the ask modest)
   //   5 - 14 -> 24 month contract (medium, locks in renewal + amortise window)
