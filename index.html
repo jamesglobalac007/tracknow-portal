@@ -12738,7 +12738,17 @@ function updateSegBillingModel(segId, mode) {
   var seg = _fpSegments.find(function(s) { return s.id === segId; });
   if (!seg) return;
   seg.billingModel = (mode === 'dayRate') ? 'dayRate' : 'hourly';
-  // Re-render the §4 section so the right input pair shows.
+  // Seed defaults from benchmark if the target mode's fields are missing/zero.
+  // (Otherwise switching mode on a freshly-loaded saved seg would calc to $0
+  // until the user manually retypes the values.)
+  var b = FLEET_BENCHMARKS[seg.type] || {};
+  if (seg.billingModel === 'dayRate') {
+    if (!seg.dayRate)     seg.dayRate     = b.dayRate     || 0;
+    if (!seg.extraDaysYr) seg.extraDaysYr = b.extraDaysYr || 0;
+  } else {
+    if (!seg.hireRate)    seg.hireRate    = b.hireRate    || 0;
+    if (!seg.extraHrsDay) seg.extraHrsDay = b.extraHrsDay || 0;
+  }
   renderCalcAssetChips();
   _autoRecalcProspectCosts();
 }
@@ -12829,12 +12839,27 @@ function renderFleetSegments() {
   c.innerHTML = _fpSegments.length === 0 ? emptyMsg : html;
   if (c2 && c2 !== c) c2.innerHTML = _fpSegments.length === 0 ? emptyMsg : html;
 }
+// Backfill any new FLEET_BENCHMARKS fields that older saved segments are missing.
+// Without this, segments saved before billingModel/dayRate/extraDaysYr existed
+// load as `undefined`, which the calc treats as 0 — so the breakdown shows $0
+// even when the UI shows the defaults (the inputs show the render fallback but
+// onchange never fires, so the seg never gets the value).
+function _backfillSegFields(seg) {
+  var b = FLEET_BENCHMARKS[seg.type] || {};
+  if (seg.billingModel == null) seg.billingModel = b.billingModel || 'hourly';
+  if (seg.extraHrsDay == null)  seg.extraHrsDay  = b.extraHrsDay != null ? b.extraHrsDay : 0;
+  if (seg.hireRate == null)     seg.hireRate     = b.hireRate    != null ? b.hireRate    : 0;
+  if (seg.dayRate == null)      seg.dayRate      = b.dayRate     != null ? b.dayRate     : 0;
+  if (seg.extraDaysYr == null)  seg.extraDaysYr  = b.extraDaysYr != null ? b.extraDaysYr : 0;
+  return seg;
+}
+
 // Auto-add one segment when fleet profile opens
 function initFleetProfile() {
   const entity = _getDealEntity();
   // Load saved fleet segments if entity has them
   if (entity && entity.fleetSegments && entity.fleetSegments.length) {
-    _fpSegments = entity.fleetSegments.map(function(s) { return Object.assign({}, s); });
+    _fpSegments = entity.fleetSegments.map(function(s) { return _backfillSegFields(Object.assign({}, s)); });
     renderFleetSegments();
   } else if (_fpSegments.length === 0) {
     addFleetSegment('trucks');
