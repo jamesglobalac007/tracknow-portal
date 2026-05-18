@@ -5706,6 +5706,17 @@ function _openBlankAgreementDoc(leadId, reuseWin) {
   </ol></div>
 </div>
 
+${l.pinchLink ? '<div style="border:3px solid #00CC66;margin:30px 0;overflow:hidden">' +
+  '<div style="background:#00CC66;padding:14px 20px;text-align:center">' +
+    '<div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Set Up Payment via Pinch</div>' +
+  '</div>' +
+  '<div style="padding:24px;background:#f0fdf4;text-align:center">' +
+    '<p style="font-size:13px;color:#1a1a1a;margin-bottom:16px;line-height:1.6">Set up your direct debit so we can start the service straight after you sign. Takes about 60 seconds — your details are handled securely by Pinch Payments.</p>' +
+    '<a href="' + l.pinchLink + '" target="_blank" rel="noopener" style="display:inline-block;padding:14px 36px;background:#00CC66;color:#fff;font-size:15px;font-weight:900;text-decoration:none;letter-spacing:.5px;text-transform:uppercase;border-radius:4px">Authorise Payment &rarr;</a>' +
+    '<p style="font-size:11px;color:#666;margin-top:14px">Opens Pinch Payments in a new tab. You\'ll be returned to this agreement once complete.</p>' +
+  '</div>' +
+'</div>' : ''}
+
 <!-- ── DIGITAL SIGNATURE SECTION ── -->
 <div style="border:3px solid #FFA028;margin:30px 0;overflow:hidden">
   <div style="background:#FFA028;padding:14px 20px;text-align:center">
@@ -5978,6 +5989,20 @@ function _buildAgreementEmailHTML(l) {
   html += '<li style="margin-bottom:4px"><strong>Entire Agreement:</strong> This document constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, and agreements. Any amendments must be made in writing and signed by both parties.</li>';
   html += '</ol>';
   html += '</div>';
+
+  // Pinch direct-debit CTA — appears only when a link has been set in Deal Products.
+  if (l.pinchLink) {
+    html += '<div style="border:3px solid #00CC66;margin:30px 0;overflow:hidden">' +
+      '<div style="background:#00CC66;padding:14px 20px;text-align:center">' +
+        '<div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase">Set Up Payment via Pinch</div>' +
+      '</div>' +
+      '<div style="padding:24px;background:#f0fdf4;text-align:center">' +
+        '<p style="font-size:13px;color:#1a1a1a;margin-bottom:16px;line-height:1.6">Set up your direct debit so we can start the service straight after you sign. Takes about 60 seconds &mdash; your details are handled securely by Pinch Payments.</p>' +
+        '<a href="' + l.pinchLink + '" target="_blank" rel="noopener" style="display:inline-block;padding:14px 36px;background:#00CC66;color:#fff;font-size:15px;font-weight:900;text-decoration:none;letter-spacing:.5px;text-transform:uppercase;border-radius:4px">Authorise Payment &rarr;</a>' +
+        '<p style="font-size:11px;color:#666;margin-top:14px">Opens Pinch Payments in a new tab. You\'ll be returned to this agreement once complete.</p>' +
+      '</div>' +
+    '</div>';
+  }
 
   html += '<div style="margin-top:30px;padding-top:16px;border-top:2px solid #0098d4;display:flex;justify-content:space-between;font-size:10px;color:#888">';
   html += '<div>Track Now Proprietary Limited &middot; ABN 12 634 559 970 &middot; Gold Coast, QLD 4217 &middot; Sydney, NSW 2000 &middot; 1300 TRACK NOW &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
@@ -12645,6 +12670,8 @@ function openDealProducts(leadId, source) {
   document.getElementById('dp_term').value = l.term != null ? l.term : 24;
   document.getElementById('dp_sim').value = l.sim || '';
   // Load saved Cost of Goods per unit (manual entries, independent from product lines)
+  var dpPinch = document.getElementById('dp_pinchLink');
+  if (dpPinch) dpPinch.value = l.pinchLink || '';
   document.getElementById('dp_hwCost_input').value = l.hwCostOfGoods || 0;
   document.getElementById('dp_swCost_input').value = l.swCostOfGoods || 0;
   document.getElementById('dp_installCost_input').value = l.installCostOfGoods || 0;
@@ -12827,6 +12854,15 @@ function toggleInstallCost(idx, val) {
 // Same Yes/No pattern for hardware $/unit. "No" means hardware is provided
 // free — sets hwFree:true on the lineItem so the proposal renderer shows the
 // catalog gross with a FREE - INCLUDED badge instead of just hiding the line.
+// Auto-save the Pinch link as it's typed so James doesn't have to click Save
+// just to keep the URL. Trims whitespace; empty string clears the link.
+function updatePinchLink(val) {
+  var l = _getDealEntity();
+  if (!l) return;
+  l.pinchLink = (val || '').trim();
+  if (typeof saveData === 'function') { try { saveData(); } catch (e) {} }
+}
+
 function toggleHwCost(idx, val) {
   const l = _getDealEntity();
   if (!l || !l.lineItems[idx]) return;
@@ -13032,6 +13068,8 @@ function saveDealProducts() {
   l.hwCostOfGoods = parseFloat(document.getElementById('dp_hwCost_input').value) || 0;
   l.swCostOfGoods = parseFloat(document.getElementById('dp_swCost_input').value) || 0;
   l.installCostOfGoods = parseFloat(document.getElementById('dp_installCost_input').value) || 0;
+  var _pinchEl = document.getElementById('dp_pinchLink');
+  l.pinchLink = _pinchEl ? (_pinchEl.value || '').trim() : '';
   calcLeadFromLines(l);
   l._productsSet = true;
   // Update deviceType to primary (highest qty) for backwards compat
@@ -17099,6 +17137,13 @@ window.doLogout = doLogout;
         <div id="dp_paymentExplainer" style="margin-top:10px;padding:8px 10px;background:#111;border:1px solid #222;font-size:10px;color:#CCC;line-height:1.5">
           <b style="color:#FFA028">Monthly:</b> Customer pays hardware + install upfront, then only the software subscription each month. Best for customers who want to own the hardware outright.
         </div>
+      </div>
+
+      <!-- ── PINCH PAYMENT LINK ── -->
+      <div style="background:#080808;border:1px solid #1a3a1a;padding:14px;margin:14px 0 12px">
+        <div style="font-size:10px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Pinch Payment Setup (Optional)</div>
+        <div style="font-size:10px;color:#666;margin-bottom:8px;line-height:1.5">Paste the customer's Pinch agreement-signup link here. It will appear as a prominent "Set up Direct Debit via Pinch" button on the agreement so the customer can authorise payment in one click. Generate from the Pinch dashboard.</div>
+        <input type="url" id="dp_pinchLink" value="" placeholder="https://app.getpinch.com.au/agreement/signup/..." oninput="updatePinchLink(this.value)" style="width:100%;padding:8px 10px;background:#111;border:1px solid #1a3a1a;color:#00CC66;font-size:12px;font-family:inherit">
       </div>
 
       <div style="font-size:10px;font-weight:700;color:#FFA028;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">Cost of Goods</div>
