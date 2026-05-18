@@ -2685,8 +2685,8 @@ select option{background:#0a0a0a;color:#0098d4}
             <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Hardware payment</label>
             <div style="display:flex;gap:6px">
               <select id="qq_hwPayment" onchange="_qqOnHwPaymentChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-                <option value="upfront">Upfront (Day 1)</option>
-                <option value="12" selected>Amortise 12 mo</option>
+                <option value="upfront" selected>Upfront (Day 1)</option>
+                <option value="12">Amortise 12 mo</option>
                 <option value="24">Amortise 24 mo</option>
                 <option value="36">Amortise 36 mo</option>
                 <option value="custom">Custom…</option>
@@ -2698,8 +2698,8 @@ select option{background:#0a0a0a;color:#0098d4}
             <label style="font-size:9px;color:#00CC66;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Install payment</label>
             <div style="display:flex;gap:6px">
               <select id="qq_installPayment" onchange="_qqOnInstallPaymentChange()" style="flex:1;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-                <option value="upfront">Upfront (Day 1)</option>
-                <option value="12" selected>Amortise 12 mo</option>
+                <option value="upfront" selected>Upfront (Day 1)</option>
+                <option value="12">Amortise 12 mo</option>
                 <option value="24">Amortise 24 mo</option>
                 <option value="36">Amortise 36 mo</option>
                 <option value="custom">Custom…</option>
@@ -3661,11 +3661,11 @@ function qqResetForm() {
   var customAmort = document.getElementById('qq_amortMonthsCustom');
   if (customAmort) { customAmort.value = '18'; customAmort.style.display = 'none'; }
   var hwPay = document.getElementById('qq_hwPayment');
-  if (hwPay) hwPay.value = '12';
+  if (hwPay) hwPay.value = 'upfront';
   var hwPayC = document.getElementById('qq_hwPaymentCustom');
   if (hwPayC) { hwPayC.value = '18'; hwPayC.style.display = 'none'; }
   var instPay = document.getElementById('qq_installPayment');
-  if (instPay) instPay.value = '12';
+  if (instPay) instPay.value = 'upfront';
   var instPayC = document.getElementById('qq_installPaymentCustom');
   if (instPayC) { instPayC.value = '18'; instPayC.style.display = 'none'; }
   document.getElementById('qq_prospect').value = '';
