@@ -4859,12 +4859,15 @@ ${_acceptedBanner}
 </div>
 <div class="header">
   <div>
-    <div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>
-    <div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>
+    <div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:700;color:#666;font-size:22px;letter-spacing:.5px">GPS</span></div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
     <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   </div>
   <div style="text-align:right"><div style="font-size:16px;font-weight:700">${l.co}</div><div style="font-size:11px;color:#666;margin-top:2px">${l.name}${l.city ? ' · '+l.city : ''}${l.st ? ', '+l.st : ''}</div><div style="font-size:11px;color:#666">${l.email || ''}</div><div style="font-size:11px;color:#666">${today}</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-${String(l.id).padStart(4,'0')}</div></div>
+</div>
+
+<div style="text-align:center;margin:18px 0 28px;padding:14px 0;border-bottom:1px solid #e8ebf1">
+  <div style="font-size:26px;font-weight:800;color:#0a1726;letter-spacing:.5px;text-transform:uppercase">Service Agreement &amp; Proposal</div>
 </div>
 
 <h2>Scope of Service</h2>
@@ -5060,13 +5063,14 @@ function _buildProposalEmailHTML(l) {
   var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
   html += '<div>';
-  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>';
-  html += '<div style="font-size:11px;color:#888;margin-top:4px">Service Agreement &amp; Proposal</div>';
+  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:700;color:#666;font-size:22px;letter-spacing:.5px">GPS</span></div>';
   html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
   html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '</div>';
   html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700">' + l.co + '</div><div style="font-size:11px;color:#666;margin-top:2px">' + _titleCase(l.name) + (l.city ? ' · '+l.city : '') + (l.st ? ', '+l.st : '') + '</div><div style="font-size:11px;color:#666">' + (l.email || '') + '</div><div style="font-size:11px;color:#666">' + today + '</div><div style="font-size:10px;color:#888;margin-top:4px">Proposal #TN-' + String(l.id).padStart(4,'0') + '</div></div>';
   html += '</div>';
+
+  html += '<div style="text-align:center;margin:18px 0 28px;padding:14px 0;border-bottom:1px solid #e8ebf1"><div style="font-size:26px;font-weight:800;color:#0a1726;letter-spacing:.5px;text-transform:uppercase">Service Agreement &amp; Proposal</div></div>';
 
   html += '<h2 style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Scope of Service</h2>';
   html += '<p style="font-size:12px;line-height:1.6;margin-bottom:16px">TrackNow GPS will ' + ((_instType==='self-install'||_instType==='not-required') ? 'supply and maintain' : 'supply, install, and maintain') + ' GPS tracking devices across your fleet of <strong>' + totalUnits + ' assets</strong>' + (_instType==='self-install' ? ' &mdash; devices ship plug-ready for client installation' : (_instType==='not-required' ? ' &mdash; plug-and-play, no fitting required' : '')) + '. This includes live tracking, fuel monitoring, geofence alerts, driver behaviour scoring, and automated reporting via the TrackNow dashboard.</p>';
