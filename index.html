@@ -13947,6 +13947,13 @@ function recalcProspectCosts() {
   var totalHireHrsDay = 0, totalHireRevDay = 0;
   var slipUnits = 0, idleUnits = 0, ahUnits = 0, hireUnits = 0;
   var hireDays = parseFloat((document.getElementById('pfp_hireDays') || {}).value) || 260;
+  // % of fleet affected — industry data (HRIA AU 2023) shows ~20-30% of hire-yard
+  // fleet has under-reporting/overrun at any time when no telemetry is in place.
+  // Applies as a multiplier so the headline figure is defensible: "of 23 machines,
+  // ~25% are leaking" rather than "all 23 leak 3 hrs every day".
+  var hireAffectedPct = parseFloat((document.getElementById('pfp_hireAffectedPct') || {}).value);
+  if (isNaN(hireAffectedPct)) hireAffectedPct = 25;
+  var hireAffectedMult = Math.max(0, Math.min(100, hireAffectedPct)) / 100;
 
   // Per-calculator asset filtering
   var _selectedSegments = _fpSegments.filter(function(seg) { return seg.selected !== false; });
@@ -14017,18 +14024,20 @@ function recalcProspectCosts() {
   _hireSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     hireUnits += q;
+    // Apply % affected — fractional units are fine as a fleet-average projection.
+    var qAffected = q * hireAffectedMult;
     if (seg.billingModel === 'dayRate') {
       var xd = seg.extraDaysYr != null ? seg.extraDaysYr : 0;
       var dr = seg.dayRate != null ? seg.dayRate : 0;
-      var segAnnual = q * xd * dr;
-      totalHireDaysYr += q * xd;
+      var segAnnual = qAffected * xd * dr;
+      totalHireDaysYr += qAffected * xd;
       totalHireDayRev += segAnnual;
       annualHireLoss += segAnnual;
     } else {
       var xh = seg.extraHrsDay != null ? seg.extraHrsDay : 0;
       var hr = seg.hireRate != null ? seg.hireRate : 0;
-      var segHireRevDay = q * xh * hr;
-      totalHireHrsDay += q * xh;
+      var segHireRevDay = qAffected * xh * hr;
+      totalHireHrsDay += qAffected * xh;
       totalHireRevDay += segHireRevDay;
       annualHireLoss += segHireRevDay * hireDays;
     }
@@ -14085,16 +14094,19 @@ function recalcProspectCosts() {
     var hireDetail = '';
     _hireSegments.forEach(function(seg) {
       var hLabel = ((FLEET_BENCHMARKS[seg.type]||{}).label||seg.type).split('/')[0].trim();
+      var q = seg.qty || 0;
+      var qAff = q * hireAffectedMult;
+      var affMath = '<span style="color:#888">' + q + ' × ' + fmtN(hireAffectedPct,0) + '% = <b style="color:#a855f7">' + fmtN(qAff,1) + '</b> affected</span>';
       if (seg.billingModel === 'dayRate') {
         var xd = seg.extraDaysYr != null ? seg.extraDaysYr : 0;
         var dr = seg.dayRate != null ? seg.dayRate : 0;
-        var perAssetYr = xd * dr;
-        hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(day rate)</span>: ' + fmtN(xd,0) + ' extra days × $' + fmtN(dr,0) + '/day = <b style="color:#dc2626">' + fmt(perAssetYr) + '</b>/asset/yr</div>';
+        var segYr = qAff * xd * dr;
+        hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(day rate)</span>: ' + affMath + ' × ' + fmtN(xd,0) + ' days × $' + fmtN(dr,0) + '/day = <b style="color:#dc2626">' + fmt(segYr) + '</b>/yr</div>';
       } else {
         var xh = seg.extraHrsDay != null ? seg.extraHrsDay : 0;
         var hr = seg.hireRate != null ? seg.hireRate : 0;
-        var perAssetDay = xh * hr;
-        hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(hourly)</span>: ' + fmtN(xh,1) + ' extra hrs × $' + fmtN(hr,0) + '/hr = <b style="color:#dc2626">' + fmt(perAssetDay) + '</b>/asset/day</div>';
+        var segYr2 = qAff * xh * hr * hireDays;
+        hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(hourly)</span>: ' + affMath + ' × ' + fmtN(xh,1) + ' hrs × $' + fmtN(hr,0) + '/hr × ' + hireDays + ' days = <b style="color:#dc2626">' + fmt(segYr2) + '</b>/yr</div>';
       }
     });
     var summaryLines = '';
@@ -14110,7 +14122,7 @@ function recalcProspectCosts() {
       hireDetail +
       summaryLines +
       '<div style="margin-top:4px">Total annual unbilled revenue: <b style="color:#dc2626">' + fmt(annualHireLoss) + '</b></div>' +
-      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> HRIA AU 2023 — billing leakage 20-40% on hourly-billed plant where engine-hours aren\'t independently verified. Day-rate leakage defaults (~15-25 extra days/asset/yr) sit inside the same band when applied to a typical 150-200 day hire year.</div>';
+      '<div style="margin-top:6px;font-size:9px;color:#666;border-top:1px solid #222;padding-top:4px"><b>Source:</b> HRIA AU 2023 — billing leakage 20-30% on hourly-billed plant where engine-hours aren\'t independently verified. % affected default (25%) reflects industry data that at any given time only a fraction of a hire fleet has under-reporting / overrun events, not every machine every day.</div>';
   }
   var ahBd = document.getElementById('pfp_afterHrsBreakdown');
   if (ahBd) {
@@ -16569,10 +16581,15 @@ window.doLogout = doLogout;
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Hire customer under-reports machine usage — GPS catches the gap. Pick per asset: <b style="color:#a855f7">Hourly</b> (extra hrs/day × $/hr × working days) or <b style="color:#a855f7">Day rate</b> (extra days/yr × $/day — for ops who charge a full extra day when a hire spills over). Applies to plant / equipment / excavators.</div>
         <div id="pfp_hireAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div>
             <label style="font-size:8px;color:#a855f7;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Working Days / Year</label>
-            <input type="number" id="pfp_hireDays" value="260" min="1" max="366" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit;max-width:200px">
+            <input type="number" id="pfp_hireDays" value="260" min="1" max="366" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:8px;color:#a855f7;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">% of Fleet Affected</label>
+            <input type="number" id="pfp_hireAffectedPct" value="25" min="0" max="100" step="5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.4">Industry ~20-30% — not every machine leaks every day</div>
           </div>
         </div>
         <div style="margin-top:8px">
