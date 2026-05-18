@@ -10345,7 +10345,7 @@ function applyGlobalSearch() {
     html += '<div style="padding:8px 12px;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;background:#0d0d0d;border-bottom:1px solid #1a1a1a;">Prospects · ' + hitsP.length + '</div>';
     html += hitsP.map(p => row(
       p.co,
-      [p.name, p.email, p.phone, p.ind].filter(Boolean).join(' · '),
+      [p.name, p.email, p.phone, _normalizeIndustry(p.ind)].filter(Boolean).join(' · '),
       '#0098d4',
       `openGlobalSearchHit('prospect',${p.id})`
     )).join('');
@@ -10413,6 +10413,18 @@ function openGlobalSearchHit(kind, id) {
   }, 200);
 }
 
+// Display-time normaliser for the Industry column. Raw imported strings vary
+// wildly ("Excavator hire / skid steer hire / dumper hire", "bobcat hire",
+// "plant and equipment hire") — all of those mean the same thing to a TrackNow
+// sales call: Dry Hire. Raw data is untouched; only the displayed label and
+// the filter equality check use the normalised form.
+function _normalizeIndustry(raw) {
+  if (!raw) return '';
+  var s = String(raw).toLowerCase();
+  if (/(hire|excavator|bobcat|dumper|\bplant\b|earthmoving)/.test(s)) return 'Dry Hire';
+  return raw;
+}
+
 function renderProspects() {
   _saveProspects();
   const el = document.getElementById('prospectsTable');
@@ -10428,7 +10440,7 @@ function renderProspects() {
 
   let allFiltered = PROSPECTS.filter(p =>
     (!srcF || p.source === srcF) &&
-    (!indF || p.ind === indF) &&
+    (!indF || _normalizeIndustry(p.ind) === indF || p.ind === indF) &&
     (!stF  || p.status === stF) &&
     (!stateF || p.state === stateF) &&
     (!_prospOwnerFilter || p.owner === _prospOwnerFilter) &&
@@ -10501,7 +10513,7 @@ function renderProspects() {
         </div>
       </td>
       <td style="padding:9px 12px"><span style="font-size:10px;font-weight:700;color:${sm.color};background:${sm.bg};padding:2px 7px;border-radius:0;white-space:nowrap;display:inline-block;text-align:center">${sm.label}</span></td>
-      <td style="padding:9px 12px;font-size:12px;color:#0098d4">${p.ind || ''}</td>
+      <td style="padding:9px 12px;font-size:12px;color:#0098d4">${_normalizeIndustry(p.ind) || ''}</td>
       <td style="padding:9px 12px">
         <select onchange="event.stopPropagation();updateProspectField(${p.id},'status',this.value)" onclick="event.stopPropagation()" style="${selectStyle};color:#00CC66;font-weight:700">
           ${statusOptions.replace('value="'+p.status+'"', 'value="'+p.status+'" selected')}
@@ -10544,7 +10556,7 @@ function renderProspects() {
 
           <!-- Header strip: status / source / industry / fleet shortcut -->
           <div style="display:flex;gap:18px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #1a1a1a">
-            <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Industry</span><div style="font-size:13px;font-weight:600;color:#0098d4">${p.ind||'—'}</div></div>
+            <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Industry</span><div style="font-size:13px;font-weight:600;color:#0098d4">${_normalizeIndustry(p.ind)||'—'}</div></div>
             <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Source</span><div style="font-size:13px;font-weight:600;color:${sm.color}">${sm.label}</div></div>
             <div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Added</span><div style="font-size:13px;font-weight:600;color:#0098d4">${auDate(p.added || p.addedAt)||'—'}${p.addedAt ? ' <span style=\"font-size:11px;color:#888;font-weight:500\">'+auTime(p.addedAt)+'</span>' : ''}</div></div>
             ${p.status==='warm' && p.fleetReportSentDate ? '<div><span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.4px">Fleet Report Sent</span><div style="font-size:12px;font-weight:600;color:#0088FF">'+auDate(p.fleetReportSentDate)+'</div></div>' : ''}
@@ -12524,7 +12536,15 @@ function saveDealProducts() {
 // offers applicable assets and the calculation only includes them. Per-segment
 // seg.calcSlip / seg.calcIdle / seg.calcAH are user-toggles seeded from these.
 const FLEET_BENCHMARKS = {
-  // ── Transport / Logistics ──
+  // ── Top-level sectors (3 active options in the dropdown) ────────────────
+  // Numbers are averaged across the legacy sub-types so a single-row pick
+  // gives a defensible call number. Legacy sub-types below stay in the table
+  // (for back-compat with already-saved fleetSegments) but aren't shown in
+  // the dropdown — _backfillSegFields migrates seg.type to the parent on load.
+  transport:   { label:'Transport / Logistics',      km: 1500, consumption: 38, insurance: 7500, slippage: 16, idle: 2.8, fraud: 4, workHrs: 10, idleHrsDay: 2.3, afterHrsPct: 4,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  service:     { label:'Service / Owned Fleet',      km: 700,  consumption: 13, insurance: 2500, slippage: 12, idle: 1.3, fraud: 3, workHrs: 8,  idleHrsDay: 1.3, afterHrsPct: 13, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  dryHire:     { label:'Dry Hire',                   km: 100,  consumption: 31, insurance: 5200, slippage: 19, idle: 3.3, fraud: 4, workHrs: 6,  idleHrsDay: 2.7, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'dayRate', extraHrsYr: 75,  hireRate: 130, dayRate: 900,  extraDaysYr: 15, notApplicableReason: 'stays on site after hours' },
+  // ── Legacy sub-types (back-compat only — not in dropdown anymore) ───────
   primeMover:  { label:'Prime Mover / B-Double',     km: 2500, consumption: 55, insurance: 12000, slippage: 15, idle: 3.0, fraud: 5, workHrs: 12, idleHrsDay: 2.5, afterHrsPct: 5,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
   trucks:      { label:'Rigid Truck',                km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
   refrigerated:{ label:'Refrigerated Vehicles',      km: 900,  consumption: 22, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: 'stays parked after hours' },
@@ -12871,17 +12891,14 @@ function renderFleetSegments() {
   // Grouped category dropdown — 12 categories grouped by business segment so
   // the dropdown stays scannable. Order inside each group matches the order
   // in FLEET_BENCHMARKS for predictability.
-  const _typeGroups = [
-    { label: 'Transport / Logistics',     keys: ['primeMover','trucks','refrigerated'] },
-    { label: 'Service / Owned Fleet',     keys: ['vans','utes','cars'] },
-    { label: 'Dry Hire',keys: ['excavators','skidSteer','wheelLoader','telehandler','equipment'] },
-    { label: 'Other',                     keys: ['trailers'] }
-  ];
-  const typeOpts = _typeGroups.map(g =>
-    '<optgroup label="' + g.label + '">' +
-    g.keys.filter(k => FLEET_BENCHMARKS[k]).map(k => `<option value="${k}">${FLEET_BENCHMARKS[k].label}</option>`).join('') +
-    '</optgroup>'
-  ).join('');
+  // Flat 3-option dropdown — no optgroups, no sub-types. Customer just picks
+  // a sector and types in a qty. Granular sub-types are migrated to their
+  // parent on load by _backfillSegFields.
+  const _typeKeys = ['transport', 'service', 'dryHire'];
+  const typeOpts = _typeKeys
+    .filter(k => FLEET_BENCHMARKS[k])
+    .map(k => `<option value="${k}">${FLEET_BENCHMARKS[k].label}</option>`)
+    .join('');
   const html = _fpSegments.map(seg => {
     const opts = typeOpts.replace(`value="${seg.type}"`, `value="${seg.type}" selected`);
     const isSelected = seg.selected !== false;
@@ -12907,7 +12924,19 @@ function renderFleetSegments() {
 // load as `undefined`, which the calc treats as 0 — so the breakdown shows $0
 // even when the UI shows the defaults (the inputs show the render fallback but
 // onchange never fires, so the seg never gets the value).
+// Map legacy sub-type keys to the new top-level sectors. Saved segments with
+// these types resolve to the parent on load so the dropdown can show only the
+// 3 top-level options without losing back-compat.
+var _LEGACY_TYPE_MAP = {
+  primeMover: 'transport', trucks: 'transport', refrigerated: 'transport',
+  vans: 'service', utes: 'service', cars: 'service',
+  excavators: 'dryHire', skidSteer: 'dryHire', wheelLoader: 'dryHire',
+  telehandler: 'dryHire', equipment: 'dryHire',
+  trailers: 'transport'
+};
+
 function _backfillSegFields(seg) {
+  if (seg.type && _LEGACY_TYPE_MAP[seg.type]) seg.type = _LEGACY_TYPE_MAP[seg.type];
   var b = FLEET_BENCHMARKS[seg.type] || {};
   if (seg.billingModel == null) seg.billingModel = b.billingModel || 'hourly';
   // Migrate legacy per-day field on saved segments → per-year (approx × 260
@@ -12934,7 +12963,7 @@ function initFleetProfile() {
     _fpSegments = entity.fleetSegments.map(function(s) { return _backfillSegFields(Object.assign({}, s)); });
     renderFleetSegments();
   } else if (_fpSegments.length === 0) {
-    addFleetSegment('trucks');
+    addFleetSegment('dryHire');
   }
 }
 
@@ -13272,7 +13301,7 @@ function _buildFleetEmailHTML(p) {
   html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
   html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '</div>';
-  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0a1726">' + p.co + '</div><div style="font-size:11px;color:#5a6675;margin-top:2px">' + _titleCase(p.name) + (p.city ? ' · '+p.city : '') + (p.st ? ', '+p.st : '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.email || '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.ind || '') + '</div><div style="font-size:11px;color:#5a6675">Prepared: ' + new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'}) + '</div></div>';
+  html += '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0a1726">' + p.co + '</div><div style="font-size:11px;color:#5a6675;margin-top:2px">' + _titleCase(p.name) + (p.city ? ' · '+p.city : '') + (p.st ? ', '+p.st : '') + '</div><div style="font-size:11px;color:#5a6675">' + (p.email || '') + '</div><div style="font-size:11px;color:#5a6675">' + (_normalizeIndustry(p.ind) || '') + '</div><div style="font-size:11px;color:#5a6675">Prepared: ' + new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'}) + '</div></div>';
   html += '</div>';
 
   html += '<h2 style="font-size:15px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin:28px 0 14px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Fleet Overview</h2>';
@@ -13855,10 +13884,10 @@ function openProspectFleetProfile(prospectId) {
   document.getElementById('pfp_title').textContent = p.co + ' — Fleet Profile';
   // Load saved segments or start fresh
   if (p.fleetSegments && p.fleetSegments.length) {
-    _fpSegments = p.fleetSegments.map(function(s) { return Object.assign({}, s); });
+    _fpSegments = p.fleetSegments.map(function(s) { return _backfillSegFields(Object.assign({}, s)); });
   } else {
     _fpSegments = [];
-    addFleetSegment('trucks');
+    addFleetSegment('dryHire');
   }
   renderFleetSegments();
   renderCalcAssetChips();
