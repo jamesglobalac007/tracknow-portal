@@ -10604,8 +10604,8 @@ function renderProspects() {
   if (!active.length) {
     el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:#666">No active prospects match the current filters. <button class="btn btn-primary btn-sm" style="margin-left:12px" onclick="openProspectModal()">+ Add First Prospect</button></div>';
   } else {
-    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
-    <table style="width:100%;border-collapse:collapse">
+    el.innerHTML = `<div class="card" style="padding:0;overflow-x:auto">
+    <table style="width:100%;min-width:1200px;border-collapse:collapse">
       <thead><tr style="background:#111;border-bottom:1px solid #222">
         <th style="${thStyle}">State</th>
         <th style="${thStyle}">Suburb</th>
@@ -10637,8 +10637,8 @@ function renderProspects() {
         '</div>';
       if (_prospArchiveOpen) {
         parkedEl.innerHTML += `
-        <div class="card" style="padding:0;overflow:hidden;border-left:3px solid #333;border-top:none">
-        <table style="width:100%;border-collapse:collapse">
+        <div class="card" style="padding:0;overflow-x:auto;border-left:3px solid #333;border-top:none">
+        <table style="width:100%;min-width:1200px;border-collapse:collapse">
           <thead><tr style="background:#080808;border-bottom:1px solid #1a1a1a">
             <th style="${thStyle}">State</th>
             <th style="${thStyle}">Suburb</th>
@@ -10873,8 +10873,8 @@ function renderCustomers() {
     'payment-overdue': {label:'Payment Overdue',  color:'#FF4444', bg:'rgba(255,68,68,.12)'},
   };
 
-  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
-  <table style="width:100%;border-collapse:collapse">
+  el.innerHTML = `<div class="card" style="padding:0;overflow-x:auto">
+  <table style="width:100%;min-width:1200px;border-collapse:collapse">
     <thead><tr style="background:#111;border-bottom:1px solid #222">
       <th onclick="toggleCustSort('company')" style="padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:${_custSortField==='company'?'#0098d4':'#fff'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Company ${_custSortField==='company'?(_custSortDir===1?'▲':'▼'):''}</th>
       <th onclick="toggleCustSort('trackers')" style="padding:11px 14px;text-align:center;font-size:11px;font-weight:700;color:${_custSortField==='trackers'?'#0098d4':'#fff'};text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none">Trackers ${_custSortField==='trackers'?(_custSortDir===1?'▲':'▼'):''}</th>
