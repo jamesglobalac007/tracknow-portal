@@ -4598,26 +4598,25 @@ function openProposalDoc(leadId) {
       '<div style="font-size:11px;color:#888;margin-bottom:18px;line-height:1.5">How are we handling hardware and installation for ' + l.co + '? These appear in the Pricing Schedule so the customer sees the value of anything being included free.</div>' +
       '<div style="margin-bottom:16px">' +
         '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Hardware</div>' +
-        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (!hwFree?'#0098d4':'#333') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (!hwFree?'#0098d4':'#333') + ';background:' + (!hwFree?'rgba(0,152,212,.08)':'transparent') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
           '<input type="radio" name="pcHw" value="charge" ' + (!hwFree?'checked':'') + ' style="accent-color:#0098d4"> Customer pays for hardware' +
         '</label>' +
-        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (hwFree?'#00CC66':'#333') + ';cursor:pointer;font-size:12px">' +
-          '<input type="radio" name="pcHw" value="free" ' + (hwFree?'checked':'') + ' style="accent-color:#00CC66"> Hardware provided FREE — show the value being given away' +
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (hwFree?'#0098d4':'#333') + ';background:' + (hwFree?'rgba(0,152,212,.08)':'transparent') + ';cursor:pointer;font-size:12px">' +
+          '<input type="radio" name="pcHw" value="free" ' + (hwFree?'checked':'') + ' style="accent-color:#0098d4"> Hardware provided FREE — show the value being given away' +
         '</label>' +
       '</div>' +
       '<div style="margin-bottom:20px">' +
         '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Installation</div>' +
         ['we-install','we-install-free','self-install','not-required'].map(function(opt){
           var labels = {
-            'we-install':       ['We install (customer pays)', '#0098d4'],
-            'we-install-free':  ['We install FREE (no charge)', '#00CC66'],
-            'self-install':     ['Self-install — customer fits the device', '#FFA028'],
-            'not-required':     ['Not required — plug-and-play device', '#888']
+            'we-install':       'We install (customer pays)',
+            'we-install-free':  'We install FREE (no charge)',
+            'self-install':     'Self-install — customer fits the device',
+            'not-required':     'Not required — plug-and-play device'
           };
-          var pair = labels[opt];
           var on = instType === opt;
-          return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (on?pair[1]:'#333') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
-            '<input type="radio" name="pcInst" value="' + opt + '" ' + (on?'checked':'') + ' style="accent-color:' + pair[1] + '"> ' + pair[0] +
+          return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ' + (on?'#0098d4':'#333') + ';background:' + (on?'rgba(0,152,212,.08)':'transparent') + ';margin-bottom:4px;cursor:pointer;font-size:12px">' +
+            '<input type="radio" name="pcInst" value="' + opt + '" ' + (on?'checked':'') + ' style="accent-color:#0098d4"> ' + labels[opt] +
           '</label>';
         }).join('') +
       '</div>' +
