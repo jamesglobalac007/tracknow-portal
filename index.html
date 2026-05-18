@@ -3709,8 +3709,14 @@ function qqRecalc() {
   _qqLines.forEach(function(lineId, idx) {
     const u = parseInt((document.getElementById('qql_' + lineId + '_units') || {}).value) || 0;
     const swP = parseFloat((document.getElementById('qql_' + lineId + '_swPerUnit') || {}).value) || 0;
-    const hwP = parseFloat((document.getElementById('qql_' + lineId + '_hwPerUnit') || {}).value) || 0;
-    const insP = parseFloat((document.getElementById('qql_' + lineId + '_installPerUnit') || {}).value) || 0;
+    // Gross-rate readers — when FREE / Self-install is ticked the input value
+    // is blanked but its previous value is stashed in dataset.savedValue. Read
+    // the stashed value so the upfront breakdown can show what's being given
+    // away (otherwise "FREE — saves $0" prints, which doesn't help the call).
+    const hwEl = document.getElementById('qql_' + lineId + '_hwPerUnit') || {};
+    const insEl = document.getElementById('qql_' + lineId + '_installPerUnit') || {};
+    const hwP = parseFloat((hwEl.dataset && hwEl.dataset.savedValue != null && hwEl.dataset.savedValue !== '') ? hwEl.dataset.savedValue : hwEl.value) || 0;
+    const insP = parseFloat((insEl.dataset && insEl.dataset.savedValue != null && insEl.dataset.savedValue !== '') ? insEl.dataset.savedValue : insEl.value) || 0;
     const hwFreeFlag = !!(document.getElementById('qql_' + lineId + '_hwFree') || {}).checked;
     const insFreeFlag = !!(document.getElementById('qql_' + lineId + '_installFree') || {}).checked;
     const selfInsFlag = !!(document.getElementById('qql_' + lineId + '_selfInstall') || {}).checked;
