@@ -2664,6 +2664,18 @@ select option{background:#0a0a0a;color:#0098d4}
 
         <button onclick="_qqAddLine()" style="width:100%;padding:8px;background:#0a1a0a;border:1px dashed #1a3a1a;color:#00CC66;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:.5px;margin-bottom:14px">+ ADD DEVICE LINE</button>
 
+        <!-- Recommended-pricing one-click preset. Picks contract length by
+             deal size (small/medium/large) and sets HW+Install to amortise
+             across the full term so the customer-visible monthly is lowest
+             while TrackNow retains full hardware/install margin. -->
+        <div style="background:rgba(0,204,102,.06);border:1px solid rgba(0,204,102,.3);padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:11px;font-weight:700;color:#00CC66;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Recommended Pricing</div>
+            <div style="font-size:10px;color:#888;line-height:1.4">Auto-picks contract length by fleet size and amortises hardware + install across the term — lowest customer monthly, best margin for TrackNow.</div>
+          </div>
+          <button onclick="qqApplyRecommended()" style="padding:8px 16px;background:#00CC66;border:1px solid #00CC66;color:#000;font-size:12px;font-weight:800;letter-spacing:.4px;cursor:pointer;font-family:inherit;text-transform:uppercase">Apply Best-Margin Preset</button>
+        </div>
+
         <!-- Contract term + payment treatment for hardware + install.
              Hardware/Install Payment dropdowns: Upfront = pay Day 1 lump sum,
              "Amortise N mo" = spread across N months (raises the monthly figure). -->
@@ -3506,6 +3518,44 @@ function _qqToggleCustomMonths(selectId, customId) {
     custom.style.display = (sel.value === 'custom') ? '' : 'none';
   }
 }
+// One-click best-margin preset. Picks the longest commercially-defensible
+// contract term for the deal size, then sets HW + Install to amortise over
+// that full term. This produces the lowest customer-perceived monthly while
+// preserving full hardware/install margin for TrackNow. Small fleets get a
+// shorter contract so the ask doesn't scare the customer; large fleets get
+// 36mo because the savings narrative carries the longer commitment.
+function qqApplyRecommended() {
+  // Total units across all currently-active device lines.
+  var totalUnits = 0;
+  (window._qqLines || []).forEach(function(lineId) {
+    var u = parseInt((document.getElementById('qql_' + lineId + '_units') || {}).value, 10) || 0;
+    totalUnits += u;
+  });
+  // Deal-size buckets (units):
+  //   < 5    -> 12 month contract (small fleet, keep the ask modest)
+  //   5 - 14 -> 24 month contract (medium, locks in renewal + amortise window)
+  //   15+    -> 36 month contract (large, customer sees biggest monthly drop)
+  var term;
+  if (totalUnits < 5) term = 12;
+  else if (totalUnits < 15) term = 24;
+  else term = 36;
+  // Apply contract term.
+  var ctrSel = document.getElementById('qq_amortMonths');
+  if (ctrSel) ctrSel.value = String(term);
+  _qqToggleCustomMonths('qq_amortMonths', 'qq_amortMonthsCustom');
+  // Apply HW + Install amortisation = full contract length.
+  var hwSel = document.getElementById('qq_hwPayment');
+  if (hwSel) hwSel.value = String(term);
+  _qqToggleCustomMonths('qq_hwPayment', 'qq_hwPaymentCustom');
+  var instSel = document.getElementById('qq_installPayment');
+  if (instSel) instSel.value = String(term);
+  _qqToggleCustomMonths('qq_installPayment', 'qq_installPaymentCustom');
+  // Cap + recalc.
+  _qqEnforceContractCap();
+  qqRecalc();
+  if (typeof showToast === 'function') showToast('Applied best-margin preset: ' + term + '-month contract, hardware + install amortised over term');
+}
+
 function _qqOnAmortChange() {
   _qqToggleCustomMonths('qq_amortMonths', 'qq_amortMonthsCustom');
   _qqEnforceContractCap();
