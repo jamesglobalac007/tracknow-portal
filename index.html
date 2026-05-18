@@ -15762,12 +15762,19 @@ function dismissProposalAccept(id) {
 // delegates to undoProposalAccept. Returns true if a matching entry was found
 // AND the user confirmed the undo, so the proposal window can reload itself.
 function undoProposalAcceptByLead(leadId) {
-  var l = (window.LEADS || []).find(function(x) { return x.id === leadId; });
-  if (!l) l = (window.PROSPECTS || []).find(function(x) { return x.id === leadId; });
-  if (!l) l = (window.CUSTOMERS || []).find(function(x) { return x.id === leadId; });
+  // Tolerate id-type drift (number vs string) — leads imported from CSV
+  // sometimes get string ids while in-portal-created ones are numbers, and
+  // the proposal window interpolates whatever l.id was at render time. So
+  // compare as strings instead of strict equality.
+  var key = String(leadId);
+  function _findIn(arr) {
+    if (!arr) return null;
+    return arr.find(function(x) { return x && String(x.id) === key; });
+  }
+  var l = _findIn(window.LEADS) || _findIn(window.PROSPECTS) || _findIn(window.CUSTOMERS);
   if (!l) {
     if (typeof showToast === 'function') showToast('Lead not found');
-    alert('Could not locate the lead/prospect to undo. Try refreshing the main portal tab.');
+    alert('Could not locate the lead/prospect to undo (id=' + leadId + '). Try refreshing the main portal tab.');
     return false;
   }
   var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
