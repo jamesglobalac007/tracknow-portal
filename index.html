@@ -12525,21 +12525,24 @@ function saveDealProducts() {
 // seg.calcSlip / seg.calcIdle / seg.calcAH are user-toggles seeded from these.
 const FLEET_BENCHMARKS = {
   // ── Transport / Logistics ──
-  primeMover:  { label:'Prime Mover / B-Double',     km: 2500, consumption: 55, insurance: 12000, slippage: 15, idle: 3.0, fraud: 5, workHrs: 12, idleHrsDay: 2.5, afterHrsPct: 5,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
-  trucks:      { label:'Rigid Truck',                km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
-  refrigerated:{ label:'Refrigerated Vehicles',      km: 900,  consumption: 22, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: 'stays parked after hours' },
+  primeMover:  { label:'Prime Mover / B-Double',     km: 2500, consumption: 55, insurance: 12000, slippage: 15, idle: 3.0, fraud: 5, workHrs: 12, idleHrsDay: 2.5, afterHrsPct: 5,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  trucks:      { label:'Rigid Truck',                km: 1200, consumption: 38, insurance: 6000, slippage: 18, idle: 2.5, fraud: 4, workHrs: 10, idleHrsDay: 2.0, afterHrsPct: 8,  appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  refrigerated:{ label:'Refrigerated Vehicles',      km: 900,  consumption: 22, insurance: 4500, slippage: 16, idle: 3.0, fraud: 4, workHrs: 10, idleHrsDay: 2.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: 'stays parked after hours' },
   // ── Service / Owned Fleet ──
-  vans:        { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 10, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
-  utes:        { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
-  cars:        { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8,  idleHrsDay: 1.0, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  vans:        { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 10, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  utes:        { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
+  cars:        { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8,  idleHrsDay: 1.0, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
   // ── Plant & Hire / Earthmoving ──
-  excavators:  { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'dayRate', extraHrsDay: 5, hireRate: 180, dayRate: 1500, extraDaysYr: 18, notApplicableReason: 'stays on site after hours' },
-  skidSteer:   { label:'Skid Steer / Bobcat',        km: 50,   consumption: 25, insurance: 3000, slippage: 18, idle: 3.0, fraud: 4, workHrs: 6,  idleHrsDay: 2.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'hourly',  extraHrsDay: 2, hireRate: 70,  dayRate: 400,  extraDaysYr: 12, notApplicableReason: 'stays on site after hours' },
-  wheelLoader: { label:'Wheel Loader / Backhoe',     km: 100,  consumption: 38, insurance: 6000, slippage: 20, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'dayRate', extraHrsDay: 3, hireRate: 180, dayRate: 1200, extraDaysYr: 18, notApplicableReason: 'stays on site after hours' },
-  telehandler: { label:'Telehandler / EWP / Forklift',km: 80,  consumption: 18, insurance: 4000, slippage: 15, idle: 2.5, fraud: 3, workHrs: 8,  idleHrsDay: 2.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'hourly',  extraHrsDay: 2, hireRate: 90,  dayRate: 500,  extraDaysYr: 12, notApplicableReason: 'stays on site after hours' },
-  equipment:   { label:'Plant / Equipment (other)',  km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'hourly',  extraHrsDay: 3, hireRate: 120, dayRate: 800,  extraDaysYr: 15, notApplicableReason: 'stays on site after hours' },
+  // extraHrsYr = unbilled hrs/yr PER AFFECTED machine. Roughly 1.5-2.5 hrs/wk
+  // for an actively-leaking machine — grounded in HRIA AU 2023 hourly-billing
+  // leakage (15-30% of total hire hours).
+  excavators:  { label:'Excavators / Earthmoving',   km: 100,  consumption: 45, insurance: 8000, slippage: 22, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.5, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'dayRate', extraHrsYr: 120, hireRate: 180, dayRate: 1500, extraDaysYr: 18, notApplicableReason: 'stays on site after hours' },
+  skidSteer:   { label:'Skid Steer / Bobcat',        km: 50,   consumption: 25, insurance: 3000, slippage: 18, idle: 3.0, fraud: 4, workHrs: 6,  idleHrsDay: 2.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'hourly',  extraHrsYr: 50,  hireRate: 70,  dayRate: 400,  extraDaysYr: 12, notApplicableReason: 'stays on site after hours' },
+  wheelLoader: { label:'Wheel Loader / Backhoe',     km: 100,  consumption: 38, insurance: 6000, slippage: 20, idle: 4.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'dayRate', extraHrsYr: 80,  hireRate: 180, dayRate: 1200, extraDaysYr: 18, notApplicableReason: 'stays on site after hours' },
+  telehandler: { label:'Telehandler / EWP / Forklift',km: 80,  consumption: 18, insurance: 4000, slippage: 15, idle: 2.5, fraud: 3, workHrs: 8,  idleHrsDay: 2.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'hourly',  extraHrsYr: 50,  hireRate: 90,  dayRate: 500,  extraDaysYr: 12, notApplicableReason: 'stays on site after hours' },
+  equipment:   { label:'Plant / Equipment (other)',  km: 200,  consumption: 30, insurance: 5000, slippage: 20, idle: 3.0, fraud: 5, workHrs: 6,  idleHrsDay: 3.0, afterHrsPct: 0,  appliesSlip: true,  appliesIdle: true,  appliesAH: false, appliesHire: true,  billingModel:'hourly',  extraHrsYr: 75,  hireRate: 120, dayRate: 800,  extraDaysYr: 15, notApplicableReason: 'stays on site after hours' },
   // ── Other ──
-  trailers:    { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0,  idleHrsDay: 0,   afterHrsPct: 0,  appliesSlip: false, appliesIdle: false, appliesAH: false, appliesHire: false, billingModel:'hourly',  extraHrsDay: 0, hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: 'no engine — unpowered asset' }
+  trailers:    { label:'Trailers / Unpowered Assets',km: 400,  consumption: 0,  insurance: 1500, slippage: 0,  idle: 0,   fraud: 0, workHrs: 0,  idleHrsDay: 0,   afterHrsPct: 0,  appliesSlip: false, appliesIdle: false, appliesAH: false, appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: 'no engine — unpowered asset' }
 };
 let _fpSegments = [];
 let _fpSegId = 0;
@@ -12551,7 +12554,7 @@ function _autoRecalcProspectCosts() {
 function addFleetSegment(type) {
   type = type || 'trucks';
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, billingModel: b.billingModel || 'hourly', extraHrsDay: b.extraHrsDay != null ? b.extraHrsDay : 0, hireRate: b.hireRate != null ? b.hireRate : 0, dayRate: b.dayRate != null ? b.dayRate : 0, extraDaysYr: b.extraDaysYr != null ? b.extraDaysYr : 0, calcSlip: b.appliesSlip !== false, calcIdle: b.appliesIdle !== false, calcAH: b.appliesAH !== false, calcHire: b.appliesHire === true, selected: true };
+  const seg = { id: ++_fpSegId, type, qty: 5, km: b.km, consumption: b.consumption, insurance: b.insurance, slippage: b.slippage, idle: b.idle, workHrs: b.workHrs || 8, idleHrsDay: b.idleHrsDay != null ? b.idleHrsDay : 1.5, afterHrsPct: b.afterHrsPct != null ? b.afterHrsPct : 8, billingModel: b.billingModel || 'hourly', extraHrsYr: b.extraHrsYr != null ? b.extraHrsYr : 0, hireRate: b.hireRate != null ? b.hireRate : 0, dayRate: b.dayRate != null ? b.dayRate : 0, extraDaysYr: b.extraDaysYr != null ? b.extraDaysYr : 0, calcSlip: b.appliesSlip !== false, calcIdle: b.appliesIdle !== false, calcAH: b.appliesAH !== false, calcHire: b.appliesHire === true, selected: true };
   _fpSegments.push(seg);
   renderFleetSegments();
   renderCalcAssetChips();
@@ -12567,7 +12570,7 @@ function updateFleetSegType(id, type) {
   const seg = _fpSegments.find(s => s.id === id);
   if (!seg) return;
   const b = FLEET_BENCHMARKS[type] || FLEET_BENCHMARKS.trucks;
-  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8; seg.billingModel = b.billingModel || 'hourly'; seg.extraHrsDay = b.extraHrsDay != null ? b.extraHrsDay : 0; seg.hireRate = b.hireRate != null ? b.hireRate : 0; seg.dayRate = b.dayRate != null ? b.dayRate : 0; seg.extraDaysYr = b.extraDaysYr != null ? b.extraDaysYr : 0; seg.calcSlip = b.appliesSlip !== false; seg.calcIdle = b.appliesIdle !== false; seg.calcAH = b.appliesAH !== false; seg.calcHire = b.appliesHire === true;
+  seg.type = type; seg.km = b.km; seg.consumption = b.consumption; seg.insurance = b.insurance; seg.slippage = b.slippage; seg.idle = b.idle; seg.workHrs = b.workHrs || 8; seg.idleHrsDay = b.idleHrsDay != null ? b.idleHrsDay : 1.5; seg.afterHrsPct = b.afterHrsPct != null ? b.afterHrsPct : 8; seg.billingModel = b.billingModel || 'hourly'; seg.extraHrsYr = b.extraHrsYr != null ? b.extraHrsYr : 0; seg.hireRate = b.hireRate != null ? b.hireRate : 0; seg.dayRate = b.dayRate != null ? b.dayRate : 0; seg.extraDaysYr = b.extraDaysYr != null ? b.extraDaysYr : 0; seg.calcSlip = b.appliesSlip !== false; seg.calcIdle = b.appliesIdle !== false; seg.calcAH = b.appliesAH !== false; seg.calcHire = b.appliesHire === true;
   renderFleetSegments();
   renderCalcAssetChips();
   _autoRecalcProspectCosts();
@@ -12704,22 +12707,12 @@ function renderCalcAssetChips() {
       hireContainer.innerHTML = '';
     } else {
       hireSection.style.display = '';
-      // Toggle Working Days/Year — only relevant when at least one active hire
-      // asset is on Hourly billing. Day-rate fleets don't use it, so hide to
-      // declutter and collapse the grid to one column.
-      var anyHourly = hireEligible.some(function(s) {
-        return s.calcHire !== false && s.billingModel !== 'dayRate';
-      });
-      var daysCell = document.getElementById('pfp_hireDaysCell');
-      var inputsGrid = document.getElementById('pfp_hireInputsGrid');
-      if (daysCell) daysCell.style.display = anyHourly ? '' : 'none';
-      if (inputsGrid) inputsGrid.style.gridTemplateColumns = anyHourly ? '1fr 1fr' : '1fr';
       var hh = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select hire assets &amp; set extra hrs/day + hire rate:</div>';
       hireEligible.forEach(function(seg) {
         var active = seg.calcHire !== false;
         var lbl = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
         var shortLabel = lbl.split('/')[0].trim();
-        var xh = seg.extraHrsDay != null ? seg.extraHrsDay : 3;
+        var xy = seg.extraHrsYr != null ? seg.extraHrsYr : 80;
         var hr = seg.hireRate != null ? seg.hireRate : 120;
         var dr = seg.dayRate != null ? seg.dayRate : 800;
         var xd = seg.extraDaysYr != null ? seg.extraDaysYr : 15;
@@ -12744,10 +12737,10 @@ function renderCalcAssetChips() {
              '<input type="number" value="' + dr + '" min="0" max="10000" step="10" ' +
              'onchange="updateSegDayRate(' + seg.id + ',this.value)" oninput="updateSegDayRate(' + seg.id + ',this.value)" ' +
              'style="width:70px;padding:3px;background:#111;border:1px solid #a855f7;color:#a855f7;font-size:11px;font-weight:700;text-align:center;font-family:inherit">')
-          : ('<span style="font-size:8px;color:#a855f7;margin-left:4px">Extra Hrs/Day:</span>' +
-             '<input type="number" value="' + xh + '" min="0" max="16" step="0.5" ' +
+          : ('<span style="font-size:8px;color:#a855f7;margin-left:4px">Extra Hrs/Yr:</span>' +
+             '<input type="number" value="' + xy + '" min="0" max="2000" step="5" ' +
              'onchange="updateSegExtraHrs(' + seg.id + ',this.value)" oninput="updateSegExtraHrs(' + seg.id + ',this.value)" ' +
-             'style="width:50px;padding:3px;background:#111;border:1px solid #a855f7;color:#a855f7;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' +
+             'style="width:55px;padding:3px;background:#111;border:1px solid #a855f7;color:#a855f7;font-size:11px;font-weight:700;text-align:center;font-family:inherit">' +
              '<span style="font-size:8px;color:#a855f7;margin-left:4px">$/Hr:</span>' +
              '<input type="number" value="' + hr + '" min="0" max="2000" step="5" ' +
              'onchange="updateSegHireRate(' + seg.id + ',this.value)" oninput="updateSegHireRate(' + seg.id + ',this.value)" ' +
@@ -12786,7 +12779,7 @@ function renderCalcAssetChips() {
 }
 function updateSegExtraHrs(segId, val) {
   var seg = _fpSegments.find(function(s) { return s.id === segId; });
-  if (seg) seg.extraHrsDay = parseFloat(val) || 0;
+  if (seg) seg.extraHrsYr = parseFloat(val) || 0;
   _autoRecalcProspectCosts();
 }
 function updateSegHireRate(segId, val) {
@@ -12816,8 +12809,8 @@ function updateSegBillingModel(segId, mode) {
     if (!seg.dayRate)     seg.dayRate     = b.dayRate     || 0;
     if (!seg.extraDaysYr) seg.extraDaysYr = b.extraDaysYr || 0;
   } else {
-    if (!seg.hireRate)    seg.hireRate    = b.hireRate    || 0;
-    if (!seg.extraHrsDay) seg.extraHrsDay = b.extraHrsDay || 0;
+    if (!seg.hireRate)   seg.hireRate   = b.hireRate   || 0;
+    if (!seg.extraHrsYr) seg.extraHrsYr = b.extraHrsYr || 0;
   }
   renderCalcAssetChips();
   _autoRecalcProspectCosts();
@@ -12917,7 +12910,16 @@ function renderFleetSegments() {
 function _backfillSegFields(seg) {
   var b = FLEET_BENCHMARKS[seg.type] || {};
   if (seg.billingModel == null) seg.billingModel = b.billingModel || 'hourly';
-  if (seg.extraHrsDay == null)  seg.extraHrsDay  = b.extraHrsDay != null ? b.extraHrsDay : 0;
+  // Migrate legacy per-day field on saved segments → per-year (approx × 260
+  // working days, capped so the headline figure doesn't explode on first load).
+  if (seg.extraHrsYr == null) {
+    if (seg.extraHrsDay != null) {
+      seg.extraHrsYr = Math.min(2000, seg.extraHrsDay * 260);
+      delete seg.extraHrsDay;
+    } else {
+      seg.extraHrsYr = b.extraHrsYr != null ? b.extraHrsYr : 0;
+    }
+  }
   if (seg.hireRate == null)     seg.hireRate     = b.hireRate    != null ? b.hireRate    : 0;
   if (seg.dayRate == null)      seg.dayRate      = b.dayRate     != null ? b.dayRate     : 0;
   if (seg.extraDaysYr == null)  seg.extraDaysYr  = b.extraDaysYr != null ? b.extraDaysYr : 0;
@@ -13954,13 +13956,11 @@ function recalcProspectCosts() {
   var totalWastedMinsDay = 0, totalSlipFuelDay = 0;
   var totalIdleLitresDay = 0, totalIdleCostDay = 0;
   var totalAhKmWeek = 0, totalAhFuelWeek = 0;
-  var totalHireHrsDay = 0, totalHireRevDay = 0;
   var slipUnits = 0, idleUnits = 0, ahUnits = 0, hireUnits = 0;
-  var hireDays = parseFloat((document.getElementById('pfp_hireDays') || {}).value) || 260;
   // % of fleet affected — industry data (HRIA AU 2023) shows ~20-30% of hire-yard
   // fleet has under-reporting/overrun at any time when no telemetry is in place.
   // Applies as a multiplier so the headline figure is defensible: "of 23 machines,
-  // ~25% are leaking" rather than "all 23 leak 3 hrs every day".
+  // ~25% are leaking" rather than "all 23 leak every day".
   var hireAffectedPct = parseFloat((document.getElementById('pfp_hireAffectedPct') || {}).value);
   if (isNaN(hireAffectedPct)) hireAffectedPct = 25;
   var hireAffectedMult = Math.max(0, Math.min(100, hireAffectedPct)) / 100;
@@ -14024,13 +14024,13 @@ function recalcProspectCosts() {
     annualWear += exKm * wearCostKm;
   });
 
-  // 2D: Hire Time Under-reporting — two billing models per asset.
-  //   Hourly:   qty × extraHrs/day × $/hr × workingDays/yr
-  //   Day rate: qty × extraDays/yr × $/day  (e.g. machine runs into a 9th day
-  //             on an 8-day hire, weekend creep, etc.)
+  // 2D: Hire Time Under-reporting — two billing models per asset, both per-year.
+  //   Hourly:   qty × % affected × extraHrs/yr × $/hr
+  //   Day rate: qty × % affected × extraDays/yr × $/day
   // Both feed the same annualHireLoss bucket — call narrative can mix both.
   var totalHireDaysYr = 0;
   var totalHireDayRev = 0;
+  var totalHireHrsYr = 0;
   _hireSegments.forEach(function(seg) {
     var q = seg.qty || 0;
     hireUnits += q;
@@ -14044,12 +14044,11 @@ function recalcProspectCosts() {
       totalHireDayRev += segAnnual;
       annualHireLoss += segAnnual;
     } else {
-      var xh = seg.extraHrsDay != null ? seg.extraHrsDay : 0;
+      var xy = seg.extraHrsYr != null ? seg.extraHrsYr : 0;
       var hr = seg.hireRate != null ? seg.hireRate : 0;
-      var segHireRevDay = qAffected * xh * hr;
-      totalHireHrsDay += qAffected * xh;
-      totalHireRevDay += segHireRevDay;
-      annualHireLoss += segHireRevDay * hireDays;
+      var segAnnual = qAffected * xy * hr;
+      totalHireHrsYr += qAffected * xy;
+      annualHireLoss += segAnnual;
     }
   });
 
@@ -14113,15 +14112,15 @@ function recalcProspectCosts() {
         var segYr = qAff * xd * dr;
         hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(day rate)</span>: ' + affMath + ' × ' + fmtN(xd,0) + ' days × $' + fmtN(dr,0) + '/day = <b style="color:#dc2626">' + fmt(segYr) + '</b>/yr</div>';
       } else {
-        var xh = seg.extraHrsDay != null ? seg.extraHrsDay : 0;
+        var xy = seg.extraHrsYr != null ? seg.extraHrsYr : 0;
         var hr = seg.hireRate != null ? seg.hireRate : 0;
-        var segYr2 = qAff * xh * hr * hireDays;
-        hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(hourly)</span>: ' + affMath + ' × ' + fmtN(xh,1) + ' hrs × $' + fmtN(hr,0) + '/hr × ' + hireDays + ' days = <b style="color:#dc2626">' + fmt(segYr2) + '</b>/yr</div>';
+        var segYr2 = qAff * xy * hr;
+        hireDetail += '<div style="font-size:10px;color:#aaa">' + hLabel + ' <span style="color:#a855f7">(hourly)</span>: ' + affMath + ' × ' + fmtN(xy,0) + ' hrs/yr × $' + fmtN(hr,0) + '/hr = <b style="color:#dc2626">' + fmt(segYr2) + '</b>/yr</div>';
       }
     });
     var summaryLines = '';
-    if (totalHireHrsDay > 0) {
-      summaryLines += '<div>Hourly: <b style="color:#dc2626">' + fmtN(totalHireHrsDay,1) + ' hrs</b> unbilled / day = <b style="color:#dc2626">' + fmt(totalHireRevDay) + '</b>/day × ' + hireDays + ' days = <b style="color:#dc2626">' + fmt(totalHireRevDay * hireDays) + '</b>/yr</div>';
+    if (totalHireHrsYr > 0) {
+      summaryLines += '<div>Hourly: <b style="color:#dc2626">' + fmtN(totalHireHrsYr,0) + ' extra hrs</b>/yr across fleet</div>';
     }
     if (totalHireDaysYr > 0) {
       summaryLines += '<div>Day rate: <b style="color:#dc2626">' + fmtN(totalHireDaysYr,0) + ' extra days</b>/yr across fleet = <b style="color:#dc2626">' + fmt(totalHireDayRev) + '</b>/yr</div>';
@@ -14174,7 +14173,7 @@ function recalcProspectCosts() {
     { key: 'slip', label: 'Fuel Slippage — ' + slipPct + '% slippage (per-asset hrs)',                      value: annualSlippage,   savingRate: 0.60, savingLabel: 'Fuel Slippage Recovery (60%)' },
     { key: 'idle', label: 'Idle Time — per-asset idle hrs @ ' + idleBurnRate + ' L/hr',                     value: annualIdleWaste,  savingRate: 0.50, savingLabel: 'Idle Time Reduction (50%)' },
     { key: 'ah',   label: 'After-Hours Use — per-asset %',                                                  value: afterHoursCost,   savingRate: 0.90, savingLabel: 'After-Hours Eliminated (90%)' },
-    { key: 'hire', label: 'Hire Time Under-reporting — ' + (totalHireHrsDay > 0 && totalHireDaysYr > 0 ? (fmtN(totalHireHrsDay,1) + ' extra hrs/day + ' + fmtN(totalHireDaysYr,0) + ' extra days/yr') : totalHireDaysYr > 0 ? (fmtN(totalHireDaysYr,0) + ' extra days/yr') : (fmtN(totalHireHrsDay,1) + ' extra hrs/day')), value: annualHireLoss, savingRate: 0.95, savingLabel: 'Hire Time Captured (95%)' }
+    { key: 'hire', label: 'Hire Time Under-reporting — ' + (totalHireHrsYr > 0 && totalHireDaysYr > 0 ? (fmtN(totalHireHrsYr,0) + ' extra hrs/yr + ' + fmtN(totalHireDaysYr,0) + ' extra days/yr') : totalHireDaysYr > 0 ? (fmtN(totalHireDaysYr,0) + ' extra days/yr') : (fmtN(totalHireHrsYr,0) + ' extra hrs/yr')), value: annualHireLoss, savingRate: 0.95, savingLabel: 'Hire Time Captured (95%)' }
   ];
   if (_hireEligibleAny) {
     // Move hire to the front.
@@ -16589,18 +16588,13 @@ window.doLogout = doLogout;
           <svg width="12" height="12" fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <div style="font-size:10px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">4</span>. Hire Time Under-reporting</div>
         </div>
-        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Hire customer under-reports machine usage — GPS catches the gap. Pick per asset: <b style="color:#a855f7">Hourly</b> (extra hrs/day × $/hr × working days) or <b style="color:#a855f7">Day rate</b> (extra days/yr × $/day — for ops who charge a full extra day when a hire spills over). Applies to plant / equipment / excavators.</div>
+        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Hire customer under-reports machine usage — GPS catches the gap. Pick per asset: <b style="color:#a855f7">Hourly</b> (extra hrs/yr × $/hr) or <b style="color:#a855f7">Day rate</b> (extra days/yr × $/day — for ops who charge a full extra day when a hire spills over). Both per affected machine per year. Applies to plant / equipment / excavators.</div>
         <div id="pfp_hireAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
-        <div id="pfp_hireInputsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div id="pfp_hireDaysCell">
-            <label style="font-size:8px;color:#a855f7;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Working Days / Year</label>
-            <input type="number" id="pfp_hireDays" value="260" min="1" max="366" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-            <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.4">Hourly billing only</div>
-          </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:280px">
           <div>
             <label style="font-size:8px;color:#a855f7;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">% of Fleet Affected</label>
             <input type="number" id="pfp_hireAffectedPct" value="25" min="0" max="100" step="5" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
-            <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.4">Industry ~20-30% — not every machine leaks every day</div>
+            <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.4">Industry ~20-30% — not every machine leaks year-round</div>
           </div>
         </div>
         <div style="margin-top:8px">
