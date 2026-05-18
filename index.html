@@ -5424,7 +5424,65 @@ function _openBlankAgreementDoc(leadId, reuseWin) {
   const monthlySubOnly = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0) * (li.sub||0), 0) : (totalUnits * subPrice);
   const fmt = n => '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
   const today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
-  const hwTotal = l.lineItems ? l.lineItems.reduce((s, li) => s + (li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)), 0) : 0;
+  // Read the same pricing-config flags the proposal uses so the signed
+  // agreement matches what the customer accepted on the proposal.
+  const _hwFree   = !!l.proposalHwFree;
+  const _instType = l.proposalInstallType || 'we-install';
+  const _instCustomerPays = _instType === 'we-install';
+  const _instWaived       = _instType === 'we-install-free' || _instType === 'self-install';
+
+  // Build per-line gross + net so the agreement's Hardware table mirrors the
+  // proposal's "FREE — INCLUDED" / "SELF-INSTALL" treatment with a Total
+  // Upfront Saving row at the bottom.
+  let agrHwRows = '';
+  let hwNetTotal = 0;
+  let hwSavingsTotal = 0;
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      const q = li.qty || 0;
+      if (q <= 0) return;
+      const _hwTypeKey = li.hwType || HW_MAP[li.type] || 'Hardwired Device';
+      const _hwGrossUnit = (li.hwPrice && li.hwPrice > 0) ? li.hwPrice : (HW_PRICES[_hwTypeKey] || 0);
+      const _hwLineGross = q * _hwGrossUnit;
+      const _hwLabel = li.hwType || (li.type + ' Device');
+      const _asset = li.asset || 'Assets';
+      const _swLine = q * (li.sub || subPrice);
+      const _liHwFree = (li.hwFree === true) || _hwFree;
+      // Hardware row
+      if (_liHwFree && _hwGrossUnit > 0) {
+        agrHwRows += '<tr><td>' + _hwLabel + '</td><td>' + _asset + '</td><td style="text-align:center">' + q + '</td>' +
+          '<td style="text-align:right"><span style="color:#00802b;font-weight:700">$0.00</span><div style="font-size:9px;color:#888;margin-top:2px"><span style="background:#e6f7ee;color:#00802b;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:4px">INCLUDED FREE</span>value <span style="text-decoration:line-through">' + fmt(_hwLineGross) + '</span></div></td>' +
+          '<td style="text-align:right">' + fmt(_swLine) + '/mo</td></tr>';
+        hwSavingsTotal += _hwLineGross;
+      } else if (_hwGrossUnit > 0) {
+        agrHwRows += '<tr><td>' + _hwLabel + '</td><td>' + _asset + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwLineGross) + '</td><td style="text-align:right">' + fmt(_swLine) + '/mo</td></tr>';
+        hwNetTotal += _hwLineGross;
+      } else {
+        agrHwRows += '<tr><td>' + _hwLabel + '</td><td>' + _asset + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">&mdash;</td><td style="text-align:right">' + fmt(_swLine) + '/mo</td></tr>';
+      }
+      // Install row — only render when there's an install cost / treatment
+      const _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
+      const _instLineGross = q * _instGrossUnit;
+      const _liInstFree = (li.installFree === true) || _instType === 'we-install-free';
+      if (_instType === 'not-required' || _instGrossUnit <= 0) {
+        // no install row
+      } else if (_instType === 'self-install') {
+        agrHwRows += '<tr><td>Installation &mdash; ' + li.type + '</td><td>' + _asset + '</td><td style="text-align:center">' + q + '</td>' +
+          '<td style="text-align:right"><span style="color:#b45309;font-weight:700">$0.00</span><div style="font-size:9px;color:#888;margin-top:2px"><span style="background:#fff4e6;color:#b45309;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:4px">SELF-INSTALL</span>value <span style="text-decoration:line-through">' + fmt(_instLineGross) + '</span></div></td>' +
+          '<td style="text-align:right">&mdash;</td></tr>';
+        hwSavingsTotal += _instLineGross;
+      } else if (_liInstFree) {
+        agrHwRows += '<tr><td>Installation &mdash; ' + li.type + '</td><td>' + _asset + '</td><td style="text-align:center">' + q + '</td>' +
+          '<td style="text-align:right"><span style="color:#00802b;font-weight:700">$0.00</span><div style="font-size:9px;color:#888;margin-top:2px"><span style="background:#e6f7ee;color:#00802b;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:4px">INCLUDED FREE</span>value <span style="text-decoration:line-through">' + fmt(_instLineGross) + '</span></div></td>' +
+          '<td style="text-align:right">&mdash;</td></tr>';
+        hwSavingsTotal += _instLineGross;
+      } else {
+        agrHwRows += '<tr><td>Installation &mdash; ' + li.type + '</td><td>' + _asset + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instLineGross) + '</td><td style="text-align:right">&mdash;</td></tr>';
+        hwNetTotal += _instLineGross;
+      }
+    });
+  }
+  const hwTotal = hwNetTotal;   // net amount actually owed (preserves spread logic below)
   const payType = l.paymentType || 'upfront';
   const isSpread = payType === 'spread' && term > 0;
   const hwPerMonth = isSpread ? hwTotal / term : 0;
@@ -5464,12 +5522,15 @@ function _openBlankAgreementDoc(leadId, reuseWin) {
 </div>
 <div class="header">
   <div>
-    <div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>
-    <div class="doc-type">Service Agreement</div>
+    <div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:700;color:#666;font-size:22px;letter-spacing:.5px">GPS</span></div>
     <div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>
     <div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>
   </div>
   <div class="meta"><div style="font-weight:600;color:#1a1a1a">${l.co}</div><div>${l.name || ''}</div><div>${l.email || ''}</div><div>${today}</div><div>Ref: TN-AGR-${String(l.id).padStart(4,'0')}</div></div>
+</div>
+
+<div style="text-align:center;margin:18px 0 28px;padding:14px 0;border-bottom:1px solid #e8ebf1">
+  <div style="font-size:26px;font-weight:800;color:#0a1726;letter-spacing:.5px;text-transform:uppercase">Service Agreement</div>
 </div>
 
 <div class="section">
@@ -5487,8 +5548,9 @@ function _openBlankAgreementDoc(leadId, reuseWin) {
   <div class="section-title">Hardware & Software</div>
   <table>
     <tr><th style="width:30%">Device</th><th style="width:20%">Asset</th><th style="width:10%;text-align:center">Qty</th><th style="width:20%;text-align:right">Hardware</th><th style="width:20%;text-align:right">Monthly Sub</th></tr>
-    ${l.lineItems ? l.lineItems.map(li => '<tr><td>'+(li.hwType||li.type||'GPS Tracker')+'</td><td>'+(li.asset||'Vehicles')+'</td><td style="text-align:center">'+(li.qty||0)+'</td><td style="text-align:right">'+fmt((li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)))+'</td><td style="text-align:right">'+fmt((li.qty||0)*(li.sub||subPrice))+'/mo</td></tr>').join('') : '<tr><td>GPS Tracker</td><td>Vehicles</td><td style="text-align:center">'+totalUnits+'</td><td style="text-align:right">'+fmt(hwTotal)+'</td><td style="text-align:right">'+fmt(monthly)+'/mo</td></tr>'}
+    ${agrHwRows || '<tr><td>GPS Tracker</td><td>Assets</td><td style="text-align:center">'+totalUnits+'</td><td style="text-align:right">'+fmt(hwTotal)+'</td><td style="text-align:right">'+fmt(monthly)+'/mo</td></tr>'}
     <tr class="total-row"><td colspan="3">TOTAL</td><td style="text-align:right">${isSpread ? fmt(hwTotal) + ' (spread over ' + term + 'mo)' : (hwTotal > 0 ? fmt(hwTotal) + ' upfront' : '$0.00')}</td><td style="text-align:right">${fmt(monthly)}/mo${isSpread ? ' <span style="font-size:10px;color:#888">(incl. hardware)</span>' : ''}</td></tr>
+    ${hwSavingsTotal > 0 ? '<tr style="background:#e6f7ee;border-top:1px solid #00CC66"><td colspan="3" style="font-weight:700;color:#00802b;padding:10px 12px">Total Upfront Saving</td><td style="text-align:right;font-weight:800;color:#00802b;padding:10px 12px">'+fmt(hwSavingsTotal)+'</td><td></td></tr>' : ''}
   </table>
 </div>
 
@@ -5498,7 +5560,7 @@ function _openBlankAgreementDoc(leadId, reuseWin) {
     <li><strong>Term &amp; Commencement:</strong> This agreement is for a minimum term of ${term} months commencing from the date of installation of the GPS tracking devices. The agreement automatically renews on a month-to-month basis unless either party provides 30 days written notice prior to the end of the initial term or any renewal period.</li>
     <li><strong>Fees &amp; Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit. All prices are in Australian dollars and exclusive of GST. A valid payment method must be provided prior to installation. Late payments may incur an administration fee of $15.00 per overdue invoice.</li>
     <li><strong>Hardware Ownership &amp; Care:</strong> ${isSpread ? 'GPS tracking devices, SIM cards, and associated hardware are being financed over the ' + term + '-month contract term at ' + fmt(hwPerMonth) + '/month (total hardware value: ' + fmt(hwTotal) + '). Hardware remains the property of Track Now Proprietary Limited until fully paid. Upon completion of all payments, ownership transfers to the Client.' : 'All GPS tracking devices, SIM cards, and associated hardware remain the sole property of Track Now Proprietary Limited (ABN 12 634 559 970) for the duration of this agreement.'} The Client is responsible for the reasonable care and protection of installed devices. Damaged, lost, or stolen devices may be replaced at the Client's cost at the then-current replacement price.</li>
-    <li><strong>Installation &amp; Access:</strong> Professional installation is included at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time. The Client agrees to provide safe and reasonable access to all vehicles and assets listed in this agreement for the purpose of installation, maintenance, and removal of GPS devices.</li>
+    <li><strong>Installation &amp; Access:</strong> ${_instType === 'we-install' ? 'Professional installation is provided by TrackNow GPS and will be scheduled within 5 business days of agreement execution at a mutually agreed time.' : (_instType === 'we-install-free' ? 'Professional installation is provided by TrackNow GPS at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time.' : (_instType === 'self-install' ? 'Devices will ship plug-ready for installation by the Client. A fitting guide is included with the shipment, and TrackNow support is available to assist remotely if required.' : 'Devices are plug-and-play and require no installation. The Client connects each unit as per the supplied quick-start guide.'))} The Client agrees to provide safe and reasonable access to all assets listed in this agreement for the purpose of ${_instType === 'self-install' || _instType === 'not-required' ? 'maintenance, replacement, and removal of GPS devices.' : 'installation, maintenance, and removal of GPS devices.'}</li>
     <li><strong>Service Level &amp; Support:</strong> TrackNow GPS provides 24/7 platform access, real-time GPS tracking, geofence alerts, driver behaviour monitoring, fuel reconciliation, and automated reporting. Technical support is available 24/7 via phone and email. Critical issues will be responded to within 2 business hours; standard queries within 1 business day.</li>
     <li><strong>Data, Privacy &amp; Security:</strong> All fleet tracking data is stored securely in Australian-based data centres and is accessible only to authorised personnel nominated by the Client. TrackNow GPS complies with the Australian Privacy Act 1988 and will not share, sell, or disclose Client data to third parties without prior written consent, except as required by law. Data is retained for 12 months after termination and then securely deleted.</li>
     <li><strong>Intellectual Property:</strong> The TrackNow GPS platform, software, dashboards, and reporting tools remain the intellectual property of Track Now Proprietary Limited. The Client is granted a non-exclusive, non-transferable licence to use the platform for the duration of this agreement.</li>
@@ -5642,7 +5704,58 @@ function _buildAgreementEmailHTML(l) {
   var monthlySubOnly = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0) * (li.sub||0); }, 0) : (totalUnits * subPrice);
   var fmt = function(n) { return '$' + n.toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2}); };
   var today = new Date().toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'});
-  var hwTotal = l.lineItems ? l.lineItems.reduce(function(s, li) { return s + (li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0)); }, 0) : 0;
+  // Mirror the proposal pricing-config flags so the email-HTML twin renders
+  // FREE/Self-install treatment the same as the on-screen agreement preview.
+  var _hwFree   = !!l.proposalHwFree;
+  var _instType = l.proposalInstallType || 'we-install';
+
+  var agrHwRows = '';
+  var hwNetTotal = 0;
+  var hwSavingsTotal = 0;
+  if (l.lineItems) {
+    l.lineItems.forEach(function(li) {
+      var q = li.qty || 0;
+      if (q <= 0) return;
+      var _hwTypeKey = li.hwType || HW_MAP[li.type] || 'Hardwired Device';
+      var _hwGrossUnit = (li.hwPrice && li.hwPrice > 0) ? li.hwPrice : (HW_PRICES[_hwTypeKey] || 0);
+      var _hwLineGross = q * _hwGrossUnit;
+      var _hwLabel = li.hwType || (li.type + ' Device');
+      var _asset = li.asset || 'Assets';
+      var _swLine = q * (li.sub || subPrice);
+      var _liHwFree = (li.hwFree === true) || _hwFree;
+      if (_liHwFree && _hwGrossUnit > 0) {
+        agrHwRows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _hwLabel + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _asset + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td>' +
+          '<td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right"><span style="color:#00802b;font-weight:700">$0.00</span><div style="font-size:9px;color:#888;margin-top:2px"><span style="background:#e6f7ee;color:#00802b;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:4px">INCLUDED FREE</span>value <span style="text-decoration:line-through">' + fmt(_hwLineGross) + '</span></div></td>' +
+          '<td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_swLine) + '/mo</td></tr>';
+        hwSavingsTotal += _hwLineGross;
+      } else if (_hwGrossUnit > 0) {
+        agrHwRows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _hwLabel + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _asset + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_hwLineGross) + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_swLine) + '/mo</td></tr>';
+        hwNetTotal += _hwLineGross;
+      } else {
+        agrHwRows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _hwLabel + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _asset + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">&mdash;</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_swLine) + '/mo</td></tr>';
+      }
+      var _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
+      var _instLineGross = q * _instGrossUnit;
+      var _liInstFree = (li.installFree === true) || _instType === 'we-install-free';
+      if (_instType === 'not-required' || _instGrossUnit <= 0) {
+        // skip
+      } else if (_instType === 'self-install') {
+        agrHwRows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Installation &mdash; ' + li.type + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _asset + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td>' +
+          '<td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right"><span style="color:#b45309;font-weight:700">$0.00</span><div style="font-size:9px;color:#888;margin-top:2px"><span style="background:#fff4e6;color:#b45309;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:4px">SELF-INSTALL</span>value <span style="text-decoration:line-through">' + fmt(_instLineGross) + '</span></div></td>' +
+          '<td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">&mdash;</td></tr>';
+        hwSavingsTotal += _instLineGross;
+      } else if (_liInstFree) {
+        agrHwRows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Installation &mdash; ' + li.type + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _asset + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td>' +
+          '<td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right"><span style="color:#00802b;font-weight:700">$0.00</span><div style="font-size:9px;color:#888;margin-top:2px"><span style="background:#e6f7ee;color:#00802b;font-size:9px;font-weight:700;padding:1px 5px;letter-spacing:.3px;margin-right:4px">INCLUDED FREE</span>value <span style="text-decoration:line-through">' + fmt(_instLineGross) + '</span></div></td>' +
+          '<td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">&mdash;</td></tr>';
+        hwSavingsTotal += _instLineGross;
+      } else {
+        agrHwRows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Installation &mdash; ' + li.type + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + _asset + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center">' + q + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">' + fmt(_instLineGross) + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:right">&mdash;</td></tr>';
+        hwNetTotal += _instLineGross;
+      }
+    });
+  }
+  var hwTotal = hwNetTotal;
   var payType = l.paymentType || 'upfront';
   var isSpread = payType === 'spread' && term > 0;
   var hwPerMonth = isSpread ? hwTotal / term : 0;
@@ -5651,13 +5764,14 @@ function _buildAgreementEmailHTML(l) {
   var html = '<div style="font-family:Inter,sans-serif;color:#1a1a1a;padding:0;max-width:800px;font-size:13px;line-height:1.6">';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:20px;border-bottom:3px solid #0098d4">';
   html += '<div>';
-  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:600;color:#666;font-size:12px;letter-spacing:1.2px">GPS</span></div>';
-  html += '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-top:4px">Service Agreement</div>';
+  html += '<div style="font-family:Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#0098d4;letter-spacing:.5px;line-height:1;margin-bottom:6px">TrackNow <span style="font-weight:700;color:#666;font-size:22px;letter-spacing:.5px">GPS</span></div>';
   html += '<div style="font-size:10px;color:#999;margin-top:4px">Track Now Proprietary Limited &middot; ABN 12 634 559 970</div>';
   html += '<div style="font-size:10px;color:#999">1300 TRACK NOW &middot; sales@tracknow.com.au &middot; <a href="https://www.tracknow.com.au" style="color:#0098d4;text-decoration:none">www.tracknow.com.au</a></div>';
   html += '</div>';
   html += '<div style="text-align:right;font-size:12px;color:#666"><div style="font-weight:600;color:#1a1a1a">' + l.co + '</div><div>' + _titleCase(l.name || '') + '</div><div>' + (l.email || '') + '</div><div>' + today + '</div><div>Ref: TN-AGR-' + String(l.id).padStart(4,'0') + '</div></div>';
   html += '</div>';
+
+  html += '<div style="text-align:center;margin:18px 0 28px;padding:14px 0;border-bottom:1px solid #e8ebf1"><div style="font-size:26px;font-weight:800;color:#0a1726;letter-spacing:.5px;text-transform:uppercase">Service Agreement</div></div>';
 
   html += '<div style="margin-bottom:28px">';
   html += '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Agreement Details</div>';
@@ -5674,14 +5788,15 @@ function _buildAgreementEmailHTML(l) {
   html += '<div style="font-size:14px;font-weight:700;color:#0098d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e8ebf1">Hardware &amp; Software</div>';
   html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
   html += '<tr><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0;width:30%">Device</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%">Asset</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:center;font-weight:600;border-bottom:1px solid #f0f0f0;width:10%">Qty</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:right;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%">Hardware</th><th style="background:#f8f8f8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:8px 12px;text-align:right;font-weight:600;border-bottom:1px solid #f0f0f0;width:20%">Monthly Sub</th></tr>';
-  if (l.lineItems) {
-    l.lineItems.forEach(function(li) {
-      html += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (li.hwType||li.type||'GPS Tracker') + '</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (li.asset||'Vehicles') + '</td><td style="text-align:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + (li.qty||0) + '</td><td style="text-align:right;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt((li.qty||0)*((li.hwPrice||0)+(li.hwInstall||0))) + '</td><td style="text-align:right;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt((li.qty||0)*(li.sub||subPrice)) + '/mo</td></tr>';
-    });
+  if (agrHwRows) {
+    html += agrHwRows;
   } else {
-    html += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">GPS Tracker</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Vehicles</td><td style="text-align:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + totalUnits + '</td><td style="text-align:right;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt(hwTotal) + '</td><td style="text-align:right;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt(monthly) + '/mo</td></tr>';
+    html += '<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">GPS Tracker</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">Assets</td><td style="text-align:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + totalUnits + '</td><td style="text-align:right;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt(hwTotal) + '</td><td style="text-align:right;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px">' + fmt(monthly) + '/mo</td></tr>';
   }
   html += '<tr style="font-weight:700;border-top:2px solid #0098d4;font-size:14px"><td colspan="3" style="padding:10px 12px">TOTAL</td><td style="text-align:right;padding:10px 12px">' + (isSpread ? fmt(hwTotal) + ' (spread over ' + term + 'mo)' : (hwTotal > 0 ? fmt(hwTotal) + ' upfront' : '$0.00')) + '</td><td style="text-align:right;padding:10px 12px">' + fmt(monthly) + '/mo' + (isSpread ? ' <span style="font-size:10px;color:#888">(incl. hardware)</span>' : '') + '</td></tr>';
+  if (hwSavingsTotal > 0) {
+    html += '<tr style="background:#e6f7ee;border-top:1px solid #00CC66"><td colspan="3" style="font-weight:700;color:#00802b;padding:10px 12px;font-size:12px">Total Upfront Saving</td><td style="text-align:right;font-weight:800;color:#00802b;padding:10px 12px;font-size:13px">' + fmt(hwSavingsTotal) + '</td><td></td></tr>';
+  }
   html += '</table>';
   html += '</div>';
 
@@ -5691,7 +5806,7 @@ function _buildAgreementEmailHTML(l) {
   html += '<li style="margin-bottom:4px"><strong>Term &amp; Commencement:</strong> This agreement is for a minimum term of ' + term + ' months commencing from the date of installation of the GPS tracking devices. The agreement automatically renews on a month-to-month basis unless either party provides 30 days written notice prior to the end of the initial term or any renewal period.</li>';
   html += '<li style="margin-bottom:4px"><strong>Fees &amp; Payment:</strong> Monthly subscription fees are billed in advance on the 1st of each month via direct debit. All prices are in Australian dollars and exclusive of GST. A valid payment method must be provided prior to installation. Late payments may incur an administration fee of $15.00 per overdue invoice.</li>';
   html += '<li style="margin-bottom:4px"><strong>Hardware Ownership &amp; Care:</strong> ' + (isSpread ? 'GPS tracking devices, SIM cards, and associated hardware are being financed over the ' + term + '-month contract term at ' + fmt(hwPerMonth) + '/month (total hardware value: ' + fmt(hwTotal) + '). Hardware remains the property of Track Now Proprietary Limited until fully paid. Upon completion of all payments, ownership transfers to the Client.' : 'All GPS tracking devices, SIM cards, and associated hardware remain the sole property of Track Now Proprietary Limited (ABN 12 634 559 970) for the duration of this agreement.') + ' The Client is responsible for the reasonable care and protection of installed devices. Damaged, lost, or stolen devices may be replaced at the Client\'s cost at the then-current replacement price.</li>';
-  html += '<li style="margin-bottom:4px"><strong>Installation &amp; Access:</strong> Professional installation is included at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time. The Client agrees to provide safe and reasonable access to all vehicles and assets listed in this agreement for the purpose of installation, maintenance, and removal of GPS devices.</li>';
+  html += '<li style="margin-bottom:4px"><strong>Installation &amp; Access:</strong> ' + (_instType === 'we-install' ? 'Professional installation is provided by TrackNow GPS and will be scheduled within 5 business days of agreement execution at a mutually agreed time.' : (_instType === 'we-install-free' ? 'Professional installation is provided by TrackNow GPS at no additional cost and will be scheduled within 5 business days of agreement execution at a mutually agreed time.' : (_instType === 'self-install' ? 'Devices will ship plug-ready for installation by the Client. A fitting guide is included with the shipment, and TrackNow support is available to assist remotely if required.' : 'Devices are plug-and-play and require no installation. The Client connects each unit as per the supplied quick-start guide.'))) + ' The Client agrees to provide safe and reasonable access to all assets listed in this agreement for the purpose of ' + (_instType === 'self-install' || _instType === 'not-required' ? 'maintenance, replacement, and removal of GPS devices.' : 'installation, maintenance, and removal of GPS devices.') + '</li>';
   html += '<li style="margin-bottom:4px"><strong>Service Level &amp; Support:</strong> TrackNow GPS provides 24/7 platform access, real-time GPS tracking, geofence alerts, driver behaviour monitoring, fuel reconciliation, and automated reporting. Technical support is available 24/7 via phone and email. Critical issues will be responded to within 2 business hours; standard queries within 1 business day.</li>';
   html += '<li style="margin-bottom:4px"><strong>Data, Privacy &amp; Security:</strong> All fleet tracking data is stored securely in Australian-based data centres and is accessible only to authorised personnel nominated by the Client. TrackNow GPS complies with the Australian Privacy Act 1988 and will not share, sell, or disclose Client data to third parties without prior written consent, except as required by law. Data is retained for 12 months after termination and then securely deleted.</li>';
   html += '<li style="margin-bottom:4px"><strong>Intellectual Property:</strong> The TrackNow GPS platform, software, dashboards, and reporting tools remain the intellectual property of Track Now Proprietary Limited. The Client is granted a non-exclusive, non-transferable licence to use the platform for the duration of this agreement.</li>';
