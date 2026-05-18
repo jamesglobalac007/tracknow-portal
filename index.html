@@ -1048,7 +1048,7 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="Civil">Civil</option>
         <option value="Mining">Mining</option>
         <option value="Agriculture">Agriculture</option>
-        <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+        <option value="Dry Hire">Dry Hire</option>
         <option value="Demolition">Demolition</option>
         <option value="Caravan">Caravan</option>
         <option value="Other">Other</option>
@@ -1084,7 +1084,7 @@ select option{background:#0a0a0a;color:#0098d4}
         <option value="Civil">Civil</option>
         <option value="Mining">Mining</option>
         <option value="Agriculture">Agriculture</option>
-        <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+        <option value="Dry Hire">Dry Hire</option>
         <option value="Demolition">Demolition</option>
         <option value="Caravan">Caravan</option>
         <option value="Other">Other</option>
@@ -1126,7 +1126,7 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="pm_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Dry Hire">Dry Hire</option>
             <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
             <option value="Other">Other</option>
           </select></div>
@@ -1182,7 +1182,7 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="ep_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Dry Hire">Dry Hire</option>
             <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
             <option value="Other">Other</option>
           </select></div>
@@ -1238,7 +1238,7 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="el_ind" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Dry Hire">Dry Hire</option>
             <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
             <option value="Other">Other</option>
           </select></div>
@@ -1268,7 +1268,7 @@ select option{background:#0a0a0a;color:#0098d4}
           <select id="cm_sector" class="form-input">
             <option value="Transport">Transport</option><option value="Civil">Civil</option>
             <option value="Mining">Mining</option><option value="Agriculture">Agriculture</option>
-            <option value="Plant and Equipment Hire">Plant and Equipment Hire</option>
+            <option value="Dry Hire">Dry Hire</option>
             <option value="Demolition">Demolition</option><option value="Caravan">Caravan</option>
             <option value="Other">Other</option>
           </select></div>
@@ -1422,7 +1422,7 @@ select option{background:#0a0a0a;color:#0098d4}
                 <option value="Utes / Dual Cab">Utes / Dual Cab</option>
                 <option value="Cars / Service Vehicles">Cars / Service Vehicles</option>
               </optgroup>
-              <optgroup label="Plant & Hire / Earthmoving">
+              <optgroup label="Dry Hire">
                 <option value="Excavators / Earthmoving">Excavators / Earthmoving</option>
                 <option value="Skid Steer / Bobcat">Skid Steer / Bobcat</option>
                 <option value="Wheel Loader / Backhoe">Wheel Loader / Backhoe</option>
@@ -2210,7 +2210,7 @@ select option{background:#0a0a0a;color:#0098d4}
 
       <!-- Scenario tabs -->
       <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap" id="hcTabs">
-        <button onclick="setHCTab('hire',this)" class="btn btn-primary btn-sm hc-tab">Equipment Hire Fraud</button>
+        <button onclick="setHCTab('hire',this)" class="btn btn-primary btn-sm hc-tab">Dry Hire Fraud</button>
         <button onclick="setHCTab('idle',this)" class="btn btn-secondary btn-sm hc-tab">Truck Idle Time</button>
         <button onclick="setHCTab('service',this)" class="btn btn-secondary btn-sm hc-tab">Service Fleet Accountability</button>
       </div>
@@ -2218,15 +2218,15 @@ select option{background:#0a0a0a;color:#0098d4}
       <!-- ── EQUIPMENT HIRE FRAUD ── -->
       <div id="hcPanel-hire">
         <div style="background:rgba(255,68,68,.04);border-radius:0;padding:16px;border:1px solid #222;margin-bottom:16px">
-          <div style="font-size:11px;color:#CCC;line-height:1.6;margin-bottom:12px"><strong style="color:#FF4444">The problem:</strong> Customers hiring your machinery lie about usage days. They use it for 5 days but claim 3. You lose hire revenue AND cop extra fuel, wear and maintenance costs you can't bill for.</div>
+          <div style="font-size:11px;color:#CCC;line-height:1.6;margin-bottom:12px"><strong style="color:#FF4444">The problem:</strong> Dry Hire customers lie about usage days. They use it for 5 days but claim 3. You lose Dry Hire revenue AND cop extra fuel, wear and maintenance costs you can't bill for.</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
           <div>
-            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Machines on Hire</label>
+            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Machines on Dry Hire</label>
             <input type="number" id="hc_hire_machines" value="5" min="1" oninput="calcHiddenCost()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:0;font-size:14px;font-family:inherit;outline:none">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Daily Hire Rate</label>
+            <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Dry Hire Day Rate</label>
             <input type="number" id="hc_hire_rate" value="450" min="1" step="10" oninput="calcHiddenCost()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:0;font-size:14px;font-family:inherit;outline:none">
           </div>
           <div>
@@ -2591,7 +2591,7 @@ select option{background:#0a0a0a;color:#0098d4}
         </div>
 
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Customer / Company *</label>
-        <input type="text" id="qq_companyName" placeholder="e.g. AJ Mini Excavator Hire" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
+        <input type="text" id="qq_companyName" placeholder="e.g. Sydney Dry Hire" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
 
         <label style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Contact name (for the email greeting)</label>
         <input type="text" id="qq_contactName" placeholder="e.g. Dave" onfocus="this.select()" oninput="qqRecalc()" style="width:100%;padding:7px 10px;background:#111;border:1px solid #333;color:#CCC;font-size:13px;font-family:inherit;margin-bottom:10px">
@@ -7541,7 +7541,7 @@ function calcHiddenCost() {
 
     breakdownHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">
       <div style="background:#000;border:1px solid #222;padding:10px;border-radius:0;text-align:center">
-        <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Lost Hire Revenue/Mo</div>
+        <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px">Lost Dry Hire Revenue/Mo</div>
         <div style="font-size:16px;font-weight:800;color:#FF4444;margin-top:4px">${fmt(lostRevenue)}</div>
       </div>
       <div style="background:#000;border:1px solid #222;padding:10px;border-radius:0;text-align:center">
@@ -7631,7 +7631,7 @@ function calcHiddenCost() {
   const banner = document.getElementById('hcBanner');
   if (banner) {
     if (_hcTab === 'hire') {
-      banner.textContent = `This business is bleeding ${fmt(annualLoss)}/year from hire fraud alone — GPS proves exactly when machines are used`;
+      banner.textContent = `This business is bleeding ${fmt(annualLoss)}/year from Dry Hire fraud alone — GPS proves exactly when machines are used`;
       banner.style.background = '#FF4444';
     } else if (_hcTab === 'idle') {
       banner.textContent = `${fmt(annualLoss)}/year burned on idle time — GPS idle alerts cut this by ${document.getElementById('hc_idle_reduction').value}% instantly`;
@@ -7644,7 +7644,7 @@ function calcHiddenCost() {
 }
 
 function copyHiddenCostReport() {
-  const labels = {hire:'Equipment Hire Fraud', idle:'Truck Idle Time Waste', service:'Service Fleet Accountability'};
+  const labels = {hire:'Dry Hire Fraud', idle:'Truck Idle Time Waste', service:'Service Fleet Accountability'};
   const text = `TrackNow GPS — Hidden Cost Analysis\n\nScenario: ${labels[_hcTab]}\nMonthly Loss: ${document.getElementById('hc_monthlyLoss').textContent}\nAnnual Loss: ${document.getElementById('hc_annualLoss').textContent}\nGPS Saves: ${document.getElementById('hc_gpsSaves').textContent} per year\nROI on GPS: ${document.getElementById('hc_roi').textContent}\n\nGPS tracking exposes hidden costs, proves usage, and eliminates fraud.\n\nSource: TrackNow Hidden Cost Calculator\nwww.tracknow.com.au`;
   navigator.clipboard.writeText(text).then(() => showToast('Hidden cost report copied!')).catch(() => prompt('Copy:', text));
 }
@@ -12532,7 +12532,7 @@ const FLEET_BENCHMARKS = {
   vans:        { label:'Vans / Light Commercial',    km: 700,  consumption: 14, insurance: 2800, slippage: 12, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 10, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
   utes:        { label:'Utes / Dual Cab',            km: 800,  consumption: 14, insurance: 2400, slippage: 14, idle: 1.5, fraud: 3, workHrs: 8,  idleHrsDay: 1.5, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
   cars:        { label:'Cars / Service Vehicles',    km: 600,  consumption: 10, insurance: 2200, slippage: 10, idle: 1.0, fraud: 2, workHrs: 8,  idleHrsDay: 1.0, afterHrsPct: 15, appliesSlip: true,  appliesIdle: true,  appliesAH: true,  appliesHire: false, billingModel:'hourly',  extraHrsYr: 0,   hireRate: 0,   dayRate: 0,    extraDaysYr: 0,  notApplicableReason: '' },
-  // ── Plant & Hire / Earthmoving ──
+  // ── Dry Hire ──
   // extraHrsYr = unbilled hrs/yr PER AFFECTED machine. Roughly 1.5-2.5 hrs/wk
   // for an actively-leaking machine — grounded in HRIA AU 2023 hourly-billing
   // leakage (15-30% of total hire hours).
@@ -12707,7 +12707,7 @@ function renderCalcAssetChips() {
       hireContainer.innerHTML = '';
     } else {
       hireSection.style.display = '';
-      var hh = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select hire assets &amp; set extra hrs/day + hire rate:</div>';
+      var hh = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select Dry Hire assets &amp; set extra hrs/yr + hire rate:</div>';
       hireEligible.forEach(function(seg) {
         var active = seg.calcHire !== false;
         var lbl = (FLEET_BENCHMARKS[seg.type] || {}).label || seg.type;
@@ -12764,7 +12764,7 @@ function renderCalcAssetChips() {
         if (b.appliesHire === true) return;
         if (hireSeen[s.type]) return;
         hireSeen[s.type] = true;
-        hireExcluded.push((b.label || s.type).split('/')[0].trim() + ' (owned fleet — not hired by hour)');
+        hireExcluded.push((b.label || s.type).split('/')[0].trim() + ' (owned fleet — not Dry Hire)');
       });
       if (hireExcluded.length) {
         hh += '<div style="font-size:8px;color:#666;margin-top:6px;font-style:italic">Not applicable for: ' + hireExcluded.join(' · ') + '</div>';
@@ -12874,7 +12874,7 @@ function renderFleetSegments() {
   const _typeGroups = [
     { label: 'Transport / Logistics',     keys: ['primeMover','trucks','refrigerated'] },
     { label: 'Service / Owned Fleet',     keys: ['vans','utes','cars'] },
-    { label: 'Plant & Hire / Earthmoving',keys: ['excavators','skidSteer','wheelLoader','telehandler','equipment'] },
+    { label: 'Dry Hire',keys: ['excavators','skidSteer','wheelLoader','telehandler','equipment'] },
     { label: 'Other',                     keys: ['trailers'] }
   ];
   const typeOpts = _typeGroups.map(g =>
@@ -14173,7 +14173,7 @@ function recalcProspectCosts() {
     { key: 'slip', label: 'Fuel Slippage — ' + slipPct + '% slippage (per-asset hrs)',                      value: annualSlippage,   savingRate: 0.60, savingLabel: 'Fuel Slippage Recovery (60%)' },
     { key: 'idle', label: 'Idle Time — per-asset idle hrs @ ' + idleBurnRate + ' L/hr',                     value: annualIdleWaste,  savingRate: 0.50, savingLabel: 'Idle Time Reduction (50%)' },
     { key: 'ah',   label: 'After-Hours Use — per-asset %',                                                  value: afterHoursCost,   savingRate: 0.90, savingLabel: 'After-Hours Eliminated (90%)' },
-    { key: 'hire', label: 'Hire Time Under-reporting — ' + (totalHireHrsYr > 0 && totalHireDaysYr > 0 ? (fmtN(totalHireHrsYr,0) + ' extra hrs/yr + ' + fmtN(totalHireDaysYr,0) + ' extra days/yr') : totalHireDaysYr > 0 ? (fmtN(totalHireDaysYr,0) + ' extra days/yr') : (fmtN(totalHireHrsYr,0) + ' extra hrs/yr')), value: annualHireLoss, savingRate: 0.95, savingLabel: 'Hire Time Captured (95%)' }
+    { key: 'hire', label: 'Dry Hire — Under-reporting — ' + (totalHireHrsYr > 0 && totalHireDaysYr > 0 ? (fmtN(totalHireHrsYr,0) + ' extra hrs/yr + ' + fmtN(totalHireDaysYr,0) + ' extra days/yr') : totalHireDaysYr > 0 ? (fmtN(totalHireDaysYr,0) + ' extra days/yr') : (fmtN(totalHireHrsYr,0) + ' extra hrs/yr')), value: annualHireLoss, savingRate: 0.95, savingLabel: 'Dry Hire Captured (95%)' }
   ];
   if (_hireEligibleAny) {
     // Move hire to the front.
@@ -16586,9 +16586,9 @@ window.doLogout = doLogout;
       <div id="pfp_hireSection" data-loss-key="hire" style="background:#080808;border:1px solid rgba(168,85,247,.25);padding:14px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg width="12" height="12" fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <div style="font-size:10px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">4</span>. Hire Time Under-reporting</div>
+          <div style="font-size:10px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:.5px"><span class="pfp-num">4</span>. Dry Hire — Under-reporting</div>
         </div>
-        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Hire customer under-reports machine usage — GPS catches the gap. Pick per asset: <b style="color:#a855f7">Hourly</b> (extra hrs/yr × $/hr) or <b style="color:#a855f7">Day rate</b> (extra days/yr × $/day — for ops who charge a full extra day when a hire spills over). Both per affected machine per year. Applies to plant / equipment / excavators.</div>
+        <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Dry Hire customer under-reports machine usage — GPS catches the gap. Pick per asset: <b style="color:#a855f7">Hourly</b> (extra hrs/yr × $/hr) or <b style="color:#a855f7">Day rate</b> (extra days/yr × $/day — for ops who charge a full extra day when a hire spills over). Both per affected machine per year. Applies to Dry Hire assets.</div>
         <div id="pfp_hireAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:280px">
           <div>
