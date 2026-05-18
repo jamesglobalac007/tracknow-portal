@@ -3508,15 +3508,67 @@ function _qqToggleCustomMonths(selectId, customId) {
 }
 function _qqOnAmortChange() {
   _qqToggleCustomMonths('qq_amortMonths', 'qq_amortMonthsCustom');
+  _qqEnforceContractCap();
   qqRecalc();
 }
 function _qqOnHwPaymentChange() {
   _qqToggleCustomMonths('qq_hwPayment', 'qq_hwPaymentCustom');
+  _qqEnforceContractCap();
   qqRecalc();
 }
 function _qqOnInstallPaymentChange() {
   _qqToggleCustomMonths('qq_installPayment', 'qq_installPaymentCustom');
+  _qqEnforceContractCap();
   qqRecalc();
+}
+
+// Cap the HW Payment and Install Payment dropdowns to the Contract term so
+// you can't (commercially nonsensically) amortise hardware over a longer
+// period than the contract itself. Disables out-of-range options and resets
+// stale selections to Upfront. Custom inputs get their max attribute updated
+// and clamped if the typed value is too high. MTM (term=0) collapses both
+// dropdowns to Upfront only.
+function _qqEnforceContractCap() {
+  var contractMonths = _qqReadPaymentMonths('qq_amortMonths', 'qq_amortMonthsCustom');
+  ['qq_hwPayment', 'qq_installPayment'].forEach(function(selId) {
+    var sel = document.getElementById(selId);
+    if (!sel) return;
+    var customId = selId + 'Custom';
+    var customEl = document.getElementById(customId);
+    var resetNeeded = false;
+    for (var i = 0; i < sel.options.length; i++) {
+      var opt = sel.options[i];
+      var v = opt.value;
+      if (v === 'upfront') { opt.disabled = false; continue; }
+      if (v === 'custom') {
+        opt.disabled = contractMonths <= 0;
+        if (opt.disabled && sel.value === 'custom') resetNeeded = true;
+        continue;
+      }
+      var n = parseInt(v, 10) || 0;
+      var tooLong = contractMonths > 0 ? n > contractMonths : true;
+      opt.disabled = tooLong;
+      if (tooLong && sel.value === v) resetNeeded = true;
+    }
+    // Cap the Custom input range to the contract term + clamp if too high.
+    if (customEl) {
+      if (contractMonths > 0) {
+        customEl.max = String(contractMonths);
+        var cv = parseInt(customEl.value, 10) || 0;
+        if (cv > contractMonths) {
+          customEl.value = String(contractMonths);
+          if (sel.value === 'custom') resetNeeded = false;  // value clamped, no reset needed
+        }
+      } else {
+        customEl.value = '0';
+        customEl.style.display = 'none';
+      }
+    }
+    if (resetNeeded) {
+      sel.value = 'upfront';
+      if (customEl) customEl.style.display = 'none';
+    }
+  });
 }
 
 // Read a "payment treatment" dropdown — returns the number of amortise months,
@@ -3679,6 +3731,9 @@ function qqResetForm() {
 }
 
 function qqRecalc() {
+  // Make sure hw/install payment dropdowns are capped to the current contract
+  // term every time — covers initial page load, reset, and load-from-prospect.
+  try { _qqEnforceContractCap(); } catch (e) {}
   const fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-AU'); };
   const fmt2 = function(n) { return '$' + n.toFixed(2); };
 
