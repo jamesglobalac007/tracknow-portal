@@ -4828,7 +4828,7 @@ function _doOpenProposalDoc(leadId) {
       '<div style="font-size:14px;font-weight:600;color:#fff;text-align:center;margin-bottom:6px">' + (_acceptInfo.name || 'Customer') + ' from ' + (_acceptInfo.company || l.co || 'Customer') + ' has clicked to proceed to formal agreement</div>' +
       '<div style="font-size:12px;color:#a8e6c0;text-align:center">Accepted on ' + new Date(_acceptInfo.ts).toLocaleDateString('en-AU', {day:'2-digit', month:'long', year:'numeric'}) + ' &middot; Proposal #TN-' + String(l.id).padStart(4, '0') + '</div>' +
       '<div class="no-print" style="text-align:center;margin-top:12px">' +
-        '<button onclick="(function(){ if (!window.opener || !window.opener.undoProposalAcceptByLead) { alert(\'Cannot reach the main portal window. Close this proposal and try again from the main tab.\'); return; } var ok = window.opener.undoProposalAcceptByLead(' + l.id + '); if (ok) { var b = document.getElementById(\'tnAcceptedBanner\'); if (b) b.parentNode.removeChild(b); } })()" style="padding:8px 18px;background:rgba(255,255,255,.12);border:1px solid #fff;color:#fff;font-size:11px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit;text-transform:uppercase">↶ Undo Acceptance</button>' +
+        '<button onclick="(function(){ if (!window.opener || !window.opener.undoProposalAcceptByLead) { alert(\'Cannot reach the main portal window. Close this proposal and try again from the main tab.\'); return; } var ok = window.opener.undoProposalAcceptByLead(' + l.id + ', ' + JSON.stringify(l.co || '') + ', ' + JSON.stringify(l.email || '') + '); if (ok) { var b = document.getElementById(\'tnAcceptedBanner\'); if (b) b.parentNode.removeChild(b); } })()" style="padding:8px 18px;background:rgba(255,255,255,.12);border:1px solid #fff;color:#fff;font-size:11px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit;text-transform:uppercase">↶ Undo Acceptance</button>' +
         '<div style="font-size:10px;color:#a8e6c0;margin-top:6px">Clicked Proceed by accident? Rolls back the banner so the proposal can be re-sent.</div>' +
       '</div>' +
     '</div>'
@@ -15761,20 +15761,35 @@ function dismissProposalAccept(id) {
 // Looks up the matching accept entry by the lead's id / company / email and
 // delegates to undoProposalAccept. Returns true if a matching entry was found
 // AND the user confirmed the undo, so the proposal window can reload itself.
-function undoProposalAcceptByLead(leadId) {
-  // Tolerate id-type drift (number vs string) — leads imported from CSV
-  // sometimes get string ids while in-portal-created ones are numbers, and
-  // the proposal window interpolates whatever l.id was at render time. So
-  // compare as strings instead of strict equality.
+function undoProposalAcceptByLead(leadId, leadCompany, leadEmail) {
+  // The proposal window embeds l.id at render time, but that id can go stale
+  // if the main portal tab was reloaded or the record was re-saved with a
+  // new id. Fall back to company-name and email matching so the Undo still
+  // finds the record. Comparisons are string-coerced + case-insensitive.
   var key = String(leadId);
+  var co  = leadCompany ? String(leadCompany).trim().toLowerCase() : '';
+  var em  = leadEmail   ? String(leadEmail).trim().toLowerCase()   : '';
   function _findIn(arr) {
     if (!arr) return null;
-    return arr.find(function(x) { return x && String(x.id) === key; });
+    // Pass 1: exact id match
+    var hit = arr.find(function(x) { return x && String(x.id) === key; });
+    if (hit) return hit;
+    // Pass 2: company-name match
+    if (co) {
+      hit = arr.find(function(x) { return x && x.co && String(x.co).trim().toLowerCase() === co; });
+      if (hit) return hit;
+    }
+    // Pass 3: email match
+    if (em) {
+      hit = arr.find(function(x) { return x && x.email && String(x.email).trim().toLowerCase() === em; });
+      if (hit) return hit;
+    }
+    return null;
   }
   var l = _findIn(window.LEADS) || _findIn(window.PROSPECTS) || _findIn(window.CUSTOMERS);
   if (!l) {
     if (typeof showToast === 'function') showToast('Lead not found');
-    alert('Could not locate the lead/prospect to undo (id=' + leadId + '). Try refreshing the main portal tab.');
+    alert('Could not locate the lead/prospect to undo (id=' + leadId + ', co="' + (leadCompany || '') + '"). Try refreshing the main portal tab.');
     return false;
   }
   var accepts = JSON.parse(localStorage.getItem('tn_proposal_accepts') || '[]');
