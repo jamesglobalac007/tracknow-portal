@@ -12704,6 +12704,16 @@ function renderCalcAssetChips() {
       hireContainer.innerHTML = '';
     } else {
       hireSection.style.display = '';
+      // Toggle Working Days/Year — only relevant when at least one active hire
+      // asset is on Hourly billing. Day-rate fleets don't use it, so hide to
+      // declutter and collapse the grid to one column.
+      var anyHourly = hireEligible.some(function(s) {
+        return s.calcHire !== false && s.billingModel !== 'dayRate';
+      });
+      var daysCell = document.getElementById('pfp_hireDaysCell');
+      var inputsGrid = document.getElementById('pfp_hireInputsGrid');
+      if (daysCell) daysCell.style.display = anyHourly ? '' : 'none';
+      if (inputsGrid) inputsGrid.style.gridTemplateColumns = anyHourly ? '1fr 1fr' : '1fr';
       var hh = '<div style="font-size:8px;color:#666;margin-bottom:4px">Select hire assets &amp; set extra hrs/day + hire rate:</div>';
       hireEligible.forEach(function(seg) {
         var active = seg.calcHire !== false;
@@ -16581,10 +16591,11 @@ window.doLogout = doLogout;
         </div>
         <div style="font-size:9px;color:#666;margin-bottom:10px;line-height:1.5">Hire customer under-reports machine usage — GPS catches the gap. Pick per asset: <b style="color:#a855f7">Hourly</b> (extra hrs/day × $/hr × working days) or <b style="color:#a855f7">Day rate</b> (extra days/yr × $/day — for ops who charge a full extra day when a hire spills over). Applies to plant / equipment / excavators.</div>
         <div id="pfp_hireAssets" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div>
+        <div id="pfp_hireInputsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div id="pfp_hireDaysCell">
             <label style="font-size:8px;color:#a855f7;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Working Days / Year</label>
             <input type="number" id="pfp_hireDays" value="260" min="1" max="366" step="1" onchange="recalcProspectCosts()" oninput="recalcProspectCosts()" style="width:100%;padding:6px;background:#111;border:1px solid #333;color:#CCC;font-size:12px;font-family:inherit">
+            <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.4">Hourly billing only</div>
           </div>
           <div>
             <label style="font-size:8px;color:#a855f7;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">% of Fleet Affected</label>
