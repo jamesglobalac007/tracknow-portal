@@ -4579,8 +4579,13 @@ function _sendAgreementNotify(btn) {
 function openProposalDoc(leadId) {
   const l = LEADS.find(x => x.id === leadId);
   if (!l) return;
-  const hwFree   = !!l.proposalHwFree;
-  const instType = l.proposalInstallType || 'we-install';
+  // Defaults: prefer the explicit proposal-level toggle if it's been set,
+  // otherwise read from the Deal Products line-item flags so the modal opens
+  // pre-selected to whatever was configured in the deal.
+  const _liAnyHwFree   = !!(l.lineItems && l.lineItems.some(function(li){ return li.hwFree === true; }));
+  const _liAnyInstFree = !!(l.lineItems && l.lineItems.some(function(li){ return li.installFree === true; }));
+  const hwFree   = (l.proposalHwFree != null) ? !!l.proposalHwFree : _liAnyHwFree;
+  const instType = l.proposalInstallType || (_liAnyInstFree ? 'we-install-free' : 'we-install');
   // Build overlay
   let overlay = document.getElementById('proposalConfigOverlay');
   if (overlay) overlay.remove();
@@ -4689,49 +4694,57 @@ function _doOpenProposalDoc(leadId) {
 
   // Build hardware rows — always render when there are line items so the
   // customer sees what's being included free (not just whatever is billable).
+  // Per-lineItem flags (set in Deal Products) take precedence over the
+  // lead-level toggles from the proposal config modal — that way Deal Products
+  // is the source of truth and the modal is a per-deal override.
   let hwRows = '';
   let hwNetTotal = 0;
+  let _anyHwFree = false;
+  let _anyInstWaived = false;
   if (l.lineItems) {
     l.lineItems.forEach(function(li) {
       const q = li.qty || 0;
       if (q <= 0) return;
-      // Gross unit price for hardware: prefer the stored value, fall back to
-      // the HW_PRICES catalog so a FREE giveaway still shows what it's worth.
       const _hwTypeKey = li.hwType || HW_MAP[li.type] || 'Hardwired Device';
       const _hwGrossUnit = (li.hwPrice && li.hwPrice > 0) ? li.hwPrice : (HW_PRICES[_hwTypeKey] || 0);
       const _hwLineGross = q * _hwGrossUnit;
       const _hwLabel = li.hwType || (li.type + ' Device');
-      if (_hwFree && _hwGrossUnit > 0) {
-        // Struck-through gross + FREE badge.
+      const _liHwFree = (li.hwFree === true) || _hwFree;
+      if (_liHwFree && _hwGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td>' +
                   '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_hwGrossUnit) + '</span></td>' +
                   '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_hwLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+        _anyHwFree = true;
       } else if (_hwGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
         hwNetTotal += _hwLineGross;
       }
-      // Install row.
       const _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
       const _instLineGross = q * _instGrossUnit;
+      const _liInstFree = (li.installFree === true) || _instType === 'we-install-free';
       if (_instType === 'not-required') {
-        // Don't show install row at all — Agreement Details handles the framing.
+        // skip — Agreement Details handles framing
       } else if (_instType === 'self-install' && _instGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
                   '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
                   '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#fff4e6;color:#b45309;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">SELF-INSTALL</span></td></tr>';
-      } else if (_instType === 'we-install-free' && _instGrossUnit > 0) {
+        _anyInstWaived = true;
+      } else if (_liInstFree && _instGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
                   '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
                   '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
-      } else if (_instCustomerPays && _instGrossUnit > 0) {
+        _anyInstWaived = true;
+      } else if (_instGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
         hwNetTotal += _instLineGross;
       }
     });
   }
-  // Override the auto-derived hwTotal with the renderer's net so the subtotal
-  // line matches what the customer actually owes (zero when everything's free).
   const _hwSectionShown = hwRows.length > 0;
+  // Effective flags for downstream callouts / Agreement Details: any FREE seen
+  // either at line-item level or lead level counts.
+  const _hwFreeEff   = _hwFree || _anyHwFree;
+  const _instWaivedEff = _instWaived || _anyInstWaived;
 
   // Build software rows
   let swRows = '';
@@ -4835,7 +4848,7 @@ ${_hwSectionShown ? `<h3>Hardware &amp; Installation</h3>
   </tbody>
 </table>
 ${hwNetTotal > 0 && isMTM ? '<div class="callout"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>' : ''}
-${(_hwFree || _instWaived) ? '<div class="callout" style="background:#e6f7ee;border-color:#00CC66"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFree ? 'Hardware' : '') + (_hwFree && _instWaived ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instType === 'we-install-free' ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>' : ''}` : ''}
+${(_hwFreeEff || _instWaivedEff) ? '<div class="callout" style="background:#e6f7ee;border-color:#00CC66"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFreeEff ? 'Hardware' : '') + (_hwFreeEff && _instWaivedEff ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instWaivedEff ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>' : ''}` : ''}
 
 <h3>Software Subscription</h3>
 <table>
@@ -4939,6 +4952,8 @@ function _buildProposalEmailHTML(l) {
 
   var hwRows = '';
   var hwNetTotal = 0;
+  var _anyHwFree = false;
+  var _anyInstWaived = false;
   if (l.lineItems) {
     l.lineItems.forEach(function(li) {
       var q = li.qty || 0;
@@ -4947,33 +4962,40 @@ function _buildProposalEmailHTML(l) {
       var _hwGrossUnit = (li.hwPrice && li.hwPrice > 0) ? li.hwPrice : (HW_PRICES[_hwTypeKey] || 0);
       var _hwLineGross = q * _hwGrossUnit;
       var _hwLabel = li.hwType || (li.type + ' Device');
-      if (_hwFree && _hwGrossUnit > 0) {
+      var _liHwFree = (li.hwFree === true) || _hwFree;
+      if (_liHwFree && _hwGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td>' +
                   '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_hwGrossUnit) + '</span></td>' +
                   '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_hwLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
+        _anyHwFree = true;
       } else if (_hwGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">' + _hwLabel + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_hwGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_hwLineGross) + '</td></tr>';
         hwNetTotal += _hwLineGross;
       }
       var _instGrossUnit = (li.hwInstall && li.hwInstall > 0) ? li.hwInstall : (HW_INSTALL_DEFAULT[_hwTypeKey] || 0);
       var _instLineGross = q * _instGrossUnit;
+      var _liInstFree = (li.installFree === true) || _instType === 'we-install-free';
       if (_instType === 'not-required') {
         // skip
       } else if (_instType === 'self-install' && _instGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
                   '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
                   '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#fff4e6;color:#b45309;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">SELF-INSTALL</span></td></tr>';
-      } else if (_instType === 'we-install-free' && _instGrossUnit > 0) {
+        _anyInstWaived = true;
+      } else if (_liInstFree && _instGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td>' +
                   '<td style="text-align:right"><span style="text-decoration:line-through;color:#999">' + fmt(_instGrossUnit) + '</span></td>' +
                   '<td style="text-align:right;font-weight:600"><span style="text-decoration:line-through;color:#999">' + fmt(_instLineGross) + '</span> &nbsp;<span style="background:#e6f7ee;color:#00802b;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.3px">FREE &mdash; INCLUDED</span></td></tr>';
-      } else if (_instCustomerPays && _instGrossUnit > 0) {
+        _anyInstWaived = true;
+      } else if (_instGrossUnit > 0) {
         hwRows += '<tr><td style="font-weight:600">Installation &mdash; ' + li.type + '</td><td style="text-align:center">' + q + '</td><td style="text-align:right">' + fmt(_instGrossUnit) + '</td><td style="text-align:right;font-weight:600">' + fmt(_instLineGross) + '</td></tr>';
         hwNetTotal += _instLineGross;
       }
     });
   }
   var _hwSectionShown = hwRows.length > 0;
+  var _hwFreeEff = _hwFree || _anyHwFree;
+  var _instWaivedEff = _instWaived || _anyInstWaived;
 
   var swRows = '';
   if (l.lineItems) {
@@ -5016,8 +5038,8 @@ function _buildProposalEmailHTML(l) {
     if (hwNetTotal > 0 && isMTM) {
       html += '<div style="background:#f0f9ff;border:1px solid #0098d4;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#0098d4">Payable Upfront:</strong> Hardware &amp; installation of <strong>' + fmt(hwNetTotal) + '</strong> is payable before activation. Once paid, devices become the property of the client.</div>';
     }
-    if (_hwFree || _instWaived) {
-      html += '<div style="background:#e6f7ee;border:1px solid #00CC66;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFree ? 'Hardware' : '') + (_hwFree && _instWaived ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instType === 'we-install-free' ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>';
+    if (_hwFreeEff || _instWaivedEff) {
+      html += '<div style="background:#e6f7ee;border:1px solid #00CC66;padding:14px;margin:12px 0 16px;font-size:12px;line-height:1.6"><strong style="color:#00802b">Included at no charge:</strong> ' + (_hwFreeEff ? 'Hardware' : '') + (_hwFreeEff && _instWaivedEff ? ' and ' : '') + (_instType === 'self-install' ? 'installation (self-install by client)' : (_instWaivedEff ? 'installation' : '')) + '. These items are part of your TrackNow subscription package.</div>';
     }
   }
 
@@ -12346,9 +12368,15 @@ function renderDealProductLines() {
           <label style="${lbl}">Qty</label>
           <input type="number" value="${li.qty||0}" min="1" onfocus="this.select()" onchange="updateLineItem(${i},'qty',parseInt(this.value)||0)" style="width:100%;${inp};text-align:center">
         </div>
-        <div style="width:80px">
+        <div style="width:130px">
           <label style="${lbl}">$/unit</label>
-          <input type="number" value="${li.hwPrice||0}" min="0" onfocus="this.select()" onchange="updateLineItem(${i},'hwPrice',parseFloat(this.value)||0)" style="width:100%;${inp};text-align:center">
+          <div style="display:flex;gap:4px;align-items:center">
+            <select id="dp_hwYN_${i}" onchange="toggleHwCost(${i},this.value)" style="width:55px;${inp};text-align:center">
+              <option value="yes" ${(li.hwFree!==true && (li.hwPrice||0)>0)?'selected':''}>Yes</option>
+              <option value="no" ${(li.hwFree===true || (li.hwPrice||0)===0)?'selected':''}>No</option>
+            </select>
+            <input type="number" id="dp_hwAmt_${i}" value="${li.hwPrice||0}" min="0" onfocus="this.select()" onchange="updateLineItem(${i},'hwPrice',parseFloat(this.value)||0);updateDealProductTotals()" style="width:65px;${inp};text-align:center;${(li.hwFree===true || (li.hwPrice||0)===0)?'opacity:.3;pointer-events:none':''}">
+          </div>
         </div>
         <div style="width:130px">
           <label style="${lbl}">Install</label>
@@ -12457,10 +12485,32 @@ function toggleInstallCost(idx, val) {
   if (val === 'yes') {
     const defaultCost = HW_INSTALL_DEFAULT[l.lineItems[idx].hwType] || 75;
     l.lineItems[idx].hwInstall = defaultCost;
+    l.lineItems[idx].installFree = false;
     if (amt) { amt.value = defaultCost; amt.style.opacity='1'; amt.style.pointerEvents='auto'; }
   } else {
     l.lineItems[idx].hwInstall = 0;
+    l.lineItems[idx].installFree = true;
     if (amt) { amt.value = 0; amt.style.opacity='.3'; amt.style.pointerEvents='none'; }
+  }
+  updateDealProductTotals();
+}
+
+// Same Yes/No pattern for hardware $/unit. "No" means hardware is provided
+// free — sets hwFree:true on the lineItem so the proposal renderer shows the
+// catalog gross with a FREE - INCLUDED badge instead of just hiding the line.
+function toggleHwCost(idx, val) {
+  const l = _getDealEntity();
+  if (!l || !l.lineItems[idx]) return;
+  const amt = document.getElementById('dp_hwAmt_'+idx);
+  if (val === 'yes') {
+    const defaultCost = HW_PRICES[l.lineItems[idx].hwType] || 199;
+    l.lineItems[idx].hwPrice = defaultCost;
+    l.lineItems[idx].hwFree = false;
+    if (amt) { amt.value = defaultCost; amt.style.opacity = '1'; amt.style.pointerEvents = 'auto'; }
+  } else {
+    l.lineItems[idx].hwPrice = 0;
+    l.lineItems[idx].hwFree = true;
+    if (amt) { amt.value = 0; amt.style.opacity = '.3'; amt.style.pointerEvents = 'none'; }
   }
   updateDealProductTotals();
 }
